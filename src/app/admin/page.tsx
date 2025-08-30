@@ -1,3 +1,5 @@
+'use client';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Book, Calendar, School, UserCheck, Users } from "lucide-react";
@@ -8,8 +10,11 @@ import StudentsManager from "./components/StudentsManager";
 import ScheduleManager from "./components/ScheduleManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
+import React from 'react';
 
 export default function AdminDashboard() {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'subjects';
 
   const tabs = [
     { value: "subjects", label: "Subjects", icon: Book, component: <SubjectsManager /> },
@@ -21,15 +26,17 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout pageTitle="Admin Dashboard" role="admin">
-      <Tabs defaultValue="subjects" className="w-full">
+      <Tabs value={tab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                <Icon className="w-4 h-4 mr-2" />
-                {tab.label}
-              </TabsTrigger>
+              <Link key={tab.value} href={`/admin?tab=${tab.value}`} passHref>
+                <TabsTrigger value={tab.value} className='w-full'>
+                  <Icon className="w-4 h-4 mr-2" />
+                  {tab.label}
+                </TabsTrigger>
+              </Link>
             );
           })}
         </TabsList>

@@ -126,11 +126,11 @@ function Nav({ role }: { role: Role }) {
   const items = navItems[role];
 
   const adminTabs = [
-      { href: '/admin', tab: 'subjects', label: 'Subjects', icon: Book },
-      { href: '/admin', tab: 'classes', label: 'Classes', icon: School },
-      { href: '/admin', tab: 'faculty', label: 'Faculty', icon: UserCheck },
-      { href: '/admin', tab: 'students', label: 'Students', icon: Users },
-      { href: '/admin', tab: 'schedule', label: 'Schedule', icon: Calendar },
+      { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
+      { href: '/admin?tab=classes', label: 'Classes', icon: School, tab: 'classes' },
+      { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
+      { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
+      { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
   ]
 
   return (
@@ -139,33 +139,34 @@ function Nav({ role }: { role: Role }) {
         const Icon = item.icon;
         return (
           <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === item.href && role !== 'admin'}
-              tooltip={item.label}
-            >
-              <Link href={item.href}>
+             <Link href={item.href}>
+              <SidebarMenuButton
+                isActive={pathname === item.href && role !== 'admin'}
+                tooltip={item.label}
+              >
                 <Icon />
                 <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
+              </SidebarMenuButton>
+             </Link>
           </SidebarMenuItem>
         );
       })}
        {role === 'admin' && adminTabs.map((item) => {
          const Icon = item.icon;
+         const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+         const isActive = pathname === '/admin' && searchParams.get('tab') === item.tab;
+
          return (
           <SidebarMenuItem key={item.tab}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === item.href && new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('tab') === item.tab}
-              tooltip={item.label}
-            >
-              <Link href={`${item.href}?tab=${item.tab}`}>
+            <Link href={item.href}>
+              <SidebarMenuButton
+                isActive={isActive}
+                tooltip={item.label}
+              >
                 <Icon />
                 <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
+              </SidebarMenuButton>
+            </Link>
            </SidebarMenuItem>
          )
        })}
