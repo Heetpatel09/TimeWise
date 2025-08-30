@@ -1,10 +1,24 @@
+
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCog, UserCheck, User, ArrowRight, Droplets } from 'lucide-react';
+import { UserCog, UserCheck, User, ArrowRight, Droplets, LogIn } from 'lucide-react';
 import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export default function Home() {
+  const [isLoginOpen, setLoginOpen] = useState(false);
+
   const roles = [
     {
       title: 'Admin',
@@ -34,42 +48,52 @@ export default function Home() {
           alt="background"
           fill
           style={{ objectFit: 'cover' }}
-          className="opacity-20"
-          data-ai-hint="abstract dark"
+          className="opacity-10"
+          data-ai-hint="abstract dark red"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
       </div>
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-4">
-        <div className="mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <Droplets className="w-16 h-16 text-primary" />
-            <h1 className="text-6xl md:text-7xl font-bold text-primary-foreground ml-4">
-              CodeBlooded
-            </h1>
-          </div>
-          <p className="mt-4 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            An intelligent platform for educational institutions to effortlessly generate and manage academic timetables.
-          </p>
+        <div className="flex items-center justify-center mb-6">
+          <Droplets className="w-24 h-24 text-primary" />
+          <h1 className="text-8xl md:text-9xl font-bold text-primary-foreground ml-4 tracking-wider">
+            CodeBlooded
+          </h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
-          {roles.map((role) => (
-            <Card key={role.title} className="flex flex-col text-center items-center bg-card/50 backdrop-blur-sm border-border/20 hover:border-primary/50 hover:shadow-lg transition-all duration-300">
-              <CardHeader className="items-center">
-                {role.icon}
-                <CardTitle className="mt-4 text-2xl font-semibold">{role.title}</CardTitle>
-                <CardDescription className="mt-2 h-12">{role.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow flex items-end w-full">
-                <Button asChild className="w-full">
-                  <Link href={role.link}>
-                    Login <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Dialog open={isLoginOpen} onOpenChange={setLoginOpen}>
+          <DialogTrigger asChild>
+            <Button size="lg" className="text-lg">
+              <LogIn className="mr-2 h-5 w-5" /> Login
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-4xl bg-card/80 backdrop-blur-lg border-primary/20">
+            <DialogHeader>
+              <DialogTitle className="text-center text-3xl font-bold">Select Your Role</DialogTitle>
+              <DialogDescription className="text-center text-lg">
+                Choose your portal to continue.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full pt-8">
+              {roles.map((role) => (
+                <Card key={role.title} className="flex flex-col text-center items-center bg-transparent border-border/20 hover:border-primary/50 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                  <CardHeader className="items-center">
+                    {role.icon}
+                    <CardTitle className="mt-4 text-2xl font-semibold">{role.title}</CardTitle>
+                    <CardDescription className="mt-2 h-12">{role.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow flex items-end w-full">
+                    <Button asChild className="w-full">
+                      <Link href={role.link}>
+                        Continue <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </main>
   );
