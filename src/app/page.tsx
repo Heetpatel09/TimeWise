@@ -55,12 +55,12 @@ export default function Home() {
     <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://picsum.photos/1920/1080?grayscale&blur=2"
+          src="https://picsum.photos/1920/1080"
           alt="background"
           fill
           style={{ objectFit: 'cover' }}
           className="opacity-20"
-          data-ai-hint="abstract dark technology"
+          data-ai-hint="clock desktop"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
       </div>
