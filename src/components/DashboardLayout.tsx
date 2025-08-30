@@ -45,12 +45,6 @@ import { Badge } from './ui/badge';
 const navItems = {
   admin: [
     { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
-    // The sub-pages for admin are managed by tabs on the dashboard, so we can remove them from nav to avoid confusion.
-    // { href: '/admin/subjects', label: 'Subjects', icon: Book },
-    // { href: '/admin/classes', label: 'Classes', icon: School },
-    // { href: '/admin/faculty', label: 'Faculty', icon: UserCheck },
-    // { href: '/admin/students', label: 'Students', icon: Users },
-    // { href: '/admin/schedule', label: 'Schedule', icon: Calendar },
   ],
   faculty: [
     { href: '/faculty', label: 'My Schedule', icon: Calendar },
@@ -68,7 +62,7 @@ function CodeBloodedLogo() {
     <Link href="/" className="flex items-center gap-2">
        <div className="relative w-8 h-8">
           <Monitor className="w-full h-full text-primary" />
-          <Clock className="absolute w-1/2 h-1/2 text-red-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          <Clock className="absolute w-1/2 h-1/2 text-red-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
       </div>
       {state === 'expanded' && (
         <span className="text-xl font-bold text-primary-foreground font-headline">CodeBlooded</span>
@@ -137,11 +131,14 @@ function Nav({ role }: { role: Role }) {
     <SidebarMenu>
       {items.map((item) => {
         const Icon = item.icon;
+        const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams('');
+        const isActive = role === 'admin' ? pathname === item.href && !searchParams.get('tab') : pathname === item.href;
+        
         return (
           <SidebarMenuItem key={item.href}>
              <Link href={item.href}>
               <SidebarMenuButton
-                isActive={pathname === item.href && role !== 'admin'}
+                isActive={isActive}
                 tooltip={item.label}
               >
                 <Icon />
