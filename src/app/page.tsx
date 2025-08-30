@@ -55,12 +55,12 @@ export default function Home() {
     <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://picsum.photos/1920/1080"
+          src="https://picsum.photos/1920/1080?grayscale&blur=2"
           alt="background"
           fill
           style={{ objectFit: 'cover' }}
-          className="opacity-10"
-          data-ai-hint="abstract dark red"
+          className="opacity-20"
+          data-ai-hint="abstract dark technology"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
       </div>
@@ -71,12 +71,11 @@ export default function Home() {
             The intelligent, AI-powered solution for effortless academic scheduling.
         </p>
 
+        <Button size="lg" className="mt-10 text-lg px-10 py-6 rounded-full font-bold animate-pulse" onClick={() => setLoginOpen(true)}>
+          <LogIn className="mr-2 h-5 w-5" /> Login
+        </Button>
+
         <Dialog open={isLoginOpen} onOpenChange={setLoginOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg" className="mt-10 text-lg px-10 py-6 rounded-full font-bold animate-pulse">
-              <LogIn className="mr-2 h-5 w-5" /> Login
-            </Button>
-          </DialogTrigger>
           <DialogContent className="sm:max-w-4xl bg-card/80 backdrop-blur-lg border-primary/20">
             <DialogHeader>
               <DialogTitle className="text-center text-3xl font-bold font-headline">Select Your Role</DialogTitle>
