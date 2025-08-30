@@ -7,6 +7,7 @@ import FacultyManager from "./components/FacultyManager";
 import StudentsManager from "./components/StudentsManager";
 import ScheduleManager from "./components/ScheduleManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 
 export default function AdminDashboard() {
 

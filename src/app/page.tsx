@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCog, UserCheck, User, ArrowRight, Droplets, LogIn } from 'lucide-react';
+import { UserCog, UserCheck, User, ArrowRight, LogIn, Monitor, Clock } from 'lucide-react';
 import Image from 'next/image';
 import {
   Dialog,
@@ -15,6 +14,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+
+const CodeBloodedLogo = () => (
+  <div className="flex items-center justify-center text-primary-foreground">
+    <div className="relative w-24 h-24 md:w-32 md:h-32">
+        <Monitor className="w-full h-full text-primary" />
+        <Clock className="absolute w-1/2 h-1/2 text-red-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+    </div>
+    <h1 className="text-6xl md:text-8xl font-bold text-primary-foreground ml-4 tracking-wider font-headline">
+      CodeBlooded
+    </h1>
+  </div>
+);
 
 export default function Home() {
   const [isLoginOpen, setLoginOpen] = useState(false);
@@ -41,7 +52,7 @@ export default function Home() {
   ];
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
       <div className="absolute inset-0 z-0">
         <Image
           src="https://picsum.photos/1920/1080"
@@ -53,23 +64,22 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
       </div>
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-4">
-        <div className="flex items-center justify-center mb-6">
-          <Droplets className="w-24 h-24 text-primary" />
-          <h1 className="text-8xl md:text-9xl font-bold text-primary-foreground ml-4 tracking-wider">
-            CodeBlooded
-          </h1>
-        </div>
+
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
+        <CodeBloodedLogo />
+        <p className="mt-6 text-lg md:text-xl max-w-2xl text-muted-foreground">
+            The intelligent, AI-powered solution for effortless academic scheduling.
+        </p>
 
         <Dialog open={isLoginOpen} onOpenChange={setLoginOpen}>
           <DialogTrigger asChild>
-            <Button size="lg" className="text-lg">
+            <Button size="lg" className="mt-10 text-lg px-10 py-6 rounded-full font-bold animate-pulse">
               <LogIn className="mr-2 h-5 w-5" /> Login
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-4xl bg-card/80 backdrop-blur-lg border-primary/20">
             <DialogHeader>
-              <DialogTitle className="text-center text-3xl font-bold">Select Your Role</DialogTitle>
+              <DialogTitle className="text-center text-3xl font-bold font-headline">Select Your Role</DialogTitle>
               <DialogDescription className="text-center text-lg">
                 Choose your portal to continue.
               </DialogDescription>
@@ -79,7 +89,7 @@ export default function Home() {
                 <Card key={role.title} className="flex flex-col text-center items-center bg-transparent border-border/20 hover:border-primary/50 hover:shadow-lg transition-all duration-300 hover:scale-105">
                   <CardHeader className="items-center">
                     {role.icon}
-                    <CardTitle className="mt-4 text-2xl font-semibold">{role.title}</CardTitle>
+                    <CardTitle className="mt-4 text-2xl font-semibold font-headline">{role.title}</CardTitle>
                     <CardDescription className="mt-2 h-12">{role.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-grow flex items-end w-full">

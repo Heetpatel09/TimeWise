@@ -8,10 +8,14 @@ import { Label } from '@/components/ui/label';
 import { schedule as allSchedule, classes, subjects } from '@/lib/placeholder-data';
 import type { Schedule } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Send } from 'lucide-react';
+import { Download, Send } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
 const LOGGED_IN_FACULTY_ID = 'FAC001';
+const LOGGED_IN_FACULTY_NAME = 'Dr. Alan Turing';
 
 export default function ScheduleView() {
   const facultySchedule = allSchedule.filter(s => s.facultyId === LOGGED_IN_FACULTY_ID);
@@ -44,39 +48,78 @@ export default function ScheduleView() {
     });
   };
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text(`Schedule for ${LOGGED_IN_FACULTY_NAME}`, 14, 16);
+    
+    const tableData = facultySchedule.map(slot => [
+        slot.day,
+        slot.time,
+        getRelationName(slot.classId, 'class'),
+        getRelationName(slot.subjectId, 'subject'),
+    ]);
+
+    (doc as any).autoTable({
+        head: [['Day', 'Time', 'Class', 'Subject']],
+        body: tableData,
+        startY: 20,
+    });
+
+    doc.save('my_schedule.pdf');
+  }
+
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const scheduleByDay = days.map(day => ({
+    day,
+    slots: facultySchedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
+  }));
+
   return (
     <div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Day</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Subject</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {facultySchedule.length > 0 ? facultySchedule.map((slot) => (
-              <TableRow key={slot.id}>
-                <TableCell>{slot.day}</TableCell>
-                <TableCell>{slot.time}</TableCell>
-                <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
-                <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="outline" size="sm" onClick={() => handleRequestChange(slot)}>
-                    Request Change
-                  </Button>
-                </TableCell>
-              </TableRow>
-            )) : (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center">No classes scheduled.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+        <div className="flex justify-end mb-4">
+            <Button onClick={exportPDF} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+            </Button>
+        </div>
+      <div className="space-y-6">
+        {scheduleByDay.map(({ day, slots }) => (
+          <Card key={day}>
+            <CardHeader>
+              <CardTitle>{day}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {slots.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {slots.map((slot) => (
+                      <TableRow key={slot.id}>
+                        <TableCell>{slot.time}</TableCell>
+                        <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
+                        <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => handleRequestChange(slot)}>
+                            Request Change
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>

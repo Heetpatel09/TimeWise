@@ -36,6 +36,8 @@ import {
   Users,
   Calendar,
   LayoutGrid,
+  Monitor,
+  Clock,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
@@ -43,11 +45,12 @@ import { Badge } from './ui/badge';
 const navItems = {
   admin: [
     { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
-    { href: '/admin/subjects', label: 'Subjects', icon: Book },
-    { href: '/admin/classes', label: 'Classes', icon: School },
-    { href: '/admin/faculty', label: 'Faculty', icon: UserCheck },
-    { href: '/admin/students', label: 'Students', icon: Users },
-    { href: '/admin/schedule', label: 'Schedule', icon: Calendar },
+    // The sub-pages for admin are managed by tabs on the dashboard, so we can remove them from nav to avoid confusion.
+    // { href: '/admin/subjects', label: 'Subjects', icon: Book },
+    // { href: '/admin/classes', label: 'Classes', icon: School },
+    // { href: '/admin/faculty', label: 'Faculty', icon: UserCheck },
+    // { href: '/admin/students', label: 'Students', icon: Users },
+    // { href: '/admin/schedule', label: 'Schedule', icon: Calendar },
   ],
   faculty: [
     { href: '/faculty', label: 'My Schedule', icon: Calendar },
@@ -59,54 +62,16 @@ const navItems = {
 
 type Role = 'admin' | 'faculty' | 'student';
 
-function TimewiseLogo() {
+function CodeBloodedLogo() {
   const { state } = useSidebar();
   return (
     <Link href="/" className="flex items-center gap-2">
-      <svg
-        className="w-8 h-8 text-primary"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M12 2L2 7V17L12 22L22 17V7L12 2Z"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M12 12L22 7"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M12 12V22"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M12 12L2 7"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M7 4.5L17 9.5"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+       <div className="relative w-8 h-8">
+          <Monitor className="w-full h-full text-primary" />
+          <Clock className="absolute w-1/2 h-1/2 text-red-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+      </div>
       {state === 'expanded' && (
-        <span className="text-xl font-bold text-primary font-headline">TimeWise</span>
+        <span className="text-xl font-bold text-primary-foreground font-headline">CodeBlooded</span>
       )}
     </Link>
   );
@@ -116,7 +81,7 @@ function UserProfile({ role }: { role: Role }) {
   const roleName = role.charAt(0).toUpperCase() + role.slice(1);
   const user = {
     name: `${roleName} User`,
-    email: `${role}@timewise.app`,
+    email: `${role}@codeblooded.app`,
     avatar: `https://avatar.vercel.sh/${role}.png`,
   };
 
@@ -160,6 +125,14 @@ function Nav({ role }: { role: Role }) {
   const pathname = usePathname();
   const items = navItems[role];
 
+  const adminTabs = [
+      { href: '/admin', tab: 'subjects', label: 'Subjects', icon: Book },
+      { href: '/admin', tab: 'classes', label: 'Classes', icon: School },
+      { href: '/admin', tab: 'faculty', label: 'Faculty', icon: UserCheck },
+      { href: '/admin', tab: 'students', label: 'Students', icon: Users },
+      { href: '/admin', tab: 'schedule', label: 'Schedule', icon: Calendar },
+  ]
+
   return (
     <SidebarMenu>
       {items.map((item) => {
@@ -168,7 +141,7 @@ function Nav({ role }: { role: Role }) {
           <SidebarMenuItem key={item.href}>
             <Link href={item.href} legacyBehavior passHref>
               <SidebarMenuButton
-                isActive={pathname === item.href}
+                isActive={pathname === item.href && role !== 'admin'}
                 tooltip={item.label}
               >
                 <Icon />
@@ -178,6 +151,22 @@ function Nav({ role }: { role: Role }) {
           </SidebarMenuItem>
         );
       })}
+       {role === 'admin' && adminTabs.map((item) => {
+         const Icon = item.icon;
+         return (
+          <SidebarMenuItem key={item.tab}>
+             <Link href={`${item.href}?tab=${item.tab}`} legacyBehavior passHref>
+               <SidebarMenuButton
+                 isActive={pathname === item.href && new URLSearchParams(window.location.search).get('tab') === item.tab}
+                 tooltip={item.label}
+               >
+                 <Icon />
+                 <span>{item.label}</span>
+               </SidebarMenuButton>
+             </Link>
+           </SidebarMenuItem>
+         )
+       })}
     </SidebarMenu>
   );
 }
@@ -206,7 +195,7 @@ export default function DashboardLayout({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <TimewiseLogo />
+          <CodeBloodedLogo />
         </SidebarHeader>
         <SidebarContent>
           <Nav role={role} />
@@ -226,7 +215,7 @@ export default function DashboardLayout({
         <header className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center">
             <SidebarTrigger className="md:hidden" />
-            <h1 className="text-2xl font-semibold ml-4">{pageTitle}</h1>
+            <h1 className="text-2xl font-semibold ml-4 font-headline">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="flex items-center text-sm">

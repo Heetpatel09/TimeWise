@@ -1,16 +1,33 @@
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { schedule as initialSchedule, classes, subjects, faculty } from '@/lib/placeholder-data';
 import type { Schedule, ResolveScheduleConflictsOutput } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Sparkles, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Sparkles, AlertTriangle, CheckCircle, Loader2, Download } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { handleResolveConflicts } from '../actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function ScheduleManager() {
   const [schedule, setSchedule] = useState<Schedule[]>(initialSchedule);
@@ -84,59 +101,104 @@ export default function ScheduleManager() {
     }
   }
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Master Schedule", 14, 16);
+    
+    const tableData = schedule.map(slot => [
+        slot.day,
+        slot.time,
+        getRelationName(slot.classId, 'class'),
+        getRelationName(slot.subjectId, 'subject'),
+        getRelationName(slot.facultyId, 'faculty'),
+    ]);
+
+    (doc as any).autoTable({
+        head: [['Day', 'Time', 'Class', 'Subject', 'Faculty']],
+        body: tableData,
+        startY: 20,
+    });
+
+    doc.save('master_schedule.pdf');
+  }
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const times = ['09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00', '14:00 - 15:00'];
+
+  const scheduleByDay = days.map(day => ({
+    day,
+    slots: schedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
+  }));
 
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <Button onClick={onResolveConflicts} variant="outline">
-          <Sparkles className="h-4 w-4 mr-2" />
-          Resolve Conflicts
-        </Button>
+        <div className='flex gap-2'>
+            <Button onClick={onResolveConflicts} variant="outline">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Resolve Conflicts
+            </Button>
+            <Button onClick={exportPDF} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+            </Button>
+        </div>
         <Button onClick={openNewDialog}>
           <PlusCircle className="h-4 w-4 mr-2" />
           Add Slot
         </Button>
       </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Day</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Subject</TableHead>
-              <TableHead>Faculty</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {schedule.map((slot) => (
-              <TableRow key={slot.id}>
-                <TableCell>{slot.day}</TableCell>
-                <TableCell>{slot.time}</TableCell>
-                <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
-                <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
-                <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
-                <TableCell className="text-right">
-                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(slot.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+
+      <div className="space-y-6">
+        {scheduleByDay.map(({ day, slots }) => (
+          <Card key={day}>
+            <CardHeader>
+              <CardTitle>{day}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {slots.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Faculty</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {slots.map((slot) => (
+                      <TableRow key={slot.id}>
+                        <TableCell>{slot.time}</TableCell>
+                        <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
+                        <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
+                        <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(slot.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
 
       <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
         <DialogContent>
