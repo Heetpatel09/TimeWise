@@ -139,15 +139,16 @@ function Nav({ role }: { role: Role }) {
         const Icon = item.icon;
         return (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href} legacyBehavior passHref>
-              <SidebarMenuButton
-                isActive={pathname === item.href && role !== 'admin'}
-                tooltip={item.label}
-              >
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === item.href && role !== 'admin'}
+              tooltip={item.label}
+            >
+              <Link href={item.href}>
                 <Icon />
                 <span>{item.label}</span>
-              </SidebarMenuButton>
-            </Link>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         );
       })}
@@ -155,15 +156,16 @@ function Nav({ role }: { role: Role }) {
          const Icon = item.icon;
          return (
           <SidebarMenuItem key={item.tab}>
-             <Link href={`${item.href}?tab=${item.tab}`} legacyBehavior passHref>
-               <SidebarMenuButton
-                 isActive={pathname === item.href && new URLSearchParams(window.location.search).get('tab') === item.tab}
-                 tooltip={item.label}
-               >
-                 <Icon />
-                 <span>{item.label}</span>
-               </SidebarMenuButton>
-             </Link>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === item.href && new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('tab') === item.tab}
+              tooltip={item.label}
+            >
+              <Link href={`${item.href}?tab=${item.tab}`}>
+                <Icon />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
            </SidebarMenuItem>
          )
        })}
