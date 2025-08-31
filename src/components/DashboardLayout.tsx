@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -19,6 +20,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  SidebarMenuBadge,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -42,10 +44,12 @@ import {
   LayoutGrid,
   Monitor,
   Clock,
+  Mail,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
 import type { User as UserType } from '@/lib/types';
+import { leaveRequests } from '@/lib/placeholder-data';
 
 const navItems = {
   admin: [
@@ -135,6 +139,7 @@ function Nav({ role }: { role: Role }) {
   }
 
   const items = navItems[role];
+  const pendingLeaveRequestsCount = leaveRequests.filter(r => r.status === 'pending').length;
 
   const adminTabs = [
       { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
@@ -142,10 +147,11 @@ function Nav({ role }: { role: Role }) {
       { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
       { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
       { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
+      { href: '/admin?tab=leave-requests', label: 'Leave Requests', icon: Mail, tab: 'leave-requests', badge: pendingLeaveRequestsCount },
   ]
   const isActive = (item: {href: string, tab?: string}) => {
-    if (role === 'admin' && item.href.startsWith('/admin?tab=')) {
-        const currentTab = searchParams.get('tab') || 'subjects';
+    if (item.href.includes('?tab=')) {
+        const currentTab = searchParams.get('tab');
         return currentTab === item.tab;
     }
      if (pathname.startsWith('/admin') && item.href === '/admin') {
@@ -190,6 +196,7 @@ function Nav({ role }: { role: Role }) {
                             >
                                 <Icon />
                                 <span>{item.label}</span>
+                                {item.badge && item.badge > 0 && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
                             </SidebarMenuButton>
                             </Link>
                         </SidebarMenuItem>

@@ -41,3 +41,12 @@ export interface User {
     email: string;
     avatar: string;
 }
+
+export interface LeaveRequest {
+  id: string;
+  facultyId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+}

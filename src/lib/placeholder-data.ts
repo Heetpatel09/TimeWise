@@ -1,4 +1,4 @@
-import type { Subject, Class, Student, Faculty, Schedule } from './types';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest } from './types';
 
 export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101' },
@@ -34,4 +34,10 @@ export const schedule: Schedule[] = [
   { id: 'SCH004', classId: 'CLS004', subjectId: 'SUB004', facultyId: 'FAC003', day: 'Wednesday', time: '14:00 - 15:00' },
   // Intentional conflict for demo purposes
   { id: 'SCH005', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', day: 'Monday', time: '09:00 - 10:00' },
+];
+
+export const leaveRequests: LeaveRequest[] = [
+  { id: 'LR001', facultyId: 'FAC002', startDate: '2024-08-01', endDate: '2024-08-05', reason: 'Family wedding.', status: 'pending' },
+  { id: 'LR002', facultyId: 'FAC003', startDate: '2024-08-10', endDate: '2024-08-12', reason: 'Attending a conference.', status: 'pending' },
+  { id: 'LR003', facultyId: 'FAC001', startDate: '2024-07-20', endDate: '2024-07-21', reason: 'Personal reasons.', status: 'approved' },
 ];
