@@ -174,7 +174,7 @@ export default function FacultyManager() {
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="streak" className="text-right">Streak</Label>
-              <Input id="streak" type="number" value={currentFaculty?.streak || 0} onChange={(e) => setCurrentFaculty({ ...currentFaculty, streak: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="streak" type="number" value={currentFaculty?.streak ?? 0} onChange={(e) => setCurrentFaculty({ ...currentFaculty, streak: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>
