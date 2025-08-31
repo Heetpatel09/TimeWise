@@ -19,6 +19,8 @@ export default function AdminProfilePage() {
   const [name, setName] = React.useState(user?.name || '');
   const [email, setEmail] = React.useState(user?.email || '');
   const [avatar, setAvatar] = React.useState(user?.avatar || '');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
   const [isSaving, setIsSaving] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -44,14 +46,24 @@ export default function AdminProfilePage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (user) {
+        if (newPassword && newPassword !== confirmPassword) {
+            toast({ title: 'Error', description: 'Passwords do not match.', variant: 'destructive'});
+            return;
+        }
+
         setIsSaving(true);
         try {
-            const updatedUser = await authService.updateAdmin({ name, email, avatar });
+            const updatedUser = await authService.updateAdmin({ id: user.id, name, email, avatar });
+            if (newPassword) {
+                await authService.updatePassword(user.email, newPassword);
+            }
             setAuthUser(updatedUser);
             toast({
                 title: 'Profile Updated',
                 description: 'Your changes have been saved successfully.',
             });
+            setNewPassword('');
+            setConfirmPassword('');
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive'});
         } finally {
@@ -120,6 +132,19 @@ export default function AdminProfilePage() {
                 id="password"
                 type="password"
                 placeholder="Enter a new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={isSaving}
+              />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Confirm your new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isSaving}
               />
             </div>

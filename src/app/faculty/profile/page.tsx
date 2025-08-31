@@ -13,12 +13,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getFaculty, updateFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { authService } from '@/lib/services/auth';
 
 
 export default function FacultyProfilePage() {
   const { user, setUser: setAuthUser } = useAuth();
   const { toast } = useToast();
   const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -36,7 +39,7 @@ export default function FacultyProfilePage() {
     loadFaculty();
   }, [user]);
   
-  const handleFieldChange = (field: keyof Omit<Faculty, 'avatar'>, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Faculty, 'avatar' | 'id'>, value: any) => {
     if (facultyMember) {
         setFacultyMember({ ...facultyMember, [field]: value });
     }
@@ -59,20 +62,31 @@ export default function FacultyProfilePage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (facultyMember && user) {
+      if (newPassword && newPassword !== confirmPassword) {
+        toast({ title: 'Error', description: 'Passwords do not match.', variant: 'destructive'});
+        return;
+      }
+
       setIsSaving(true);
       try {
-        await updateFaculty(facultyMember);
+        const updatedFaculty = await updateFaculty(facultyMember);
+        if (newPassword) {
+            await authService.updatePassword(updatedFaculty.email, newPassword);
+        }
+        
         const updatedUser = { 
             ...user, 
-            name: facultyMember.name, 
-            email: facultyMember.email, 
-            avatar: facultyMember.avatar || user.avatar 
+            name: updatedFaculty.name, 
+            email: updatedFaculty.email, 
+            avatar: updatedFaculty.avatar || user.avatar 
         };
         setAuthUser(updatedUser);
         toast({
           title: 'Profile Updated',
           description: 'Your changes have been saved successfully.',
         });
+        setNewPassword('');
+        setConfirmPassword('');
       } catch (error) {
         toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive'});
       } finally {
@@ -170,12 +184,25 @@ export default function FacultyProfilePage() {
                 id="password"
                 type="password"
                 placeholder="Enter a new password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                disabled={isSaving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Confirm your new password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
                 disabled={isSaving}
               />
             </div>
             <div className="flex justify-end">
               <Button type="submit" disabled={isSaving}>
-                {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </div>

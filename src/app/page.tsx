@@ -34,7 +34,7 @@ const CodeBloodedLogo = () => (
 );
 
 const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => void }) => {
-  const [userId, setUserId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -45,7 +45,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
     e.preventDefault();
     setIsLoading(true);
     try {
-      const user = await login(userId, password);
+      const user = await login(email, password);
        if (user.role !== role) {
         throw new Error(`Invalid credentials for ${role} role.`);
       }
@@ -67,9 +67,9 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
 
   const getPlaceholder = () => {
     switch (role) {
-        case 'admin': return 'admin';
-        case 'faculty': return 'FAC001';
-        case 'student': return 'STU001';
+        case 'admin': return 'admin@codeblooded.app';
+        case 'faculty': return 'turing@example.com';
+        case 'student': return 'alice@example.com';
     }
   }
 
@@ -84,14 +84,15 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
         <form onSubmit={handleLogin}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="userId" className="text-right">
-                User ID
+              <Label htmlFor="email" className="text-right">
+                Email
               </Label>
               <Input
-                id="userId"
+                id="email"
+                type="email"
                 placeholder={`e.g. ${getPlaceholder()}`}
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="col-span-3"
                 disabled={isLoading}
               />

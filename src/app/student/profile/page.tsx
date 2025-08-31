@@ -14,6 +14,7 @@ import { getStudents, updateStudent } from '@/lib/services/students';
 import { getClasses } from '@/lib/services/classes';
 import type { Student, Class } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { authService } from '@/lib/services/auth';
 
 
 export default function StudentProfilePage() {
@@ -21,6 +22,8 @@ export default function StudentProfilePage() {
   const { toast } = useToast();
   const [student, setStudent] = useState<Student | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -42,7 +45,7 @@ export default function StudentProfilePage() {
     loadData();
   }, [user]);
   
-  const handleFieldChange = (field: keyof Omit<Student, 'avatar'>, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Student, 'id' | 'avatar' | 'classId'>, value: any) => {
     if (student) {
         setStudent({ ...student, [field]: value });
     }
@@ -67,20 +70,31 @@ export default function StudentProfilePage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (student && user) {
+        if (newPassword && newPassword !== confirmPassword) {
+            toast({ title: 'Error', description: 'Passwords do not match.', variant: 'destructive'});
+            return;
+        }
+
       setIsSaving(true);
       try {
-        await updateStudent(student);
+        const updatedStudent = await updateStudent(student);
+        if (newPassword) {
+            await authService.updatePassword(updatedStudent.email, newPassword);
+        }
+        
         const updatedUser = { 
             ...user, 
-            name: student.name, 
-            email: student.email, 
-            avatar: student.avatar || user.avatar 
+            name: updatedStudent.name, 
+            email: updatedStudent.email, 
+            avatar: updatedStudent.avatar || user.avatar 
         };
         setAuthUser(updatedUser);
         toast({
           title: 'Profile Updated',
           description: 'Your changes have been saved successfully.',
         });
+        setNewPassword('');
+        setConfirmPassword('');
       } catch(error) {
         toast({ title: 'Error', description: 'Failed to save changes', variant: 'destructive' });
       } finally {
@@ -176,6 +190,19 @@ export default function StudentProfilePage() {
                 id="password"
                 type="password"
                 placeholder="Enter a new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={isSaving}
+              />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Confirm your new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isSaving}
               />
             </div>
