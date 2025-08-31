@@ -5,8 +5,9 @@ import { getClasses } from '@/lib/services/classes';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSubjects } from '@/lib/services/subjects';
 import type { ResolveScheduleConflictsInput, ResolveScheduleConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts';
+import { getSchedule } from '@/lib/services/schedule';
 
-export async function handleResolveConflicts(schedules: string): Promise<ResolveScheduleConflictsOutput> {
+export async function handleResolveConflicts(currentSchedule: any): Promise<ResolveScheduleConflictsOutput> {
   try {
     const [classes, subjects, faculty] = await Promise.all([
         getClasses(),
@@ -14,6 +15,7 @@ export async function handleResolveConflicts(schedules: string): Promise<Resolve
         getFaculty(),
     ]);
 
+    const schedules = JSON.stringify(currentSchedule);
     const parameters = JSON.stringify({ classes, subjects, faculty });
 
     const result = await resolveScheduleConflicts({schedules, parameters});
@@ -23,7 +25,7 @@ export async function handleResolveConflicts(schedules: string): Promise<Resolve
     // Return a structured error
     return {
       hasConflicts: true,
-      resolvedSchedules: schedules, // return original on error
+      resolvedSchedules: JSON.stringify(currentSchedule), // return original on error
       conflictDetails: JSON.stringify({
         error: "An unexpected error occurred while analyzing the schedule.",
         message: e.message || 'Unknown error',

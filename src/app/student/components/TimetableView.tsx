@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { schedule as allSchedule } from '@/lib/placeholder-data';
+import { getSchedule } from '@/lib/services/schedule';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClasses } from '@/lib/services/classes';
-import type { Subject, Faculty, Class } from '@/lib/types';
+import type { Schedule, Subject, Faculty, Class } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
@@ -17,7 +17,7 @@ const LOGGED_IN_STUDENT_CLASS_ID = 'CLS004';
 const LOGGED_IN_STUDENT_NAME = 'Alice Johnson';
 
 export default function TimetableView() {
-  const studentSchedule = allSchedule.filter(s => s.classId === LOGGED_IN_STUDENT_CLASS_ID);
+  const [studentSchedule, setStudentSchedule] = useState<Schedule[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -26,11 +26,13 @@ export default function TimetableView() {
   useEffect(() => {
     async function loadData() {
         setIsLoading(true);
-        const [subjectData, facultyData, classData] = await Promise.all([
+        const [allSchedule, subjectData, facultyData, classData] = await Promise.all([
+            getSchedule(),
             getSubjects(),
             getFaculty(),
             getClasses()
         ]);
+        setStudentSchedule(allSchedule.filter(s => s.classId === LOGGED_IN_STUDENT_CLASS_ID));
         setSubjects(subjectData);
         setFaculty(facultyData);
         setClasses(classData);

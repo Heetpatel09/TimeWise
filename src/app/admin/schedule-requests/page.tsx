@@ -4,39 +4,42 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { schedule as staticSchedule } from '@/lib/placeholder-data';
 import type { ScheduleChangeRequest, Schedule, Faculty, Class, Subject } from '@/lib/types';
 import { Check, Loader2 } from 'lucide-react';
 import { getScheduleChangeRequests, updateScheduleChangeRequestStatus } from '@/lib/services/schedule-changes';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
+import { getSchedule } from '@/lib/services/schedule';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ScheduleRequestsPage() {
   const [requests, setRequests] = useState<ScheduleChangeRequest[]>([]);
-  const [schedule, setSchedule] = useState<Schedule[]>(staticSchedule); // For demo, schedule is static
+  const [schedule, setSchedule] = useState<Schedule[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchRequests() {
+  async function loadData() {
       setIsLoading(true);
-      const [fetchedRequests, facultyData, classData, subjectData] = await Promise.all([
+      const [fetchedRequests, scheduleData, facultyData, classData, subjectData] = await Promise.all([
         getScheduleChangeRequests(),
+        getSchedule(),
         getFaculty(),
         getClasses(),
         getSubjects()
       ]);
       setRequests(fetchedRequests);
+      setSchedule(scheduleData);
       setFaculty(facultyData);
       setClasses(classData);
       setSubjects(subjectData);
       setIsLoading(false);
-    }
-    fetchRequests();
+  }
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleRequestStatus = async (id: string, status: 'resolved') => {
@@ -44,6 +47,7 @@ export default function ScheduleRequestsPage() {
     setRequests(requests.map(req => req.id === id ? { ...req, status } : req));
     try {
       await updateScheduleChangeRequestStatus(id, status);
+      loadData(); // Re-fetch to confirm and get latest state
     } catch (error) {
       setRequests(originalRequests);
     }

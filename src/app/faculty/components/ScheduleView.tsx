@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { schedule as allSchedule } from '@/lib/placeholder-data';
+import { getSchedule } from '@/lib/services/schedule';
 import type { Schedule, Class, Subject } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Send, Loader2 } from 'lucide-react';
@@ -22,7 +22,7 @@ const LOGGED_IN_FACULTY_ID = 'FAC001';
 const LOGGED_IN_FACULTY_NAME = 'Dr. Alan Turing';
 
 export default function ScheduleView() {
-  const facultySchedule = allSchedule.filter(s => s.facultyId === LOGGED_IN_FACULTY_ID);
+  const [facultySchedule, setFacultySchedule] = useState<Schedule[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,10 +35,12 @@ export default function ScheduleView() {
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      const [classData, subjectData] = await Promise.all([
+      const [allSchedule, classData, subjectData] = await Promise.all([
+        getSchedule(),
         getClasses(),
         getSubjects(),
       ]);
+      setFacultySchedule(allSchedule.filter(s => s.facultyId === LOGGED_IN_FACULTY_ID));
       setClasses(classData);
       setSubjects(subjectData);
       setIsLoading(false);

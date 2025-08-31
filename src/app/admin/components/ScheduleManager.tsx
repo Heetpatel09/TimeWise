@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { schedule as initialSchedule } from '@/lib/placeholder-data';
+import { getSchedule, addSchedule, updateSchedule, deleteSchedule } from '@/lib/services/schedule';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
@@ -32,9 +32,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ScheduleManager() {
-  const [schedule, setSchedule] = useState<Schedule[]>(initialSchedule);
+  const [schedule, setSchedule] = useState<Schedule[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
@@ -44,21 +45,25 @@ export default function ScheduleManager() {
   const [conflictResult, setConflictResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const { toast } = useToast();
+
+  async function loadAllData() {
+    setIsDataLoading(true);
+    const [scheduleData, classData, subjectData, facultyData] = await Promise.all([
+        getSchedule(),
+        getClasses(),
+        getSubjects(),
+        getFaculty()
+    ]);
+    setSchedule(scheduleData);
+    setClasses(classData);
+    setSubjects(subjectData);
+    setFaculty(facultyData);
+    setIsDataLoading(false);
+  }
 
   useEffect(() => {
-    async function loadData() {
-        setIsDataLoading(true);
-        const [classData, subjectData, facultyData] = await Promise.all([
-            getClasses(),
-            getSubjects(),
-            getFaculty()
-        ]);
-        setClasses(classData);
-        setSubjects(subjectData);
-        setFaculty(facultyData);
-        setIsDataLoading(false);
-    }
-    loadData();
+    loadAllData();
   }, [])
 
   const getRelationName = (id: string, type: 'class' | 'subject' | 'faculty') => {
@@ -70,17 +75,23 @@ export default function ScheduleManager() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (currentSlot) {
-      if (currentSlot.id) {
-        setSchedule(schedule.map(s => s.id === currentSlot.id ? { ...s, ...currentSlot } as Schedule : s));
-      } else {
-        const newSlot = { ...currentSlot, id: `SCH${Date.now()}` } as Schedule;
-        setSchedule([...schedule, newSlot]);
-      }
+        try {
+            if (currentSlot.id) {
+                await updateSchedule(currentSlot as Schedule);
+                toast({ title: 'Slot Updated', description: 'The schedule slot has been updated.' });
+            } else {
+                await addSchedule(currentSlot as Omit<Schedule, 'id'>);
+                toast({ title: 'Slot Added', description: 'The new schedule slot has been created.' });
+            }
+            loadAllData();
+            setFormOpen(false);
+            setCurrentSlot(null);
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to save slot.', variant: 'destructive' });
+        }
     }
-    setFormOpen(false);
-    setCurrentSlot(null);
   };
   
   const handleEdit = (slot: Schedule) => {
@@ -88,8 +99,14 @@ export default function ScheduleManager() {
     setFormOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setSchedule(schedule.filter(s => s.id !== id));
+  const handleDelete = async (id: string) => {
+     try {
+        await deleteSchedule(id);
+        toast({ title: 'Slot Deleted', description: 'The schedule slot has been removed.' });
+        loadAllData();
+     } catch (error) {
+        toast({ title: 'Error', description: 'Failed to delete slot.', variant: 'destructive' });
+     }
   };
 
   const openNewDialog = () => {
@@ -102,8 +119,7 @@ export default function ScheduleManager() {
     setResultOpen(true);
     setConflictResult(null);
     try {
-      const schedulesJSON = JSON.stringify(schedule);
-      const result = await handleResolveConflicts(schedulesJSON);
+      const result = await handleResolveConflicts(schedule);
       setConflictResult(result);
     } catch (error) {
       console.error(error);
@@ -308,9 +324,16 @@ export default function ScheduleManager() {
               {conflictResult.hasConflicts && conflictResult.resolvedSchedules && (
                 <div className="mt-4">
                   <h3 className="font-semibold mb-2">Suggested Resolution</h3>
-                  <Button onClick={() => {
-                    setSchedule(JSON.parse(conflictResult.resolvedSchedules));
+                  <Button onClick={async () => {
+                    const newSchedule = JSON.parse(conflictResult.resolvedSchedules);
+                    for (const slot of newSchedule) {
+                        // This is a simple update logic. A more robust solution would
+                        // diff the schedules and only update changed slots.
+                        await updateSchedule(slot);
+                    }
+                    loadAllData();
                     setResultOpen(false);
+                    toast({ title: 'Schedule Applied', description: 'The suggested schedule has been applied.' });
                   }}>Apply Suggested Schedule</Button>
                   <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
                     <code className="text-white">{JSON.stringify(JSON.parse(conflictResult.resolvedSchedules), null, 2)}</code>
