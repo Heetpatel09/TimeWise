@@ -62,7 +62,7 @@ function CodeBloodedLogo() {
     <Link href="/" className="flex items-center gap-2">
        <div className="relative w-8 h-8">
           <Monitor className="w-full h-full text-primary" />
-          <Clock className="absolute w-1/2 h-1/2 text-red-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
+          <Clock className="absolute w-1/2 h-1/2 text-destructive top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
       </div>
       {state === 'expanded' && (
         <span className="text-xl font-bold text-primary-foreground font-headline">CodeBlooded</span>

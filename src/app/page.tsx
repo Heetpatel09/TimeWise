@@ -20,7 +20,7 @@ const CodeBloodedLogo = () => (
   <div className="flex items-center justify-center">
     <div className="relative w-24 h-24 md:w-32 md:h-32">
         <Monitor className="w-full h-full text-primary" />
-        <Clock className="absolute w-1/2 h-1/2 text-black top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
+        <Clock className="absolute w-1/2 h-1/2 text-primary-foreground top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
     </div>
     <h1 className="text-6xl md:text-8xl font-bold text-foreground ml-4 tracking-wider font-headline">
       CodeBlooded
@@ -60,10 +60,10 @@ export default function Home() {
           alt="background"
           fill
           style={{ objectFit: 'cover' }}
-          className="opacity-20"
+          className="opacity-10"
           data-ai-hint="abstract colorful"
         />
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
