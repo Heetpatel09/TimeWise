@@ -5,12 +5,21 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Monitor, Clock, LogIn, Loader2 } from 'lucide-react';
+import { Monitor, Clock, UserCog, UserCheck, Users, LogIn, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-
+import type { User } from '@/lib/types';
 
 const CodeBloodedLogo = () => (
   <div className="flex items-center justify-center">
@@ -24,10 +33,12 @@ const CodeBloodedLogo = () => (
   </div>
 );
 
-export default function Home() {
+
+const LoginDialog = ({ role, children }: { role: User['role'], children: React.ReactNode }) => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -37,10 +48,14 @@ export default function Home() {
     setIsLoading(true);
     try {
       const user = await login(userId, password);
+       if (user.role !== role) {
+        throw new Error(`Invalid credentials for ${role} role.`);
+      }
       toast({
         title: 'Login Successful',
         description: `Welcome, ${user.name}! Redirecting...`,
       });
+      setIsOpen(false);
       router.push(`/${user.role}`);
     } catch (error: any) {
       toast({
@@ -53,7 +68,70 @@ export default function Home() {
     }
   };
 
+  const getPlaceholder = () => {
+    switch (role) {
+        case 'admin': return 'admin';
+        case 'faculty': return 'FAC001';
+        case 'student': return 'STU001';
+    }
+  }
 
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="capitalize">{role} Login</DialogTitle>
+          <DialogDescription>
+            Enter your credentials to access the {role} portal.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleLogin}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="userId" className="text-right">
+                User ID
+              </Label>
+              <Input
+                id="userId"
+                placeholder={`e.g. ${getPlaceholder()}`}
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                className="col-span-3"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="col-span-3"
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
+                Login
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+export default function Home() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-transparent p-4">
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
@@ -62,40 +140,30 @@ export default function Home() {
             The intelligent, AI-powered solution for effortless academic scheduling.
         </p>
 
-        <Card className="mt-10 w-full max-w-sm bg-card/80 backdrop-blur-lg border-primary/20">
+        <Card className="mt-10 w-full max-w-2xl bg-card/80 backdrop-blur-lg border-primary/20">
           <CardHeader>
-            <CardTitle className="text-2xl font-headline">Login</CardTitle>
-            <CardDescription>Enter your credentials to access your portal.</CardDescription>
+            <CardTitle className="text-2xl font-headline">Select Your Portal</CardTitle>
+            <CardDescription>Choose your role to log in and access your dashboard.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2 text-left">
-                <Label htmlFor="userId">User ID</Label>
-                <Input
-                  id="userId"
-                  placeholder="e.g., admin, FAC001, STU001"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              <div className="space-y-2 text-left">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
-                Login
-              </Button>
-            </form>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <LoginDialog role="admin">
+                <Button variant="outline" className="w-full h-24 flex-col gap-2">
+                    <UserCog className="h-8 w-8 text-primary" />
+                    <span className="text-lg">Admin</span>
+                </Button>
+              </LoginDialog>
+              <LoginDialog role="faculty">
+                <Button variant="outline" className="w-full h-24 flex-col gap-2">
+                    <UserCheck className="h-8 w-8 text-primary" />
+                    <span className="text-lg">Faculty</span>
+                </Button>
+              </LoginDialog>
+              <LoginDialog role="student">
+                <Button variant="outline" className="w-full h-24 flex-col gap-2">
+                    <Users className="h-8 w-8 text-primary" />
+                    <span className="text-lg">Student</span>
+                </Button>
+              </LoginDialog>
           </CardContent>
         </Card>
       </div>
