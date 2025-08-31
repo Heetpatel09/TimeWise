@@ -46,9 +46,8 @@ export default function AdminProfilePage() {
     if (user) {
         setIsSaving(true);
         try {
-            const updatedUser = await authService.updateAdmin({ name, email });
-            const finalUser = { ...updatedUser, avatar }; // Combine backend data with client-side avatar state
-            setAuthUser(finalUser);
+            const updatedUser = await authService.updateAdmin({ name, email, avatar });
+            setAuthUser(updatedUser);
             toast({
                 title: 'Profile Updated',
                 description: 'Your changes have been saved successfully.',

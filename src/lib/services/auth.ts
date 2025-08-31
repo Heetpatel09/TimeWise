@@ -14,6 +14,7 @@ if (!(global as any).users) {
                 id: 'admin',
                 name: 'Admin User',
                 email: 'admin@codeblooded.app',
+                avatar: `https://avatar.vercel.sh/admin@codeblooded.app.png`,
             }
         },
         ...Object.fromEntries(faculty.map(f => [f.id, { password: 'faculty123', role: 'faculty', details: f }])),
@@ -33,7 +34,7 @@ export const authService = {
             id: userEntry.details.id,
             name: userEntry.details.name,
             email: userEntry.details.email,
-            avatar: `https://avatar.vercel.sh/${userEntry.details.email}.png`,
+            avatar: userEntry.details.avatar || `https://avatar.vercel.sh/${userEntry.details.email}.png`,
             role: userEntry.role,
           };
           resolve(user);
@@ -43,16 +44,17 @@ export const authService = {
       }, 500); // Simulate network delay
     });
   },
-  updateAdmin: (updatedDetails: { name: string, email: string }): Promise<User> => {
+  updateAdmin: (updatedDetails: { name: string, email: string, avatar: string }): Promise<User> => {
     return new Promise((resolve) => {
         const adminEntry = users['admin'];
         adminEntry.details.name = updatedDetails.name;
         adminEntry.details.email = updatedDetails.email;
+        adminEntry.details.avatar = updatedDetails.avatar;
         const user: User = {
             id: 'admin',
             name: adminEntry.details.name,
             email: adminEntry.details.email,
-            avatar: `https://avatar.vercel.sh/${adminEntry.details.email}.png`,
+            avatar: adminEntry.details.avatar,
             role: 'admin',
         };
         resolve(user);

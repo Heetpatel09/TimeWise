@@ -21,7 +21,6 @@ export default function FacultyProfilePage() {
   const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [avatar, setAvatar] = useState(user?.avatar || '');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   useEffect(() => {
@@ -31,14 +30,13 @@ export default function FacultyProfilePage() {
             const allFaculty = await getFaculty();
             const member = allFaculty.find((f) => f.id === user.id);
             setFacultyMember(member || null);
-            setAvatar(user.avatar);
             setIsLoading(false);
         }
     }
     loadFaculty();
   }, [user]);
   
-  const handleFieldChange = (field: keyof Faculty, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Faculty, 'avatar'>, value: any) => {
     if (facultyMember) {
         setFacultyMember({ ...facultyMember, [field]: value });
     }
@@ -49,7 +47,9 @@ export default function FacultyProfilePage() {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatar(reader.result as string);
+        if (facultyMember) {
+            setFacultyMember({ ...facultyMember, avatar: reader.result as string });
+        }
         toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
       };
       reader.readAsDataURL(file);
@@ -62,7 +62,12 @@ export default function FacultyProfilePage() {
       setIsSaving(true);
       try {
         await updateFaculty(facultyMember);
-        const updatedUser = { ...user, name: facultyMember.name, email: facultyMember.email, avatar };
+        const updatedUser = { 
+            ...user, 
+            name: facultyMember.name, 
+            email: facultyMember.email, 
+            avatar: facultyMember.avatar || user.avatar 
+        };
         setAuthUser(updatedUser);
         toast({
           title: 'Profile Updated',
@@ -113,7 +118,7 @@ export default function FacultyProfilePage() {
           <form onSubmit={handleSave} className="space-y-6 max-w-lg">
              <div className="flex items-center space-x-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src={avatar} alt={facultyMember.name} />
+                <AvatarImage src={facultyMember.avatar || user?.avatar} alt={facultyMember.name} />
                 <AvatarFallback>{facultyMember.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
               <Button 

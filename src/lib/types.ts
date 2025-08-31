@@ -18,14 +18,16 @@ export interface Student {
   email: string;
   classId: string;
   streak: number;
+  avatar?: string;
 }
 
 export interface Faculty {
-  id: string;
+  id:string;
   name: string;
   email: string;
   department: string;
   streak: number;
+  avatar?: string;
 }
 
 export interface Schedule {

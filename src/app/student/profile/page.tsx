@@ -23,7 +23,6 @@ export default function StudentProfilePage() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [avatar, setAvatar] = useState(user?.avatar || '');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -37,14 +36,13 @@ export default function StudentProfilePage() {
             const currentStudent = allStudents.find((s) => s.id === user.id);
             setStudent(currentStudent || null);
             setClasses(classData);
-            setAvatar(user.avatar);
             setIsLoading(false);
         }
     }
     loadData();
   }, [user]);
   
-  const handleFieldChange = (field: keyof Student, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Student, 'avatar'>, value: any) => {
     if (student) {
         setStudent({ ...student, [field]: value });
     }
@@ -55,7 +53,9 @@ export default function StudentProfilePage() {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatar(reader.result as string);
+        if (student) {
+            setStudent({ ...student, avatar: reader.result as string });
+        }
         toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
       };
       reader.readAsDataURL(file);
@@ -70,7 +70,12 @@ export default function StudentProfilePage() {
       setIsSaving(true);
       try {
         await updateStudent(student);
-        const updatedUser = { ...user, name: student.name, email: student.email, avatar };
+        const updatedUser = { 
+            ...user, 
+            name: student.name, 
+            email: student.email, 
+            avatar: student.avatar || user.avatar 
+        };
         setAuthUser(updatedUser);
         toast({
           title: 'Profile Updated',
@@ -119,7 +124,7 @@ export default function StudentProfilePage() {
           <form onSubmit={handleSave} className="space-y-6 max-w-lg">
             <div className="flex items-center space-x-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src={avatar} alt={student.name} />
+                <AvatarImage src={student.avatar || user?.avatar} alt={student.name} />
                 <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
               <Button 
