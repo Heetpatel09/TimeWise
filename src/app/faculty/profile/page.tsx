@@ -175,7 +175,8 @@ export default function FacultyProfilePage() {
               <Input
                 id="department"
                 value={facultyMember.department}
-                disabled
+                onChange={(e) => handleFieldChange('department', e.target.value)}
+                disabled={isSaving}
               />
             </div>
              <div className="space-y-2">
