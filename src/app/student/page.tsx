@@ -3,13 +3,20 @@
 
 import { useEffect, useState } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2 } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
 import type { Student, Notification } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { addLeaveRequest } from '@/lib/services/leave';
 
 
 export default function StudentDashboard() {
@@ -17,6 +24,12 @@ export default function StudentDashboard() {
   const [student, setStudent] = useState<Student | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLeaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [leaveStartDate, setLeaveStartDate] = useState('');
+  const [leaveEndDate, setLeaveEndDate] = useState('');
+  const [leaveReason, setLeaveReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function loadData() {
@@ -34,6 +47,48 @@ export default function StudentDashboard() {
     }
     loadData();
   }, [user]);
+
+  const handleLeaveRequestSubmit = async () => {
+    if (!leaveStartDate || !leaveEndDate || !leaveReason) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill out all fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!user || !student) return;
+
+    setIsSubmitting(true);
+    try {
+      await addLeaveRequest({
+        requesterId: user.id,
+        requesterName: student.name,
+        requesterRole: 'student',
+        startDate: leaveStartDate,
+        endDate: leaveEndDate,
+        reason: leaveReason,
+      });
+
+      toast({
+        title: 'Leave Request Sent',
+        description: 'Your request has been submitted for approval.',
+      });
+
+      setLeaveDialogOpen(false);
+      setLeaveStartDate('');
+      setLeaveEndDate('');
+      setLeaveReason('');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to submit leave request.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -71,6 +126,23 @@ export default function StudentDashboard() {
                         <p className="text-muted-foreground mt-2">Days in a row</p>
                     </CardContent>
                 </Card>
+                 <Card className="flex flex-col">
+                    <CardHeader>
+                    <CardTitle>Request Leave</CardTitle>
+                    <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                    <p className="text-sm text-muted-foreground">
+                        Need to take time off? Fill out the leave request form for approval.
+                    </p>
+                    </CardContent>
+                    <CardFooter>
+                    <Button onClick={() => setLeaveDialogOpen(true)}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        Open Leave Form
+                    </Button>
+                    </CardFooter>
+                </Card>
                 <Card>
                     <CardHeader>
                          <CardTitle className="flex items-center">
@@ -95,6 +167,62 @@ export default function StudentDashboard() {
                 </Card>
             </div>
         </div>
+
+        <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Request Leave of Absence</DialogTitle>
+            <DialogDescription>
+              Please fill out the form below to submit your leave request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                <Label htmlFor="start-date">Start Date</Label>
+                <Input 
+                  id="start-date" 
+                  type="date" 
+                  value={leaveStartDate}
+                  onChange={(e) => setLeaveStartDate(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="end-date">End Date</Label>
+                <Input 
+                  id="end-date" 
+                  type="date"
+                  value={leaveEndDate}
+                  onChange={(e) => setLeaveEndDate(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for Leave</Label>
+              <Textarea 
+                id="reason"
+                placeholder="Please provide a brief reason for your absence..."
+                value={leaveReason}
+                onChange={(e) => setLeaveReason(e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeaveDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleLeaveRequestSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

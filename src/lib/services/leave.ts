@@ -24,7 +24,7 @@ export async function addLeaveRequest(request: Omit<LeaveRequest, 'id' | 'status
     };
     leaveRequests.unshift(newRequest);
     revalidatePath('/admin', 'layout');
-    revalidatePath('/faculty', 'layout');
+    revalidatePath(`/${request.requesterRole}`, 'layout');
     return Promise.resolve(newRequest);
 }
 
@@ -35,11 +35,12 @@ export async function updateLeaveRequestStatus(id: string, status: 'approved' | 
         request.status = status;
         
         await addNotification({
-            userId: request.facultyId,
+            userId: request.requesterId,
             message: `Your leave request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been ${status}.`
         });
     }
     revalidatePath('/admin', 'layout');
     revalidatePath('/faculty', 'layout');
+    revalidatePath('/student', 'layout');
     return Promise.resolve(leaveRequests.find(req => req.id === id));
 }

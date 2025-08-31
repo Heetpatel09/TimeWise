@@ -66,12 +66,14 @@ export default function FacultyDashboard() {
       });
       return;
     }
-    if (!user) return;
+    if (!user || !currentFaculty) return;
 
     setIsSubmitting(true);
     try {
       await addLeaveRequest({
-        facultyId: user.id,
+        requesterId: user.id,
+        requesterName: currentFaculty.name,
+        requesterRole: 'faculty',
         startDate: leaveStartDate,
         endDate: leaveEndDate,
         reason: leaveReason,

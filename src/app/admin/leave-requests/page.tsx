@@ -4,26 +4,20 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { LeaveRequest, Faculty } from '@/lib/types';
+import type { LeaveRequest } from '@/lib/types';
 import { Check, X, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLeaveRequests, updateLeaveRequestStatus } from '@/lib/services/leave';
-import { getFaculty } from '@/lib/services/faculty';
 
 export default function LeaveRequestsPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   async function fetchRequests() {
     setIsLoading(true);
-    const [requests, facultyData] = await Promise.all([
-      getLeaveRequests(),
-      getFaculty()
-    ]);
+    const requests = await getLeaveRequests();
     setLeaveRequests(requests.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()));
-    setFaculty(facultyData);
     setIsLoading(false);
   }
 
@@ -33,7 +27,6 @@ export default function LeaveRequestsPage() {
 
   const handleRequestStatus = async (id: string, status: 'approved' | 'rejected') => {
     setIsUpdating(id);
-    // No optimistic update to ensure we show server state
     try {
       await updateLeaveRequestStatus(id, status);
       await fetchRequests(); // Re-fetch to get the latest state
@@ -45,8 +38,6 @@ export default function LeaveRequestsPage() {
     }
   };
   
-  const getFacultyName = (facultyId: string) => faculty.find(f => f.id === facultyId)?.name || 'Unknown';
-
   const pendingRequests = leaveRequests.filter(r => r.status === 'pending');
   const resolvedRequests = leaveRequests.filter(r => r.status !== 'pending');
 
@@ -55,7 +46,8 @@ export default function LeaveRequestsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Faculty</TableHead>
+            <TableHead>Requester</TableHead>
+            <TableHead>Role</TableHead>
             <TableHead>Start Date</TableHead>
             <TableHead>End Date</TableHead>
             <TableHead>Reason</TableHead>
@@ -66,7 +58,10 @@ export default function LeaveRequestsPage() {
         <TableBody>
           {requests.map((request) => (
             <TableRow key={request.id}>
-              <TableCell>{getFacultyName(request.facultyId)}</TableCell>
+              <TableCell>{request.requesterName}</TableCell>
+               <TableCell className="capitalize">
+                <Badge variant={request.requesterRole === 'faculty' ? 'secondary' : 'outline'}>{request.requesterRole}</Badge>
+              </TableCell>
               <TableCell>{new Date(request.startDate).toLocaleDateString()}</TableCell>
               <TableCell>{new Date(request.endDate).toLocaleDateString()}</TableCell>
               <TableCell className="max-w-xs truncate">{request.reason}</TableCell>

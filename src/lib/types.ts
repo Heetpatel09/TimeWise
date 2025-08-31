@@ -47,7 +47,9 @@ export interface User {
 
 export interface LeaveRequest {
   id: string;
-  facultyId: string;
+  requesterId: string; // Can be facultyId or studentId
+  requesterName: string;
+  requesterRole: 'faculty' | 'student';
   startDate: string;
   endDate: string;
   reason: string;
