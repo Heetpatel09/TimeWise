@@ -5,20 +5,23 @@ import type { User } from '@/lib/types';
 // This is a mock authentication service.
 // In a real application, this would involve API calls to a secure backend.
 
-const users: Record<string, { password: string, role: 'admin' | 'faculty' | 'student', details: any }> = {
-    'admin': {
-        password: 'admin123',
-        role: 'admin',
-        details: {
-            id: 'admin',
-            name: 'Admin User',
-            email: 'admin@codeblooded.app',
-            avatar: 'https://avatar.vercel.sh/admin.png',
-        }
-    },
-    ...Object.fromEntries(faculty.map(f => [f.id, { password: 'faculty123', role: 'faculty', details: f }])),
-    ...Object.fromEntries(students.map(s => [s.id, { password: 'student123', role: 'student', details: s }])),
-};
+if (!(global as any).users) {
+    (global as any).users = {
+        'admin': {
+            password: 'admin123',
+            role: 'admin',
+            details: {
+                id: 'admin',
+                name: 'Admin User',
+                email: 'admin@codeblooded.app',
+            }
+        },
+        ...Object.fromEntries(faculty.map(f => [f.id, { password: 'faculty123', role: 'faculty', details: f }])),
+        ...Object.fromEntries(students.map(s => [s.id, { password: 'student123', role: 'student', details: s }])),
+    };
+}
+let users: Record<string, { password: string, role: 'admin' | 'faculty' | 'student', details: any }> = (global as any).users;
+
 
 export const authService = {
   login: (userId: string, password: string): Promise<User> => {
@@ -38,6 +41,21 @@ export const authService = {
           reject(new Error('Invalid user ID or password.'));
         }
       }, 500); // Simulate network delay
+    });
+  },
+  updateAdmin: (updatedDetails: { name: string, email: string }): Promise<User> => {
+    return new Promise((resolve) => {
+        const adminEntry = users['admin'];
+        adminEntry.details.name = updatedDetails.name;
+        adminEntry.details.email = updatedDetails.email;
+        const user: User = {
+            id: 'admin',
+            name: adminEntry.details.name,
+            email: adminEntry.details.email,
+            avatar: `https://avatar.vercel.sh/${adminEntry.details.email}.png`,
+            role: 'admin',
+        };
+        resolve(user);
     });
   }
 };

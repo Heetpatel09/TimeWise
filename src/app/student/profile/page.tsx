@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -16,12 +17,13 @@ import { useAuth } from '@/context/AuthContext';
 
 
 export default function StudentProfilePage() {
-  const { user } = useAuth();
+  const { user, setUser: setAuthUser } = useAuth();
   const { toast } = useToast();
   const [student, setStudent] = useState<Student | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [avatar, setAvatar] = useState(user?.avatar || '');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -35,21 +37,25 @@ export default function StudentProfilePage() {
             const currentStudent = allStudents.find((s) => s.id === user.id);
             setStudent(currentStudent || null);
             setClasses(classData);
+            setAvatar(user.avatar);
             setIsLoading(false);
         }
     }
     loadData();
   }, [user]);
+  
+  const handleFieldChange = (field: keyof Student, value: any) => {
+    if (student) {
+        setStudent({ ...student, [field]: value });
+    }
+  }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && student) {
+    if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
-        // This is a temporary solution for client-side preview.
-        // In a real app, you would upload this to a server and get a URL.
-        const updatedStudent = {...student, email: `updated.${Date.now()}@example.com`};
-        setStudent(updatedStudent);
+        setAvatar(reader.result as string);
         toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
       };
       reader.readAsDataURL(file);
@@ -60,10 +66,12 @@ export default function StudentProfilePage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (student) {
+    if (student && user) {
       setIsSaving(true);
       try {
         await updateStudent(student);
+        const updatedUser = { ...user, name: student.name, email: student.email, avatar };
+        setAuthUser(updatedUser);
         toast({
           title: 'Profile Updated',
           description: 'Your changes have been saved successfully.',
@@ -111,7 +119,7 @@ export default function StudentProfilePage() {
           <form onSubmit={handleSave} className="space-y-6 max-w-lg">
             <div className="flex items-center space-x-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src={`https://avatar.vercel.sh/${student.email}.png`} alt={student.name} />
+                <AvatarImage src={avatar} alt={student.name} />
                 <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
               <Button 
@@ -135,7 +143,7 @@ export default function StudentProfilePage() {
               <Input
                 id="name"
                 value={student.name}
-                onChange={(e) => setStudent({ ...student, name: e.target.value } as Student)}
+                onChange={(e) => handleFieldChange('name', e.target.value)}
                 disabled={isSaving}
               />
             </div>
@@ -145,7 +153,7 @@ export default function StudentProfilePage() {
                 id="email"
                 type="email"
                 value={student.email}
-                onChange={(e) => setStudent({ ...student, email: e.target.value } as Student)}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
                 disabled={isSaving}
               />
             </div>

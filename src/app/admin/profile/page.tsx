@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -7,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { UserCog } from 'lucide-react';
+import { UserCog, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
+import { authService } from '@/lib/services/auth';
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
@@ -17,6 +19,7 @@ export default function AdminProfilePage() {
   const [name, setName] = React.useState(user?.name || '');
   const [email, setEmail] = React.useState(user?.email || '');
   const [avatar, setAvatar] = React.useState(user?.avatar || '');
+  const [isSaving, setIsSaving] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -38,15 +41,23 @@ export default function AdminProfilePage() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (user) {
-        const updatedUser = { ...user, name, email, avatar };
-        setAuthUser(updatedUser);
-         toast({
-            title: 'Profile Updated',
-            description: 'Your changes have been saved successfully.',
-        });
+        setIsSaving(true);
+        try {
+            const updatedUser = await authService.updateAdmin({ name, email });
+            const finalUser = { ...updatedUser, avatar }; // Combine backend data with client-side avatar state
+            setAuthUser(finalUser);
+            toast({
+                title: 'Profile Updated',
+                description: 'Your changes have been saved successfully.',
+            });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive'});
+        } finally {
+            setIsSaving(false);
+        }
     }
   };
 
@@ -72,7 +83,8 @@ export default function AdminProfilePage() {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => fileInputRef.current?.click()}>
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSaving}>
                   Change Photo
               </Button>
               <Input
@@ -81,6 +93,7 @@ export default function AdminProfilePage() {
                 accept="image/*"
                 className="hidden"
                 onChange={handleAvatarChange}
+                disabled={isSaving}
               />
             </div>
             <div className="space-y-2">
@@ -89,6 +102,7 @@ export default function AdminProfilePage() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={isSaving}
               />
             </div>
             <div className="space-y-2">
@@ -98,6 +112,7 @@ export default function AdminProfilePage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isSaving}
               />
             </div>
              <div className="space-y-2">
@@ -106,10 +121,14 @@ export default function AdminProfilePage() {
                 id="password"
                 type="password"
                 placeholder="Enter a new password"
+                disabled={isSaving}
               />
             </div>
             <div className="flex justify-end">
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </div>
           </form>
         </CardContent>
