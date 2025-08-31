@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -72,7 +71,7 @@ export default function StudentProfilePage() {
           <CardTitle className="flex items-center">
             <User className="w-6 h-6 mr-2" />
             Student Profile
-          </Title>
+          </CardTitle>
           <CardDescription>View and update your profile information.</CardDescription>
         </CardHeader>
         <CardContent>
