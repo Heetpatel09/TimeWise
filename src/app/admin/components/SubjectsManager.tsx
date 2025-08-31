@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -16,33 +16,54 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { subjects as initialSubjects } from '@/lib/placeholder-data';
+import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
 import type { Subject } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SubjectsManager() {
-  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject> | null>(null);
+  const { toast } = useToast();
 
-  const handleSave = () => {
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      const data = await getSubjects();
+      setSubjects(data);
+      setIsLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleSave = async () => {
     if (currentSubject) {
-      if (currentSubject.id) {
-        // Update
-        setSubjects(subjects.map(s => s.id === currentSubject.id ? { ...s, ...currentSubject } as Subject : s));
-      } else {
-        // Create
-        const newSubject = { ...currentSubject, id: `SUB${Date.now()}` } as Subject;
-        setSubjects([...subjects, newSubject]);
+      setIsSubmitting(true);
+      try {
+        if (currentSubject.id) {
+          await updateSubject(currentSubject as Subject);
+          toast({ title: "Subject Updated", description: "The subject details have been saved." });
+        } else {
+          await addSubject(currentSubject as Omit<Subject, 'id'>);
+          toast({ title: "Subject Added", description: "The new subject has been added." });
+        }
+        const data = await getSubjects();
+        setSubjects(data);
+        setDialogOpen(false);
+        setCurrentSubject(null);
+      } catch (error) {
+        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
       }
     }
-    setDialogOpen(false);
-    setCurrentSubject(null);
   };
 
   const handleEdit = (subject: Subject) => {
@@ -50,14 +71,24 @@ export default function SubjectsManager() {
     setDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    setSubjects(subjects.filter(s => s.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSubject(id);
+      setSubjects(subjects.filter(s => s.id !== id));
+      toast({ title: "Subject Deleted", description: "The subject has been removed." });
+    } catch (error) {
+      toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    }
   };
   
   const openNewDialog = () => {
     setCurrentSubject({});
     setDialogOpen(true);
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
     <div>
@@ -125,6 +156,7 @@ export default function SubjectsManager() {
                 value={currentSubject?.name || ''}
                 onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })}
                 className="col-span-3"
+                disabled={isSubmitting}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -136,12 +168,16 @@ export default function SubjectsManager() {
                 value={currentSubject?.code || ''}
                 onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })}
                 className="col-span-3"
+                disabled={isSubmitting}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save changes</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

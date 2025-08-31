@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -19,8 +19,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { schedule as initialSchedule, classes, subjects, faculty } from '@/lib/placeholder-data';
-import type { Schedule, ResolveScheduleConflictsOutput } from '@/lib/types';
+import { schedule as initialSchedule } from '@/lib/placeholder-data';
+import { getClasses } from '@/lib/services/classes';
+import { getSubjects } from '@/lib/services/subjects';
+import { getFaculty } from '@/lib/services/faculty';
+import type { Schedule, Class, Subject, Faculty } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Sparkles, AlertTriangle, CheckCircle, Loader2, Download } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -32,11 +35,31 @@ import 'jspdf-autotable';
 
 export default function ScheduleManager() {
   const [schedule, setSchedule] = useState<Schedule[]>(initialSchedule);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const [isResultOpen, setResultOpen] = useState(false);
   const [currentSlot, setCurrentSlot] = useState<Partial<Schedule> | null>(null);
-  const [conflictResult, setConflictResult] = useState<ResolveScheduleConflictsOutput | null>(null);
+  const [conflictResult, setConflictResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+        setIsDataLoading(true);
+        const [classData, subjectData, facultyData] = await Promise.all([
+            getClasses(),
+            getSubjects(),
+            getFaculty()
+        ]);
+        setClasses(classData);
+        setSubjects(subjectData);
+        setFaculty(facultyData);
+        setIsDataLoading(false);
+    }
+    loadData();
+  }, [])
 
   const getRelationName = (id: string, type: 'class' | 'subject' | 'faculty') => {
     switch (type) {
@@ -80,8 +103,7 @@ export default function ScheduleManager() {
     setConflictResult(null);
     try {
       const schedulesJSON = JSON.stringify(schedule);
-      const parameters = JSON.stringify({ classes, subjects, faculty });
-      const result = await handleResolveConflicts({schedules: schedulesJSON, parameters});
+      const result = await handleResolveConflicts(schedulesJSON);
       setConflictResult(result);
     } catch (error) {
       console.error(error);
@@ -131,6 +153,10 @@ export default function ScheduleManager() {
     day,
     slots: schedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
   }));
+
+  if (isDataLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
     <div>

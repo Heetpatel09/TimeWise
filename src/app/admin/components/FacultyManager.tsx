@@ -1,32 +1,56 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { faculty as initialFaculty } from '@/lib/placeholder-data';
+import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 export default function FacultyManager() {
-  const [faculty, setFaculty] = useState<Faculty[]>(initialFaculty);
+  const [faculty, setFaculty] = useState<Faculty[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty> | null>(null);
+  const { toast } = useToast();
 
-  const handleSave = () => {
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      const data = await getFaculty();
+      setFaculty(data);
+      setIsLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleSave = async () => {
     if (currentFaculty) {
-      if (currentFaculty.id) {
-        setFaculty(faculty.map(f => f.id === currentFaculty.id ? { ...f, ...currentFaculty } as Faculty : f));
-      } else {
-        const newFaculty = { ...currentFaculty, id: `FAC${Date.now()}` } as Faculty;
-        setFaculty([...faculty, newFaculty]);
+      setIsSubmitting(true);
+      try {
+        if (currentFaculty.id) {
+          await updateFaculty(currentFaculty as Faculty);
+          toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
+        } else {
+          await addFaculty(currentFaculty as Omit<Faculty, 'id'>);
+          toast({ title: "Faculty Added", description: "The new faculty member has been added." });
+        }
+        const data = await getFaculty();
+        setFaculty(data);
+        setDialogOpen(false);
+        setCurrentFaculty(null);
+      } catch (error) {
+        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
       }
     }
-    setDialogOpen(false);
-    setCurrentFaculty(null);
   };
 
   const handleEdit = (fac: Faculty) => {
@@ -34,14 +58,24 @@ export default function FacultyManager() {
     setDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    setFaculty(faculty.filter(f => f.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteFaculty(id);
+      setFaculty(faculty.filter(f => f.id !== id));
+      toast({ title: "Faculty Deleted", description: "The faculty member has been removed." });
+    } catch (error) {
+       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    }
   };
   
   const openNewDialog = () => {
     setCurrentFaculty({});
     setDialogOpen(true);
   };
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
     <div>
@@ -113,20 +147,23 @@ export default function FacultyManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentFaculty?.name || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} className="col-span-3" />
+              <Input id="name" value={currentFaculty?.name || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentFaculty?.email || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} className="col-span-3" />
+              <Input id="email" type="email" value={currentFaculty?.email || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>
-              <Input id="department" value={currentFaculty?.department || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" />
+              <Input id="department" value={currentFaculty?.department || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save changes</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

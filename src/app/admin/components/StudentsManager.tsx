@@ -1,33 +1,60 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { students as initialStudents, classes } from '@/lib/placeholder-data';
-import type { Student } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { getStudents, addStudent, updateStudent, deleteStudent } from '@/lib/services/students';
+import { getClasses } from '@/lib/services/classes';
+import type { Student, Class } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 export default function StudentsManager() {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Partial<Student> | null>(null);
+  const { toast } = useToast();
 
-  const handleSave = () => {
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      const [studentData, classData] = await Promise.all([getStudents(), getClasses()]);
+      setStudents(studentData);
+      setClasses(classData);
+      setIsLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleSave = async () => {
     if (currentStudent) {
-      if (currentStudent.id) {
-        setStudents(students.map(s => s.id === currentStudent.id ? { ...s, ...currentStudent } as Student : s));
-      } else {
-        const newStudent = { ...currentStudent, id: `STU${Date.now()}` } as Student;
-        setStudents([...students, newStudent]);
+      setIsSubmitting(true);
+      try {
+        if (currentStudent.id) {
+          await updateStudent(currentStudent as Student);
+          toast({ title: "Student Updated", description: "The student's details have been saved." });
+        } else {
+          await addStudent(currentStudent as Omit<Student, 'id'>);
+          toast({ title: "Student Added", description: "The new student has been added." });
+        }
+        const data = await getStudents();
+        setStudents(data);
+        setDialogOpen(false);
+        setCurrentStudent(null);
+      } catch (error) {
+        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
       }
     }
-    setDialogOpen(false);
-    setCurrentStudent(null);
   };
 
   const handleEdit = (student: Student) => {
@@ -35,8 +62,14 @@ export default function StudentsManager() {
     setDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    setStudents(students.filter(s => s.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteStudent(id);
+      setStudents(students.filter(s => s.id !== id));
+      toast({ title: "Student Deleted", description: "The student has been removed." });
+    } catch (error) {
+       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    }
   };
   
   const openNewDialog = () => {
@@ -45,6 +78,10 @@ export default function StudentsManager() {
   };
 
   const getClassName = (classId: string) => classes.find(c => c.id === classId)?.name || 'N/A';
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
     <div>
@@ -116,15 +153,15 @@ export default function StudentsManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentStudent?.name || ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} className="col-span-3" />
+              <Input id="name" value={currentStudent?.name || ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} className="col-span-3" disabled={isSubmitting} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentStudent?.email || ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} className="col-span-3" />
+              <Input id="email" type="email" value={currentStudent?.email || ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} className="col-span-3" disabled={isSubmitting} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="class" className="text-right">Class</Label>
-              <Select value={currentStudent?.classId || ''} onValueChange={(value) => setCurrentStudent({ ...currentStudent, classId: value })}>
+              <Select value={currentStudent?.classId || ''} onValueChange={(value) => setCurrentStudent({ ...currentStudent, classId: value })} disabled={isSubmitting}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select a class" />
                 </SelectTrigger>
@@ -135,8 +172,11 @@ export default function StudentsManager() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save changes</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

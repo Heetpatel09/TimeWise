@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -19,27 +19,51 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { classes as initialClasses } from '@/lib/placeholder-data';
+import { getClasses, addClass, updateClass, deleteClass } from '@/lib/services/classes';
 import type { Class } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ClassesManager() {
-  const [classes, setClasses] = useState<Class[]>(initialClasses);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentClass, setCurrentClass] = useState<Partial<Class> | null>(null);
+  const { toast } = useToast();
 
-  const handleSave = () => {
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      const data = await getClasses();
+      setClasses(data);
+      setIsLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleSave = async () => {
     if (currentClass) {
-      if (currentClass.id) {
-        setClasses(classes.map(c => c.id === currentClass.id ? { ...c, ...currentClass } as Class : c));
-      } else {
-        const newClass = { ...currentClass, id: `CLS${Date.now()}` } as Class;
-        setClasses([...classes, newClass]);
+      setIsSubmitting(true);
+      try {
+        if (currentClass.id) {
+          await updateClass(currentClass as Class);
+          toast({ title: "Class Updated", description: "The class details have been saved." });
+        } else {
+          await addClass(currentClass as Omit<Class, 'id'>);
+          toast({ title: "Class Added", description: "The new class has been added." });
+        }
+        const data = await getClasses();
+        setClasses(data);
+        setDialogOpen(false);
+        setCurrentClass(null);
+      } catch (error) {
+        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
       }
     }
-    setDialogOpen(false);
-    setCurrentClass(null);
   };
 
   const handleEdit = (cls: Class) => {
@@ -47,14 +71,24 @@ export default function ClassesManager() {
     setDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    setClasses(classes.filter(c => c.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteClass(id);
+      setClasses(classes.filter(c => c.id !== id));
+      toast({ title: "Class Deleted", description: "The class has been removed." });
+    } catch (error) {
+      toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    }
   };
   
   const openNewDialog = () => {
     setCurrentClass({});
     setDialogOpen(true);
   };
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
     <div>
@@ -117,20 +151,23 @@ export default function ClassesManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentClass?.name || ''} onChange={(e) => setCurrentClass({ ...currentClass, name: e.target.value })} className="col-span-3" />
+              <Input id="name" value={currentClass?.name || ''} onChange={(e) => setCurrentClass({ ...currentClass, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="year" className="text-right">Year</Label>
-              <Input id="year" type="number" value={currentClass?.year || ''} onChange={(e) => setCurrentClass({ ...currentClass, year: parseInt(e.target.value) })} className="col-span-3" />
+              <Input id="year" type="number" value={currentClass?.year || ''} onChange={(e) => setCurrentClass({ ...currentClass, year: parseInt(e.target.value) })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>
-              <Input id="department" value={currentClass?.department || ''} onChange={(e) => setCurrentClass({ ...currentClass, department: e.target.value })} className="col-span-3" />
+              <Input id="department" value={currentClass?.department || ''} onChange={(e) => setCurrentClass({ ...currentClass, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save changes</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
