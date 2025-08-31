@@ -16,9 +16,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
+import { faculty } from '@/lib/placeholder-data';
+
+// Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
+const LOGGED_IN_FACULTY_ID = 'FAC001';
+const currentFaculty = faculty.find(f => f.id === LOGGED_IN_FACULTY_ID);
+
 
 export default function FacultyDashboard() {
   const [isLeaveDialogOpen, setLeaveDialogOpen] = useState(false);
@@ -49,51 +55,70 @@ export default function FacultyDashboard() {
 
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
-       <Card>
-        <CardHeader>
-          <CardTitle>Welcome, Dr. Turing!</CardTitle>
-          <CardDescription>
-            This is your central hub for managing your schedule and administrative tasks.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="flex flex-col">
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         <div className="lg:col-span-2">
+            <Card>
                 <CardHeader>
-                  <CardTitle>Request Leave</CardTitle>
-                  <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                <CardTitle>Welcome, {currentFaculty?.name || "Dr. Turing"}!</CardTitle>
+                <CardDescription>
+                    This is your central hub for managing your schedule and administrative tasks.
+                </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-muted-foreground">
-                    Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
-                  </p>
+                <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                        <CardTitle>Request Leave</CardTitle>
+                        <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                        <p className="text-sm text-muted-foreground">
+                            Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
+                        </p>
+                        </CardContent>
+                        <CardFooter>
+                        <Button onClick={() => setLeaveDialogOpen(true)}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            Open Leave Form
+                        </Button>
+                        </CardFooter>
+                    </Card>
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                        <CardTitle>Manage Schedule</CardTitle>
+                        <CardDescription>View your weekly schedule and request changes.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                        <p className="text-sm text-muted-foreground">
+                            Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
+                        </p>
+                        </CardContent>
+                        <CardFooter>
+                        <Button onClick={() => setScheduleModalOpen(true)}>
+                            View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
                 </CardContent>
-                <CardFooter>
-                  <Button onClick={() => setLeaveDialogOpen(true)}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    Open Leave Form
-                  </Button>
-                </CardFooter>
-              </Card>
-               <Card className="flex flex-col">
+            </Card>
+         </div>
+         <div className="lg:col-span-1">
+            <Card>
                 <CardHeader>
-                  <CardTitle>Manage Schedule</CardTitle>
-                  <CardDescription>View your weekly schedule and request changes.</CardDescription>
+                    <CardTitle className="flex items-center">
+                        <Flame className="w-6 h-6 mr-2 text-orange-500"/>
+                        Teaching Streak
+                    </CardTitle>
+                    <CardDescription>For your consistent dedication.</CardDescription>
                 </CardHeader>
-                 <CardContent className="flex-grow">
-                   <p className="text-sm text-muted-foreground">
-                     Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
-                  </p>
+                <CardContent className="text-center">
+                    <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
+                    <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
                 </CardContent>
-                <CardFooter>
-                  <Button onClick={() => setScheduleModalOpen(true)}>
-                     View Schedule <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-           </div>
-        </CardContent>
-      </Card>
+            </Card>
+         </div>
+       </div>
 
 
       <Dialog open={isScheduleModalOpen} onOpenChange={setScheduleModalOpen}>

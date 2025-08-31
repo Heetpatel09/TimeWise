@@ -16,6 +16,7 @@ export interface Student {
   name: string;
   email: string;
   classId: string;
+  streak: number;
 }
 
 export interface Faculty {
@@ -23,6 +24,7 @@ export interface Faculty {
   name: string;
   email: string;
   department: string;
+  streak: number;
 }
 
 export interface Schedule {

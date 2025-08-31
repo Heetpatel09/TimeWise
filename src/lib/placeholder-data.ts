@@ -16,15 +16,15 @@ export const classes: Class[] = [
 ];
 
 export const students: Student[] = [
-  { id: 'STU001', name: 'Alice Johnson', email: 'alice@example.com', classId: 'CLS004' },
-  { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003' },
-  { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004' },
+  { id: 'STU001', name: 'Alice Johnson', email: 'alice@example.com', classId: 'CLS004', streak: 12 },
+  { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003', streak: 5 },
+  { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004', streak: 23 },
 ];
 
 export const faculty: Faculty[] = [
-  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', department: 'Computer Engineering' },
-  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', department: 'Computer Engineering' },
-  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering' },
+  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', department: 'Computer Engineering', streak: 45 },
+  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', department: 'Computer Engineering', streak: 8 },
+  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering', streak: 15 },
 ];
 
 export const schedule: Schedule[] = [
