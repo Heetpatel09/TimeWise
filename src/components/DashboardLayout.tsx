@@ -54,6 +54,7 @@ import {
   Loader2,
   Bell,
   CheckCheck,
+  Trophy,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
@@ -237,6 +238,7 @@ function Nav() {
       { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
       { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
       { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
+      { href: '/admin?tab=leaderboards', label: 'Leaderboards', icon: Trophy, tab: 'leaderboards' },
       { href: '/admin?tab=leave-requests', label: 'Leave Requests', icon: Mail, tab: 'leave-requests', badge: pendingLeaveRequestsCount },
       { href: '/admin?tab=schedule-requests', label: 'Schedule Requests', icon: PencilRuler, tab: 'schedule-requests', badge: pendingScheduleRequestsCount },
   ]
