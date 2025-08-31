@@ -27,10 +27,9 @@ export default function RootLayout({
               alt="background"
               fill
               style={{ objectFit: 'cover' }}
-              className="opacity-5"
+              className="opacity-10"
               data-ai-hint="abstract colorful"
             />
-            <div className="absolute inset-0 bg-white/50" />
         </div>
         {children}
         <Toaster />
