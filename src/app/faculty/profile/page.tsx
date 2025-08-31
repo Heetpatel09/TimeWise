@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -9,13 +10,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { UserCheck, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getFaculty, updateFaculty } from '@/lib/services/faculty';
+import { getFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
 
 export default function FacultyProfilePage() {
-  const { user } = useAuth();
+  const { user, setUser: setAuthUser } = useAuth();
   const { toast } = useToast();
   const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +35,12 @@ export default function FacultyProfilePage() {
     }
     loadFaculty();
   }, [user]);
+  
+  const handleFieldChange = (field: keyof Faculty, value: any) => {
+    if (facultyMember) {
+        setFacultyMember({ ...facultyMember, [field]: value });
+    }
+  }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && facultyMember) {
@@ -41,9 +48,9 @@ export default function FacultyProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const avatarUrl = reader.result as string;
-        // In a real app, you would upload this and get a URL.
-        // For demo, we'll just update the email to change the vercel avatar.
-        setFacultyMember({ ...facultyMember, email: `updated.${Date.now()}@example.com` });
+        if (user) {
+            setAuthUser({...user, avatar: avatarUrl });
+        }
         toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
       };
       reader.readAsDataURL(file);
@@ -52,10 +59,13 @@ export default function FacultyProfilePage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (facultyMember) {
+    if (facultyMember && user) {
       setIsSaving(true);
       try {
-        await updateFaculty(facultyMember);
+        // In a real app, this would call updateFaculty(facultyMember)
+        // For this demo, we just update the user in the AuthContext
+        const updatedUser = { ...user, name: facultyMember.name, email: facultyMember.email };
+        setAuthUser(updatedUser);
         toast({
           title: 'Profile Updated',
           description: 'Your changes have been saved successfully.',
@@ -105,7 +115,7 @@ export default function FacultyProfilePage() {
           <form onSubmit={handleSave} className="space-y-6 max-w-lg">
              <div className="flex items-center space-x-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src={`https://avatar.vercel.sh/${facultyMember.email}.png`} alt={facultyMember.name} />
+                <AvatarImage src={user?.avatar} alt={facultyMember.name} />
                 <AvatarFallback>{facultyMember.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
               <Button 
@@ -128,7 +138,7 @@ export default function FacultyProfilePage() {
               <Input
                 id="name"
                 value={facultyMember.name}
-                onChange={(e) => setFacultyMember({ ...facultyMember, name: e.target.value } as Faculty)}
+                onChange={(e) => handleFieldChange('name', e.target.value)}
                 disabled={isSaving}
               />
             </div>
@@ -138,7 +148,7 @@ export default function FacultyProfilePage() {
                 id="email"
                 type="email"
                 value={facultyMember.email}
-                onChange={(e) => setFacultyMember({ ...facultyMember, email: e.target.value } as Faculty)}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
                 disabled={isSaving}
               />
             </div>

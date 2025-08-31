@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -119,7 +120,8 @@ export default function ScheduleView() {
 
   return (
     <div>
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">My Weekly Schedule</h3>
             <Button onClick={exportPDF} variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
@@ -158,8 +160,7 @@ export default function ScheduleView() {
                   </TableBody>
                 </Table>
               ) : (
-                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
-              )}
+                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>              )}
             </CardContent>
           </Card>
         ))}

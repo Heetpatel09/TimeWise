@@ -1,4 +1,4 @@
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest } from './types';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification } from './types';
 
 export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101' },
@@ -44,4 +44,8 @@ export const leaveRequests: LeaveRequest[] = [
 
 export const scheduleChangeRequests: ScheduleChangeRequest[] = [
     { id: 'SCR001', scheduleId: 'SCH001', facultyId: 'FAC001', reason: 'Need to swap this class with my afternoon slot.', status: 'pending' },
+];
+
+export const notifications: Notification[] = [
+    { id: 'NOT001', userId: 'FAC001', message: 'Your leave request from 2024-07-20 to 2024-07-21 has been approved.', isRead: true, createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
 ];

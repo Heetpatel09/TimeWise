@@ -16,14 +16,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 import { addLeaveRequest } from '@/lib/services/leave';
 import { getFaculty } from '@/lib/services/faculty';
-import type { Faculty as FacultyType } from '@/lib/types';
+import type { Faculty as FacultyType, Notification } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
-
+import { getNotificationsForUser } from '@/lib/services/notifications';
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -34,18 +34,28 @@ export default function FacultyDashboard() {
   const [leaveReason, setLeaveReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentFaculty, setCurrentFaculty] = useState<FacultyType | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-        getFaculty().then(allFaculty => {
+    async function loadData() {
+        if (user) {
+            setIsLoading(true);
+            const [allFaculty, userNotifications] = await Promise.all([
+                getFaculty(),
+                getNotificationsForUser(user.id)
+            ]);
+            
             const fac = allFaculty.find(f => f.id === user.id);
             if (fac) setCurrentFaculty(fac);
+
+            setNotifications(userNotifications);
             setIsLoading(false);
-        });
+        }
     }
-  }, [user])
+    loadData();
+  }, [user]);
 
   const handleLeaveRequestSubmit = async () => {
     if (!leaveStartDate || !leaveEndDate || !leaveReason) {
@@ -143,7 +153,7 @@ export default function FacultyDashboard() {
                 </CardContent>
             </Card>
          </div>
-         <div className="lg:col-span-1">
+         <div className="lg:col-span-1 space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center">
@@ -155,6 +165,28 @@ export default function FacultyDashboard() {
                 <CardContent className="text-center">
                     <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
                     <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                        <CardTitle className="flex items-center">
+                        <Bell className="w-5 h-5 mr-2"/>
+                        Notifications
+                    </CardTitle>
+                    <CardDescription>Updates and announcements.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {notifications.length > 0 ? (
+                        <ul className="space-y-3">
+                            {notifications.slice(0, 5).map(n => (
+                                <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary">{n.message}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-4">
+                            <p>No new notifications.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
          </div>

@@ -30,6 +30,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Button } from './ui/button';
 import {
   User,
@@ -47,23 +52,26 @@ import {
   Mail,
   PencilRuler,
   Loader2,
+  Bell,
+  CheckCheck,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
-import type { LeaveRequest } from '@/lib/types';
+import type { LeaveRequest, Notification } from '@/lib/types';
 import { getLeaveRequests } from '@/lib/services/leave';
 import { getScheduleChangeRequests } from '@/lib/services/schedule-changes';
 import { useAuth } from '@/context/AuthContext';
+import { getNotificationsForUser, markNotificationAsRead } from '@/lib/services/notifications';
 
 const navItems = {
   admin: [
     { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
   ],
   faculty: [
-    { href: '/faculty', label: 'My Schedule', icon: Calendar },
+    { href: '/faculty', label: 'My Dashboard', icon: LayoutGrid },
   ],
   student: [
-    { href: '/student', label: 'My Timetable', icon: Calendar },
+    { href: '/student', label: 'My Dashboard', icon: LayoutGrid },
   ],
 };
 
@@ -82,6 +90,71 @@ function CodeBloodedLogo() {
       )}
     </Link>
   );
+}
+
+function NotificationsBell() {
+    const { user } = useAuth();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (user) {
+            getNotificationsForUser(user.id).then(setNotifications);
+        }
+    }, [user]);
+
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    const handleMarkAsRead = async (id: string) => {
+        await markNotificationAsRead(id);
+        const updatedNotifications = await getNotificationsForUser(user!.id);
+        setNotifications(updatedNotifications);
+    }
+    
+    return (
+        <Popover onOpenChange={(isOpen) => {
+          // Re-fetch notifications when popover is opened
+          if (isOpen && user) getNotificationsForUser(user.id).then(setNotifications);
+        }}>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5"/>
+                    {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Notifications</h4>
+                        <p className="text-sm text-muted-foreground">
+                            {unreadCount > 0 ? `You have ${unreadCount} unread messages.` : 'No new messages.'}
+                        </p>
+                    </div>
+                    <div className="grid gap-2">
+                        {notifications.length > 0 ? notifications.map(n => (
+                             <div
+                                key={n.id}
+                                className="grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0"
+                            >
+                                <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
+                                <div className="grid gap-1">
+                                    <p className="text-sm font-medium">{n.message}</p>
+                                    <p className="text-sm text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className='text-sm text-muted-foreground'>You're all caught up.</p>
+                        )}
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
 }
 
 function UserProfile() {
@@ -312,6 +385,7 @@ export default function DashboardLayout({
                 {getRoleIcon()}
                 {role.charAt(0).toUpperCase() + role.slice(1)}
             </Badge>
+            <NotificationsBell />
             <UserProfile />
           </div>
         </header>

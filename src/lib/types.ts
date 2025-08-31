@@ -1,3 +1,4 @@
+
 export interface Subject {
   id: string;
   name: string;
@@ -59,4 +60,12 @@ export interface ScheduleChangeRequest {
   facultyId: string;
   reason: string;
   status: 'pending' | 'resolved';
+}
+
+export interface Notification {
+  id: string;
+  userId: string; // admin, FAC001, STU001, etc.
+  message: string;
+  isRead: boolean;
+  createdAt: string;
 }

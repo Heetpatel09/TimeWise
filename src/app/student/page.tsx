@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,26 +7,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import TimetableView from "./components/TimetableView";
 import { Bell, Flame, Loader2 } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
-import type { Student } from '@/lib/types';
+import { getNotificationsForUser } from '@/lib/services/notifications';
+import type { Student, Notification } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function loadStudent() {
+    async function loadData() {
       if (user) {
         setIsLoading(true);
-        const allStudents = await getStudents();
+        const [allStudents, userNotifications] = await Promise.all([
+            getStudents(),
+            getNotificationsForUser(user.id)
+        ]);
         const currentStudent = allStudents.find(s => s.id === user.id);
         setStudent(currentStudent || null);
+        setNotifications(userNotifications);
         setIsLoading(false);
       }
     }
-    loadStudent();
+    loadData();
   }, [user]);
 
   if (isLoading) {
@@ -73,9 +80,17 @@ export default function StudentDashboard() {
                         <CardDescription>Updates and announcements will appear here.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-center text-muted-foreground py-8">
-                            <p>No new notifications.</p>
-                        </div>
+                         {notifications.length > 0 ? (
+                            <ul className="space-y-3">
+                                {notifications.slice(0, 5).map(n => (
+                                    <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary">{n.message}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>No new notifications.</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
