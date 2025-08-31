@@ -240,13 +240,14 @@ export default function DashboardLayout({
 }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     if (!isLoading && !user) {
       router.push('/');
     }
   }, [user, isLoading, router]);
-
 
   const getRoleIcon = () => {
     if (!user) return null;
@@ -259,8 +260,8 @@ export default function DashboardLayout({
         return <User className="h-5 w-5 mr-2 text-primary" />;
     }
   };
-
-  if (isLoading || !user) {
+  
+  if (!isClient || isLoading || !user) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-background">
             <Loader2 className="w-10 h-10 animate-spin" />
@@ -277,7 +278,6 @@ export default function DashboardLayout({
         </div>
     )
   }
-
 
   return (
     <SidebarProvider>
