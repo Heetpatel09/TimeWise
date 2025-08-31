@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { students as initialStudents } from '@/lib/placeholder-data';
 import type { Student } from '@/lib/types';
+import { authService } from './auth';
 
 // This is a server-side in-memory store.
 // In a real application, you would use a database.
@@ -23,12 +24,14 @@ export async function getStudents() {
   return Promise.resolve(students);
 }
 
-export async function addStudent(item: Omit<Student, 'id'>) {
+export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak?: number }) {
     const newItem: Student = {
         ...item,
         id: `STU${Date.now()}`,
         streak: item.streak || 0,
+        avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`
     };
+    
     students.push(newItem);
     revalidateAll();
     return Promise.resolve(newItem);
