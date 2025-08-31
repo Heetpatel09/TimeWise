@@ -5,12 +5,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -143,35 +137,25 @@ export default function Home() {
             The intelligent, AI-powered solution for effortless academic scheduling.
         </p>
 
-        <div className="mt-12">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                  <Button size="lg" className="text-lg px-8 py-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
-                      <LogIn className="mr-3 h-5 w-5" />
-                      Login / Get Started
-                  </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
-                <LoginDialog role="admin">
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <UserCog className="mr-2 h-4 w-4" />
-                    <span>Login as Admin</span>
-                  </DropdownMenuItem>
-                </LoginDialog>
-                <LoginDialog role="faculty">
-                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <UserCheck className="mr-2 h-4 w-4" />
-                    <span>Login as Faculty</span>
-                  </DropdownMenuItem>
-                </LoginDialog>
-                <LoginDialog role="student">
-                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>Login as Student</span>
-                  </DropdownMenuItem>
-                </LoginDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <div className="mt-12 flex flex-wrap justify-center gap-4">
+            <LoginDialog role="admin">
+                <Button size="lg" variant="outline">
+                <UserCog className="mr-2 h-5 w-5" />
+                Admin Portal
+                </Button>
+            </LoginDialog>
+            <LoginDialog role="faculty">
+                <Button size="lg" variant="outline">
+                <UserCheck className="mr-2 h-5 w-5" />
+                Faculty Portal
+                </Button>
+            </LoginDialog>
+             <LoginDialog role="student">
+                <Button size="lg" variant="outline">
+                <Users className="mr-2 h-5 w-5" />
+                Student Portal
+                </Button>
+            </LoginDialog>
         </div>
       </div>
     </main>
