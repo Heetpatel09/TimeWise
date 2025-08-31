@@ -73,6 +73,7 @@ export default function FacultyProfilePage() {
       try {
         const updatedFaculty = await updateFaculty(facultyMember);
         if (newPassword) {
+            // Use the updated email from `updatedFaculty` to ensure correctness
             await authService.updatePassword(updatedFaculty.email, newPassword);
         }
         
@@ -89,8 +90,8 @@ export default function FacultyProfilePage() {
         });
         setNewPassword('');
         setConfirmPassword('');
-      } catch (error) {
-        toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive'});
+      } catch (error: any) {
+        toast({ title: 'Error', description: error.message || 'Failed to save changes.', variant: 'destructive'});
       } finally {
         setIsSaving(false);
       }

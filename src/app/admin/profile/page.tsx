@@ -55,9 +55,11 @@ export default function AdminProfilePage() {
 
         setIsSaving(true);
         try {
+            // The `email` from the form state is the new email.
             const updatedUser = await authService.updateAdmin({ id: user.id, name, email, avatar });
             if (newPassword) {
-                await authService.updatePassword(user.email, newPassword);
+                // Pass the new email to the password update function.
+                await authService.updatePassword(email, newPassword);
             }
             setAuthUser(updatedUser);
             toast({
@@ -66,8 +68,8 @@ export default function AdminProfilePage() {
             });
             setNewPassword('');
             setConfirmPassword('');
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive'});
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Failed to save changes.', variant: 'destructive'});
         } finally {
             setIsSaving(false);
         }

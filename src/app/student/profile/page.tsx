@@ -81,6 +81,7 @@ export default function StudentProfilePage() {
       try {
         const updatedStudent = await updateStudent(student);
         if (newPassword) {
+            // Use the updated email from `updatedStudent` to ensure correctness
             await authService.updatePassword(updatedStudent.email, newPassword);
         }
         
@@ -97,8 +98,8 @@ export default function StudentProfilePage() {
         });
         setNewPassword('');
         setConfirmPassword('');
-      } catch(error) {
-        toast({ title: 'Error', description: 'Failed to save changes', variant: 'destructive' });
+      } catch(error: any) {
+        toast({ title: 'Error', description: error.message || 'Failed to save changes', variant: 'destructive' });
       } finally {
         setIsSaving(false);
       }
