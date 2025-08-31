@@ -55,7 +55,7 @@ export default function Home() {
     <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://picsum.photos/1920/1080"
+          src="https://thumbs.dreamstime.com/b/abstract-digital-art-displays-glowing-tech-clock-neon-lines-geometric-shapes-against-dark-background-futuristic-design-modern-388294510.jpg"
           alt="background"
           fill
           style={{ objectFit: 'cover' }}
