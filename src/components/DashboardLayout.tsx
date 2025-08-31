@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -45,11 +45,12 @@ import {
   Monitor,
   Clock,
   Mail,
+  Loader2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
-import type { User as UserType } from '@/lib/types';
-import { leaveRequests } from '@/lib/placeholder-data';
+import type { User as UserType, LeaveRequest } from '@/lib/types';
+import { getLeaveRequests } from '@/lib/services/leave';
 
 const navItems = {
   admin: [
@@ -129,18 +130,23 @@ function Nav({ role }: { role: Role }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = React.useState(false);
-
-  React.useEffect(() => {
+  const [pendingLeaveRequestsCount, setPendingLeaveRequestsCount] = useState<number | null>(null);
+  
+  useEffect(() => {
     setIsClient(true);
-  }, []);
+    if (role === 'admin') {
+      getLeaveRequests().then(requests => {
+        setPendingLeaveRequestsCount(requests.filter(r => r.status === 'pending').length);
+      })
+    }
+  }, [role]);
 
   if (!isClient) {
     return null; // Don't render on the server to avoid hydration mismatch
   }
 
   const items = navItems[role];
-  const pendingLeaveRequestsCount = leaveRequests.filter(r => r.status === 'pending').length;
-
+  
   const adminTabs = [
       { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
       { href: '/admin?tab=classes', label: 'Classes', icon: School, tab: 'classes' },
@@ -196,7 +202,8 @@ function Nav({ role }: { role: Role }) {
                             >
                                 <Icon />
                                 <span>{item.label}</span>
-                                {item.badge && item.badge > 0 && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+                                {item.badge !== null && item.badge > 0 && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+                                {item.badge === null && <Loader2 className='absolute right-2 top-1.5 h-4 w-4 animate-spin' />}
                             </SidebarMenuButton>
                             </Link>
                         </SidebarMenuItem>

@@ -1,21 +1,39 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { faculty, leaveRequests as initialLeaveRequests } from '@/lib/placeholder-data';
+import { faculty } from '@/lib/placeholder-data';
 import type { LeaveRequest } from '@/lib/types';
-import { Check, X } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Check, X, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { getLeaveRequests, updateLeaveRequestStatus } from '@/lib/services/leave';
 
 export default function LeaveRequestsPage() {
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(initialLeaveRequests);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleRequestStatus = (id: string, status: 'approved' | 'rejected') => {
+  useEffect(() => {
+    async function fetchRequests() {
+      setIsLoading(true);
+      const requests = await getLeaveRequests();
+      setLeaveRequests(requests);
+      setIsLoading(false);
+    }
+    fetchRequests();
+  }, []);
+
+  const handleRequestStatus = async (id: string, status: 'approved' | 'rejected') => {
+    // Optimistic update
+    const originalRequests = leaveRequests;
     setLeaveRequests(leaveRequests.map(req => req.id === id ? { ...req, status } : req));
+    try {
+      await updateLeaveRequestStatus(id, status);
+    } catch (error) {
+      setLeaveRequests(originalRequests);
+      // Optionally, show an error toast
+    }
   };
   
   const getFacultyName = (facultyId: string) => faculty.find(f => f.id === facultyId)?.name || 'Unknown';
@@ -40,8 +58,8 @@ export default function LeaveRequestsPage() {
           {requests.map((request) => (
             <TableRow key={request.id}>
               <TableCell>{getFacultyName(request.facultyId)}</TableCell>
-              <TableCell>{request.startDate}</TableCell>
-              <TableCell>{request.endDate}</TableCell>
+              <TableCell>{new Date(request.startDate).toLocaleDateString()}</TableCell>
+              <TableCell>{new Date(request.endDate).toLocaleDateString()}</TableCell>
               <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
               <TableCell>
                 <Badge variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}>
@@ -67,6 +85,14 @@ export default function LeaveRequestsPage() {
     </div>
   );
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <Tabs defaultValue="pending">
         <TabsList>
@@ -80,6 +106,5 @@ export default function LeaveRequestsPage() {
              {resolvedRequests.length > 0 ? renderRequestTable(resolvedRequests) : <p className="text-muted-foreground text-center py-8">No resolved leave requests.</p>}
         </TabsContent>
     </Tabs>
-
   );
 }

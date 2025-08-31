@@ -16,10 +16,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 import { faculty } from '@/lib/placeholder-data';
+import { addLeaveRequest } from '@/lib/services/leave';
 
 // Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
 const LOGGED_IN_FACULTY_ID = 'FAC001';
@@ -32,25 +33,45 @@ export default function FacultyDashboard() {
   const [leaveStartDate, setLeaveStartDate] = useState('');
   const [leaveEndDate, setLeaveEndDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleLeaveRequestSubmit = () => {
-    // Placeholder for API call
-    console.log({
-      leaveStartDate,
-      leaveEndDate,
-      leaveReason,
-    });
+  const handleLeaveRequestSubmit = async () => {
+    if (!leaveStartDate || !leaveEndDate || !leaveReason) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill out all fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await addLeaveRequest({
+        facultyId: LOGGED_IN_FACULTY_ID,
+        startDate: leaveStartDate,
+        endDate: leaveEndDate,
+        reason: leaveReason,
+      });
 
-    toast({
-      title: 'Leave Request Sent',
-      description: 'Your request has been submitted for approval.',
-    });
+      toast({
+        title: 'Leave Request Sent',
+        description: 'Your request has been submitted for approval.',
+      });
 
-    setLeaveDialogOpen(false);
-    setLeaveStartDate('');
-    setLeaveEndDate('');
-    setLeaveReason('');
+      setLeaveDialogOpen(false);
+      setLeaveStartDate('');
+      setLeaveEndDate('');
+      setLeaveReason('');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to submit leave request.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -156,6 +177,7 @@ export default function FacultyDashboard() {
                   type="date" 
                   value={leaveStartDate}
                   onChange={(e) => setLeaveStartDate(e.target.value)}
+                  disabled={isSubmitting}
                 />
               </div>
                <div className="space-y-2">
@@ -165,6 +187,7 @@ export default function FacultyDashboard() {
                   type="date"
                   value={leaveEndDate}
                   onChange={(e) => setLeaveEndDate(e.target.value)}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -175,13 +198,18 @@ export default function FacultyDashboard() {
                 placeholder="Please provide a brief reason for your absence..."
                 value={leaveReason}
                 onChange={(e) => setLeaveReason(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLeaveDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleLeaveRequestSubmit}>
-              <Send className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={() => setLeaveDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleLeaveRequestSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
               Submit Request
             </Button>
           </DialogFooter>
