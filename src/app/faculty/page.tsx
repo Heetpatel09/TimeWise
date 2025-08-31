@@ -22,13 +22,11 @@ import ScheduleView from "./components/ScheduleView";
 import { addLeaveRequest } from '@/lib/services/leave';
 import { getFaculty } from '@/lib/services/faculty';
 import type { Faculty as FacultyType } from '@/lib/types';
-
-
-// Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
-const LOGGED_IN_FACULTY_ID = 'FAC001';
+import { useAuth } from '@/context/AuthContext';
 
 
 export default function FacultyDashboard() {
+  const { user } = useAuth();
   const [isLeaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [leaveStartDate, setLeaveStartDate] = useState('');
@@ -40,12 +38,14 @@ export default function FacultyDashboard() {
   const { toast } = useToast();
 
   useEffect(() => {
-    getFaculty().then(allFaculty => {
-        const fac = allFaculty.find(f => f.id === LOGGED_IN_FACULTY_ID);
-        if (fac) setCurrentFaculty(fac);
-        setIsLoading(false);
-    });
-  }, [])
+    if (user) {
+        getFaculty().then(allFaculty => {
+            const fac = allFaculty.find(f => f.id === user.id);
+            if (fac) setCurrentFaculty(fac);
+            setIsLoading(false);
+        });
+    }
+  }, [user])
 
   const handleLeaveRequestSubmit = async () => {
     if (!leaveStartDate || !leaveEndDate || !leaveReason) {
@@ -56,10 +56,12 @@ export default function FacultyDashboard() {
       });
       return;
     }
+    if (!user) return;
+
     setIsSubmitting(true);
     try {
       await addLeaveRequest({
-        facultyId: LOGGED_IN_FACULTY_ID,
+        facultyId: user.id,
         startDate: leaveStartDate,
         endDate: leaveEndDate,
         reason: leaveReason,

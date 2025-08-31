@@ -12,10 +12,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getStudents, updateStudent } from '@/lib/services/students';
 import { getClasses } from '@/lib/services/classes';
 import type { Student, Class } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
 
-const LOGGED_IN_STUDENT_ID = 'STU001';
 
 export default function StudentProfilePage() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [student, setStudent] = useState<Student | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -25,18 +26,20 @@ export default function StudentProfilePage() {
 
   useEffect(() => {
     async function loadData() {
-        setIsLoading(true);
-        const [allStudents, classData] = await Promise.all([
-            getStudents(),
-            getClasses()
-        ]);
-        const currentStudent = allStudents.find((s) => s.id === LOGGED_IN_STUDENT_ID);
-        setStudent(currentStudent || null);
-        setClasses(classData);
-        setIsLoading(false);
+        if (user) {
+            setIsLoading(true);
+            const [allStudents, classData] = await Promise.all([
+                getStudents(),
+                getClasses()
+            ]);
+            const currentStudent = allStudents.find((s) => s.id === user.id);
+            setStudent(currentStudent || null);
+            setClasses(classData);
+            setIsLoading(false);
+        }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && student) {

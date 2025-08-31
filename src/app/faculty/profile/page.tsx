@@ -11,10 +11,11 @@ import { UserCheck, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getFaculty, updateFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
 
-const LOGGED_IN_FACULTY_ID = 'FAC001';
 
 export default function FacultyProfilePage() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,14 +24,16 @@ export default function FacultyProfilePage() {
   
   useEffect(() => {
     async function loadFaculty() {
-        setIsLoading(true);
-        const allFaculty = await getFaculty();
-        const member = allFaculty.find((f) => f.id === LOGGED_IN_FACULTY_ID);
-        setFacultyMember(member || null);
-        setIsLoading(false);
+        if (user) {
+            setIsLoading(true);
+            const allFaculty = await getFaculty();
+            const member = allFaculty.find((f) => f.id === user.id);
+            setFacultyMember(member || null);
+            setIsLoading(false);
+        }
     }
     loadFaculty();
-  }, []);
+  }, [user]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && facultyMember) {

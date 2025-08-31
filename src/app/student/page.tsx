@@ -7,24 +7,26 @@ import TimetableView from "./components/TimetableView";
 import { Bell, Flame, Loader2 } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import type { Student } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
 
-// Assume logged-in student is Alice Johnson (STU001)
-const LOGGED_IN_STUDENT_ID = 'STU001';
 
 export default function StudentDashboard() {
+  const { user } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadStudent() {
-      setIsLoading(true);
-      const allStudents = await getStudents();
-      const currentStudent = allStudents.find(s => s.id === LOGGED_IN_STUDENT_ID);
-      setStudent(currentStudent || null);
-      setIsLoading(false);
+      if (user) {
+        setIsLoading(true);
+        const allStudents = await getStudents();
+        const currentStudent = allStudents.find(s => s.id === user.id);
+        setStudent(currentStudent || null);
+        setIsLoading(false);
+      }
     }
     loadStudent();
-  }, []);
+  }, [user]);
 
   if (isLoading) {
     return (

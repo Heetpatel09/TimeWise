@@ -5,18 +5,19 @@ import { getSchedule } from '@/lib/services/schedule';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClasses } from '@/lib/services/classes';
-import type { Schedule, Subject, Faculty, Class } from '@/lib/types';
+import { getStudents } from '@/lib/services/students';
+import type { Schedule, Subject, Faculty, Class, Student } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useAuth } from '@/context/AuthContext';
 
-// Assume logged-in student is Alice Johnson (STU001) in class CLS004
-const LOGGED_IN_STUDENT_CLASS_ID = 'CLS004';
-const LOGGED_IN_STUDENT_NAME = 'Alice Johnson';
 
 export default function TimetableView() {
+  const { user } = useAuth();
+  const [student, setStudent] = useState<Student | null>(null);
   const [studentSchedule, setStudentSchedule] = useState<Schedule[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
@@ -25,23 +26,33 @@ export default function TimetableView() {
   
   useEffect(() => {
     async function loadData() {
-        setIsLoading(true);
-        const [allSchedule, subjectData, facultyData, classData] = await Promise.all([
-            getSchedule(),
-            getSubjects(),
-            getFaculty(),
-            getClasses()
-        ]);
-        setStudentSchedule(allSchedule.filter(s => s.classId === LOGGED_IN_STUDENT_CLASS_ID));
-        setSubjects(subjectData);
-        setFaculty(facultyData);
-        setClasses(classData);
-        setIsLoading(false);
+        if (user) {
+            setIsLoading(true);
+            const [allSchedule, subjectData, facultyData, classData, studentData] = await Promise.all([
+                getSchedule(),
+                getSubjects(),
+                getFaculty(),
+                getClasses(),
+                getStudents()
+            ]);
+
+            const currentStudent = studentData.find(s => s.id === user.id);
+            setStudent(currentStudent || null);
+
+            if (currentStudent) {
+                 setStudentSchedule(allSchedule.filter(s => s.classId === currentStudent.classId));
+            }
+           
+            setSubjects(subjectData);
+            setFaculty(facultyData);
+            setClasses(classData);
+            setIsLoading(false);
+        }
     }
     loadData();
-  }, []);
+  }, [user]);
 
-  const className = classes.find(c => c.id === LOGGED_IN_STUDENT_CLASS_ID)?.name;
+  const className = student ? classes.find(c => c.id === student.classId)?.name : '';
 
   const getRelationName = (id: string, type: 'subject' | 'faculty') => {
     switch (type) {
@@ -52,8 +63,9 @@ export default function TimetableView() {
   };
 
   const exportPDF = () => {
+    if (!student) return;
     const doc = new jsPDF();
-    doc.text(`Timetable for ${LOGGED_IN_STUDENT_NAME} (${className})`, 14, 16);
+    doc.text(`Timetable for ${student.name} (${className})`, 14, 16);
     
     const tableData = studentSchedule.map(slot => [
         slot.day,

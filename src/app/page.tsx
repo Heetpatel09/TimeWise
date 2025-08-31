@@ -2,17 +2,15 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCog, UserCheck, User, ArrowRight, LogIn, Monitor, Clock } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Monitor, Clock, LogIn, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+
 
 const CodeBloodedLogo = () => (
   <div className="flex items-center justify-center">
@@ -27,28 +25,34 @@ const CodeBloodedLogo = () => (
 );
 
 export default function Home() {
-  const [isLoginOpen, setLoginOpen] = useState(false);
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const roles = [
-    {
-      title: 'Admin',
-      description: 'Manage subjects, classes, faculty, students, and schedules.',
-      icon: <UserCog className="w-12 h-12 text-primary" />,
-      link: '/admin',
-    },
-    {
-      title: 'Faculty',
-      description: 'View your schedule and manage your lecture slots.',
-      icon: <UserCheck className="w-12 h-12 text-primary" />,
-      link: '/faculty',
-    },
-    {
-      title: 'Student',
-      description: 'Access your class timetable and see updates.',
-      icon: <User className="w-12 h-12 text-primary" />,
-      link: '/student',
-    },
-  ];
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const user = await login(userId, password);
+      toast({
+        title: 'Login Successful',
+        description: `Welcome, ${user.name}! Redirecting...`,
+      });
+      router.push(`/${user.role}`);
+    } catch (error: any) {
+      toast({
+        title: 'Login Failed',
+        description: error.message || 'Invalid credentials. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-transparent p-4">
@@ -58,38 +62,42 @@ export default function Home() {
             The intelligent, AI-powered solution for effortless academic scheduling.
         </p>
 
-        <Button size="lg" className="mt-10 text-lg px-10 py-6 rounded-full font-bold animate-pulse" onClick={() => setLoginOpen(true)}>
-          <LogIn className="mr-2 h-5 w-5" /> Login
-        </Button>
-
-        <Dialog open={isLoginOpen} onOpenChange={setLoginOpen}>
-          <DialogContent className="sm:max-w-4xl bg-card/80 backdrop-blur-lg border-primary/20">
-            <DialogHeader>
-              <DialogTitle className="text-center text-3xl font-bold font-headline">Select Your Role</DialogTitle>
-              <DialogDescription className="text-center text-lg">
-                Choose your portal to continue.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full pt-8">
-              {roles.map((role) => (
-                <Card key={role.title} className="flex flex-col text-center items-center bg-transparent border-border/20 hover:border-primary/50 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <CardHeader className="items-center">
-                    {role.icon}
-                    <CardTitle className="mt-4 text-2xl font-semibold font-headline">{role.title}</CardTitle>
-                    <CardDescription className="mt-2 h-12">{role.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-grow flex items-end w-full">
-                    <Button asChild className="w-full">
-                      <Link href={role.link}>
-                        Continue <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Card className="mt-10 w-full max-w-sm bg-card/80 backdrop-blur-lg border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-2xl font-headline">Login</CardTitle>
+            <CardDescription>Enter your credentials to access your portal.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2 text-left">
+                <Label htmlFor="userId">User ID</Label>
+                <Input
+                  id="userId"
+                  placeholder="e.g., admin, FAC001, STU001"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              <div className="space-y-2 text-left">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
+                Login
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

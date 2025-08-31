@@ -15,13 +15,11 @@ import 'jspdf-autotable';
 import { addScheduleChangeRequest } from '@/lib/services/schedule-changes';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
+import { useAuth } from '@/context/AuthContext';
 
-
-// Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
-const LOGGED_IN_FACULTY_ID = 'FAC001';
-const LOGGED_IN_FACULTY_NAME = 'Dr. Alan Turing';
 
 export default function ScheduleView() {
+  const { user } = useAuth();
   const [facultySchedule, setFacultySchedule] = useState<Schedule[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -34,19 +32,21 @@ export default function ScheduleView() {
 
   useEffect(() => {
     async function loadData() {
-      setIsLoading(true);
-      const [allSchedule, classData, subjectData] = await Promise.all([
-        getSchedule(),
-        getClasses(),
-        getSubjects(),
-      ]);
-      setFacultySchedule(allSchedule.filter(s => s.facultyId === LOGGED_IN_FACULTY_ID));
-      setClasses(classData);
-      setSubjects(subjectData);
-      setIsLoading(false);
+      if (user) {
+        setIsLoading(true);
+        const [allSchedule, classData, subjectData] = await Promise.all([
+          getSchedule(),
+          getClasses(),
+          getSubjects(),
+        ]);
+        setFacultySchedule(allSchedule.filter(s => s.facultyId === user.id));
+        setClasses(classData);
+        setSubjects(subjectData);
+        setIsLoading(false);
+      }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   const getRelationName = (id: string, type: 'class' | 'subject') => {
     switch (type) {
@@ -66,11 +66,12 @@ export default function ScheduleView() {
        toast({ title: 'Missing Message', description: 'Please provide a reason for the change.', variant: 'destructive' });
        return;
     }
+    if (!user) return;
     setIsSubmitting(true);
     try {
         await addScheduleChangeRequest({
             scheduleId: selectedSlot.id,
-            facultyId: LOGGED_IN_FACULTY_ID,
+            facultyId: user.id,
             reason: requestMessage,
         });
         setDialogOpen(false);
@@ -88,7 +89,7 @@ export default function ScheduleView() {
 
   const exportPDF = () => {
     const doc = new jsPDF();
-    doc.text(`Schedule for ${LOGGED_IN_FACULTY_NAME}`, 14, 16);
+    doc.text(`Schedule for ${user?.name}`, 14, 16);
     
     const tableData = facultySchedule.map(slot => [
         slot.day,

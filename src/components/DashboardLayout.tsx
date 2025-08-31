@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {
   SidebarProvider,
@@ -50,9 +50,10 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
-import type { User as UserType, LeaveRequest } from '@/lib/types';
+import type { LeaveRequest } from '@/lib/types';
 import { getLeaveRequests } from '@/lib/services/leave';
 import { getScheduleChangeRequests } from '@/lib/services/schedule-changes';
+import { useAuth } from '@/context/AuthContext';
 
 const navItems = {
   admin: [
@@ -83,12 +84,16 @@ function CodeBloodedLogo() {
   );
 }
 
-function UserProfile({ role }: { role: Role }) {
-  const user: UserType = {
-    name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
-    email: `${role}@codeblooded.app`,
-    avatar: `https://avatar.vercel.sh/${role}.png`,
-  };
+function UserProfile() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  }
+
+  if (!user) return null;
 
   return (
     <DropdownMenu>
@@ -111,33 +116,32 @@ function UserProfile({ role }: { role: Role }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-           <Link href={`/${role}/profile`}>
+           <Link href={`/${user.role}/profile`}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/">
+        <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
-          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-function Nav({ role }: { role: Role }) {
+function Nav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const [isClient, setIsClient] = React.useState(false);
   const [pendingLeaveRequestsCount, setPendingLeaveRequestsCount] = useState<number | null>(null);
   const [pendingScheduleRequestsCount, setPendingScheduleRequestsCount] = useState<number | null>(null);
   
   useEffect(() => {
     setIsClient(true);
-    if (role === 'admin') {
+    if (user?.role === 'admin') {
       getLeaveRequests().then(requests => {
         setPendingLeaveRequestsCount(requests.filter(r => r.status === 'pending').length);
       });
@@ -145,12 +149,13 @@ function Nav({ role }: { role: Role }) {
         setPendingScheduleRequestsCount(requests.filter(r => r.status === 'pending').length);
       })
     }
-  }, [role]);
+  }, [user]);
 
-  if (!isClient) {
+  if (!isClient || !user) {
     return null; // Don't render on the server to avoid hydration mismatch
   }
-
+  
+  const role = user.role;
   const items = navItems[role];
   
   const adminTabs = [
@@ -233,8 +238,19 @@ export default function DashboardLayout({
   pageTitle: string;
   role: Role;
 }) {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/');
+    }
+  }, [user, isLoading, router]);
+
+
   const getRoleIcon = () => {
-    switch (role) {
+    if (!user) return null;
+    switch (user.role) {
       case 'admin':
         return <UserCog className="h-5 w-5 mr-2 text-primary" />;
       case 'faculty':
@@ -244,6 +260,25 @@ export default function DashboardLayout({
     }
   };
 
+  if (isLoading || !user) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Loader2 className="w-10 h-10 animate-spin" />
+        </div>
+    )
+  }
+
+  if (user.role !== role) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+            <h1 className='text-2xl font-bold'>Access Denied</h1>
+            <p className='text-muted-foreground'>You do not have permission to view this page.</p>
+            <Button onClick={() => router.push('/')} className="mt-4">Go to Login</Button>
+        </div>
+    )
+  }
+
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -251,7 +286,7 @@ export default function DashboardLayout({
           <CodeBloodedLogo />
         </SidebarHeader>
         <SidebarContent>
-          <Nav role={role} />
+          <Nav />
         </SidebarContent>
         <SidebarFooter>
             <SidebarMenu>
@@ -277,7 +312,7 @@ export default function DashboardLayout({
                 {getRoleIcon()}
                 {role.charAt(0).toUpperCase() + role.slice(1)}
             </Badge>
-            <UserProfile role={role} />
+            <UserProfile />
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent">
