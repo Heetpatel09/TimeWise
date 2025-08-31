@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -79,7 +80,8 @@ export default function ScheduleManager() {
     setConflictResult(null);
     try {
       const schedulesJSON = JSON.stringify(schedule);
-      const result = await handleResolveConflicts({schedules: schedulesJSON});
+      const parameters = JSON.stringify({ classes, subjects, faculty });
+      const result = await handleResolveConflicts({schedules: schedulesJSON, parameters});
       setConflictResult(result);
     } catch (error) {
       console.error(error);
