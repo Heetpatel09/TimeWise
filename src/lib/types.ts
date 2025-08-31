@@ -33,3 +33,9 @@ export interface Schedule {
   day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
   time: string; // e.g., "09:00 - 10:00"
 }
+
+export interface User {
+    name: string;
+    email: string;
+    avatar: string;
+}

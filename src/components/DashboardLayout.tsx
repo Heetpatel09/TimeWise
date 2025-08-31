@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
+import type { User as UserType } from '@/lib/types';
 
 const navItems = {
   admin: [
@@ -72,9 +73,8 @@ function CodeBloodedLogo() {
 }
 
 function UserProfile({ role }: { role: Role }) {
-  const roleName = role.charAt(0).toUpperCase() + role.slice(1);
-  const user = {
-    name: `${roleName} User`,
+  const user: UserType = {
+    name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
     email: `${role}@codeblooded.app`,
     avatar: `https://avatar.vercel.sh/${role}.png`,
   };
@@ -99,9 +99,11 @@ function UserProfile({ role }: { role: Role }) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+        <DropdownMenuItem asChild>
+           <Link href={`/${role}/profile`}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
@@ -137,19 +139,26 @@ function Nav({ role }: { role: Role }) {
       { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
       { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
   ]
+  const isActive = (item: {href: string, tab?: string}) => {
+    if (role === 'admin' && item.href.startsWith('/admin?tab=')) {
+        const currentTab = searchParams.get('tab') || 'subjects';
+        return currentTab === item.tab;
+    }
+     if (pathname.startsWith('/admin') && item.href === '/admin') {
+        return !searchParams.get('tab');
+     }
+    return pathname === item.href;
+  }
 
   return (
     <SidebarMenu>
       {items.map((item) => {
         const Icon = item.icon;
-        const currentTab = searchParams.get('tab');
-        const isActive = pathname === item.href && !currentTab;
-        
         return (
           <SidebarMenuItem key={item.href}>
              <Link href={item.href}>
               <SidebarMenuButton
-                isActive={isActive}
+                isActive={isActive(item)}
                 tooltip={item.label}
               >
                 <Icon />
@@ -159,25 +168,33 @@ function Nav({ role }: { role: Role }) {
           </SidebarMenuItem>
         );
       })}
-       {role === 'admin' && adminTabs.map((item) => {
-         const Icon = item.icon;
-         const currentTab = searchParams.get('tab');
-         const isActive = (pathname === '/admin' && (currentTab === item.tab || (!currentTab && item.tab === 'subjects')));
-
-         return (
-          <SidebarMenuItem key={item.tab}>
-            <Link href={item.href}>
-              <SidebarMenuButton
-                isActive={isActive}
-                tooltip={item.label}
-              >
-                <Icon />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
-            </Link>
-           </SidebarMenuItem>
-         )
-       })}
+       {role === 'admin' && <SidebarSeparator />}
+       {role === 'admin' && (
+         <SidebarGroup>
+            <SidebarGroupLabel>Management</SidebarGroupLabel>
+            <SidebarGroupContent>
+                <SidebarMenu>
+                    {adminTabs.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                        <SidebarMenuItem key={item.tab}>
+                            <Link href={item.href}>
+                            <SidebarMenuButton
+                                isActive={isActive(item)}
+                                tooltip={item.label}
+                                size="sm"
+                            >
+                                <Icon />
+                                <span>{item.label}</span>
+                            </SidebarMenuButton>
+                            </Link>
+                        </SidebarMenuItem>
+                        )
+                    })}
+                </SidebarMenu>
+            </SidebarGroupContent>
+        </SidebarGroup>
+       )}
     </SidebarMenu>
   );
 }
@@ -212,14 +229,16 @@ export default function DashboardLayout({
           <Nav role={role} />
         </SidebarContent>
         <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Settings">
-                  <Settings />
-                  <span>Settings</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <Link href={`/${role}/profile`}>
+                        <SidebarMenuButton tooltip="Settings">
+                        <Settings />
+                        <span>Settings</span>
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+            </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col min-h-screen bg-transparent">
