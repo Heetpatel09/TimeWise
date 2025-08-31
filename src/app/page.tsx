@@ -15,28 +15,28 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Monitor, Clock, LogIn, Loader2, UserCog, UserCheck, Users } from 'lucide-react';
+import { Monitor, Clock, LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const CodeBloodedLogo = () => (
-  <div className="flex items-center justify-center">
-    <div className="relative w-24 h-24 md:w-32 md:h-32">
+  <div className="flex items-center justify-center gap-4">
+    <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
         <Monitor className="w-full h-full text-primary" />
-        <Clock className="absolute w-1/2 h-1/2 text-black top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
+        <Clock className="absolute w-1/2 h-1/2 text-destructive top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
     </div>
-    <h1 className="text-6xl md:text-8xl font-bold text-foreground ml-4 tracking-wider font-headline">
+    <h1 className="text-5xl md:text-7xl font-bold text-foreground tracking-wider font-headline">
       CodeBlooded
     </h1>
   </div>
 );
 
-const LoginDialog = ({ role, children }: { role: User['role'], children: React.ReactNode }) => {
+const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => void }) => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -53,7 +53,6 @@ const LoginDialog = ({ role, children }: { role: User['role'], children: React.R
         title: 'Login Successful',
         description: `Welcome, ${user.name}! Redirecting...`,
       });
-      setIsOpen(false);
       router.push(`/${user.role}`);
     } catch (error: any) {
       toast({
@@ -75,14 +74,10 @@ const LoginDialog = ({ role, children }: { role: User['role'], children: React.R
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+    <div>
         <DialogHeader>
-          <DialogTitle className="capitalize">{role} Login</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="capitalize text-center text-2xl">{role} Login</DialogTitle>
+          <DialogDescription className="text-center">
             Enter your credentials to access the {role} portal.
           </DialogDescription>
         </DialogHeader>
@@ -115,47 +110,86 @@ const LoginDialog = ({ role, children }: { role: User['role'], children: React.R
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+          <DialogFooter className="sm:justify-between gap-2">
+            <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>Back</Button>
+            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
                 Login
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
-  );
+    </div>
+  )
 }
 
+const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role']) => void }) => {
+
+    const roles: { role: User['role'], title: string, description: string, icon: React.ElementType}[] = [
+        { role: 'admin', title: 'Admin', description: 'Manage university data and schedules.', icon: UserCog },
+        { role: 'faculty', title: 'Faculty', description: 'Access your schedule and make requests.', icon: UserCheck },
+        { role: 'student', title: 'Student', description: 'View your timetable and profile.', icon: Users },
+    ]
+
+    return (
+        <div>
+            <DialogHeader>
+                <DialogTitle className="text-center text-2xl">Select Your Role</DialogTitle>
+                <DialogDescription className="text-center">
+                    Who are you logging in as?
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                {roles.map(({ role, title, description, icon: Icon }) => (
+                    <Card key={role} className="hover:bg-accent hover:border-primary transition-all cursor-pointer" onClick={() => onSelectRole(role)}>
+                        <CardHeader className="flex flex-row items-center gap-4">
+                           <div className="bg-primary/10 p-3 rounded-lg">
+                             <Icon className="w-6 h-6 text-primary" />
+                           </div>
+                           <div>
+                                <CardTitle>{title}</CardTitle>
+                                <CardDescription>{description}</CardDescription>
+                           </div>
+                           <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground" />
+                        </CardHeader>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    )
+}
 
 export default function Home() {
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-transparent p-4">
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <CodeBloodedLogo />
         <p className="mt-6 text-lg md:text-xl max-w-2xl text-muted-foreground">
             The intelligent, AI-powered solution for effortless academic scheduling.
+            Simplify complexity, resolve conflicts, and create perfect timetables in minutes.
         </p>
 
-        <div className="mt-12 flex flex-wrap justify-center gap-4">
-            <LoginDialog role="admin">
-                <Button size="lg" variant="outline">
-                <UserCog className="mr-2 h-5 w-5" />
-                Admin Portal
-                </Button>
-            </LoginDialog>
-            <LoginDialog role="faculty">
-                <Button size="lg" variant="outline">
-                <UserCheck className="mr-2 h-5 w-5" />
-                Faculty Portal
-                </Button>
-            </LoginDialog>
-             <LoginDialog role="student">
-                <Button size="lg" variant="outline">
-                <Users className="mr-2 h-5 w-5" />
-                Student Portal
-                </Button>
-            </LoginDialog>
+        <div className="mt-12">
+             <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                if (!open) setSelectedRole(null);
+                setDialogOpen(open);
+             }}>
+                <DialogTrigger asChild>
+                    <Button size="lg">
+                        <LogIn className="mr-2 h-5 w-5" />
+                        Login / Get Started
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                   {selectedRole ? (
+                        <CredentialDialog role={selectedRole} onBack={() => setSelectedRole(null)} />
+                   ) : (
+                        <RoleSelectionDialog onSelectRole={setSelectedRole} />
+                   )}
+                </DialogContent>
+            </Dialog>
         </div>
       </div>
     </main>
