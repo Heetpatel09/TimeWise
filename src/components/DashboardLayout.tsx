@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import {
   SidebarProvider,
@@ -117,6 +117,14 @@ function UserProfile({ role }: { role: Role }) {
 
 function Nav({ role }: { role: Role }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+
   const items = navItems[role];
 
   const adminTabs = [
@@ -131,8 +139,8 @@ function Nav({ role }: { role: Role }) {
     <SidebarMenu>
       {items.map((item) => {
         const Icon = item.icon;
-        const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams('');
-        const isActive = role === 'admin' ? pathname === item.href && !searchParams.get('tab') : pathname === item.href;
+        const currentTab = searchParams.get('tab');
+        const isActive = isClient && (role === 'admin' ? pathname === item.href && !currentTab : pathname === item.href);
         
         return (
           <SidebarMenuItem key={item.href}>
@@ -150,8 +158,8 @@ function Nav({ role }: { role: Role }) {
       })}
        {role === 'admin' && adminTabs.map((item) => {
          const Icon = item.icon;
-         const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-         const isActive = pathname === '/admin' && searchParams.get('tab') === item.tab;
+         const currentTab = searchParams.get('tab');
+         const isActive = isClient && (pathname === '/admin' && currentTab === item.tab);
 
          return (
           <SidebarMenuItem key={item.tab}>
