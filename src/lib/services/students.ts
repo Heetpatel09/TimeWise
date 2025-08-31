@@ -6,10 +6,16 @@ import type { Student } from '@/lib/types';
 
 // This is a server-side in-memory store.
 // In a real application, you would use a database.
-let students: Student[] = [...initialStudents];
+// We use a global variable to simulate persistence across requests in a dev environment.
+if (!(global as any).students) {
+  (global as any).students = [...initialStudents];
+}
+let students: Student[] = (global as any).students;
+
 
 function revalidateAll() {
-    revalidatePath('/admin');
+    revalidatePath('/admin', 'layout');
+    revalidatePath('/student', 'layout');
 }
 
 export async function getStudents() {
@@ -22,21 +28,23 @@ export async function addStudent(item: Omit<Student, 'id'>) {
         id: `STU${Date.now()}`,
         streak: item.streak || 0,
     };
-    students = [...students, newItem];
+    students.push(newItem);
     revalidateAll();
     return Promise.resolve(newItem);
 }
 
 export async function updateStudent(updatedItem: Student) {
-    students = students.map(item => 
-        item.id === updatedItem.id ? updatedItem : item
-    );
+    const index = students.findIndex(item => item.id === updatedItem.id);
+    if (index !== -1) {
+        students[index] = updatedItem;
+    }
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
 
 export async function deleteStudent(id: string) {
     students = students.filter(item => item.id !== id);
+    (global as any).students = students;
     revalidateAll();
     return Promise.resolve(id);
 }

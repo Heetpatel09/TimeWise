@@ -6,10 +6,16 @@ import type { Faculty } from '@/lib/types';
 
 // This is a server-side in-memory store.
 // In a real application, you would use a database.
-let faculty: Faculty[] = [...initialFaculty];
+// We use a global variable to simulate persistence across requests in a dev environment.
+if (!(global as any).faculty) {
+  (global as any).faculty = [...initialFaculty];
+}
+let faculty: Faculty[] = (global as any).faculty;
+
 
 function revalidateAll() {
-    revalidatePath('/admin');
+    revalidatePath('/admin', 'layout');
+    revalidatePath('/faculty', 'layout');
 }
 
 export async function getFaculty() {
@@ -22,21 +28,23 @@ export async function addFaculty(item: Omit<Faculty, 'id'>) {
         id: `FAC${Date.now()}`,
         streak: item.streak || 0,
     };
-    faculty = [...faculty, newItem];
+    faculty.push(newItem);
     revalidateAll();
     return Promise.resolve(newItem);
 }
 
 export async function updateFaculty(updatedItem: Faculty) {
-    faculty = faculty.map(item => 
-        item.id === updatedItem.id ? updatedItem : item
-    );
+    const index = faculty.findIndex(item => item.id === updatedItem.id);
+    if (index !== -1) {
+        faculty[index] = updatedItem;
+    }
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
 
 export async function deleteFaculty(id: string) {
     faculty = faculty.filter(item => item.id !== id);
+    (global as any).faculty = faculty;
     revalidateAll();
     return Promise.resolve(id);
 }

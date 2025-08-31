@@ -14,30 +14,34 @@ export default function LeaveRequestsPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+
+  async function fetchRequests() {
+    setIsLoading(true);
+    const [requests, facultyData] = await Promise.all([
+      getLeaveRequests(),
+      getFaculty()
+    ]);
+    setLeaveRequests(requests.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()));
+    setFaculty(facultyData);
+    setIsLoading(false);
+  }
 
   useEffect(() => {
-    async function fetchRequests() {
-      setIsLoading(true);
-      const [requests, facultyData] = await Promise.all([
-        getLeaveRequests(),
-        getFaculty()
-      ]);
-      setLeaveRequests(requests);
-      setFaculty(facultyData);
-      setIsLoading(false);
-    }
     fetchRequests();
   }, []);
 
   const handleRequestStatus = async (id: string, status: 'approved' | 'rejected') => {
-    // Optimistic update
-    const originalRequests = leaveRequests;
-    setLeaveRequests(leaveRequests.map(req => req.id === id ? { ...req, status } : req));
+    setIsUpdating(id);
+    // No optimistic update to ensure we show server state
     try {
       await updateLeaveRequestStatus(id, status);
+      await fetchRequests(); // Re-fetch to get the latest state
     } catch (error) {
-      setLeaveRequests(originalRequests);
+      console.error("Failed to update status", error);
       // Optionally, show an error toast
+    } finally {
+        setIsUpdating(null);
     }
   };
   
@@ -74,12 +78,18 @@ export default function LeaveRequestsPage() {
               <TableCell className="text-right">
                 {request.status === 'pending' && (
                   <div className="flex gap-2 justify-end">
-                    <Button size="icon" variant="outline" className="h-8 w-8 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleRequestStatus(request.id, 'approved')}>
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="outline" className="h-8 w-8 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleRequestStatus(request.id, 'rejected')}>
-                      <X className="h-4 w-4" />
-                    </Button>
+                    {isUpdating === request.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <>
+                        <Button size="icon" variant="outline" className="h-8 w-8 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleRequestStatus(request.id, 'approved')}>
+                            <Check className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="outline" className="h-8 w-8 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleRequestStatus(request.id, 'rejected')}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                        </>
+                    )}
                   </div>
                 )}
               </TableCell>
