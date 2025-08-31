@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function FacultyManager() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
@@ -18,6 +19,7 @@ export default function FacultyManager() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty> | null>(null);
+  const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
   const { toast } = useToast();
 
   async function loadData() {
@@ -44,19 +46,25 @@ export default function FacultyManager() {
           await updateFaculty(currentFaculty as Faculty);
           toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
         } else {
-          await addFaculty(currentFaculty as Omit<Faculty, 'id'>);
-          toast({ title: "Faculty Added", description: "The new faculty member has been added." });
+          const result = await addFaculty(currentFaculty as Omit<Faculty, 'id'>);
+          toast({ title: "Faculty Added", description: "The new faculty member has been created." });
+          setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
         }
         await loadData();
         setDialogOpen(false);
         setCurrentFaculty(null);
-      } catch (error) {
-        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
     }
   };
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied!', description: 'Password copied to clipboard.' });
+  }
 
   const handleEdit = (fac: Faculty) => {
     setCurrentFaculty(fac);
@@ -106,7 +114,7 @@ export default function FacultyManager() {
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
                     <Avatar>
-                        <AvatarImage src={`https://avatar.vercel.sh/${fac.email}.png`} alt={fac.name} />
+                        <AvatarImage src={fac.avatar} alt={fac.name} />
                         <AvatarFallback>{fac.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -175,6 +183,43 @@ export default function FacultyManager() {
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={!!newFacultyCredentials} onOpenChange={() => setNewFacultyCredentials(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Faculty Member Created</DialogTitle>
+            <DialogDescription>
+              Share the following credentials with the new faculty member so they can log in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert>
+              <AlertTitle>Login Credentials</AlertTitle>
+              <AlertDescription>
+                <div className="space-y-2 mt-2">
+                  <div>
+                    <Label>Email</Label>
+                    <Input readOnly value={newFacultyCredentials?.email} />
+                  </div>
+                   <div>
+                    <Label>Initial Password</Label>
+                    <div className="flex items-center gap-2">
+                      <Input readOnly type="password" value={newFacultyCredentials?.initialPassword} />
+                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(newFacultyCredentials?.initialPassword || '')}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-2">The faculty member will be required to change this password on their first login.</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setNewFacultyCredentials(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

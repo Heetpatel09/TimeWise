@@ -72,6 +72,7 @@ export const authService = {
         if (!oldEmail) return reject(new Error('Admin user not found'));
 
         const adminEntry = users[oldEmail];
+        const oldPassword = adminEntry.password;
         
         // Update details
         adminEntry.details.name = updatedDetails.name;
@@ -80,7 +81,7 @@ export const authService = {
         // If email has changed, we need to move the entry
         if (oldEmail !== updatedDetails.email) {
             adminEntry.details.email = updatedDetails.email;
-            users[updatedDetails.email] = adminEntry;
+            users[updatedDetails.email] = { ...adminEntry, password: oldPassword };
             delete users[oldEmail];
         } else {
             users[oldEmail] = adminEntry;
@@ -103,7 +104,7 @@ export const authService = {
             users[email].password = newPassword;
             resolve();
         } else {
-            reject(new Error('User not found.'));
+            reject(new Error('User not found when trying to update password.'));
         }
     });
   },
@@ -114,7 +115,7 @@ export const authService = {
             return resolve();
         }
         if (users[oldEmail] && !users[newEmail]) {
-            const entry = users[oldEmail];
+            const entry = { ...users[oldEmail] }; // Make a copy
             entry.details.email = newEmail;
             users[newEmail] = entry;
             delete users[oldEmail];
@@ -123,10 +124,25 @@ export const authService = {
             reject(new Error('New email is already taken.'));
         } 
         else {
-            reject(new Error('User not found.'));
+            reject(new Error('User not found when trying to update email.'));
         }
     });
-  }
+  },
+  
+  addUser: (user: {id: string, email: string, password?: string, role: 'faculty' | 'student', details: any}): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (users[user.email]) {
+            return reject(new Error("User with this email already exists."));
+        }
+        users[user.email] = {
+            id: user.id,
+            password: user.password,
+            role: user.role,
+            details: user.details
+        };
+        resolve();
+    });
+  },
 };
 
 // --- Monkey Patching update functions to sync with auth store ---
@@ -136,7 +152,8 @@ const _originalUpdateFaculty = originalUpdateFaculty;
 const _originalUpdateStudent = originalUpdateStudent;
 
 async function updateFaculty(facultyMember: Faculty) {
-    const oldFaculty = (await getFaculty()).find(f => f.id === facultyMember.id);
+    const allFaculty = await getFaculty();
+    const oldFaculty = allFaculty.find(f => f.id === facultyMember.id);
     const oldEmail = oldFaculty?.email;
 
     // First, call the original function to update the main faculty data store
@@ -156,7 +173,8 @@ async function updateFaculty(facultyMember: Faculty) {
 }
 
 async function updateStudent(student: Student) {
-    const oldStudent = (await getStudents()).find(s => s.id === student.id);
+    const allStudents = await getStudents();
+    const oldStudent = allStudents.find(s => s.id === student.id);
     const oldEmail = oldStudent?.email;
 
     // First, call the original function to update the main student data store
