@@ -15,6 +15,10 @@ import {
   useSidebar,
   SidebarInset,
   SidebarTrigger,
+  SidebarSeparator,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
