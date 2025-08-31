@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import * as React from 'react';
+import React from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -124,6 +124,9 @@ function Nav({ role }: { role: Role }) {
     setIsClient(true);
   }, []);
 
+  if (!isClient) {
+    return null; // Don't render on the server to avoid hydration mismatch
+  }
 
   const items = navItems[role];
 
@@ -140,7 +143,7 @@ function Nav({ role }: { role: Role }) {
       {items.map((item) => {
         const Icon = item.icon;
         const currentTab = searchParams.get('tab');
-        const isActive = isClient && (role === 'admin' ? pathname === item.href && !currentTab : pathname === item.href);
+        const isActive = pathname === item.href && !currentTab;
         
         return (
           <SidebarMenuItem key={item.href}>
@@ -159,7 +162,7 @@ function Nav({ role }: { role: Role }) {
        {role === 'admin' && adminTabs.map((item) => {
          const Icon = item.icon;
          const currentTab = searchParams.get('tab');
-         const isActive = isClient && (pathname === '/admin' && currentTab === item.tab);
+         const isActive = (pathname === '/admin' && (currentTab === item.tab || (!currentTab && item.tab === 'subjects')));
 
          return (
           <SidebarMenuItem key={item.tab}>
@@ -219,7 +222,7 @@ export default function DashboardLayout({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="flex flex-col min-h-screen">
+      <SidebarInset className="flex flex-col min-h-screen bg-transparent">
         <header className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center">
             <SidebarTrigger className="md:hidden" />
@@ -233,7 +236,7 @@ export default function DashboardLayout({
             <UserProfile role={role} />
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-muted/40">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent">
             {children}
         </main>
       </SidebarInset>

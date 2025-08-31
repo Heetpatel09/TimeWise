@@ -6,21 +6,19 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserCog, UserCheck, User, ArrowRight, LogIn, Monitor, Clock } from 'lucide-react';
-import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 
 const CodeBloodedLogo = () => (
   <div className="flex items-center justify-center">
     <div className="relative w-24 h-24 md:w-32 md:h-32">
         <Monitor className="w-full h-full text-primary" />
-        <Clock className="absolute w-1/2 h-1/2 text-primary-foreground top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
+        <Clock className="absolute w-1/2 h-1/2 text-black top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
     </div>
     <h1 className="text-6xl md:text-8xl font-bold text-foreground ml-4 tracking-wider font-headline">
       CodeBlooded
@@ -53,19 +51,7 @@ export default function Home() {
   ];
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="https://thumbs.dreamstime.com/b/abstract-digital-art-displays-glowing-tech-clock-neon-lines-geometric-shapes-against-dark-background-futuristic-design-modern-388294510.jpg"
-          alt="background"
-          fill
-          style={{ objectFit: 'cover' }}
-          className="opacity-10"
-          data-ai-hint="abstract colorful"
-        />
-        <div className="absolute inset-0 bg-black/50" />
-      </div>
-
+    <main className="flex flex-col items-center justify-center min-h-screen bg-transparent p-4">
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <CodeBloodedLogo />
         <p className="mt-6 text-lg md:text-xl max-w-2xl text-muted-foreground">

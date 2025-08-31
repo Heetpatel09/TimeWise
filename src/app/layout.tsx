@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
+import Image from 'next/image';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -20,6 +21,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
+        <div className="fixed inset-0 z-[-1]">
+            <Image
+              src="https://thumbs.dreamstime.com/b/abstract-digital-art-displays-glowing-tech-clock-neon-lines-geometric-shapes-against-dark-background-futuristic-design-modern-388294510.jpg"
+              alt="background"
+              fill
+              style={{ objectFit: 'cover' }}
+              className="opacity-5"
+              data-ai-hint="abstract colorful"
+            />
+            <div className="absolute inset-0 bg-white/50" />
+        </div>
         {children}
         <Toaster />
       </body>
