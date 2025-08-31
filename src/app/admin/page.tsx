@@ -1,3 +1,4 @@
+
 'use client';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from "@/components/DashboardLayout";
@@ -11,6 +12,7 @@ import ScheduleManager from "./components/ScheduleManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 const AdminDashboardHome = () => (
     <Card>
