@@ -1,14 +1,39 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame } from "lucide-react";
-import { students } from "@/lib/placeholder-data";
+import { Bell, Flame, Loader2 } from "lucide-react";
+import { getStudents } from '@/lib/services/students';
+import type { Student } from '@/lib/types';
 
 // Assume logged-in student is Alice Johnson (STU001)
 const LOGGED_IN_STUDENT_ID = 'STU001';
-const student = students.find(s => s.id === LOGGED_IN_STUDENT_ID);
 
 export default function StudentDashboard() {
+  const [student, setStudent] = useState<Student | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStudent() {
+      setIsLoading(true);
+      const allStudents = await getStudents();
+      const currentStudent = allStudents.find(s => s.id === LOGGED_IN_STUDENT_ID);
+      setStudent(currentStudent || null);
+      setIsLoading(false);
+    }
+    loadStudent();
+  }, []);
+
+  if (isLoading) {
+    return (
+        <DashboardLayout pageTitle="Student Dashboard" role="student">
+            <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>
+        </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
         <div className="grid gap-8 md:grid-cols-3">

@@ -1,18 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { schedule as allSchedule, classes, subjects } from '@/lib/placeholder-data';
-import type { Schedule } from '@/lib/types';
+import { schedule as allSchedule } from '@/lib/placeholder-data';
+import type { Schedule, Class, Subject } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Send, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { addScheduleChangeRequest } from '@/lib/services/schedule-changes';
+import { getClasses } from '@/lib/services/classes';
+import { getSubjects } from '@/lib/services/subjects';
+
 
 // Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
 const LOGGED_IN_FACULTY_ID = 'FAC001';
@@ -20,11 +23,28 @@ const LOGGED_IN_FACULTY_NAME = 'Dr. Alan Turing';
 
 export default function ScheduleView() {
   const facultySchedule = allSchedule.filter(s => s.facultyId === LOGGED_IN_FACULTY_ID);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Schedule | null>(null);
   const [requestMessage, setRequestMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      const [classData, subjectData] = await Promise.all([
+        getClasses(),
+        getSubjects(),
+      ]);
+      setClasses(classData);
+      setSubjects(subjectData);
+      setIsLoading(false);
+    }
+    loadData();
+  }, []);
 
   const getRelationName = (id: string, type: 'class' | 'subject') => {
     switch (type) {
@@ -89,6 +109,10 @@ export default function ScheduleView() {
     day,
     slots: facultySchedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
   }));
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
     <div>

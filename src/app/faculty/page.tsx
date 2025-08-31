@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -19,12 +19,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
-import { faculty } from '@/lib/placeholder-data';
 import { addLeaveRequest } from '@/lib/services/leave';
+import { getFaculty } from '@/lib/services/faculty';
+import type { Faculty as FacultyType } from '@/lib/types';
+
 
 // Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
 const LOGGED_IN_FACULTY_ID = 'FAC001';
-const currentFaculty = faculty.find(f => f.id === LOGGED_IN_FACULTY_ID);
 
 
 export default function FacultyDashboard() {
@@ -34,7 +35,17 @@ export default function FacultyDashboard() {
   const [leaveEndDate, setLeaveEndDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentFaculty, setCurrentFaculty] = useState<FacultyType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    getFaculty().then(allFaculty => {
+        const fac = allFaculty.find(f => f.id === LOGGED_IN_FACULTY_ID);
+        if (fac) setCurrentFaculty(fac);
+        setIsLoading(false);
+    });
+  }, [])
 
   const handleLeaveRequestSubmit = async () => {
     if (!leaveStartDate || !leaveEndDate || !leaveReason) {
@@ -74,13 +85,19 @@ export default function FacultyDashboard() {
     }
   };
 
+  if (isLoading) {
+    return <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
+      <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>
+    </DashboardLayout>
+  }
+
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-2">
             <Card>
                 <CardHeader>
-                <CardTitle>Welcome, {currentFaculty?.name || "Dr. Turing"}!</CardTitle>
+                <CardTitle>Welcome, {currentFaculty?.name || "Faculty Member"}!</CardTitle>
                 <CardDescription>
                     This is your central hub for managing your schedule and administrative tasks.
                 </CardDescription>

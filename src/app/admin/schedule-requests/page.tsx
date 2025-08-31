@@ -4,21 +4,36 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { schedule, faculty, classes, subjects } from '@/lib/placeholder-data';
-import type { ScheduleChangeRequest, Schedule } from '@/lib/types';
+import { schedule as staticSchedule } from '@/lib/placeholder-data';
+import type { ScheduleChangeRequest, Schedule, Faculty, Class, Subject } from '@/lib/types';
 import { Check, Loader2 } from 'lucide-react';
 import { getScheduleChangeRequests, updateScheduleChangeRequestStatus } from '@/lib/services/schedule-changes';
+import { getFaculty } from '@/lib/services/faculty';
+import { getClasses } from '@/lib/services/classes';
+import { getSubjects } from '@/lib/services/subjects';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ScheduleRequestsPage() {
   const [requests, setRequests] = useState<ScheduleChangeRequest[]>([]);
+  const [schedule, setSchedule] = useState<Schedule[]>(staticSchedule); // For demo, schedule is static
+  const [faculty, setFaculty] = useState<Faculty[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchRequests() {
       setIsLoading(true);
-      const fetchedRequests = await getScheduleChangeRequests();
+      const [fetchedRequests, facultyData, classData, subjectData] = await Promise.all([
+        getScheduleChangeRequests(),
+        getFaculty(),
+        getClasses(),
+        getSubjects()
+      ]);
       setRequests(fetchedRequests);
+      setFaculty(facultyData);
+      setClasses(classData);
+      setSubjects(subjectData);
       setIsLoading(false);
     }
     fetchRequests();

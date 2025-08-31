@@ -4,21 +4,26 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { faculty } from '@/lib/placeholder-data';
-import type { LeaveRequest } from '@/lib/types';
+import type { LeaveRequest, Faculty } from '@/lib/types';
 import { Check, X, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLeaveRequests, updateLeaveRequestStatus } from '@/lib/services/leave';
+import { getFaculty } from '@/lib/services/faculty';
 
 export default function LeaveRequestsPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchRequests() {
       setIsLoading(true);
-      const requests = await getLeaveRequests();
+      const [requests, facultyData] = await Promise.all([
+        getLeaveRequests(),
+        getFaculty()
+      ]);
       setLeaveRequests(requests);
+      setFaculty(facultyData);
       setIsLoading(false);
     }
     fetchRequests();

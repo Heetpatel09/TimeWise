@@ -1,9 +1,14 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { schedule as allSchedule, subjects, faculty, classes } from '@/lib/placeholder-data';
+import { schedule as allSchedule } from '@/lib/placeholder-data';
+import { getSubjects } from '@/lib/services/subjects';
+import { getFaculty } from '@/lib/services/faculty';
+import { getClasses } from '@/lib/services/classes';
+import type { Subject, Faculty, Class } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -13,6 +18,27 @@ const LOGGED_IN_STUDENT_NAME = 'Alice Johnson';
 
 export default function TimetableView() {
   const studentSchedule = allSchedule.filter(s => s.classId === LOGGED_IN_STUDENT_CLASS_ID);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [faculty, setFaculty] = useState<Faculty[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadData() {
+        setIsLoading(true);
+        const [subjectData, facultyData, classData] = await Promise.all([
+            getSubjects(),
+            getFaculty(),
+            getClasses()
+        ]);
+        setSubjects(subjectData);
+        setFaculty(facultyData);
+        setClasses(classData);
+        setIsLoading(false);
+    }
+    loadData();
+  }, []);
+
   const className = classes.find(c => c.id === LOGGED_IN_STUDENT_CLASS_ID)?.name;
 
   const getRelationName = (id: string, type: 'subject' | 'faculty') => {
@@ -48,6 +74,10 @@ export default function TimetableView() {
     day,
     slots: studentSchedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
   }));
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
 
 
   return (
