@@ -47,7 +47,7 @@ export default function AdminProfilePage() {
           <CardTitle className="flex items-center">
             <UserCog className="w-6 h-6 mr-2" />
             Admin Profile
-          </Title>
+          </CardTitle>
           <CardDescription>Manage your profile information and settings.</CardDescription>
         </CardHeader>
         <CardContent>

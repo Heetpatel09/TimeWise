@@ -73,7 +73,7 @@ export default function FacultyProfilePage() {
           <CardTitle className="flex items-center">
             <UserCheck className="w-6 h-6 mr-2" />
             Faculty Profile
-          </Title>
+          </CardTitle>
           <CardDescription>View and update your profile information.</CardDescription>
         </CardHeader>
         <CardContent>
