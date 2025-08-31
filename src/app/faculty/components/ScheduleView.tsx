@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { schedule as allSchedule, classes, subjects } from '@/lib/placeholder-data';
 import type { Schedule } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Send } from 'lucide-react';
+import { Download, Send, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { addScheduleChangeRequest } from '@/lib/services/schedule-changes';
 
 // Assume logged-in faculty is Dr. Alan Turing (FAC001) for demo
 const LOGGED_IN_FACULTY_ID = 'FAC001';
@@ -22,6 +23,7 @@ export default function ScheduleView() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Schedule | null>(null);
   const [requestMessage, setRequestMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const getRelationName = (id: string, type: 'class' | 'subject') => {
@@ -37,15 +39,29 @@ export default function ScheduleView() {
     setDialogOpen(true);
   };
 
-  const handleSubmitRequest = () => {
-    console.log('Request submitted for slot', selectedSlot?.id, ':', requestMessage);
-    // Placeholder for API call to admin
-    setDialogOpen(false);
-    setRequestMessage('');
-    toast({
-      title: "Request Sent",
-      description: "Your schedule change request has been sent to the admin for approval.",
-    });
+  const handleSubmitRequest = async () => {
+    if (!selectedSlot || !requestMessage) {
+       toast({ title: 'Missing Message', description: 'Please provide a reason for the change.', variant: 'destructive' });
+       return;
+    }
+    setIsSubmitting(true);
+    try {
+        await addScheduleChangeRequest({
+            scheduleId: selectedSlot.id,
+            facultyId: LOGGED_IN_FACULTY_ID,
+            reason: requestMessage,
+        });
+        setDialogOpen(false);
+        setRequestMessage('');
+        toast({
+            title: "Request Sent",
+            description: "Your schedule change request has been sent to the admin for approval.",
+        });
+    } catch (error) {
+        toast({ title: 'Error', description: 'Failed to send request.', variant: 'destructive'});
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const exportPDF = () => {
@@ -143,13 +159,14 @@ export default function ScheduleView() {
                 id="message"
                 value={requestMessage}
                 onChange={(e) => setRequestMessage(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmitRequest}>
-                <Send className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSubmitRequest} disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                 Send Request
             </Button>
           </DialogFooter>

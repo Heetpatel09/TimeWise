@@ -50,3 +50,11 @@ export interface LeaveRequest {
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
 }
+
+export interface ScheduleChangeRequest {
+  id: string;
+  scheduleId: string;
+  facultyId: string;
+  reason: string;
+  status: 'pending' | 'resolved';
+}

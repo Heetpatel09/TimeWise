@@ -45,12 +45,14 @@ import {
   Monitor,
   Clock,
   Mail,
+  PencilRuler,
   Loader2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
 import type { User as UserType, LeaveRequest } from '@/lib/types';
 import { getLeaveRequests } from '@/lib/services/leave';
+import { getScheduleChangeRequests } from '@/lib/services/schedule-changes';
 
 const navItems = {
   admin: [
@@ -131,12 +133,16 @@ function Nav({ role }: { role: Role }) {
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = React.useState(false);
   const [pendingLeaveRequestsCount, setPendingLeaveRequestsCount] = useState<number | null>(null);
+  const [pendingScheduleRequestsCount, setPendingScheduleRequestsCount] = useState<number | null>(null);
   
   useEffect(() => {
     setIsClient(true);
     if (role === 'admin') {
       getLeaveRequests().then(requests => {
         setPendingLeaveRequestsCount(requests.filter(r => r.status === 'pending').length);
+      });
+      getScheduleChangeRequests().then(requests => {
+        setPendingScheduleRequestsCount(requests.filter(r => r.status === 'pending').length);
       })
     }
   }, [role]);
@@ -154,6 +160,7 @@ function Nav({ role }: { role: Role }) {
       { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
       { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
       { href: '/admin?tab=leave-requests', label: 'Leave Requests', icon: Mail, tab: 'leave-requests', badge: pendingLeaveRequestsCount },
+      { href: '/admin?tab=schedule-requests', label: 'Schedule Requests', icon: PencilRuler, tab: 'schedule-requests', badge: pendingScheduleRequestsCount },
   ]
   const isActive = (item: {href: string, tab?: string}) => {
     if (item.href.includes('?tab=')) {

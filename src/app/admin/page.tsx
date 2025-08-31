@@ -3,14 +3,14 @@
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler } from "lucide-react";
 import SubjectsManager from "./components/SubjectsManager";
 import ClassesManager from "./components/ClassesManager";
 import FacultyManager from "./components/FacultyManager";
 import StudentsManager from "./components/StudentsManager";
 import ScheduleManager from "./components/ScheduleManager";
 import LeaveRequestsPage from "./leave-requests/page";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ScheduleRequestsPage from "./schedule-requests/page";
 import Link from "next/link";
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -86,6 +86,7 @@ export default function AdminDashboard() {
     { value: "students", label: "Students", icon: Users, component: <StudentsManager /> },
     { value: "schedule", label: "Schedule", icon: Calendar, component: <ScheduleManager /> },
     { value: "leave-requests", label: "Leave Requests", icon: Mail, component: <LeaveRequestsPage /> },
+    { value: "schedule-requests", label: "Schedule Requests", icon: PencilRuler, component: <ScheduleRequestsPage /> },
   ];
 
   const activeTab = tab || 'dashboard';
@@ -97,21 +98,24 @@ export default function AdminDashboard() {
        {!tab ? (
          <AdminDashboardHome />
        ): (
-        <Card>
-            <CardHeader>
-            <CardTitle>{tabs.find(t => t.value === tab)?.label} Management</CardTitle>
-            <CardDescription>
-                {
-                    tab === 'leave-requests' 
-                    ? 'Review and approve or reject faculty leave requests.'
-                    : `Add, edit, or delete ${tabs.find(t => t.value === tab)?.label.toLowerCase()} from the system.`
-                }
-            </CardDescription>
-            </CardHeader>
-            <CardContent>
-            {selectedTabContents}
-            </CardContent>
-        </Card>
+        <React.Fragment>
+          {tab === 'leave-requests' || tab === 'schedule-requests' 
+            ? selectedTabContents
+            : (
+                <Card>
+                    <CardHeader>
+                    <CardTitle>{tabs.find(t => t.value === tab)?.label} Management</CardTitle>
+                    <CardDescription>
+                        {`Add, edit, or delete ${tabs.find(t => t.value === tab)?.label.toLowerCase()} from the system.`}
+                    </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    {selectedTabContents}
+                    </CardContent>
+                </Card>
+            )
+          }
+        </React.Fragment>
        )}
     </DashboardLayout>
   );
