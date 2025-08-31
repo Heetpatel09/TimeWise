@@ -23,19 +23,25 @@ export default function StudentsManager() {
   const [currentStudent, setCurrentStudent] = useState<Partial<Student> | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
+  async function loadData() {
+    setIsLoading(true);
+    try {
       const [studentData, classData] = await Promise.all([getStudents(), getClasses()]);
       setStudents(studentData);
       setClasses(classData);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to load data.", variant: "destructive" });
+    } finally {
       setIsLoading(false);
     }
+  }
+  
+  useEffect(() => {
     loadData();
   }, []);
 
   const handleSave = async () => {
-    if (currentStudent) {
+    if (currentStudent && currentStudent.classId) {
       setIsSubmitting(true);
       try {
         if (currentStudent.id) {
@@ -45,8 +51,7 @@ export default function StudentsManager() {
           await addStudent(currentStudent as Omit<Student, 'id'>);
           toast({ title: "Student Added", description: "The new student has been added." });
         }
-        const data = await getStudents();
-        setStudents(data);
+        await loadData();
         setDialogOpen(false);
         setCurrentStudent(null);
       } catch (error) {
@@ -54,6 +59,8 @@ export default function StudentsManager() {
       } finally {
         setIsSubmitting(false);
       }
+    } else {
+        toast({ title: "Missing Information", description: "Please select a class for the student.", variant: "destructive" });
     }
   };
 
@@ -65,7 +72,7 @@ export default function StudentsManager() {
   const handleDelete = async (id: string) => {
     try {
       await deleteStudent(id);
-      setStudents(students.filter(s => s.id !== id));
+      await loadData();
       toast({ title: "Student Deleted", description: "The student has been removed." });
     } catch (error) {
        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
@@ -97,6 +104,7 @@ export default function StudentsManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Class</TableHead>
+              <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -116,6 +124,7 @@ export default function StudentsManager() {
                   </div>
                 </TableCell>
                 <TableCell>{getClassName(student.classId)}</TableCell>
+                <TableCell>{student.streak}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -169,6 +178,10 @@ export default function StudentsManager() {
                   {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="streak" className="text-right">Streak</Label>
+              <Input id="streak" type="number" value={currentStudent?.streak || 0} onChange={(e) => setCurrentStudent({ ...currentStudent, streak: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>

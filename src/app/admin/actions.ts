@@ -9,13 +9,14 @@ import { getSchedule } from '@/lib/services/schedule';
 
 export async function handleResolveConflicts(currentSchedule: any): Promise<ResolveScheduleConflictsOutput> {
   try {
-    const [classes, subjects, faculty] = await Promise.all([
+    const [classes, subjects, faculty, scheduleData] = await Promise.all([
         getClasses(),
         getSubjects(),
         getFaculty(),
+        getSchedule() // Use live schedule data
     ]);
 
-    const schedules = JSON.stringify(currentSchedule);
+    const schedules = JSON.stringify(scheduleData);
     const parameters = JSON.stringify({ classes, subjects, faculty });
 
     const result = await resolveScheduleConflicts({schedules, parameters});

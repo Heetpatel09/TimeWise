@@ -33,13 +33,19 @@ export default function ClassesManager() {
   const [currentClass, setCurrentClass] = useState<Partial<Class> | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
+  async function loadData() {
+    setIsLoading(true);
+    try {
       const data = await getClasses();
       setClasses(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to load classes.", variant: "destructive" });
+    } finally {
       setIsLoading(false);
     }
+  }
+
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -54,8 +60,7 @@ export default function ClassesManager() {
           await addClass(currentClass as Omit<Class, 'id'>);
           toast({ title: "Class Added", description: "The new class has been added." });
         }
-        const data = await getClasses();
-        setClasses(data);
+        await loadData();
         setDialogOpen(false);
         setCurrentClass(null);
       } catch (error) {
@@ -74,7 +79,7 @@ export default function ClassesManager() {
   const handleDelete = async (id: string) => {
     try {
       await deleteClass(id);
-      setClasses(classes.filter(c => c.id !== id));
+      await loadData();
       toast({ title: "Class Deleted", description: "The class has been removed." });
     } catch (error) {
       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
@@ -155,7 +160,7 @@ export default function ClassesManager() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="year" className="text-right">Year</Label>
-              <Input id="year" type="number" value={currentClass?.year || ''} onChange={(e) => setCurrentClass({ ...currentClass, year: parseInt(e.target.value) })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="year" type="number" value={currentClass?.year || ''} onChange={(e) => setCurrentClass({ ...currentClass, year: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>

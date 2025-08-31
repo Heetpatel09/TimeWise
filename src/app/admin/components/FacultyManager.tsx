@@ -20,13 +20,19 @@ export default function FacultyManager() {
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty> | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
+  async function loadData() {
+    setIsLoading(true);
+    try {
       const data = await getFaculty();
       setFaculty(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to load faculty.", variant: "destructive" });
+    } finally {
       setIsLoading(false);
     }
+  }
+
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -41,8 +47,7 @@ export default function FacultyManager() {
           await addFaculty(currentFaculty as Omit<Faculty, 'id'>);
           toast({ title: "Faculty Added", description: "The new faculty member has been added." });
         }
-        const data = await getFaculty();
-        setFaculty(data);
+        await loadData();
         setDialogOpen(false);
         setCurrentFaculty(null);
       } catch (error) {
@@ -61,7 +66,7 @@ export default function FacultyManager() {
   const handleDelete = async (id: string) => {
     try {
       await deleteFaculty(id);
-      setFaculty(faculty.filter(f => f.id !== id));
+      await loadData();
       toast({ title: "Faculty Deleted", description: "The faculty member has been removed." });
     } catch (error) {
        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
@@ -91,6 +96,7 @@ export default function FacultyManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Department</TableHead>
+              <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -110,6 +116,7 @@ export default function FacultyManager() {
                   </div>
                 </TableCell>
                 <TableCell>{fac.department}</TableCell>
+                <TableCell>{fac.streak}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -156,6 +163,10 @@ export default function FacultyManager() {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>
               <Input id="department" value={currentFaculty?.department || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="streak" className="text-right">Streak</Label>
+              <Input id="streak" type="number" value={currentFaculty?.streak || 0} onChange={(e) => setCurrentFaculty({ ...currentFaculty, streak: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>

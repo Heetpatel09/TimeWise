@@ -33,13 +33,19 @@ export default function SubjectsManager() {
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject> | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
+  async function loadData() {
+    setIsLoading(true);
+    try {
       const data = await getSubjects();
       setSubjects(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to load subjects.", variant: "destructive" });
+    } finally {
       setIsLoading(false);
     }
+  }
+
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -54,8 +60,7 @@ export default function SubjectsManager() {
           await addSubject(currentSubject as Omit<Subject, 'id'>);
           toast({ title: "Subject Added", description: "The new subject has been added." });
         }
-        const data = await getSubjects();
-        setSubjects(data);
+        await loadData();
         setDialogOpen(false);
         setCurrentSubject(null);
       } catch (error) {
@@ -74,7 +79,7 @@ export default function SubjectsManager() {
   const handleDelete = async (id: string) => {
     try {
       await deleteSubject(id);
-      setSubjects(subjects.filter(s => s.id !== id));
+      await loadData();
       toast({ title: "Subject Deleted", description: "The subject has been removed." });
     } catch (error) {
       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
