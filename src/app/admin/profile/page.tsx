@@ -59,7 +59,7 @@ export default function AdminProfilePage() {
             const updatedUser = await authService.updateAdmin({ id: user.id, name, email, avatar });
             if (newPassword) {
                 // Pass the new email to the password update function.
-                await authService.updatePassword(email, newPassword);
+                await authService.updatePassword(updatedUser.email, newPassword);
             }
             setAuthUser(updatedUser);
             toast({

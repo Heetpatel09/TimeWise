@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { UserCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getFaculty, updateFaculty } from '@/lib/services/faculty';
+import { getFaculty, updateFaculty } from '@/lib/services/auth';
 import type { Faculty } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/lib/services/auth';

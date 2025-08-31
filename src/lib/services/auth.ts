@@ -1,8 +1,8 @@
 
 import { students, faculty } from '@/lib/placeholder-data';
 import type { User, Faculty, Student } from '@/lib/types';
-import { updateFaculty } from './faculty';
-import { updateStudent } from './students';
+import { updateFaculty as originalUpdateFaculty } from './faculty';
+import { updateStudent as originalUpdateStudent } from './students';
 
 // This is a mock authentication service.
 // In a real application, this would involve API calls to a secure backend.
@@ -82,6 +82,8 @@ export const authService = {
             adminEntry.details.email = updatedDetails.email;
             users[updatedDetails.email] = adminEntry;
             delete users[oldEmail];
+        } else {
+            users[oldEmail] = adminEntry;
         }
 
         const user: User = {
@@ -108,6 +110,9 @@ export const authService = {
   
   updateUserEmail: (oldEmail: string, newEmail: string): Promise<void> => {
      return new Promise((resolve, reject) => {
+        if (users[oldEmail] && oldEmail === newEmail) {
+            return resolve();
+        }
         if (users[oldEmail] && !users[newEmail]) {
             const entry = users[oldEmail];
             entry.details.email = newEmail;
@@ -124,33 +129,55 @@ export const authService = {
   }
 };
 
-// Sync faculty changes with auth store
-const originalUpdateFaculty = updateFaculty;
-(global as any).updateFaculty = async (facultyMember: Faculty) => {
-    const originalFaculty = (await originalUpdateFaculty(facultyMember));
-    const oldEmail = Object.keys(users).find(key => users[key].id === facultyMember.id);
-    if (oldEmail && oldEmail !== facultyMember.email) {
-        await authService.updateUserEmail(oldEmail, facultyMember.email);
-    }
-     if (users[facultyMember.email]) {
-        users[facultyMember.email].details = facultyMember;
-    }
-    return originalFaculty;
-};
+// --- Monkey Patching update functions to sync with auth store ---
 
-// Sync student changes with auth store
-const originalUpdateStudent = updateStudent;
-(global as any).updateStudent = async (student: Student) => {
-    const originalStudent = await originalUpdateStudent(student);
-     const oldEmail = Object.keys(users).find(key => users[key].id === student.id);
-    if (oldEmail && oldEmail !== student.email) {
-        await authService.updateUserEmail(oldEmail, student.email);
-    }
-    if (users[student.email]) {
-        users[student.email].details = student;
-    }
-    return originalStudent;
-};
+// Store the original functions to avoid infinite loops
+const _originalUpdateFaculty = originalUpdateFaculty;
+const _originalUpdateStudent = originalUpdateStudent;
 
-// We need to re-export the patched functions for other services to use them
+async function updateFaculty(facultyMember: Faculty) {
+    const oldFaculty = (await getFaculty()).find(f => f.id === facultyMember.id);
+    const oldEmail = oldFaculty?.email;
+
+    // First, call the original function to update the main faculty data store
+    const updatedFaculty = await _originalUpdateFaculty(facultyMember);
+
+    // Then, sync changes with the auth store
+    if (oldEmail && oldEmail !== updatedFaculty.email) {
+        await authService.updateUserEmail(oldEmail, updatedFaculty.email);
+    }
+    
+    // Ensure the details in the auth store are up-to-date
+    if (users[updatedFaculty.email]) {
+        users[updatedFaculty.email].details = updatedFaculty;
+    }
+    
+    return updatedFaculty;
+}
+
+async function updateStudent(student: Student) {
+    const oldStudent = (await getStudents()).find(s => s.id === student.id);
+    const oldEmail = oldStudent?.email;
+
+    // First, call the original function to update the main student data store
+    const updatedStudent = await _originalUpdateStudent(student);
+
+    // Then, sync changes with the auth store
+    if (oldEmail && oldEmail !== updatedStudent.email) {
+        await authService.updateUserEmail(oldEmail, updatedStudent.email);
+    }
+
+    // Ensure the details in the auth store are up-to-date
+    if (users[updatedStudent.email]) {
+        users[updatedStudent.email].details = updatedStudent;
+    }
+
+    return updatedStudent;
+}
+
+
+// We re-export the patched functions so other services use them.
+// We also need to manually import and export the other functions from the original files.
 export { updateFaculty, updateStudent };
+export { getFaculty, addFaculty, deleteFaculty } from './faculty';
+export { getStudents, addStudent, deleteStudent } from './students';
