@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -62,7 +63,7 @@ export default function Home() {
           className="opacity-20"
           data-ai-hint="abstract colorful"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/70 to-background" />
+        <div className="absolute inset-0 bg-black/60" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
