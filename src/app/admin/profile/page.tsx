@@ -10,14 +10,27 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { UserCog } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User } from '@/lib/types';
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
-  const [user, setUser] = React.useState({
+  const [user, setUser] = React.useState<User>({
     name: 'Admin User',
     email: 'admin@codeblooded.app',
     avatar: 'https://avatar.vercel.sh/admin.png',
   });
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUser({ ...user, avatar: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +47,7 @@ export default function AdminProfilePage() {
           <CardTitle className="flex items-center">
             <UserCog className="w-6 h-6 mr-2" />
             Admin Profile
-          </CardTitle>
+          </Title>
           <CardDescription>Manage your profile information and settings.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -44,7 +57,19 @@ export default function AdminProfilePage() {
                 <AvatarImage src={user.avatar} />
                 <AvatarFallback>A</AvatarFallback>
               </Avatar>
-              <Button variant="outline">Change Photo</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}>
+                  Change Photo
+              </Button>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>

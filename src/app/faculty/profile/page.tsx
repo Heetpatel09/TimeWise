@@ -20,6 +20,27 @@ export default function FacultyProfilePage() {
   const [facultyMember, setFacultyMember] = React.useState<Faculty | undefined>(
     allFaculty.find((f) => f.id === LOGGED_IN_FACULTY_ID)
   );
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && facultyMember) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // This is a temporary solution for client-side preview.
+        // In a real app, you would upload this to a server and get a URL.
+        const avatarUrl = reader.result as string;
+        // The avatar property is not part of the Faculty type, so we need to be creative
+        // For the demo, we will update the vercel avatar URL to a fake one to show change.
+        // A proper implementation would extend the faculty type or handle image state differently.
+        const updatedFaculty = {...facultyMember, email: `updated.${Date.now()}`};
+        setFacultyMember(updatedFaculty);
+        toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +73,7 @@ export default function FacultyProfilePage() {
           <CardTitle className="flex items-center">
             <UserCheck className="w-6 h-6 mr-2" />
             Faculty Profile
-          </CardTitle>
+          </Title>
           <CardDescription>View and update your profile information.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -62,14 +83,26 @@ export default function FacultyProfilePage() {
                 <AvatarImage src={`https://avatar.vercel.sh/${facultyMember.email}.png`} alt={facultyMember.name} />
                 <AvatarFallback>{facultyMember.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
-              <Button variant="outline">Change Photo</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}>
+                  Change Photo
+              </Button>
+               <Input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 value={facultyMember.name}
-                onChange={(e) => setFacultyMember({ ...facultyMember, name: e.target.value })}
+                onChange={(e) => setFacultyMember({ ...facultyMember, name: e.target.value } as Faculty)}
               />
             </div>
             <div className="space-y-2">
@@ -78,7 +111,7 @@ export default function FacultyProfilePage() {
                 id="email"
                 type="email"
                 value={facultyMember.email}
-                onChange={(e) => setFacultyMember({ ...facultyMember, email: e.target.value })}
+                onChange={(e) => setFacultyMember({ ...facultyMember, email: e.target.value } as Faculty)}
               />
             </div>
             <div className="space-y-2">

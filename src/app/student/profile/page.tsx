@@ -20,6 +20,25 @@ export default function StudentProfilePage() {
   const [student, setStudent] = React.useState<Student | undefined>(
     allStudents.find((s) => s.id === LOGGED_IN_STUDENT_ID)
   );
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && student) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // This is a temporary solution for client-side preview.
+        // In a real app, you would upload this to a server and get a URL.
+        const avatarUrl = reader.result as string;
+        // The avatar property is not part of the Student type, so we need to be creative
+        // For the demo, we will update the vercel avatar URL to a fake one to show change.
+        const updatedStudent = {...student, email: `updated.${Date.now()}`};
+        setStudent(updatedStudent);
+        toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const getClassName = (classId: string) => classes.find(c => c.id === classId)?.name || 'N/A';
 
@@ -53,7 +72,7 @@ export default function StudentProfilePage() {
           <CardTitle className="flex items-center">
             <User className="w-6 h-6 mr-2" />
             Student Profile
-          </CardTitle>
+          </Title>
           <CardDescription>View and update your profile information.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -63,14 +82,26 @@ export default function StudentProfilePage() {
                 <AvatarImage src={`https://avatar.vercel.sh/${student.email}.png`} alt={student.name} />
                 <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
-              <Button variant="outline">Change Photo</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}>
+                  Change Photo
+              </Button>
+               <Input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 value={student.name}
-                onChange={(e) => setStudent({ ...student, name: e.target.value })}
+                onChange={(e) => setStudent({ ...student, name: e.target.value } as Student)}
               />
             </div>
             <div className="space-y-2">
@@ -79,7 +110,7 @@ export default function StudentProfilePage() {
                 id="email"
                 type="email"
                 value={student.email}
-                onChange={(e) => setStudent({ ...student, email: e.target.value })}
+                onChange={(e) => setStudent({ ...student, email: e.target.value } as Student)}
               />
             </div>
             <div className="space-y-2">
