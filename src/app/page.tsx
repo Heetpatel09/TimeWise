@@ -3,8 +3,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Monitor, Clock, UserCog, UserCheck, Users, LogIn, Loader2 } from 'lucide-react';
+import { Monitor, Clock, LogIn, Loader2, UserCog, UserCheck, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
@@ -32,7 +37,6 @@ const CodeBloodedLogo = () => (
     </h1>
   </div>
 );
-
 
 const LoginDialog = ({ role, children }: { role: User['role'], children: React.ReactNode }) => {
   const [userId, setUserId] = useState('');
@@ -75,7 +79,6 @@ const LoginDialog = ({ role, children }: { role: User['role'], children: React.R
         case 'student': return 'STU001';
     }
   }
-
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -140,32 +143,36 @@ export default function Home() {
             The intelligent, AI-powered solution for effortless academic scheduling.
         </p>
 
-        <Card className="mt-10 w-full max-w-2xl bg-card/80 backdrop-blur-lg border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-2xl font-headline">Select Your Portal</CardTitle>
-            <CardDescription>Choose your role to log in and access your dashboard.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <LoginDialog role="admin">
-                <Button variant="outline" className="w-full h-24 flex-col gap-2">
-                    <UserCog className="h-8 w-8 text-primary" />
-                    <span className="text-lg">Admin</span>
-                </Button>
-              </LoginDialog>
-              <LoginDialog role="faculty">
-                <Button variant="outline" className="w-full h-24 flex-col gap-2">
-                    <UserCheck className="h-8 w-8 text-primary" />
-                    <span className="text-lg">Faculty</span>
-                </Button>
-              </LoginDialog>
-              <LoginDialog role="student">
-                <Button variant="outline" className="w-full h-24 flex-col gap-2">
-                    <Users className="h-8 w-8 text-primary" />
-                    <span className="text-lg">Student</span>
-                </Button>
-              </LoginDialog>
-          </CardContent>
-        </Card>
+        <div className="mt-12">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                  <Button size="lg" className="text-lg px-8 py-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
+                      <LogIn className="mr-3 h-5 w-5" />
+                      Login / Get Started
+                  </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <LoginDialog role="admin">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <UserCog className="mr-2 h-4 w-4" />
+                    <span>Login as Admin</span>
+                  </DropdownMenuItem>
+                </LoginDialog>
+                <LoginDialog role="faculty">
+                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    <span>Login as Faculty</span>
+                  </DropdownMenuItem>
+                </LoginDialog>
+                <LoginDialog role="student">
+                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Login as Student</span>
+                  </DropdownMenuItem>
+                </LoginDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </div>
     </main>
   );
