@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,12 +16,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 
 export default function FacultyDashboard() {
   const [isLeaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [leaveStartDate, setLeaveStartDate] = useState('');
   const [leaveEndDate, setLeaveEndDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
@@ -48,25 +49,70 @@ export default function FacultyDashboard() {
 
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
-      <Card>
+       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>My Weekly Schedule</CardTitle>
-              <CardDescription>
-                Here are your scheduled lectures for the week. You can request changes or apply for leave.
-              </CardDescription>
-            </div>
-            <Button onClick={() => setLeaveDialogOpen(true)}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Request Leave
-            </Button>
-          </div>
+          <CardTitle>Welcome, Dr. Turing!</CardTitle>
+          <CardDescription>
+            This is your central hub for managing your schedule and administrative tasks.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ScheduleView />
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle>Request Leave</CardTitle>
+                  <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-sm text-muted-foreground">
+                    Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={() => setLeaveDialogOpen(true)}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    Open Leave Form
+                  </Button>
+                </CardFooter>
+              </Card>
+               <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle>Manage Schedule</CardTitle>
+                  <CardDescription>View your weekly schedule and request changes.</CardDescription>
+                </CardHeader>
+                 <CardContent className="flex-grow">
+                   <p className="text-sm text-muted-foreground">
+                     Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={() => setScheduleModalOpen(true)}>
+                     View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+           </div>
         </CardContent>
       </Card>
+
+
+      <Dialog open={isScheduleModalOpen} onOpenChange={setScheduleModalOpen}>
+        <DialogContent className="max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>My Weekly Schedule</DialogTitle>
+                <DialogDescription>
+                    Here are your scheduled lectures for the week. You can request changes for any slot.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[70vh] overflow-y-auto p-1">
+              <ScheduleView />
+            </div>
+             <DialogFooter>
+                <Button variant="outline" onClick={() => setScheduleModalOpen(false)}>Close</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
