@@ -59,8 +59,8 @@ export default function Home() {
           alt="background"
           fill
           style={{ objectFit: 'cover' }}
-          className="opacity-20"
-          data-ai-hint="tech circuit"
+          className="opacity-40"
+          data-ai-hint="abstract colorful"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/70 to-background" />
       </div>
