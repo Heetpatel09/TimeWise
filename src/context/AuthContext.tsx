@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User } from '@/lib/types';
-import { authService } from '@/lib/services/auth';
+import { login as loginService } from '@/lib/services/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -20,7 +20,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for a logged-in user in localStorage on initial load
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -35,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<User> => {
-    const loggedInUser = await authService.login(email, password);
+    const loggedInUser = await loginService(email, password);
     localStorage.setItem('user', JSON.stringify(loggedInUser));
     setUser(loggedInUser);
     return loggedInUser;

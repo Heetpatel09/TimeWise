@@ -41,11 +41,18 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
     return Promise.resolve({ ...newItem, initialPassword });
 }
 
-export async function updateFaculty(updatedItem: Faculty) {
+export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
+    const oldFaculty: Faculty | undefined = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as any;
+    
+    if (oldFaculty && oldFaculty.email !== updatedItem.email) {
+        await authService.updateUserEmail(oldFaculty.email, updatedItem.email);
+    }
+    
     const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ? WHERE id = ?');
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.id);
+    
     revalidateAll();
-    return Promise.resolve(updatedItem);
+    return updatedItem;
 }
 
 export async function deleteFaculty(id: string) {

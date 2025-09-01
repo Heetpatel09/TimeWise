@@ -39,11 +39,18 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
     return Promise.resolve(newItem);
 }
 
-export async function updateStudent(updatedItem: Student) {
+export async function updateStudent(updatedItem: Student): Promise<Student> {
+    const oldStudent: Student | undefined = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as any;
+
+    if (oldStudent && oldStudent.email !== updatedItem.email) {
+        await authService.updateUserEmail(oldStudent.email, updatedItem.email);
+    }
+    
     const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ? WHERE id = ?');
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.id);
+    
     revalidateAll();
-    return Promise.resolve(updatedItem);
+    return updatedItem;
 }
 
 export async function deleteStudent(id: string) {

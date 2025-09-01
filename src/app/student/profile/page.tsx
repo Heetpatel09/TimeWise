@@ -10,11 +10,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { User, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getStudents, updateStudent } from '@/lib/services/auth';
+import { getStudents, updateStudent } from '@/lib/services/students';
 import { getClasses } from '@/lib/services/classes';
 import type { Student, Class } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
-import { authService } from '@/lib/services/auth';
+import { updatePassword } from '@/lib/services/auth';
 
 
 export default function StudentProfilePage() {
@@ -81,8 +81,7 @@ export default function StudentProfilePage() {
       try {
         const updatedStudent = await updateStudent(student);
         if (newPassword) {
-            // Use the updated email from `updatedStudent` to ensure correctness
-            await authService.updatePassword(updatedStudent.email, newPassword);
+            await updatePassword(updatedStudent.email, newPassword);
         }
         
         const updatedUser = { 

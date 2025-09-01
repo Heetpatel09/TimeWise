@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCog, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
-import { authService } from '@/lib/services/auth';
+import { updateAdmin, updatePassword } from '@/lib/services/auth';
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
@@ -55,11 +55,9 @@ export default function AdminProfilePage() {
 
         setIsSaving(true);
         try {
-            // The `email` from the form state is the new email.
-            const updatedUser = await authService.updateAdmin({ id: user.id, name, email, avatar });
+            const updatedUser = await updateAdmin({ id: user.id, name, email, avatar });
             if (newPassword) {
-                // Pass the new email to the password update function.
-                await authService.updatePassword(updatedUser.email, newPassword);
+                await updatePassword(updatedUser.email, newPassword);
             }
             setAuthUser(updatedUser);
             toast({
