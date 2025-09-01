@@ -1,40 +1,31 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { scheduleChangeRequests as initialRequests } from '@/lib/placeholder-data';
+import { db } from '@/lib/db';
 import type { ScheduleChangeRequest } from '@/lib/types';
 
-// This is a server-side in-memory store.
-// In a real application, you would use a database.
-// We use a global variable to simulate persistence across requests in a dev environment.
-if (!(global as any).scheduleChangeRequests) {
-  (global as any).scheduleChangeRequests = [...initialRequests];
-}
-let requests: ScheduleChangeRequest[] = (global as any).scheduleChangeRequests;
-
-
-export async function getScheduleChangeRequests() {
-  return Promise.resolve(requests);
+export async function getScheduleChangeRequests(): Promise<ScheduleChangeRequest[]> {
+  const stmt = db.prepare('SELECT * FROM schedule_change_requests');
+  return stmt.all() as ScheduleChangeRequest[];
 }
 
 export async function addScheduleChangeRequest(request: Omit<ScheduleChangeRequest, 'id' | 'status'>) {
-    const newRequest: ScheduleChangeRequest = {
-        ...request,
-        id: `SCR${Date.now()}`,
-        status: 'pending',
-    };
-    requests.push(newRequest);
+    const id = `SCR${Date.now()}`;
+    const status = 'pending';
+    const stmt = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status) VALUES (?, ?, ?, ?, ?)');
+    stmt.run(id, request.scheduleId, request.facultyId, request.reason, status);
+
+    const newRequest: ScheduleChangeRequest = { ...request, id, status };
     revalidatePath('/admin', 'layout');
     revalidatePath('/faculty', 'layout');
     return Promise.resolve(newRequest);
 }
 
 export async function updateScheduleChangeRequestStatus(id: string, status: 'resolved') {
-    const index = requests.findIndex(req => req.id === id);
-    if (index !== -1) {
-        requests[index] = { ...requests[index], status };
-    }
+    const stmt = db.prepare('UPDATE schedule_change_requests SET status = ? WHERE id = ?');
+    stmt.run(status, id);
     revalidatePath('/admin', 'layout');
     revalidatePath('/faculty', 'layout');
-    return Promise.resolve(requests.find(req => req.id === id));
+    const request = db.prepare('SELECT * FROM schedule_change_requests WHERE id = ?').get(id) as ScheduleChangeRequest | undefined;
+    return Promise.resolve(request);
 }

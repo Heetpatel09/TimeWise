@@ -2,62 +2,53 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { students as initialStudents } from '@/lib/placeholder-data';
+import { db } from '@/lib/db';
 import type { Student } from '@/lib/types';
 import { authService } from './auth';
-
-// This is a server-side in-memory store.
-// In a real application, you would use a database.
-// We use a global variable to simulate persistence across requests in a dev environment.
-if (!(global as any).students) {
-  (global as any).students = [...initialStudents];
-}
-let students: Student[] = (global as any).students;
-
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
     revalidatePath('/student', 'layout');
 }
 
-export async function getStudents() {
-  return Promise.resolve(students);
+export async function getStudents(): Promise<Student[]> {
+  const stmt = db.prepare('SELECT * FROM students');
+  return stmt.all() as Student[];
 }
 
 export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak?: number }) {
+    const id = `STU${Date.now()}`;
     const newItem: Student = {
         ...item,
-        id: `STU${Date.now()}`,
+        id,
         streak: item.streak || 0,
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`
     };
 
-    // Add to auth system
+    const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar);
+
     await authService.addUser({
       id: newItem.id,
       email: newItem.email,
-      password: 'student123', // Set a default password for new students
+      password: 'student123',
       role: 'student',
-      details: newItem
     });
     
-    students.push(newItem);
     revalidateAll();
     return Promise.resolve(newItem);
 }
 
 export async function updateStudent(updatedItem: Student) {
-    const index = students.findIndex(item => item.id === updatedItem.id);
-    if (index !== -1) {
-        students[index] = updatedItem;
-    }
+    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
 
 export async function deleteStudent(id: string) {
-    students = students.filter(item => item.id !== id);
-    (global as any).students = students;
+    const stmt = db.prepare('DELETE FROM students WHERE id = ?');
+    stmt.run(id);
     revalidateAll();
     return Promise.resolve(id);
 }

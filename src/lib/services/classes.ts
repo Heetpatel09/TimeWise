@@ -1,48 +1,37 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { classes as initialClasses } from '@/lib/placeholder-data';
+import { db } from '@/lib/db';
 import type { Class } from '@/lib/types';
-
-// This is a server-side in-memory store.
-// In a real application, you would use a database.
-// We use a global variable to simulate persistence across requests in a dev environment.
-if (!(global as any).classes) {
-  (global as any).classes = [...initialClasses];
-}
-let classes: Class[] = (global as any).classes;
-
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
 }
 
-export async function getClasses() {
-  return Promise.resolve(classes);
+export async function getClasses(): Promise<Class[]> {
+  const stmt = db.prepare('SELECT * FROM classes');
+  return stmt.all() as Class[];
 }
 
 export async function addClass(item: Omit<Class, 'id'>) {
-    const newItem: Class = {
-        ...item,
-        id: `CLS${Date.now()}`,
-    };
-    classes.push(newItem);
+    const id = `CLS${Date.now()}`;
+    const stmt = db.prepare('INSERT INTO classes (id, name, year, department) VALUES (?, ?, ?, ?)');
+    stmt.run(id, item.name, item.year, item.department);
     revalidateAll();
+    const newItem: Class = { ...item, id };
     return Promise.resolve(newItem);
 }
 
 export async function updateClass(updatedItem: Class) {
-    const index = classes.findIndex(item => item.id === updatedItem.id);
-    if (index !== -1) {
-        classes[index] = updatedItem;
-    }
+    const stmt = db.prepare('UPDATE classes SET name = ?, year = ?, department = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.year, updatedItem.department, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
 
 export async function deleteClass(id: string) {
-    classes = classes.filter(item => item.id !== id);
-    (global as any).classes = classes;
+    const stmt = db.prepare('DELETE FROM classes WHERE id = ?');
+    stmt.run(id);
     revalidateAll();
     return Promise.resolve(id);
 }

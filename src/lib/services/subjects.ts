@@ -1,48 +1,37 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { subjects as initialSubjects } from '@/lib/placeholder-data';
+import { db } from '@/lib/db';
 import type { Subject } from '@/lib/types';
-
-// This is a server-side in-memory store.
-// In a real application, you would use a database.
-// We use a global variable to simulate persistence across requests in a dev environment.
-if (!(global as any).subjects) {
-  (global as any).subjects = [...initialSubjects];
-}
-let subjects: Subject[] = (global as any).subjects;
-
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
 }
 
-export async function getSubjects() {
-  return Promise.resolve(subjects);
+export async function getSubjects(): Promise<Subject[]> {
+  const stmt = db.prepare('SELECT * FROM subjects');
+  return stmt.all() as Subject[];
 }
 
 export async function addSubject(item: Omit<Subject, 'id'>) {
-    const newItem: Subject = {
-        ...item,
-        id: `SUB${Date.now()}`,
-    };
-    subjects.push(newItem);
+    const id = `SUB${Date.now()}`;
+    const newItem: Subject = { ...item, id };
+    const stmt = db.prepare('INSERT INTO subjects (id, name, code) VALUES (?, ?, ?)');
+    stmt.run(id, item.name, item.code);
     revalidateAll();
     return Promise.resolve(newItem);
 }
 
 export async function updateSubject(updatedItem: Subject) {
-    const index = subjects.findIndex(item => item.id === updatedItem.id);
-    if (index !== -1) {
-        subjects[index] = updatedItem;
-    }
+    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.code, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
 
 export async function deleteSubject(id: string) {
-    subjects = subjects.filter(item => item.id !== id);
-    (global as any).subjects = subjects;
+    const stmt = db.prepare('DELETE FROM subjects WHERE id = ?');
+    stmt.run(id);
     revalidateAll();
     return Promise.resolve(id);
 }

@@ -1,16 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { schedule as initialSchedule } from '@/lib/placeholder-data';
+import { db } from '@/lib/db';
 import type { Schedule } from '@/lib/types';
-
-// This is a server-side in-memory store.
-// In a real application, you would use a database.
-// We use a global variable to simulate persistence across requests in a dev environment.
-if (!(global as any).schedule) {
-  (global as any).schedule = [...initialSchedule];
-}
-let schedule: Schedule[] = (global as any).schedule;
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
@@ -18,34 +10,36 @@ function revalidateAll() {
     revalidatePath('/student', 'layout');
 }
 
-export async function getSchedule() {
-  return Promise.resolve(schedule);
+export async function getSchedule(): Promise<Schedule[]> {
+  const stmt = db.prepare('SELECT * FROM schedule');
+  return stmt.all() as Schedule[];
 }
 
 export async function addSchedule(item: Omit<Schedule, 'id'>) {
-    const newItem: Schedule = {
-        ...item,
-        id: `SCH${Date.now()}`,
-    };
-    schedule.push(newItem);
+    const id = `SCH${Date.now()}`;
+    const newItem: Schedule = { ...item, id };
+    const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, day, time) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, item.classId, item.subjectId, item.facultyId, item.day, item.time);
     revalidateAll();
     return Promise.resolve(newItem);
 }
 
 export async function updateSchedule(updatedItem: Schedule) {
-    const index = schedule.findIndex(item => item.id === updatedItem.id);
-    if (index !== -1) {
-        schedule[index] = updatedItem;
+    const existing = db.prepare('SELECT * FROM schedule WHERE id = ?').get(updatedItem.id);
+    if (existing) {
+        const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, day = ?, time = ? WHERE id = ?');
+        stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.day, updatedItem.time, updatedItem.id);
     } else {
-        schedule.push(updatedItem); // If it's a new item from AI, add it
+        const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, day, time) VALUES (?, ?, ?, ?, ?, ?)');
+        stmt.run(updatedItem.id, updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.day, updatedItem.time);
     }
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
 
 export async function deleteSchedule(id: string) {
-    schedule = schedule.filter(item => item.id !== id);
-    (global as any).schedule = schedule;
+    const stmt = db.prepare('DELETE FROM schedule WHERE id = ?');
+    stmt.run(id);
     revalidateAll();
     return Promise.resolve(id);
 }

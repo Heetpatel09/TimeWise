@@ -1,61 +1,44 @@
 
-import { students, faculty } from '@/lib/placeholder-data';
+'use server';
+
+import { db } from '@/lib/db';
 import type { User, Faculty, Student } from '@/lib/types';
 import { updateFaculty as originalUpdateFaculty } from './faculty';
 import { updateStudent as originalUpdateStudent } from './students';
-
-// This is a mock authentication service.
-// In a real application, this would involve API calls to a secure backend.
 
 type UserStoreEntry = {
     id: string;
     password?: string;
     role: 'admin' | 'faculty' | 'student';
-    details: any;
+    email: string;
 };
-
-if (!(global as any).users) {
-    const allUsers: Record<string, UserStoreEntry> = {};
-
-    // Add admin
-    allUsers['admin@codeblooded.app'] = {
-        id: 'admin',
-        password: 'admin123',
-        role: 'admin',
-        details: {
-            id: 'admin',
-            name: 'Admin User',
-            email: 'admin@codeblooded.app',
-            avatar: `https://avatar.vercel.sh/admin@codeblooded.app.png`,
-        }
-    };
-    
-    // Add faculty
-    faculty.forEach(f => {
-        allUsers[f.email] = { id: f.id, password: 'faculty123', role: 'faculty', details: f };
-    });
-
-    // Add students
-    students.forEach(s => {
-        allUsers[s.email] = { id: s.id, password: 'student123', role: 'student', details: s };
-    });
-
-    (global as any).users = allUsers;
-}
-let users: Record<string, UserStoreEntry> = (global as any).users;
-
 
 export const authService = {
   login: (email: string, password: string): Promise<User> => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const userEntry = users[email];
+        const userEntry: UserStoreEntry | undefined = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+
         if (userEntry && userEntry.password === password) {
+            let details: any;
+            if (userEntry.role === 'admin') {
+                details = {
+                    id: 'admin',
+                    name: 'Admin User',
+                    email: 'admin@codeblooded.app',
+                    avatar: `https://avatar.vercel.sh/admin@codeblooded.app.png`,
+                };
+            } else if (userEntry.role === 'faculty') {
+                details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(userEntry.id);
+            } else {
+                details = db.prepare('SELECT * FROM students WHERE id = ?').get(userEntry.id);
+            }
+
           const user: User = {
-            id: userEntry.details.id,
-            name: userEntry.details.name,
-            email: userEntry.details.email,
-            avatar: userEntry.details.avatar || `https://avatar.vercel.sh/${userEntry.details.email}.png`,
+            id: details.id,
+            name: details.name,
+            email: details.email,
+            avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
             role: userEntry.role,
           };
           resolve(user);
@@ -67,31 +50,20 @@ export const authService = {
   },
 
   updateAdmin: (updatedDetails: { id: string; name: string, email: string, avatar: string }): Promise<User> => {
-    return new Promise((resolve, reject) => {
-        const oldEmail = Object.keys(users).find(key => users[key].id === updatedDetails.id && users[key].role === 'admin');
-        if (!oldEmail) return reject(new Error('Admin user not found'));
+     return new Promise((resolve, reject) => {
+        const oldEntry: UserStoreEntry | undefined = db.prepare('SELECT * FROM users WHERE id = ? AND role = ?').get(updatedDetails.id, 'admin') as any;
+        if (!oldEntry) return reject(new Error('Admin user not found'));
 
-        const adminEntry = users[oldEmail];
-        const oldPassword = adminEntry.password;
-        
-        // Update details
-        adminEntry.details.name = updatedDetails.name;
-        adminEntry.details.avatar = updatedDetails.avatar;
-        
-        // If email has changed, we need to move the entry
-        if (oldEmail !== updatedDetails.email) {
-            adminEntry.details.email = updatedDetails.email;
-            users[updatedDetails.email] = { ...adminEntry, password: oldPassword };
-            delete users[oldEmail];
-        } else {
-            users[oldEmail] = adminEntry;
+        // If email has changed, we need to update the users table
+        if (oldEntry.email !== updatedDetails.email) {
+            db.prepare('UPDATE users SET email = ? WHERE id = ? AND role = ?').run(updatedDetails.email, updatedDetails.id, 'admin');
         }
 
         const user: User = {
             id: 'admin',
-            name: adminEntry.details.name,
-            email: adminEntry.details.email,
-            avatar: adminEntry.details.avatar,
+            name: updatedDetails.name,
+            email: updatedDetails.email,
+            avatar: updatedDetails.avatar,
             role: 'admin',
         };
         resolve(user);
@@ -100,8 +72,8 @@ export const authService = {
   
   updatePassword: (email: string, newPassword: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-        if (users[email]) {
-            users[email].password = newPassword;
+        const result = db.prepare('UPDATE users SET password = ? WHERE email = ?').run(newPassword, email);
+        if (result.changes > 0) {
             resolve();
         } else {
             reject(new Error('User not found when trying to update password.'));
@@ -111,35 +83,29 @@ export const authService = {
   
   updateUserEmail: (oldEmail: string, newEmail: string): Promise<void> => {
      return new Promise((resolve, reject) => {
-        if (users[oldEmail] && oldEmail === newEmail) {
-            return resolve();
+        if (oldEmail === newEmail) return resolve();
+
+        const newEmailExists: { count: number } | undefined = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get(newEmail) as any;
+        if (newEmailExists && newEmailExists.count > 0) {
+            return reject(new Error('New email is already taken.'));
         }
-        if (users[oldEmail] && !users[newEmail]) {
-            const entry = { ...users[oldEmail] }; // Make a copy
-            entry.details.email = newEmail;
-            users[newEmail] = entry;
-            delete users[oldEmail];
+        
+        const result = db.prepare('UPDATE users SET email = ? WHERE email = ?').run(newEmail, oldEmail);
+        if (result.changes > 0) {
             resolve();
-        } else if (users[newEmail]) {
-            reject(new Error('New email is already taken.'));
-        } 
-        else {
+        } else {
             reject(new Error('User not found when trying to update email.'));
         }
     });
   },
   
-  addUser: (user: {id: string, email: string, password?: string, role: 'faculty' | 'student', details: any}): Promise<void> => {
+  addUser: (user: {id: string, email: string, password?: string, role: 'faculty' | 'student'}): Promise<void> => {
     return new Promise((resolve, reject) => {
-        if (users[user.email]) {
+        const existingUser: { count: number } | undefined = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get(user.email) as any;
+        if (existingUser && existingUser.count > 0) {
             return reject(new Error("User with this email already exists."));
         }
-        users[user.email] = {
-            id: user.id,
-            password: user.password,
-            role: user.role,
-            details: user.details
-        };
+        db.prepare('INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)').run(user.id, user.email, user.password, user.role);
         resolve();
     });
   },
@@ -147,7 +113,6 @@ export const authService = {
 
 // --- Monkey Patching update functions to sync with auth store ---
 
-// Store the original functions to avoid infinite loops
 const _originalUpdateFaculty = originalUpdateFaculty;
 const _originalUpdateStudent = originalUpdateStudent;
 
@@ -156,17 +121,10 @@ async function updateFaculty(facultyMember: Faculty) {
     const oldFaculty = allFaculty.find(f => f.id === facultyMember.id);
     const oldEmail = oldFaculty?.email;
 
-    // First, call the original function to update the main faculty data store
     const updatedFaculty = await _originalUpdateFaculty(facultyMember);
 
-    // Then, sync changes with the auth store
     if (oldEmail && oldEmail !== updatedFaculty.email) {
         await authService.updateUserEmail(oldEmail, updatedFaculty.email);
-    }
-    
-    // Ensure the details in the auth store are up-to-date
-    if (users[updatedFaculty.email]) {
-        users[updatedFaculty.email].details = updatedFaculty;
     }
     
     return updatedFaculty;
@@ -177,17 +135,10 @@ async function updateStudent(student: Student) {
     const oldStudent = allStudents.find(s => s.id === student.id);
     const oldEmail = oldStudent?.email;
 
-    // First, call the original function to update the main student data store
     const updatedStudent = await _originalUpdateStudent(student);
 
-    // Then, sync changes with the auth store
     if (oldEmail && oldEmail !== updatedStudent.email) {
         await authService.updateUserEmail(oldEmail, updatedStudent.email);
-    }
-
-    // Ensure the details in the auth store are up-to-date
-    if (users[updatedStudent.email]) {
-        users[updatedStudent.email].details = updatedStudent;
     }
 
     return updatedStudent;

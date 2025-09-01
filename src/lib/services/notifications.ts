@@ -2,40 +2,35 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { notifications as initialNotifications } from '@/lib/placeholder-data';
+import { db } from '@/lib/db';
 import type { Notification } from '@/lib/types';
-
-if (!(global as any).notifications) {
-  (global as any).notifications = [...initialNotifications];
-}
-let notifications: Notification[] = (global as any).notifications;
 
 function revalidateAll() {
     revalidatePath('/', 'layout');
 }
 
-export async function getNotificationsForUser(userId: string) {
-    return Promise.resolve(notifications.filter(n => n.userId === userId).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
+    const stmt = db.prepare('SELECT *, isRead as isReadBool FROM notifications WHERE userId = ? ORDER BY createdAt DESC');
+    const results = stmt.all(userId) as any[];
+    return results.map(n => ({...n, isRead: !!n.isReadBool }));
 }
 
 export async function addNotification(notification: Omit<Notification, 'id' | 'isRead' | 'createdAt'>) {
-    const newNotification: Notification = {
-        ...notification,
-        id: `NOT${Date.now()}`,
-        isRead: false,
-        createdAt: new Date().toISOString(),
-    };
-    notifications.unshift(newNotification);
+    const id = `NOT${Date.now()}`;
+    const isRead = false;
+    const createdAt = new Date().toISOString();
+    const stmt = db.prepare('INSERT INTO notifications (id, userId, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?)');
+    stmt.run(id, notification.userId, notification.message, isRead ? 1 : 0, createdAt);
+    
+    const newNotification: Notification = { ...notification, id, isRead, createdAt };
     revalidateAll();
     return Promise.resolve(newNotification);
 }
 
 export async function markNotificationAsRead(id: string) {
-    const index = notifications.findIndex(n => n.id === id);
-    if (index !== -1) {
-        notifications[index].isRead = true;
-        revalidateAll();
-        return Promise.resolve(notifications[index]);
-    }
-    return Promise.resolve(null);
+    const stmt = db.prepare('UPDATE notifications SET isRead = 1 WHERE id = ?');
+    stmt.run(id);
+    revalidateAll();
+    const notification = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id) as Notification | undefined;
+    return Promise.resolve(notification || null);
 }
