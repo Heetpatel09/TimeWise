@@ -31,6 +31,15 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
         streak: item.streak || 0,
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`
     };
+
+    // Add to auth system
+    await authService.addUser({
+      id: newItem.id,
+      email: newItem.email,
+      password: 'student123', // Set a default password for new students
+      role: 'student',
+      details: newItem
+    });
     
     students.push(newItem);
     revalidateAll();
