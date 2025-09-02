@@ -25,9 +25,9 @@ import Image from 'next/image';
 const TimeWiseLogo = () => (
   <div className="flex items-center justify-center gap-4">
     <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
-        <BrainCircuit className="w-full h-full" style={{ color: '#FCA311' }} />
+        <BrainCircuit className="w-full h-full" style={{ color: '#420080' }} />
     </div>
-    <h1 className="text-5xl md:text-7xl font-bold tracking-wider font-headline" style={{ color: '#FCA311' }}>
+    <h1 className="text-5xl md:text-7xl font-bold tracking-wider font-headline" style={{ color: '#420080' }}>
       TimeWise
     </h1>
   </div>
@@ -113,7 +113,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
           </div>
           <DialogFooter className="sm:justify-between gap-2">
             <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>Back</Button>
-            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading} style={{ backgroundColor: '#FCA311', color: '#0A263B' }}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading} style={{ backgroundColor: '#420080', color: '#DOAFEF' }}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
                 Login
             </Button>
@@ -169,7 +169,7 @@ export default function Home() {
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <TimeWiseLogo />
-        <p className="mt-6 text-lg md:text-xl max-w-2xl" style={{ color: '#FCA311' }}>
+        <p className="mt-6 text-lg md:text-xl max-w-2xl" style={{ color: '#420080' }}>
             The intelligent, AI-powered solution for effortless academic scheduling.
             Simplify complexity, resolve conflicts, and create perfect timetables in minutes.
         </p>
@@ -180,7 +180,7 @@ export default function Home() {
                 setDialogOpen(open);
              }}>
                 <DialogTrigger asChild>
-                    <Button size="lg" style={{ backgroundColor: '#FCA311', color: '#0A263B' }}>
+                    <Button size="lg" style={{ backgroundColor: '#420080', color: '#DOAFEF' }}>
                         <LogIn className="mr-2 h-5 w-5" />
                         Login / Get Started
                     </Button>
