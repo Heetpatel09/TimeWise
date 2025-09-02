@@ -8,7 +8,7 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 240 5% 96%; /* Light gray */
     --foreground: 222.2 47.4% 11.2%;
 
     --card: 0 0% 100%;
@@ -17,7 +17,7 @@ body {
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 221.2 83.2% 53.3%; /* A more vibrant blue */
+    --primary: 250 80% 60%; /* Vibrant Purple */
     --primary-foreground: 0 0% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -34,31 +34,31 @@ body {
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 250 80% 60%;
 
-    --chart-1: 221 83% 53%; /* Saturated Blue */
+    --chart-1: 250 80% 60%; /* Vibrant Purple */
     --chart-2: 160 60% 45%; /* Teal */
     --chart-3: 40 90% 55%;  /* Orange */
-    --chart-4: 280 65% 60%; /* Purple */
+    --chart-4: 280 65% 60%; /* Deeper Purple */
     --chart-5: 340 75% 55%; /* Pink */
 
 
     /* Sidebar specific light theme adjustments */
-    --sidebar-background: 230 35% 98%;
+    --sidebar-background: 240 5% 90%; /* Darker gray for sidebar */
     --sidebar-foreground: 222.2 47.4% 11.2%;
     
-    --sidebar-primary: 215 28% 48%;
+    --sidebar-primary: 250 80% 60%;
     --sidebar-primary-foreground: 0 0% 98%;
 
-    --sidebar-accent: 214.3 31.8% 91.4%;
+    --sidebar-accent: 240 5% 85%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     
-    --sidebar-border: 220 20% 88%;
-    --sidebar-ring: 215 28% 48%;
+    --sidebar-border: 240 5% 80%;
+    --sidebar-ring: 250 80% 60%;
   }
 
   .dark {
-    --background: 0 0% 0%;
+    --background: 240 5% 96%;
     --foreground: 210 20% 98%;
     --card: 0 0% 0%;
     --card-foreground: 210 20% 98%;
