@@ -60,11 +60,11 @@ body {
   }
 
   .dark {
-    --background: 224 71.4% 4.1%; /* Darker Blue */
+    --background: 224 71% 2%;
     --foreground: 210 20% 98%;
-    --card: 224 71.4% 4.1%;
+    --card: 224 71% 2%;
     --card-foreground: 210 20% 98%;
-    --popover: 224 71.4% 4.1%;
+    --popover: 224 71% 2%;
     --popover-foreground: 210 20% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 210 20% 98%;
@@ -84,7 +84,7 @@ body {
     --chart-3: 30 80% 55%;  /* Orange */
     --chart-4: 280 65% 60%; /* Purple */
     --chart-5: 340 75% 55%; /* Pink */
-    --sidebar-background: 224 71.4% 4.1%;
+    --sidebar-background: 224 71% 2%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 210 20% 98%;
     --sidebar-primary-foreground: 222.2 47.4% 11.2%;
