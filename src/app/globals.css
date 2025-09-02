@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Inter', sans-serif;
-}
-
 @layer base {
   :root {
     --background: 240 100% 97%; /* Very Light Lavender */
@@ -97,5 +93,13 @@ body {
   
   body {
     background-color: transparent;
+    overflow: hidden; /* Prevent body from scrolling */
+  }
+
+  .parallax-container {
+    height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    perspective: 1px;
   }
 }
