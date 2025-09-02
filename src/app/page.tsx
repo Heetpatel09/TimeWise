@@ -113,7 +113,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
           </div>
           <DialogFooter className="sm:justify-between gap-2">
             <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>Back</Button>
-            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading} style={{ backgroundColor: '#FCA311', color: '#0A263B' }}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
                 Login
             </Button>
