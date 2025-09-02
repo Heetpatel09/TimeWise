@@ -24,7 +24,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div className="fixed inset-0 z-[-1]">
             <Image
-              src="https://storage.googleapis.com/project-devel-hot/50537424/1725510656133-blurry-classroom-with-white-lines.jpg"
+              src="https://cdn.discordapp.com/attachments/1370426452218220566/1412390603903205406/asthetic_ai_schedule_of_full_screen_that_looks_like_background_of_webssite.jpg?ex=68b81ec0&is=68b6cd40&hm=0744299cab9ae4bc052901fefb19d22fbb5601a00bb9715c6347a99725915d00&"
               alt="background"
               fill
               style={{ objectFit: 'cover' }}
