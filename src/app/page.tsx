@@ -162,7 +162,7 @@ export default function Home() {
   const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-4">
+    <main className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#0A263B]">
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <TimeWiseLogo />
         <p className="mt-6 text-lg md:text-xl max-w-2xl text-muted-foreground">
