@@ -15,7 +15,7 @@ import {z} from 'genkit';
 
 const ResolveScheduleConflictsInputSchema = z.object({
   schedules: z.string().describe('A list of schedules to check for conflicts, in JSON format.'),
-  parameters: z.string().optional().describe('Additional parameters including classes, subjects, and faculty, in JSON format.'),
+  parameters: z.string().optional().describe('Additional parameters including classes, subjects, faculty, and classrooms, in JSON format.'),
 });
 export type ResolveScheduleConflictsInput = z.infer<typeof ResolveScheduleConflictsInputSchema>;
 
@@ -39,20 +39,22 @@ const resolveScheduleConflictsPrompt = ai.definePrompt({
 Your task is to identify and resolve any conflicts in the provided schedule. A conflict occurs if:
 1.  A faculty member is scheduled for two different classes at the same time.
 2.  A class is scheduled for two different subjects at the same time.
+3.  A classroom is booked for two different classes at the same time.
 
-You will receive the current schedule, plus lists of all available classes, subjects, and faculty members.
+You will receive the current schedule, plus lists of all available classes, subjects, faculty members, and classrooms. You will also receive workload constraints.
 
 Schedules: {{{schedules}}}
 Parameters: {{{parameters}}}
 
 Your goals are:
-1.  **Detect Conflicts:** Analyze the schedule to find all instances of conflicts.
-2.  **Generate Details:** If conflicts are found, provide a clear, human-readable JSON object in 'conflictDetails' explaining each conflict (who, what, when, and where).
+1.  **Detect Conflicts:** Analyze the schedule to find all instances of conflicts based on the rules above.
+2.  **Generate Details:** If conflicts are found, provide a clear, human-readable JSON object in 'conflictDetails' explaining each conflict (who/what, when, and where).
 3.  **Resolve Conflicts:** Create a new, complete schedule in 'resolvedSchedules' that resolves all conflicts.
-    *   You should make the minimum number of changes necessary.
-    *   You can reassign faculty or change time slots for conflicting classes.
+    *   You must make the minimum number of changes necessary.
+    *   You can reassign faculty, change time slots, or change classrooms for conflicting classes.
     *   Do not remove any classes from the schedule. Every class must be taught.
     *   The resolved schedule must be a complete, valid JSON array of all schedule slots, not just the ones you changed.
+    *   The resolution must respect all workload constraints provided in the parameters (max classes per day/week for faculty and classes).
 4.  **Set Flag:** Set 'hasConflicts' to true if conflicts were found, and false otherwise.
 
 If no conflicts are found, 'hasConflicts' should be false, 'resolvedSchedules' should be the original schedule, and 'conflictDetails' can be an empty object.

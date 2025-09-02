@@ -22,15 +22,18 @@ export async function getTimetableDataForStudent(studentId: string) {
             sch.classId,
             sch.subjectId,
             sch.facultyId,
+            sch.classroomId,
             sch.day,
             sch.time,
             sub.name as subjectName,
             fac.name as facultyName,
-            cls.name as className
+            cls.name as className,
+            crm.name as classroomName
         FROM schedule sch
         JOIN subjects sub ON sch.subjectId = sub.id
         JOIN faculty fac ON sch.facultyId = fac.id
         JOIN classes cls ON sch.classId = cls.id
+        JOIN classrooms crm ON sch.classroomId = crm.id
         WHERE sch.classId = ?
     `).all(student.classId) as EnrichedSchedule[];
 

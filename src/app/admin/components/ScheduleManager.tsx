@@ -23,7 +23,8 @@ import { getSchedule, addSchedule, updateSchedule, deleteSchedule } from '@/lib/
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
-import type { Schedule, Class, Subject, Faculty } from '@/lib/types';
+import { getClassrooms } from '@/lib/services/classrooms';
+import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Sparkles, AlertTriangle, CheckCircle, Loader2, Download } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,7 @@ export default function ScheduleManager() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const [isResultOpen, setResultOpen] = useState(false);
   const [currentSlot, setCurrentSlot] = useState<Partial<Schedule> | null>(null);
@@ -49,16 +51,18 @@ export default function ScheduleManager() {
 
   async function loadAllData() {
     setIsDataLoading(true);
-    const [scheduleData, classData, subjectData, facultyData] = await Promise.all([
+    const [scheduleData, classData, subjectData, facultyData, classroomData] = await Promise.all([
         getSchedule(),
         getClasses(),
         getSubjects(),
         getFaculty(),
+        getClassrooms(),
     ]);
     setSchedule(scheduleData);
     setClasses(classData);
     setSubjects(subjectData);
     setFaculty(facultyData);
+    setClassrooms(classroomData);
     setIsDataLoading(false);
   }
 
@@ -66,11 +70,12 @@ export default function ScheduleManager() {
     loadAllData();
   }, [])
 
-  const getRelationName = (id: string, type: 'class' | 'subject' | 'faculty') => {
+  const getRelationName = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom') => {
     switch (type) {
       case 'class': return classes.find(c => c.id === id)?.name;
       case 'subject': return subjects.find(s => s.id === id)?.name;
       case 'faculty': return faculty.find(f => f.id === id)?.name;
+      case 'classroom': return classrooms.find(cr => cr.id === id)?.name;
       default: return 'N/A';
     }
   };
@@ -151,10 +156,11 @@ export default function ScheduleManager() {
         getRelationName(slot.classId, 'class'),
         getRelationName(slot.subjectId, 'subject'),
         getRelationName(slot.facultyId, 'faculty'),
+        getRelationName(slot.classroomId, 'classroom'),
     ]);
 
     (doc as any).autoTable({
-        head: [['Day', 'Time', 'Class', 'Subject', 'Faculty']],
+        head: [['Day', 'Time', 'Class', 'Subject', 'Faculty', 'Classroom']],
         body: tableData,
         startY: 20,
     });
@@ -208,6 +214,7 @@ export default function ScheduleManager() {
                       <TableHead>Class</TableHead>
                       <TableHead>Subject</TableHead>
                       <TableHead>Faculty</TableHead>
+                      <TableHead>Classroom</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -218,6 +225,7 @@ export default function ScheduleManager() {
                         <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
                         <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
                         <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
+                        <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -285,6 +293,13 @@ export default function ScheduleManager() {
               <Select value={currentSlot?.facultyId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, facultyId: v })}>
                 <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Faculty" /></SelectTrigger>
                 <SelectContent>{faculty.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Classroom</Label>
+              <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })}>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Classroom" /></SelectTrigger>
+                <SelectContent>{classrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>

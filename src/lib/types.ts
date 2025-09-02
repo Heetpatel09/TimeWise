@@ -32,11 +32,17 @@ export interface Faculty {
   avatar?: string;
 }
 
+export interface Classroom {
+  id: string;
+  name: string;
+}
+
 export interface Schedule {
   id: string;
   classId: string;
   subjectId: string;
   facultyId: string;
+  classroomId: string;
   day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
   time: string; // e.g., "09:00 - 10:00"
 }
@@ -45,6 +51,7 @@ export interface EnrichedSchedule extends Schedule {
     subjectName: string;
     facultyName: string;
     className: string;
+    classroomName: string;
 }
 
 export interface User {
@@ -67,11 +74,12 @@ export interface LeaveRequest {
 }
 
 export interface ScheduleChangeRequest {
-  id: string;
+  id:string;
   scheduleId: string;
   facultyId: string;
   reason: string;
   status: 'pending' | 'resolved';
+  requestedClassroomId?: string;
 }
 
 export interface Notification {

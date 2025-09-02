@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { ScheduleChangeRequest, Schedule, Faculty, Class, Subject } from '@/lib/types';
+import type { ScheduleChangeRequest, Schedule, Faculty, Class, Subject, Classroom } from '@/lib/types';
 import { Check, Loader2 } from 'lucide-react';
 import { getScheduleChangeRequests, updateScheduleChangeRequestStatus } from '@/lib/services/schedule-changes';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
+import { getClassrooms } from '@/lib/services/classrooms';
 import { getSchedule } from '@/lib/services/schedule';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -19,22 +20,25 @@ export default function ScheduleRequestsPage() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   async function loadData() {
       setIsLoading(true);
-      const [fetchedRequests, scheduleData, facultyData, classData, subjectData] = await Promise.all([
+      const [fetchedRequests, scheduleData, facultyData, classData, subjectData, classroomData] = await Promise.all([
         getScheduleChangeRequests(),
         getSchedule(),
         getFaculty(),
         getClasses(),
         getSubjects(),
+        getClassrooms(),
       ]);
       setRequests(fetchedRequests);
       setSchedule(scheduleData);
       setFaculty(facultyData);
       setClasses(classData);
       setSubjects(subjectData);
+      setClassrooms(classroomData);
       setIsLoading(false);
   }
 
@@ -55,10 +59,12 @@ export default function ScheduleRequestsPage() {
   
   const getFacultyName = (facultyId: string) => faculty.find(f => f.id === facultyId)?.name || 'Unknown';
   const getScheduleSlot = (scheduleId: string): Schedule | undefined => schedule.find(s => s.id === scheduleId);
-  const getRelationName = (id: string, type: 'class' | 'subject') => {
+  const getRelationName = (id: string | undefined, type: 'class' | 'subject' | 'classroom') => {
+    if (!id) return 'N/A';
     switch (type) {
       case 'class': return classes.find(c => c.id === id)?.name;
       case 'subject': return subjects.find(s => s.id === id)?.name;
+      case 'classroom': return classrooms.find(cr => cr.id === id)?.name;
       default: return 'N/A';
     }
   };
@@ -90,11 +96,17 @@ export default function ScheduleRequestsPage() {
                             <div><strong>Day:</strong> {slot.day}, {slot.time}</div>
                             <div><strong>Class:</strong> {getRelationName(slot.classId, 'class')}</div>
                             <div><strong>Subject:</strong> {getRelationName(slot.subjectId, 'subject')}</div>
+                            <div><strong>Classroom:</strong> {getRelationName(slot.classroomId, 'classroom')}</div>
                         </div>
                     ) : 'Slot not found'}
                 </TableCell>
                 <TableCell className="max-w-xs">
                     <p className='truncate'>{request.reason}</p>
+                    {request.requestedClassroomId && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        New Classroom Request: <strong>{getRelationName(request.requestedClassroomId, 'classroom')}</strong>
+                      </p>
+                    )}
                 </TableCell>
                 <TableCell>
                     <Badge variant={request.status === 'pending' ? 'secondary' : 'default'}>

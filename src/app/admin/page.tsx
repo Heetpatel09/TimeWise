@@ -3,9 +3,10 @@
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse } from "lucide-react";
 import SubjectsManager from "./components/SubjectsManager";
 import ClassesManager from "./components/ClassesManager";
+import ClassroomsManager from "./components/ClassroomsManager";
 import FacultyManager from "./components/FacultyManager";
 import StudentsManager from "./components/StudentsManager";
 import ScheduleManager from "./components/ScheduleManager";
@@ -84,6 +85,7 @@ export default function AdminDashboard() {
   const tabs = [
     { value: "subjects", label: "Subjects", icon: Book, component: <SubjectsManager /> },
     { value: "classes", label: "Classes", icon: School, component: <ClassesManager /> },
+    { value: "classrooms", label: "Classrooms", icon: Warehouse, component: <ClassroomsManager /> },
     { value: "faculty", label: "Faculty", icon: UserCheck, component: <FacultyManager /> },
     { value: "students", label: "Students", icon: Users, component: <StudentsManager /> },
     { value: "schedule", label: "Schedule", icon: Calendar, component: <ScheduleManager /> },

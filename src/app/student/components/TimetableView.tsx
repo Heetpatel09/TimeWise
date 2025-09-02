@@ -34,7 +34,7 @@ export default function TimetableView() {
   }, [user]);
 
   const studentSchedule = data?.schedule || [];
-  const className = data?.student?.className || '';
+  const className = (data?.student as any)?.className || '';
 
   const exportPDF = () => {
     if (!data?.student) return;
@@ -46,10 +46,11 @@ export default function TimetableView() {
         slot.time,
         slot.subjectName,
         slot.facultyName,
+        slot.classroomName,
     ]);
 
     (doc as any).autoTable({
-        head: [['Day', 'Time', 'Subject', 'Faculty']],
+        head: [['Day', 'Time', 'Subject', 'Faculty', 'Classroom']],
         body: tableData,
         startY: 20,
     });
@@ -90,6 +91,7 @@ export default function TimetableView() {
                         <TableHead>Time</TableHead>
                         <TableHead>Subject</TableHead>
                         <TableHead>Faculty</TableHead>
+                        <TableHead>Classroom</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -98,6 +100,7 @@ export default function TimetableView() {
                         <TableCell>{slot.time}</TableCell>
                         <TableCell>{slot.subjectName}</TableCell>
                         <TableCell>{slot.facultyName}</TableCell>
+                        <TableCell>{slot.classroomName}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

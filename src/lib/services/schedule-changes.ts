@@ -12,8 +12,8 @@ export async function getScheduleChangeRequests(): Promise<ScheduleChangeRequest
 export async function addScheduleChangeRequest(request: Omit<ScheduleChangeRequest, 'id' | 'status'>) {
     const id = `SCR${Date.now()}`;
     const status = 'pending';
-    const stmt = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(id, request.scheduleId, request.facultyId, request.reason, status);
+    const stmt = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, request.scheduleId, request.facultyId, request.reason, status, request.requestedClassroomId || null);
 
     const newRequest: ScheduleChangeRequest = { ...request, id, status };
     revalidatePath('/admin', 'layout');

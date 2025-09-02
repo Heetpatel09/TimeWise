@@ -9,8 +9,13 @@ function revalidateAll() {
 }
 
 export async function getClassrooms(): Promise<Classroom[]> {
-  const stmt = db.prepare('SELECT * FROM classrooms');
-  return stmt.all() as Classroom[];
+  try {
+    const stmt = db.prepare('SELECT * FROM classrooms');
+    return stmt.all() as Classroom[];
+  } catch (error) {
+    console.error("Failed to get classrooms", error)
+    return [];
+  }
 }
 
 export async function addClassroom(item: Omit<Classroom, 'id'>) {

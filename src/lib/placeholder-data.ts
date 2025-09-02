@@ -1,4 +1,4 @@
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification } from './types';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom } from './types';
 
 export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101' },
@@ -27,13 +27,22 @@ export const faculty: Faculty[] = [
   { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering', streak: 15 },
 ];
 
+export const classrooms: Classroom[] = [
+    { id: 'CR001', name: 'Room 101' },
+    { id: 'CR002', name: 'Room 102' },
+    { id: 'CR003', name: 'Lab A' },
+    { id: 'CR004', name: 'Lab B' },
+]
+
 export const schedule: Schedule[] = [
-  { id: 'SCH001', classId: 'CLS004', subjectId: 'SUB005', facultyId: 'FAC001', day: 'Monday', time: '09:00 - 10:00' },
-  { id: 'SCH002', classId: 'CLS004', subjectId: 'SUB003', facultyId: 'FAC002', day: 'Monday', time: '10:00 - 11:00' },
-  { id: 'SCH003', classId: 'CLS003', subjectId: 'SUB002', facultyId: 'FAC003', day: 'Tuesday', time: '11:00 - 12:00' },
-  { id: 'SCH004', classId: 'CLS004', subjectId: 'SUB004', facultyId: 'FAC003', day: 'Wednesday', time: '14:00 - 15:00' },
-  // Intentional conflict for demo purposes
-  { id: 'SCH005', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', day: 'Monday', time: '09:00 - 10:00' },
+  { id: 'SCH001', classId: 'CLS004', subjectId: 'SUB005', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '09:00 - 10:00' },
+  { id: 'SCH002', classId: 'CLS004', subjectId: 'SUB003', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '10:00 - 11:00' },
+  { id: 'SCH003', classId: 'CLS003', subjectId: 'SUB002', facultyId: 'FAC003', classroomId: 'CR003', day: 'Tuesday', time: '11:00 - 12:00' },
+  { id: 'SCH004', classId: 'CLS004', subjectId: 'SUB004', facultyId: 'FAC003', classroomId: 'CR004', day: 'Wednesday', time: '14:00 - 15:00' },
+  // Intentional conflict for demo purposes: Same faculty, same time, different class/classroom
+  { id: 'SCH005', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR002', day: 'Monday', time: '09:00 - 10:00' },
+  // Intentional conflict for demo purposes: Same classroom, same time, different class/faculty
+  { id: 'SCH006', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC002', classroomId: 'CR001', day: 'Monday', time: '09:00 - 10:00' },
 ];
 
 export const leaveRequests: LeaveRequest[] = [
@@ -46,6 +55,7 @@ export const leaveRequests: LeaveRequest[] = [
 export const scheduleChangeRequests: ScheduleChangeRequest[] = [
     { id: 'SCR001', scheduleId: 'SCH001', facultyId: 'FAC001', reason: 'Need to swap this class with my afternoon slot.', status: 'pending' },
     { id: 'SCR002', scheduleId: 'SCH002', facultyId: 'FAC002', reason: 'Lab equipment is unavailable.', status: 'pending' },
+    { id: 'SCR003', scheduleId: 'SCH003', facultyId: 'FAC003', reason: 'Requesting to move to Room 101.', status: 'pending', requestedClassroomId: 'CR001' },
 ];
 
 export const notifications: Notification[] = [

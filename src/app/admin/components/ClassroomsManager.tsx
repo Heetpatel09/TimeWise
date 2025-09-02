@@ -81,8 +81,8 @@ export default function ClassroomsManager() {
       await deleteClassroom(id);
       await loadData();
       toast({ title: "Classroom Deleted", description: "The classroom has been removed." });
-    } catch (error) {
-      toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     }
   };
   
