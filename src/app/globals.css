@@ -44,7 +44,7 @@ body {
     --chart-4: 276 50% 40%;
     --chart-5: 271 60% 55%;
     
-    --sidebar-background: 271 29% 96%; /* Even Lighter Lavender */
+    --sidebar-background: 0 0% 100%; /* Even Lighter Lavender */
     --sidebar-foreground: 275 100% 15%;
     --sidebar-primary: 275 100% 25%;
     --sidebar-primary-foreground: 0 0% 98%;
