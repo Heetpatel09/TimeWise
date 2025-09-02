@@ -24,12 +24,12 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div className="fixed inset-0 z-[-1]">
             <Image
-              src="https://picsum.photos/seed/prof-bg/1920/1080"
+              src="https://storage.googleapis.com/project-devel-hot/50537424/1725510656133-blurry-classroom-with-white-lines.jpg"
               alt="background"
               fill
               style={{ objectFit: 'cover' }}
-              className="opacity-20"
-              data-ai-hint="abstract muted"
+              className="opacity-10"
+              data-ai-hint="blurry classroom"
             />
         </div>
         <AuthProvider>
