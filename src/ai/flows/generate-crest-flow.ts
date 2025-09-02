@@ -29,18 +29,6 @@ export async function generateCrest(input: GenerateCrestInput): Promise<Generate
   return generateCrestFlow(input);
 }
 
-const crestPrompt = ai.definePrompt({
-    name: 'crestPrompt',
-    input: { schema: GenerateCrestInputSchema },
-    prompt: `Generate a university-style crest emblem for {{name}}. 
-    They are a {{role}} being celebrated for: '{{achievement}}'.
-    The crest should be dignified, academic, and visually impressive. 
-    It should incorporate thematic elements related to their role and achievement, like books, laurels, or a flame of knowledge.
-    The style should be a modern emblem with a clean design.
-    Do not include any text or letters in the image.`
-});
-
-
 const generateCrestFlow = ai.defineFlow(
   {
     name: 'generateCrestFlow',
@@ -48,9 +36,17 @@ const generateCrestFlow = ai.defineFlow(
     outputSchema: GenerateCrestOutputSchema,
   },
   async (input) => {
+    // Build the prompt string directly
+    const prompt = `Generate a university-style crest emblem for ${input.name}. 
+    They are a ${input.role} being celebrated for: '${input.achievement}'.
+    The crest should be dignified, academic, and visually impressive. 
+    It should incorporate thematic elements related to their role and achievement, like books, laurels, or a flame of knowledge.
+    The style should be a modern emblem with a clean design.
+    Do not include any text or letters in the image.`;
+
     const { media } = await ai.generate({
         model: 'googleai/imagen-4.0-fast-generate-001',
-        prompt: await crestPrompt.renderText({input}),
+        prompt: prompt, // Pass the simple string prompt
     });
 
     if (!media) {
