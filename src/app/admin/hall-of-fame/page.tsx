@@ -82,7 +82,7 @@ export default function HallOfFamePage() {
     }, []);
 
     const handleGenerationResult = (result: { crestDataUri: string }, role: 'student' | 'faculty') => {
-        if (result.crestDataUri === 'error') {
+        if (result.crestDataUri === 'error' || !result.crestDataUri) {
             toast({
                 title: 'Crest Generation Failed',
                 description: 'The AI could not generate a crest at this time. Please try again later.',
@@ -99,24 +99,34 @@ export default function HallOfFamePage() {
     const generateStudentCrest = async () => {
         if (!topStudent) return;
         setIsGeneratingStudentCrest(true);
-        const result = await handleGenerateCrest({
-            name: topStudent.name,
-            role: 'student',
-            achievement: 'Top Attendance Streak'
-        });
-        handleGenerationResult(result, 'student');
+        setStudentCrest(null);
+        try {
+            const result = await handleGenerateCrest({
+                name: topStudent.name,
+                role: 'student',
+                achievement: 'Top Attendance Streak'
+            });
+            handleGenerationResult(result, 'student');
+        } catch (e) {
+            handleGenerationResult({crestDataUri: 'error'}, 'student');
+        }
         setIsGeneratingStudentCrest(false);
     };
 
     const generateFacultyCrest = async () => {
         if (!topFaculty) return;
         setIsGeneratingFacultyCrest(true);
-        const result = await handleGenerateCrest({
-            name: topFaculty.name,
-            role: 'faculty',
-            achievement: 'Top Teaching Streak'
-        });
-        handleGenerationResult(result, 'faculty');
+        setFacultyCrest(null);
+         try {
+            const result = await handleGenerateCrest({
+                name: topFaculty.name,
+                role: 'faculty',
+                achievement: 'Top Teaching Streak'
+            });
+            handleGenerationResult(result, 'faculty');
+        } catch (e) {
+            handleGenerationResult({crestDataUri: 'error'}, 'faculty');
+        }
         setIsGeneratingFacultyCrest(false);
     };
 
