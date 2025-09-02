@@ -24,12 +24,12 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div className="fixed inset-0 z-[-1]">
             <Image
-              src="https://thumbs.dreamstime.com/b/abstract-digital-art-displays-glowing-tech-clock-neon-lines-geometric-shapes-against-dark-background-futuristic-design-modern-388294510.jpg"
+              src="https://picsum.photos/seed/prof-bg/1920/1080"
               alt="background"
               fill
               style={{ objectFit: 'cover' }}
-              className="opacity-25"
-              data-ai-hint="abstract colorful"
+              className="opacity-20"
+              data-ai-hint="abstract muted"
             />
         </div>
         <AuthProvider>
