@@ -8,16 +8,16 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* White */
-    --foreground: 275 100% 25%; /* New purple for text */
+    --background: 240 100% 97%; /* Very Light Lavender */
+    --foreground: 275 100% 25%; /* Deep Indigo */
     
-    --card: 0 0% 100%;
+    --card: 240 100% 98%;
     --card-foreground: 275 100% 25%;
     
-    --popover: 0 0% 100%;
+    --popover: 240 100% 98%;
     --popover-foreground: 275 100% 25%;
     
-    --primary: 275 100% 25%; /* New purple: #420080 */
+    --primary: 275 100% 25%; /* Deep Indigo: #4B0082, adjusted to #420080 */
     --primary-foreground: 0 0% 98%;
     
     --secondary: 271 29% 90%; /* Lighter Lavender */
@@ -44,7 +44,7 @@ body {
     --chart-4: 276 50% 40%;
     --chart-5: 271 60% 55%;
     
-    --sidebar-background: 0 0% 100%; /* Even Lighter Lavender */
+    --sidebar-background: 271 29% 94%; /* Even Lighter Lavender */
     --sidebar-foreground: 275 100% 15%;
     --sidebar-primary: 275 100% 25%;
     --sidebar-primary-foreground: 0 0% 98%;
@@ -55,7 +55,7 @@ body {
   }
 
   .dark {
-    --background: 275 100% 5%; /* Very Dark version of new purple */
+    --background: 275 100% 5%; /* Very Dark version of Deep Indigo */
     --foreground: 0 0% 98%;
     --card: 275 100% 10%;
     --card-foreground: 0 0% 98%;
@@ -67,7 +67,7 @@ body {
     --secondary-foreground: 0 0% 98%;
     --muted: 275 100% 15%;
     --muted-foreground: 271 29% 70%;
-    --accent: 275 100% 25%; /* New purple */
+    --accent: 275 100% 25%; /* Deep Indigo */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -94,11 +94,8 @@ body {
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  
   body {
-    @apply bg-background text-foreground;
     background-color: transparent;
   }
 }
