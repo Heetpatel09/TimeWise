@@ -165,24 +165,6 @@ export default function Home() {
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
- const BackgroundImage: React.FC = () = (
-  <div
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundImage: 'url("https://drive.google.com/uc?export=view&id=1A9K31YMk6agWk5-tLKK6drnMxdPwceib")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      zIndex: -1,
-    }}
-  />
-);
-
-export default BackgroundImage;
 
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">

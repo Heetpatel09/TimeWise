@@ -23,14 +23,15 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <div className="fixed inset-0 z-[-1]">
-          <Image
-            src="https://drive.google.com/uc?export=view&id=1A9K31YMk6agWk5-tLKK6drnMxdPwceib" // Correct image URL
-            alt="Background"
-            fill // This is shorthand for layout="fill"
-            style={{ objectFit: 'cover' }} // Applying objectFit as inline style
-            quality={100}
-            data-ai-hint="abstract background"
-          />
+        <Image
+          src="https://drive.google.com/uc?export=view&id=1A9K31YMk6agWk5-tLKK6drnMxdPwceib"
+          alt="Background"
+          fill
+          style={{ objectFit: 'cover' }}
+          quality={100}
+          data-ai-hint="abstract schedule"
+        />
+
           <div className="absolute inset-0 bg-black/50" />  
         </div>
         <AuthProvider>
