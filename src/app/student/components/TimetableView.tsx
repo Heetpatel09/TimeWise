@@ -1,83 +1,52 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getSchedule } from '@/lib/services/schedule';
-import { getSubjects } from '@/lib/services/subjects';
-import { getFaculty } from '@/lib/services/faculty';
-import { getClasses } from '@/lib/services/classes';
-import { getStudents } from '@/lib/services/students';
-import { getClassrooms } from '@/lib/services/classrooms';
-import type { Schedule, Subject, Faculty, Class, Student, Classroom } from '@/lib/types';
+import type { EnrichedSchedule, Student } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
+import { getTimetableDataForStudent } from '../actions';
 
+interface TimetableData {
+    student: Student;
+    schedule: EnrichedSchedule[];
+}
 
 export default function TimetableView() {
   const { user } = useAuth();
-  const [student, setStudent] = useState<Student | null>(null);
-  const [studentSchedule, setStudentSchedule] = useState<Schedule[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [faculty, setFaculty] = useState<Faculty[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [data, setData] = useState<TimetableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     async function loadData() {
-        if (user) {
+        if (user?.id) {
             setIsLoading(true);
-            const [allSchedule, subjectData, facultyData, classData, studentData, classroomData] = await Promise.all([
-                getSchedule(),
-                getSubjects(),
-                getFaculty(),
-                getClasses(),
-                getStudents(),
-                getClassrooms()
-            ]);
-
-            const currentStudent = studentData.find(s => s.id === user.id);
-            setStudent(currentStudent || null);
-
-            if (currentStudent) {
-                 setStudentSchedule(allSchedule.filter(s => s.classId === currentStudent.classId));
-            }
-           
-            setSubjects(subjectData);
-            setFaculty(facultyData);
-            setClasses(classData);
-            setClassrooms(classroomData);
+            const timetableData = await getTimetableDataForStudent(user.id);
+            setData(timetableData);
             setIsLoading(false);
         }
     }
     loadData();
   }, [user]);
 
-  const className = student ? classes.find(c => c.id === student.classId)?.name : '';
-
-  const getRelationName = (id: string, type: 'subject' | 'faculty' | 'classroom') => {
-    switch (type) {
-      case 'subject': return subjects.find(s => s.id === id)?.name;
-      case 'faculty': return faculty.find(f => f.id === id)?.name;
-      case 'classroom': return classrooms.find(cr => cr.id === id)?.name;
-      default: return 'N/A';
-    }
-  };
+  const studentSchedule = data?.schedule || [];
+  const className = data?.student?.className || '';
 
   const exportPDF = () => {
-    if (!student) return;
+    if (!data?.student) return;
     const doc = new jsPDF();
-    doc.text(`Timetable for ${student.name} (${className})`, 14, 16);
+    doc.text(`Timetable for ${data.student.name} (${className})`, 14, 16);
     
     const tableData = studentSchedule.map(slot => [
         slot.day,
         slot.time,
-        getRelationName(slot.subjectId, 'subject'),
-        getRelationName(slot.facultyId, 'faculty'),
-        getRelationName(slot.classroomId, 'classroom'),
+        slot.subjectName,
+        slot.facultyName,
+        slot.classroomName,
     ]);
 
     (doc as any).autoTable({
@@ -129,9 +98,9 @@ export default function TimetableView() {
                     {slots.map((slot) => (
                         <TableRow key={slot.id}>
                         <TableCell>{slot.time}</TableCell>
-                        <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
-                        <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
-                        <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
+                        <TableCell>{slot.subjectName}</TableCell>
+                        <TableCell>{slot.facultyName}</TableCell>
+                        <TableCell>{slot.classroomName}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

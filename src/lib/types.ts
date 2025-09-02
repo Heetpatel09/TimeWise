@@ -25,6 +25,7 @@ export interface Student {
   classId: string;
   streak: number;
   avatar?: string;
+  className?: string; // Optional: can be added when joining with classes table
 }
 
 export interface Faculty {
@@ -44,6 +45,13 @@ export interface Schedule {
   classroomId: string;
   day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
   time: string; // e.g., "09:00 - 10:00"
+}
+
+export interface EnrichedSchedule extends Schedule {
+    subjectName: string;
+    facultyName: string;
+    className: string;
+    classroomName: string;
 }
 
 export interface User {
