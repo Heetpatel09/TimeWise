@@ -21,7 +21,7 @@ const ChampionCard = ({ user, role, achievement, onGenerate, crest, isGenerating
     isGenerating: boolean
 }) => {
     return (
-        <Card className="flex flex-col items-center text-center p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <Card className="flex flex-col items-center text-center p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
             <CardHeader className="p-0">
                 <Crown className="w-12 h-12 text-yellow-500 mx-auto" />
                 <CardTitle className="text-2xl mt-4">{user.name}</CardTitle>
@@ -39,7 +39,7 @@ const ChampionCard = ({ user, role, achievement, onGenerate, crest, isGenerating
                     {isGenerating ? (
                         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                     ) : crest && crest !== 'error' ? (
-                        <Image src={crest} alt={`${user.name}'s Crest`} width={150} height={150} className="object-contain" />
+                        <Image src={crest} alt={`${user.name}'s Crest`} width={150} height={150} className="object-contain animate-in fade-in zoom-in-50" />
                     ) : (
                          <p className="text-xs text-muted-foreground p-2">Click below to generate a unique crest!</p>
                     )}
@@ -139,14 +139,14 @@ export default function HallOfFamePage() {
 
     return (
         <div>
-            <div className="text-center mb-12">
+            <div className="text-center mb-12 animate-in fade-in slide-in-from-top-12 duration-500">
                  <h1 className="text-4xl font-bold font-headline tracking-tight">Hall of Fame</h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto mt-2">
                     Celebrating the most dedicated members of our university community. Here are our current champions.
                 </p>
             </div>
            
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-12 duration-500">
                 {topFaculty ? (
                     <ChampionCard 
                         user={topFaculty} 

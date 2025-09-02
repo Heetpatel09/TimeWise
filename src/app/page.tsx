@@ -141,7 +141,7 @@ const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role
             </DialogHeader>
             <div className="grid gap-4 py-4">
                 {roles.map(({ role, title, description, icon: Icon }) => (
-                    <Card key={role} className="hover:bg-accent/10 hover:border-primary transition-all cursor-pointer" onClick={() => onSelectRole(role)}>
+                    <Card key={role} className="hover:bg-accent/10 hover:border-primary hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer" onClick={() => onSelectRole(role)}>
                         <CardHeader className="flex flex-row items-center gap-4">
                            <div className="bg-primary/10 p-3 rounded-lg">
                              <Icon className="w-6 h-6 text-primary" />
@@ -180,7 +180,7 @@ export default function Home() {
                 setDialogOpen(open);
              }}>
                 <DialogTrigger asChild>
-                    <Button size="lg" style={{ backgroundColor: '#420080', color: '#DOAFEF' }}>
+                    <Button size="lg" style={{ backgroundColor: '#420080', color: '#DOAFEF' }} className="hover:scale-105 hover:shadow-lg transform transition-transform">
                         <LogIn className="mr-2 h-5 w-5" />
                         Login / Get Started
                     </Button>
