@@ -56,8 +56,8 @@ export default function LeaveRequestsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {requests.map((request) => (
-            <TableRow key={request.id}>
+          {requests.map((request, index) => (
+            <TableRow key={`${request.id}-${index}`}>
               <TableCell>{request.requesterName}</TableCell>
                <TableCell className="capitalize">
                 <Badge variant={request.requesterRole === 'faculty' ? 'secondary' : 'outline'}>{request.requesterRole}</Badge>
