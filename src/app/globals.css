@@ -8,7 +8,7 @@ body {
 
 @layer base {
   :root {
-    --background: 271 29% 96%; /* Very light lavender: #F5EEF8 */
+    --background: 0 0% 100%; /* White */
     --foreground: 271 100% 25%; /* Deep Indigo for text */
     
     --card: 0 0% 100%;
