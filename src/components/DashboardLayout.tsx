@@ -391,7 +391,7 @@ export default function DashboardLayout({
             <UserProfile />
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in slide-in-from-bottom-8 duration-500">
             {children}
         </main>
       </SidebarInset>

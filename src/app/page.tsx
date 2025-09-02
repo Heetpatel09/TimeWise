@@ -167,7 +167,7 @@ export default function Home() {
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
 
 
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center animate-in fade-in slide-in-from-bottom-8 duration-500">
         <TimeWiseLogo />
         <p className="mt-6 text-lg md:text-xl max-w-2xl" style={{ color: '#420080' }}>
             The intelligent, AI-powered solution for effortless academic scheduling.
