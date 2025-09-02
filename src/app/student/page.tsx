@@ -101,7 +101,7 @@ export default function StudentDashboard() {
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
         <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Card>
                     <CardHeader>
                         <CardTitle>My Timetable</CardTitle>
@@ -112,7 +112,7 @@ export default function StudentDashboard() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="md:col-span-1 space-y-8">
+            <div className="md:col-span-1 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 delay-300">
                 <Card>
                     <CardHeader>
                          <CardTitle className="flex items-center">
@@ -155,7 +155,7 @@ export default function StudentDashboard() {
                          {notifications.length > 0 ? (
                             <ul className="space-y-3">
                                 {notifications.slice(0, 5).map(n => (
-                                    <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary">{n.message}</li>
+                                    <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary animate-in fade-in slide-in-from-top-2 duration-300">{n.message}</li>
                                 ))}
                             </ul>
                         ) : (

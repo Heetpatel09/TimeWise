@@ -108,7 +108,7 @@ export default function FacultyDashboard() {
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         <div className="lg:col-span-2">
+         <div className="lg:col-span-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <Card>
                 <CardHeader>
                 <CardTitle>Welcome, {currentFaculty?.name || "Faculty Member"}!</CardTitle>
@@ -155,7 +155,7 @@ export default function FacultyDashboard() {
                 </CardContent>
             </Card>
          </div>
-         <div className="lg:col-span-1 space-y-6">
+         <div className="lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center">
@@ -181,7 +181,7 @@ export default function FacultyDashboard() {
                     {notifications.length > 0 ? (
                         <ul className="space-y-3">
                             {notifications.slice(0, 5).map(n => (
-                                <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary">{n.message}</li>
+                                <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary animate-in fade-in slide-in-from-top-2 duration-300">{n.message}</li>
                             ))}
                         </ul>
                     ) : (

@@ -96,10 +96,14 @@ function NotificationsBell() {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasUnread, setHasUnread] = useState(false);
 
     useEffect(() => {
         if (user) {
-            getNotificationsForUser(user.id).then(setNotifications);
+            getNotificationsForUser(user.id).then(data => {
+                setNotifications(data);
+                setHasUnread(data.some(n => !n.isRead));
+            });
         }
     }, [user]);
 
@@ -109,16 +113,16 @@ function NotificationsBell() {
         await markNotificationAsRead(id);
         const updatedNotifications = await getNotificationsForUser(user!.id);
         setNotifications(updatedNotifications);
+        setHasUnread(updatedNotifications.some(n => !n.isRead));
     }
     
     return (
         <Popover onOpenChange={(isOpen) => {
-          // Re-fetch notifications when popover is opened
           if (isOpen && user) getNotificationsForUser(user.id).then(setNotifications);
         }}>
             <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5"/>
+                    <Bell className={`h-5 w-5 ${hasUnread ? 'animation-shake' : ''}`}/>
                     {unreadCount > 0 && (
                         <span className="absolute top-0 right-0 flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -171,7 +175,7 @@ function UserProfile() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full transition-transform hover:scale-110">
           <Avatar className="h-10 w-10">
             <AvatarImage src={user.avatar} alt={user.name} />
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
@@ -289,7 +293,7 @@ function Nav() {
                             >
                                 <Icon />
                                 <span>{item.label}</span>
-                                {item.badge !== null && item.badge > 0 && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+                                {item.badge !== null && item.badge > 0 && <SidebarMenuBadge className="animate-pulse">{item.badge}</SidebarMenuBadge>}
                                 {item.badge === null && <Loader2 className='absolute right-2 top-1.5 h-4 w-4 animate-spin' />}
                             </SidebarMenuButton>
                             </Link>
