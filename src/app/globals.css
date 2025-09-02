@@ -44,13 +44,13 @@ body {
     --chart-4: 276 50% 40%;
     --chart-5: 271 60% 55%;
     
-    --sidebar-background: 275 100% 15%; /* Darker version of new purple */
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 275 100% 25%;
-    --sidebar-accent: 275 100% 25%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 275 100% 20%;
+    --sidebar-background: 271 29% 96%; /* Even Lighter Lavender */
+    --sidebar-foreground: 275 100% 15%;
+    --sidebar-primary: 275 100% 25%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 271 29% 90%;
+    --sidebar-accent-foreground: 275 100% 15%;
+    --sidebar-border: 271 29% 90%;
     --sidebar-ring: 276 45% 60%;
   }
 
@@ -82,7 +82,7 @@ body {
     --chart-4: 0 0% 98%;
     --chart-5: 271 60% 55%;
 
-    --sidebar-background: 275 100% 5%;
+    --sidebar-background: 275 100% 8%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 0 0% 98%;
     --sidebar-primary-foreground: 275 100% 5%;

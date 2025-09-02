@@ -51,7 +51,7 @@ export default function StudentDashboard() {
   const handleLeaveRequestSubmit = async () => {
     if (!leaveStartDate || !leaveEndDate || !leaveReason) {
       toast({
-        title: 'Missing Information',
+        title: 'Misng Information',
         description: 'Please fill out all fields.',
         variant: 'destructive',
       });
