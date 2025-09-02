@@ -24,7 +24,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div className="fixed inset-0 z-[-1]">
         <Image
-          src="https://drive.google.com/uc?export=view&id=1A9K31YMk6agWk5-tLKK6drnMxdPwceib"
+          src="https://storage.googleapis.com/studiogpt-pro-team-testing-pr/1e23a411-b0e2-4a4a-939e-d30907a985e1"
           alt="Background"
           fill
           style={{ objectFit: 'cover' }}
