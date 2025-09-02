@@ -22,6 +22,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
+        <div className="fixed inset-0 z-[-1]">
+          <Image
+            src="https://picsum.photos/1920/1080"
+            alt="Background"
+            layout="fill"
+            objectFit="cover"
+            quality={100}
+            data-ai-hint="abstract background"
+          />
+          <div className="absolute inset-0 bg-black/50" />  
+        </div>
         <AuthProvider>
             {children}
         </AuthProvider>
