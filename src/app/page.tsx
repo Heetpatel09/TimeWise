@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -164,13 +165,12 @@ export default function Home() {
   const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
 
   return (
-    <main style={{ backgroundColor: '#0A263B' }} className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
+    <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
         <Image
             src="https://storage.googleapis.com/studiogpt-pro-team-testing-pr/1d40243e-c682-4ac8-a8ca-031f0578f7e2"
             alt="Background"
             layout="fill"
             objectFit="cover"
-            className="opacity-50"
         />
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <TimeWiseLogo />
