@@ -22,6 +22,15 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
+        <div className="fixed inset-0 z-[-1]">
+          <Image
+            src="https://drive.google.com/uc?export=view&id=1QH2yxa47s9VaCWJSVc1z8mdHxAQF3KOP"
+            alt="Background"
+            fill
+            style={{ objectFit: 'cover' }}
+            data-ai-hint="abstract background"
+          />
+        </div>
         <AuthProvider>
           {children}
         </AuthProvider>
