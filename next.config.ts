@@ -39,6 +39,12 @@ const nextConfig: NextConfig = {
         hostname: 'cdn.discordapp.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.pinimg.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
