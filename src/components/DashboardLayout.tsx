@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -376,7 +377,7 @@ export default function DashboardLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col min-h-screen bg-transparent">
-        <header className="flex items-center justify-between p-4 border-b">
+        <header className="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-card shadow-sm">
           <div className="flex items-center">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-2xl font-semibold ml-4 font-headline">{pageTitle}</h1>
