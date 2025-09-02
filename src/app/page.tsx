@@ -167,7 +167,7 @@ export default function Home() {
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
         <Image
-            src="https://storage.googleapis.com/studiogpt-pro-team-testing-pr/1d40243e-c682-4ac8-a8ca-031f0578f7e2"
+            src="https://storage.googleapis.com/studiogpt-pro-team-testing-pr/6851b32d-213c-411e-8c88-e25f17849e7b"
             alt="Background"
             layout="fill"
             objectFit="cover"
