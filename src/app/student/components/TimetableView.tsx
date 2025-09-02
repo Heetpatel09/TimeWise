@@ -6,7 +6,8 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClasses } from '@/lib/services/classes';
 import { getStudents } from '@/lib/services/students';
-import type { Schedule, Subject, Faculty, Class, Student } from '@/lib/types';
+import { getClassrooms } from '@/lib/services/classrooms';
+import type { Schedule, Subject, Faculty, Class, Student, Classroom } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
@@ -22,18 +23,20 @@ export default function TimetableView() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     async function loadData() {
         if (user) {
             setIsLoading(true);
-            const [allSchedule, subjectData, facultyData, classData, studentData] = await Promise.all([
+            const [allSchedule, subjectData, facultyData, classData, studentData, classroomData] = await Promise.all([
                 getSchedule(),
                 getSubjects(),
                 getFaculty(),
                 getClasses(),
-                getStudents()
+                getStudents(),
+                getClassrooms()
             ]);
 
             const currentStudent = studentData.find(s => s.id === user.id);
@@ -46,6 +49,7 @@ export default function TimetableView() {
             setSubjects(subjectData);
             setFaculty(facultyData);
             setClasses(classData);
+            setClassrooms(classroomData);
             setIsLoading(false);
         }
     }
@@ -54,10 +58,11 @@ export default function TimetableView() {
 
   const className = student ? classes.find(c => c.id === student.classId)?.name : '';
 
-  const getRelationName = (id: string, type: 'subject' | 'faculty') => {
+  const getRelationName = (id: string, type: 'subject' | 'faculty' | 'classroom') => {
     switch (type) {
       case 'subject': return subjects.find(s => s.id === id)?.name;
       case 'faculty': return faculty.find(f => f.id === id)?.name;
+      case 'classroom': return classrooms.find(cr => cr.id === id)?.name;
       default: return 'N/A';
     }
   };
@@ -72,10 +77,11 @@ export default function TimetableView() {
         slot.time,
         getRelationName(slot.subjectId, 'subject'),
         getRelationName(slot.facultyId, 'faculty'),
+        getRelationName(slot.classroomId, 'classroom'),
     ]);
 
     (doc as any).autoTable({
-        head: [['Day', 'Time', 'Subject', 'Faculty']],
+        head: [['Day', 'Time', 'Subject', 'Faculty', 'Classroom']],
         body: tableData,
         startY: 20,
     });
@@ -116,6 +122,7 @@ export default function TimetableView() {
                         <TableHead>Time</TableHead>
                         <TableHead>Subject</TableHead>
                         <TableHead>Faculty</TableHead>
+                        <TableHead>Classroom</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -124,6 +131,7 @@ export default function TimetableView() {
                         <TableCell>{slot.time}</TableCell>
                         <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
                         <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
+                        <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

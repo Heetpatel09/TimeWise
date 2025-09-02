@@ -55,6 +55,7 @@ import {
   CheckCheck,
   Trophy,
   Award,
+  DoorOpen,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
@@ -238,6 +239,7 @@ function Nav() {
   const adminTabs = [
       { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
       { href: '/admin?tab=classes', label: 'Classes', icon: School, tab: 'classes' },
+      { href: '/admin?tab=classrooms', label: 'Classrooms', icon: DoorOpen, tab: 'classrooms' },
       { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
       { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
       { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
@@ -380,7 +382,7 @@ export default function DashboardLayout({
             </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <div className="flex flex-col h-screen">
+      <SidebarInset className="flex flex-col">
         <header className="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-sidebar shadow-sm">
           <div className="flex items-center">
             <SidebarTrigger className="md:hidden" />
@@ -398,7 +400,7 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in slide-in-from-bottom-8 duration-500">
             {children}
         </main>
-      </div>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

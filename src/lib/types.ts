@@ -1,4 +1,5 @@
 
+
 export interface Subject {
   id: string;
   name: string;
@@ -10,6 +11,11 @@ export interface Class {
   name: string;
   year: number;
   department: string;
+}
+
+export interface Classroom {
+  id: string;
+  name: string;
 }
 
 export interface Student {
@@ -35,6 +41,7 @@ export interface Schedule {
   classId: string;
   subjectId: string;
   facultyId: string;
+  classroomId: string;
   day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
   time: string; // e.g., "09:00 - 10:00"
 }
@@ -64,6 +71,7 @@ export interface ScheduleChangeRequest {
   facultyId: string;
   reason: string;
   status: 'pending' | 'resolved';
+  requestedClassroomId?: string; // Optional, for classroom change requests
 }
 
 export interface Notification {

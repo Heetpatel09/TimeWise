@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import {
   subjects,
   classes,
+  classrooms,
   students,
   faculty,
   schedule,
@@ -43,6 +44,10 @@ function initializeDb() {
           year INTEGER NOT NULL,
           department TEXT NOT NULL
       );
+      CREATE TABLE classrooms (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE
+      );
       CREATE TABLE students (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
@@ -65,11 +70,13 @@ function initializeDb() {
           classId TEXT NOT NULL,
           subjectId TEXT NOT NULL,
           facultyId TEXT NOT NULL,
+          classroomId TEXT NOT NULL,
           day TEXT NOT NULL,
           time TEXT NOT NULL,
           FOREIGN KEY (classId) REFERENCES classes(id),
           FOREIGN KEY (subjectId) REFERENCES subjects(id),
-          FOREIGN KEY (facultyId) REFERENCES faculty(id)
+          FOREIGN KEY (facultyId) REFERENCES faculty(id),
+          FOREIGN KEY (classroomId) REFERENCES classrooms(id)
       );
       CREATE TABLE leave_requests (
           id TEXT PRIMARY KEY,
@@ -87,8 +94,10 @@ function initializeDb() {
           facultyId TEXT NOT NULL,
           reason TEXT NOT NULL,
           status TEXT NOT NULL,
+          requestedClassroomId TEXT,
           FOREIGN KEY (scheduleId) REFERENCES schedule(id),
-          FOREIGN KEY (facultyId) REFERENCES faculty(id)
+          FOREIGN KEY (facultyId) REFERENCES faculty(id),
+          FOREIGN KEY (requestedClassroomId) REFERENCES classrooms(id)
       );
       CREATE TABLE notifications (
           id TEXT PRIMARY KEY,
@@ -107,22 +116,24 @@ function initializeDb() {
 
     const insertSubject = db.prepare('INSERT INTO subjects (id, name, code) VALUES (?, ?, ?)');
     const insertClass = db.prepare('INSERT INTO classes (id, name, year, department) VALUES (?, ?, ?, ?)');
+    const insertClassroom = db.prepare('INSERT INTO classrooms (id, name) VALUES (?, ?)');
     const insertStudent = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertSchedule = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, day, time) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertSchedule = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertScheduleChangeRequest = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status) VALUES (?, ?, ?, ?, ?)');
+    const insertScheduleChangeRequest = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
     const insertNotification = db.prepare('INSERT INTO notifications (id, userId, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?)');
     const insertUser = db.prepare('INSERT INTO users (email, id, password, role) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code));
         classes.forEach(c => insertClass.run(c.id, c.name, c.year, c.department));
+        classrooms.forEach(c => insertClassroom.run(c.id, c.name));
         students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null));
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null));
-        schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.day, s.time));
+        schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status));
-        scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status));
+        scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
         // Auth users

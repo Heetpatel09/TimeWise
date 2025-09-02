@@ -1,0 +1,42 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { db } from '@/lib/db';
+import type { Classroom } from '@/lib/types';
+
+function revalidateAll() {
+    revalidatePath('/admin', 'layout');
+}
+
+export async function getClassrooms(): Promise<Classroom[]> {
+  const stmt = db.prepare('SELECT * FROM classrooms');
+  return stmt.all() as Classroom[];
+}
+
+export async function addClassroom(item: Omit<Classroom, 'id'>) {
+    const id = `CR${Date.now()}`;
+    const stmt = db.prepare('INSERT INTO classrooms (id, name) VALUES (?, ?)');
+    stmt.run(id, item.name);
+    revalidateAll();
+    const newItem: Classroom = { ...item, id };
+    return Promise.resolve(newItem);
+}
+
+export async function updateClassroom(updatedItem: Classroom) {
+    const stmt = db.prepare('UPDATE classrooms SET name = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.id);
+    revalidateAll();
+    return Promise.resolve(updatedItem);
+}
+
+export async function deleteClassroom(id: string) {
+    // Check if classroom is in use
+    const inUse = db.prepare('SELECT 1 FROM schedule WHERE classroomId = ?').get(id);
+    if (inUse) {
+        throw new Error("Cannot delete classroom that is currently in use in the schedule.");
+    }
+    const stmt = db.prepare('DELETE FROM classrooms WHERE id = ?');
+    stmt.run(id);
+    revalidateAll();
+    return Promise.resolve(id);
+}

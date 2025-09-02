@@ -2,7 +2,7 @@
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, DoorOpen } from "lucide-react";
 import SubjectsManager from "./components/SubjectsManager";
 import ClassesManager from "./components/ClassesManager";
 import FacultyManager from "./components/FacultyManager";
@@ -15,6 +15,7 @@ import HallOfFamePage from './hall-of-fame/page';
 import Link from "next/link";
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import ClassroomsManager from './components/ClassroomsManager';
 
 const AdminDashboardHome = () => (
     <Card>
@@ -83,6 +84,7 @@ export default function AdminDashboard() {
   const tabs = [
     { value: "subjects", label: "Subjects", icon: Book, component: <SubjectsManager /> },
     { value: "classes", label: "Classes", icon: School, component: <ClassesManager /> },
+    { value: "classrooms", label: "Classrooms", icon: DoorOpen, component: <ClassroomsManager /> },
     { value: "faculty", label: "Faculty", icon: UserCheck, component: <FacultyManager /> },
     { value: "students", label: "Students", icon: Users, component: <StudentsManager /> },
     { value: "schedule", label: "Schedule", icon: Calendar, component: <ScheduleManager /> },
