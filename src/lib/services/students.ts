@@ -5,6 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import type { Student } from '@/lib/types';
 import { addUser, updateUserEmail } from './auth';
+import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
+import { addNotification } from './notifications';
+import { getClasses } from './classes';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
@@ -35,6 +38,24 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
       role: 'student',
     });
     
+    // Generate welcome notification
+    try {
+        const classes = await getClasses();
+        const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
+        const notificationResult = await generateWelcomeNotification({
+            name: newItem.name,
+            role: 'student',
+            context: className
+        });
+        await addNotification({
+            userId: newItem.id,
+            message: notificationResult.message
+        });
+    } catch (e: any) {
+        console.error("Failed to generate welcome notification for student:", e.message);
+        // Don't block user creation if notification fails
+    }
+
     revalidateAll();
     return Promise.resolve(newItem);
 }
