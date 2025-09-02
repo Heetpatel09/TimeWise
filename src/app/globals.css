@@ -36,8 +36,6 @@ body {
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
 
-    --radius: 0.5rem;
-
     --chart-1: 221 83% 53%; /* Saturated Blue */
     --chart-2: 160 60% 45%; /* Teal */
     --chart-3: 40 90% 55%;  /* Orange */
@@ -60,11 +58,11 @@ body {
   }
 
   .dark {
-    --background: 224 71% 2%;
+    --background: 224 71% 1%;
     --foreground: 210 20% 98%;
-    --card: 224 71% 2%;
+    --card: 224 71% 1%;
     --card-foreground: 210 20% 98%;
-    --popover: 224 71% 2%;
+    --popover: 224 71% 1%;
     --popover-foreground: 210 20% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 210 20% 98%;
@@ -84,7 +82,7 @@ body {
     --chart-3: 30 80% 55%;  /* Orange */
     --chart-4: 280 65% 60%; /* Purple */
     --chart-5: 340 75% 55%; /* Pink */
-    --sidebar-background: 224 71% 2%;
+    --sidebar-background: 224 71% 1%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 210 20% 98%;
     --sidebar-primary-foreground: 222.2 47.4% 11.2%;
