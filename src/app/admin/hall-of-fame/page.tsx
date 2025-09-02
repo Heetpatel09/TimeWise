@@ -10,6 +10,7 @@ import { Loader2, Crown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { handleGenerateCrest } from './actions';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 const ChampionCard = ({ user, role, achievement, onGenerate, crest, isGenerating }: {
     user: Student | Faculty,
@@ -64,6 +65,7 @@ export default function HallOfFamePage() {
     const [facultyCrest, setFacultyCrest] = useState<string | null>(null);
     const [isGeneratingStudentCrest, setIsGeneratingStudentCrest] = useState(false);
     const [isGeneratingFacultyCrest, setIsGeneratingFacultyCrest] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         async function loadData() {
@@ -79,6 +81,21 @@ export default function HallOfFamePage() {
         loadData();
     }, []);
 
+    const handleGenerationResult = (result: { crestDataUri: string }, role: 'student' | 'faculty') => {
+        if (result.crestDataUri === 'error') {
+            toast({
+                title: 'Crest Generation Failed',
+                description: 'The AI could not generate a crest at this time. Please try again later.',
+                variant: 'destructive',
+            });
+            if (role === 'student') setStudentCrest(null);
+            else setFacultyCrest(null);
+        } else {
+            if (role === 'student') setStudentCrest(result.crestDataUri);
+            else setFacultyCrest(result.crestDataUri);
+        }
+    }
+
     const generateStudentCrest = async () => {
         if (!topStudent) return;
         setIsGeneratingStudentCrest(true);
@@ -87,7 +104,7 @@ export default function HallOfFamePage() {
             role: 'student',
             achievement: 'Top Attendance Streak'
         });
-        setStudentCrest(result.crestDataUri);
+        handleGenerationResult(result, 'student');
         setIsGeneratingStudentCrest(false);
     };
 
@@ -99,7 +116,7 @@ export default function HallOfFamePage() {
             role: 'faculty',
             achievement: 'Top Teaching Streak'
         });
-        setFacultyCrest(result.crestDataUri);
+        handleGenerationResult(result, 'faculty');
         setIsGeneratingFacultyCrest(false);
     };
 
