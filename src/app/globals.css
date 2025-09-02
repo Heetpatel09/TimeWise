@@ -17,7 +17,7 @@ body {
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 215 28% 48%; /* Muted Blue */
+    --primary: 221.2 83.2% 53.3%; /* A more vibrant blue */
     --primary-foreground: 0 0% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -34,15 +34,16 @@ body {
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 215 28% 48%;
+    --ring: 221.2 83.2% 53.3%;
 
     --radius: 0.5rem;
 
-    --chart-1: 215 28% 48%;
-    --chart-2: 170 35% 50%;
-    --chart-3: 30 70% 55%;
-    --chart-4: 280 40% 60%;
-    --chart-5: 0 60% 65%;
+    --chart-1: 221 83% 53%; /* Saturated Blue */
+    --chart-2: 160 60% 45%; /* Teal */
+    --chart-3: 40 90% 55%;  /* Orange */
+    --chart-4: 280 65% 60%; /* Purple */
+    --chart-5: 340 75% 55%; /* Pink */
+
 
     /* Sidebar specific light theme adjustments */
     --sidebar-background: 230 35% 98%;
