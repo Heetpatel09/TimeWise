@@ -5,9 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import type { LeaveRequest } from '@/lib/types';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getLeaveRequests, updateLeaveRequestStatus } from '@/lib/services/leave';
+import { getLeaveRequests, updateLeaveRequestStatus, deleteResolvedLeaveRequests } from '@/lib/services/leave';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function LeaveRequestsPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -37,6 +48,11 @@ export default function LeaveRequestsPage() {
         setIsUpdating(null);
     }
   };
+
+  const handleClearHistory = async () => {
+    await deleteResolvedLeaveRequests();
+    await fetchRequests();
+  }
   
   const pendingRequests = leaveRequests.filter(r => r.status === 'pending');
   const resolvedRequests = leaveRequests.filter(r => r.status !== 'pending');
@@ -113,6 +129,28 @@ export default function LeaveRequestsPage() {
             {pendingRequests.length > 0 ? renderRequestTable(pendingRequests) : <p className="text-muted-foreground text-center py-8">No pending leave requests.</p>}
         </TabsContent>
         <TabsContent value="resolved">
+            <div className="flex justify-end mb-4">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={resolvedRequests.length === 0}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear History
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete all {resolvedRequests.length} resolved leave requests.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearHistory}>Continue</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
              {resolvedRequests.length > 0 ? renderRequestTable(resolvedRequests) : <p className="text-muted-foreground text-center py-8">No resolved leave requests.</p>}
         </TabsContent>
     </Tabs>

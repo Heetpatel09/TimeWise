@@ -41,3 +41,10 @@ export async function updateLeaveRequestStatus(id: string, status: 'approved' | 
     revalidatePath('/student', 'layout');
     return Promise.resolve(request);
 }
+
+export async function deleteResolvedLeaveRequests() {
+    const stmt = db.prepare("DELETE FROM leave_requests WHERE status != 'pending'");
+    stmt.run();
+    revalidatePath('/admin', 'layout');
+    return Promise.resolve();
+}
