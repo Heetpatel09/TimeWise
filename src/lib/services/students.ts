@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import type { Student } from '@/lib/types';
-import { authService } from './auth';
+import { addUser, updateUserEmail } from './auth';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
@@ -28,7 +28,7 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
     const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar);
 
-    await authService.addUser({
+    await addUser({
       id: newItem.id,
       email: newItem.email,
       password: 'student123',
@@ -43,7 +43,7 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
     const oldStudent: Student | undefined = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as any;
 
     if (oldStudent && oldStudent.email !== updatedItem.email) {
-        await authService.updateUserEmail(oldStudent.email, updatedItem.email);
+        await updateUserEmail(oldStudent.email, updatedItem.email);
     }
     
     const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ? WHERE id = ?');

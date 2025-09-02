@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import type { Faculty } from '@/lib/types';
-import { authService } from './auth';
+import { addUser, updateUserEmail } from './auth';
 
 
 function revalidateAll() {
@@ -30,7 +30,7 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
     stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar);
 
     const initialPassword = 'faculty123';
-    await authService.addUser({
+    await addUser({
       id: newItem.id,
       email: newItem.email,
       password: initialPassword,
@@ -45,7 +45,7 @@ export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
     const oldFaculty: Faculty | undefined = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as any;
     
     if (oldFaculty && oldFaculty.email !== updatedItem.email) {
-        await authService.updateUserEmail(oldFaculty.email, updatedItem.email);
+        await updateUserEmail(oldFaculty.email, updatedItem.email);
     }
     
     const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ? WHERE id = ?');
