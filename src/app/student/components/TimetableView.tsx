@@ -46,11 +46,10 @@ export default function TimetableView() {
         slot.time,
         slot.subjectName,
         slot.facultyName,
-        slot.classroomName,
     ]);
 
     (doc as any).autoTable({
-        head: [['Day', 'Time', 'Subject', 'Faculty', 'Classroom']],
+        head: [['Day', 'Time', 'Subject', 'Faculty']],
         body: tableData,
         startY: 20,
     });
@@ -91,7 +90,6 @@ export default function TimetableView() {
                         <TableHead>Time</TableHead>
                         <TableHead>Subject</TableHead>
                         <TableHead>Faculty</TableHead>
-                        <TableHead>Classroom</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -100,7 +98,6 @@ export default function TimetableView() {
                         <TableCell>{slot.time}</TableCell>
                         <TableCell>{slot.subjectName}</TableCell>
                         <TableCell>{slot.facultyName}</TableCell>
-                        <TableCell>{slot.classroomName}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

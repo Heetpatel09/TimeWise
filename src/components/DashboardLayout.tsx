@@ -55,7 +55,6 @@ import {
   CheckCheck,
   Trophy,
   Award,
-  DoorOpen,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
@@ -239,7 +238,6 @@ function Nav() {
   const adminTabs = [
       { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
       { href: '/admin?tab=classes', label: 'Classes', icon: School, tab: 'classes' },
-      { href: '/admin?tab=classrooms', label: 'Classrooms', icon: DoorOpen, tab: 'classrooms' },
       { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
       { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
       { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },

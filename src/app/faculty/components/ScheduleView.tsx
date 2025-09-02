@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { getSchedule } from '@/lib/services/schedule';
-import type { Schedule, Class, Subject, Classroom } from '@/lib/types';
+import type { Schedule, Class, Subject } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Send, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +16,7 @@ import 'jspdf-autotable';
 import { addScheduleChangeRequest } from '@/lib/services/schedule-changes';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
-import { getClassrooms } from '@/lib/services/classrooms';
 import { useAuth } from '@/context/AuthContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 export default function ScheduleView() {
@@ -26,12 +24,10 @@ export default function ScheduleView() {
   const [facultySchedule, setFacultySchedule] = useState<Schedule[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Schedule | null>(null);
   const [requestMessage, setRequestMessage] = useState('');
-  const [requestedClassroomId, setRequestedClassroomId] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -39,27 +35,24 @@ export default function ScheduleView() {
     async function loadData() {
       if (user) {
         setIsLoading(true);
-        const [allSchedule, classData, subjectData, classroomData] = await Promise.all([
+        const [allSchedule, classData, subjectData] = await Promise.all([
           getSchedule(),
           getClasses(),
           getSubjects(),
-          getClassrooms(),
         ]);
         setFacultySchedule(allSchedule.filter(s => s.facultyId === user.id));
         setClasses(classData);
         setSubjects(subjectData);
-        setClassrooms(classroomData);
         setIsLoading(false);
       }
     }
     loadData();
   }, [user]);
 
-  const getRelationName = (id: string, type: 'class' | 'subject' | 'classroom') => {
+  const getRelationName = (id: string, type: 'class' | 'subject') => {
     switch (type) {
       case 'class': return classes.find(c => c.id === id)?.name;
       case 'subject': return subjects.find(s => s.id === id)?.name;
-      case 'classroom': return classrooms.find(cr => cr.id === id)?.name;
       default: return 'N/A';
     }
   };
@@ -70,8 +63,8 @@ export default function ScheduleView() {
   };
 
   const handleSubmitRequest = async () => {
-    if (!selectedSlot || (!requestMessage && !requestedClassroomId)) {
-       toast({ title: 'Missing Information', description: 'Please provide a reason or select a new classroom.', variant: 'destructive' });
+    if (!selectedSlot || !requestMessage) {
+       toast({ title: 'Missing Information', description: 'Please provide a reason for the change.', variant: 'destructive' });
        return;
     }
     if (!user) return;
@@ -80,12 +73,10 @@ export default function ScheduleView() {
         await addScheduleChangeRequest({
             scheduleId: selectedSlot.id,
             facultyId: user.id,
-            reason: requestMessage || 'Classroom change request',
-            requestedClassroomId: requestedClassroomId
+            reason: requestMessage,
         });
         setDialogOpen(false);
         setRequestMessage('');
-        setRequestedClassroomId(undefined);
         toast({
             title: "Request Sent",
             description: "Your schedule change request has been sent to the admin for approval.",
@@ -106,11 +97,10 @@ export default function ScheduleView() {
         slot.time,
         getRelationName(slot.classId, 'class'),
         getRelationName(slot.subjectId, 'subject'),
-        getRelationName(slot.classroomId, 'classroom'),
     ]);
 
     (doc as any).autoTable({
-        head: [['Day', 'Time', 'Class', 'Subject', 'Classroom']],
+        head: [['Day', 'Time', 'Class', 'Subject']],
         body: tableData,
         startY: 20,
     });
@@ -151,7 +141,6 @@ export default function ScheduleView() {
                       <TableHead>Time</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>Subject</TableHead>
-                      <TableHead>Classroom</TableHead>
                       <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -161,7 +150,6 @@ export default function ScheduleView() {
                         <TableCell>{slot.time}</TableCell>
                         <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
                         <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
-                        <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" onClick={() => handleRequestChange(slot)}>
                             Request Change
@@ -183,7 +171,7 @@ export default function ScheduleView() {
           <DialogHeader>
             <DialogTitle>Request Schedule Change</DialogTitle>
             <DialogDescription>
-              Send a message to the administrator regarding this slot, or request a classroom change.
+              Send a message to the administrator regarding this slot.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -191,19 +179,9 @@ export default function ScheduleView() {
                 <p><strong>Slot:</strong> {selectedSlot?.day}, {selectedSlot?.time}</p>
                 <p><strong>Class:</strong> {getRelationName(selectedSlot?.classId || '', 'class')}</p>
                 <p><strong>Subject:</strong> {getRelationName(selectedSlot?.subjectId || '', 'subject')}</p>
-                <p><strong>Current Classroom:</strong> {getRelationName(selectedSlot?.classroomId || '', 'classroom')}</p>
             </div>
             <div className="grid w-full gap-1.5">
-              <Label htmlFor="classroom">Request different classroom</Label>
-              <Select value={requestedClassroomId} onValueChange={setRequestedClassroomId} disabled={isSubmitting}>
-                <SelectTrigger><SelectValue placeholder="Select an available classroom" /></SelectTrigger>
-                <SelectContent>
-                  {classrooms.filter(c => c.id !== selectedSlot?.classroomId).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid w-full gap-1.5">
-              <Label htmlFor="message">Or, send a message</Label>
+              <Label htmlFor="message">Reason for change</Label>
               <Textarea 
                 placeholder="Please specify the reason for the change (e.g., cancellation, rescheduling request)." 
                 id="message"

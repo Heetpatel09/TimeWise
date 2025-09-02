@@ -18,8 +18,8 @@ export async function getSchedule(): Promise<Schedule[]> {
 export async function addSchedule(item: Omit<Schedule, 'id'>) {
     const id = `SCH${Date.now()}`;
     const newItem: Schedule = { ...item, id };
-    const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time);
+    const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, day, time) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, item.classId, item.subjectId, item.facultyId, item.day, item.time);
     revalidateAll();
     return Promise.resolve(newItem);
 }
@@ -27,11 +27,11 @@ export async function addSchedule(item: Omit<Schedule, 'id'>) {
 export async function updateSchedule(updatedItem: Schedule) {
     const existing = db.prepare('SELECT * FROM schedule WHERE id = ?').get(updatedItem.id);
     if (existing) {
-        const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, classroomId = ?, day = ?, time = ? WHERE id = ?');
-        stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time, updatedItem.id);
+        const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, day = ?, time = ? WHERE id = ?');
+        stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.day, updatedItem.time, updatedItem.id);
     } else {
-        const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        stmt.run(updatedItem.id, updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time);
+        const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, day, time) VALUES (?, ?, ?, ?, ?, ?)');
+        stmt.run(updatedItem.id, updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.day, updatedItem.time);
     }
     revalidateAll();
     return Promise.resolve(updatedItem);
