@@ -38,7 +38,7 @@ const ChampionCard = ({ user, role, achievement, onGenerate, crest, isGenerating
                 <div className="mt-6 h-40 w-40 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50">
                     {isGenerating ? (
                         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                    ) : crest ? (
+                    ) : crest && crest !== 'error' ? (
                         <Image src={crest} alt={`${user.name}'s Crest`} width={150} height={150} className="object-contain" />
                     ) : (
                          <p className="text-xs text-muted-foreground p-2">Click below to generate a unique crest!</p>
@@ -109,8 +109,9 @@ export default function HallOfFamePage() {
             handleGenerationResult(result, 'student');
         } catch (e) {
             handleGenerationResult({crestDataUri: 'error'}, 'student');
+        } finally {
+            setIsGeneratingStudentCrest(false);
         }
-        setIsGeneratingStudentCrest(false);
     };
 
     const generateFacultyCrest = async () => {
@@ -126,8 +127,9 @@ export default function HallOfFamePage() {
             handleGenerationResult(result, 'faculty');
         } catch (e) {
             handleGenerationResult({crestDataUri: 'error'}, 'faculty');
+        } finally {
+            setIsGeneratingFacultyCrest(false);
         }
-        setIsGeneratingFacultyCrest(false);
     };
 
 
