@@ -28,7 +28,7 @@ export default function RootLayout({
               alt="background"
               fill
               style={{ objectFit: 'cover' }}
-              className="opacity-10"
+              className="opacity-25"
               data-ai-hint="blurry classroom"
             />
         </div>
