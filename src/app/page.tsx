@@ -24,9 +24,9 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 const TimeWiseLogo = () => (
   <div className="flex items-center justify-center gap-4">
     <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
-        <BrainCircuit className="w-full h-full text-primary" />
+        <BrainCircuit className="w-full h-full" style={{ color: '#FCA311' }} />
     </div>
-    <h1 className="text-5xl md:text-7xl font-bold text-foreground tracking-wider font-headline">
+    <h1 className="text-5xl md:text-7xl font-bold tracking-wider font-headline" style={{ color: '#FCA311' }}>
       TimeWise
     </h1>
   </div>
@@ -75,7 +75,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
   return (
     <div>
         <DialogHeader>
-          <DialogTitle className="capitalize text-center text-2xl">{role} Login</DialogTitle>
+          <DialogTitle className="capitalize text-center text-2xl">Login</DialogTitle>
           <DialogDescription className="text-center">
             Enter your credentials to access the {role} portal.
           </DialogDescription>
@@ -163,10 +163,10 @@ export default function Home() {
   const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-4">
+    <main style={{ backgroundColor: '#0A263B' }} className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <TimeWiseLogo />
-        <p className="mt-6 text-lg md:text-xl max-w-2xl text-muted-foreground">
+        <p className="mt-6 text-lg md:text-xl max-w-2xl" style={{ color: '#FCA311' }}>
             The intelligent, AI-powered solution for effortless academic scheduling.
             Simplify complexity, resolve conflicts, and create perfect timetables in minutes.
         </p>
@@ -177,7 +177,7 @@ export default function Home() {
                 setDialogOpen(open);
              }}>
                 <DialogTrigger asChild>
-                    <Button size="lg">
+                    <Button size="lg" style={{ backgroundColor: '#FCA311', color: '#0A263B' }}>
                         <LogIn className="mr-2 h-5 w-5" />
                         Login / Get Started
                     </Button>
