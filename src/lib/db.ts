@@ -126,7 +126,7 @@ function initializeDb() {
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
         // Auth users
-        insertUser.run('admin@codeblooded.app', 'admin', 'admin123', 'admin');
+        insertUser.run('admin@timewise.app', 'admin', 'admin123', 'admin');
         faculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty'));
         students.forEach(s => insertUser.run(s.email, s.id, 'student123', 'student'));
 

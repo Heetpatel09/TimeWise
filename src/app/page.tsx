@@ -14,20 +14,19 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Monitor, Clock, LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight } from 'lucide-react';
+import { LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight, BrainCircuit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-const CodeBloodedLogo = () => (
+const TimeWiseLogo = () => (
   <div className="flex items-center justify-center gap-4">
     <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
-        <Monitor className="w-full h-full text-primary" />
-        <Clock className="absolute w-1/2 h-1/2 text-destructive top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
+        <BrainCircuit className="w-full h-full text-primary" />
     </div>
     <h1 className="text-5xl md:text-7xl font-bold text-foreground tracking-wider font-headline">
-      CodeBlooded
+      TimeWise
     </h1>
   </div>
 );
@@ -66,7 +65,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
 
   const getPlaceholder = () => {
     switch (role) {
-        case 'admin': return 'admin@codeblooded.app';
+        case 'admin': return 'admin@timewise.app';
         case 'faculty': return 'turing@example.com';
         case 'student': return 'alice@example.com';
     }
@@ -140,7 +139,7 @@ const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role
             </DialogHeader>
             <div className="grid gap-4 py-4">
                 {roles.map(({ role, title, description, icon: Icon }) => (
-                    <Card key={role} className="hover:bg-accent hover:border-primary transition-all cursor-pointer" onClick={() => onSelectRole(role)}>
+                    <Card key={role} className="hover:bg-accent/10 hover:border-primary transition-all cursor-pointer" onClick={() => onSelectRole(role)}>
                         <CardHeader className="flex flex-row items-center gap-4">
                            <div className="bg-primary/10 p-3 rounded-lg">
                              <Icon className="w-6 h-6 text-primary" />
@@ -163,9 +162,9 @@ export default function Home() {
   const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-transparent p-4">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
-        <CodeBloodedLogo />
+        <TimeWiseLogo />
         <p className="mt-6 text-lg md:text-xl max-w-2xl text-muted-foreground">
             The intelligent, AI-powered solution for effortless academic scheduling.
             Simplify complexity, resolve conflicts, and create perfect timetables in minutes.

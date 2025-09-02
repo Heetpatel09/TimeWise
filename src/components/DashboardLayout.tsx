@@ -46,8 +46,7 @@ import {
   Users,
   Calendar,
   LayoutGrid,
-  Monitor,
-  Clock,
+  BrainCircuit,
   Mail,
   PencilRuler,
   Loader2,
@@ -78,16 +77,15 @@ const navItems = {
 
 type Role = 'admin' | 'faculty' | 'student';
 
-function CodeBloodedLogo() {
+function TimeWiseLogo() {
   const { state } = useSidebar();
   return (
     <Link href="/" className="flex items-center gap-2">
        <div className="relative w-8 h-8">
-          <Monitor className="w-full h-full text-primary" />
-          <Clock className="absolute w-1/2 h-1/2 text-destructive top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse [animation-duration:1.5s]" />
+          <BrainCircuit className="w-full h-full text-primary" />
       </div>
       {state === 'expanded' && (
-        <span className="text-xl font-bold text-primary-foreground font-headline">CodeBlooded</span>
+        <span className="text-xl font-bold text-sidebar-primary font-headline">TimeWise</span>
       )}
     </Link>
   );
@@ -359,7 +357,7 @@ export default function DashboardLayout({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <CodeBloodedLogo />
+          <TimeWiseLogo />
         </SidebarHeader>
         <SidebarContent>
           <Nav />

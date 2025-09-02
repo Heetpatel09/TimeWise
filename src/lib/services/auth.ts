@@ -22,8 +22,8 @@ export async function login(email: string, password: string): Promise<User> {
                     details = {
                         id: 'admin',
                         name: 'Admin User',
-                        email: 'admin@codeblooded.app',
-                        avatar: `https://avatar.vercel.sh/admin@codeblooded.app.png`,
+                        email: 'admin@timewise.app',
+                        avatar: `https://avatar.vercel.sh/admin@timewise.app.png`,
                     };
                 } else if (userEntry.role === 'faculty') {
                     details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(userEntry.id);
