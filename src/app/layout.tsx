@@ -1,5 +1,5 @@
-import type {Metadata} from 'next';
-import { Toaster } from "@/components/ui/toaster"
+import type { Metadata } from 'next';
+import { Toaster } from "@/components/ui/toaster";
 import Image from 'next/image';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
@@ -24,17 +24,17 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://picsum.photos/1920/1080"
+            src="https://drive.google.com/uc?export=view&id=1A9K31YMk6agWk5-tLKK6drnMxdPwceib" // Correct image URL
             alt="Background"
-            layout="fill"
-            objectFit="cover"
+            fill // This is shorthand for layout="fill"
+            style={{ objectFit: 'cover' }} // Applying objectFit as inline style
             quality={100}
             data-ai-hint="abstract background"
           />
           <div className="absolute inset-0 bg-black/50" />  
         </div>
         <AuthProvider>
-            {children}
+          {children}
         </AuthProvider>
         <Toaster />
       </body>

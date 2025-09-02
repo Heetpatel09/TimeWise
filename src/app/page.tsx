@@ -165,12 +165,26 @@ export default function Home() {
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
-        <Image
-            src="https://storage.googleapis.com/studiogpt-pro-team-testing-pr/6851b32d-213c-411e-8c88-e25f17849e7b"
-            alt="Background"
-            layout="fill"
-            objectFit="cover"
-        />
+ const BackgroundImage: React.FC = () = (
+  <div
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundImage: 'url("https://drive.google.com/uc?export=view&id=1A9K31YMk6agWk5-tLKK6drnMxdPwceib")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      zIndex: -1,
+    }}
+  />
+);
+
+export default BackgroundImage;
+
+
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <TimeWiseLogo />
         <p className="mt-6 text-lg md:text-xl max-w-2xl" style={{ color: '#FCA311' }}>
