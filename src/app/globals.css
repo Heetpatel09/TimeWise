@@ -90,17 +90,8 @@
 }
 
 @layer base {
-  
   body {
     background-color: transparent;
-    overflow: hidden; /* Prevent body from scrolling */
-  }
-
-  .parallax-container {
-    height: 100vh;
-    overflow-x: hidden;
-    overflow-y: auto;
-    perspective: 1px;
   }
 }
 

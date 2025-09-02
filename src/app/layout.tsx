@@ -31,12 +31,10 @@ export default function RootLayout({
             data-ai-hint="abstract background"
           />
         </div>
-        <div className="parallax-container">
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-            <Toaster />
-        </div>
+        <AuthProvider>
+            {children}
+        </AuthProvider>
+        <Toaster />
       </body>
     </html>
   );
