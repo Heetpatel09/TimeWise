@@ -41,8 +41,6 @@ export const schedule: Schedule[] = [
   { id: 'SCH004', classId: 'CLS004', subjectId: 'SUB004', facultyId: 'FAC003', classroomId: 'CR004', day: 'Wednesday', time: '14:00 - 15:00' },
   // Intentional conflict for demo purposes: Same faculty, same time, different class/classroom
   { id: 'SCH005', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR002', day: 'Monday', time: '09:00 - 10:00' },
-  // Intentional conflict for demo purposes: Same classroom, same time, different class/faculty
-  { id: 'SCH006', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC002', classroomId: 'CR001', day: 'Monday', time: '09:00 - 10:00' },
 ];
 
 export const leaveRequests: LeaveRequest[] = [

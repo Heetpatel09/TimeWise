@@ -1,3 +1,4 @@
+
 import Database from 'better-sqlite3';
 import {
   subjects,
@@ -23,18 +24,19 @@ function initializeDb() {
     console.log('Initializing database connection...');
     db = new Database('local.db');
     db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON'); // Enforce foreign key constraints
 
-    // Drop tables if they exist for a clean slate, useful in development
+    // Drop tables in the correct order to avoid foreign key constraint errors
     db.exec(`
-      DROP TABLE IF EXISTS subjects;
-      DROP TABLE IF EXISTS classes;
+      DROP TABLE IF EXISTS schedule_change_requests;
+      DROP TABLE IF EXISTS leave_requests;
+      DROP TABLE IF EXISTS notifications;
+      DROP TABLE IF EXISTS schedule;
       DROP TABLE IF EXISTS students;
       DROP TABLE IF EXISTS faculty;
+      DROP TABLE IF EXISTS subjects;
+      DROP TABLE IF EXISTS classes;
       DROP TABLE IF EXISTS classrooms;
-      DROP TABLE IF EXISTS schedule;
-      DROP TABLE IF EXISTS leave_requests;
-      DROP TABLE IF EXISTS schedule_change_requests;
-      DROP TABLE IF EXISTS notifications;
       DROP TABLE IF EXISTS users;
     `);
 
@@ -52,14 +54,9 @@ function initializeDb() {
           year INTEGER NOT NULL,
           department TEXT NOT NULL
       );
-      CREATE TABLE students (
+       CREATE TABLE classrooms (
           id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          email TEXT NOT NULL UNIQUE,
-          classId TEXT NOT NULL,
-          streak INTEGER NOT NULL,
-          avatar TEXT,
-          FOREIGN KEY (classId) REFERENCES classes(id)
+          name TEXT NOT NULL
       );
       CREATE TABLE faculty (
           id TEXT PRIMARY KEY,
@@ -69,9 +66,14 @@ function initializeDb() {
           streak INTEGER NOT NULL,
           avatar TEXT
       );
-      CREATE TABLE classrooms (
+       CREATE TABLE students (
           id TEXT PRIMARY KEY,
-          name TEXT NOT NULL
+          name TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          classId TEXT NOT NULL,
+          streak INTEGER NOT NULL,
+          avatar TEXT,
+          FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
       );
       CREATE TABLE schedule (
           id TEXT PRIMARY KEY,
@@ -81,10 +83,10 @@ function initializeDb() {
           classroomId TEXT NOT NULL,
           day TEXT NOT NULL,
           time TEXT NOT NULL,
-          FOREIGN KEY (classId) REFERENCES classes(id),
-          FOREIGN KEY (subjectId) REFERENCES subjects(id),
-          FOREIGN KEY (facultyId) REFERENCES faculty(id),
-          FOREIGN KEY (classroomId) REFERENCES classrooms(id)
+          FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
+          FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
+          FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
+          FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
       );
       CREATE TABLE leave_requests (
           id TEXT PRIMARY KEY,
@@ -103,9 +105,9 @@ function initializeDb() {
           reason TEXT NOT NULL,
           status TEXT NOT NULL,
           requestedClassroomId TEXT,
-          FOREIGN KEY (scheduleId) REFERENCES schedule(id),
-          FOREIGN KEY (facultyId) REFERENCES faculty(id),
-          FOREIGN KEY (requestedClassroomId) REFERENCES classrooms(id)
+          FOREIGN KEY (scheduleId) REFERENCES schedule(id) ON DELETE CASCADE,
+          FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
+          FOREIGN KEY (requestedClassroomId) REFERENCES classrooms(id) ON DELETE SET NULL
       );
       CREATE TABLE notifications (
           id TEXT PRIMARY KEY,
