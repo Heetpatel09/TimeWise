@@ -34,6 +34,16 @@ export default function StudentProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileCompletion, setProfileCompletion] = useState(0);
+  
+  const calculateProfileCompletion = React.useCallback((currentStudent: Student | null, requiresPasswordChange: boolean) => {
+      if (!currentStudent) return 0;
+      let completion = 0;
+      if (currentStudent.name) completion += 25;
+      if (currentStudent.email) completion += 25;
+      if (currentStudent.avatar && !currentStudent.avatar.includes('vercel.sh')) completion += 25;
+      if (!requiresPasswordChange) completion += 25;
+      setProfileCompletion(Math.min(completion, 100));
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -45,29 +55,23 @@ export default function StudentProfilePage() {
             ]);
             const currentStudent = allStudents.find((s) => s.id === user.id);
             setStudent(currentStudent || null);
-            if (currentStudent) {
-              calculateProfileCompletion(currentStudent, !!user.requiresPasswordChange);
-            }
             setClasses(classData);
             setIsLoading(false);
         }
     }
     loadData();
   }, [user]);
-  
-  const calculateProfileCompletion = (currentStudent: Student, requiresPasswordChange: boolean) => {
-      let completion = 0;
-      if (currentStudent.name) completion += 33;
-      if (currentStudent.email) completion += 33;
-      if (!requiresPasswordChange) completion += 34;
-      setProfileCompletion(Math.min(completion, 100));
-  };
+
+  useEffect(() => {
+    if (student) {
+        calculateProfileCompletion(student, !!user?.requiresPasswordChange);
+    }
+  }, [student, user?.requiresPasswordChange, calculateProfileCompletion]);
   
   const handleFieldChange = (field: keyof Omit<Student, 'id' | 'avatar' | 'classId' | 'profileCompleted'>, value: any) => {
     if (student) {
         const newStudentState = { ...student, [field]: value };
         setStudent(newStudentState);
-        calculateProfileCompletion(newStudentState, !!user?.requiresPasswordChange);
     }
   }
 
@@ -79,7 +83,6 @@ export default function StudentProfilePage() {
         if (student) {
             const newStudentState = { ...student, avatar: reader.result as string };
             setStudent(newStudentState);
-            calculateProfileCompletion(newStudentState, !!user?.requiresPasswordChange);
         }
       };
       reader.readAsDataURL(file);
@@ -106,9 +109,10 @@ export default function StudentProfilePage() {
         const requiresPasswordChange = newPassword ? false : user.requiresPasswordChange;
         
         let completion = 0;
-        if (student.name) completion += 33;
-        if (student.email) completion += 33;
-        if (!requiresPasswordChange) completion += 34;
+        if (student.name) completion += 25;
+        if (student.email) completion += 25;
+        if (student.avatar && !student.avatar.includes('vercel.sh')) completion += 25;
+        if (!requiresPasswordChange) completion += 25;
 
         const updatedStudentData = { ...student, profileCompleted: Math.min(completion, 100) };
         const updatedStudentResult = await updateStudent(updatedStudentData);
@@ -139,7 +143,6 @@ export default function StudentProfilePage() {
         });
         setNewPassword('');
         setConfirmPassword('');
-        calculateProfileCompletion(updatedStudentResult, requiresPasswordChange);
 
       } catch(error: any) {
         toast({ title: 'Error', description: error.message || 'Failed to save changes', variant: 'destructive' });
