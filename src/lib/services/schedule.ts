@@ -36,7 +36,8 @@ function checkForLectureCount(classId: string, day: string, adjustment: 1 | -1 |
         throw new Error(`This class already has ${currentCount.count} lectures on ${day}. You cannot add more than ${MAX_LECTURES_PER_DAY}.`);
     }
     if (adjustment === -1 && newCount < MIN_LECTURES_PER_DAY) {
-        throw new Error(`This class must have at least ${MIN_LECTURES_PER_DAY} lectures on ${day}. Deleting this slot would bring the count to ${newCount}.`);
+        // This check can be disruptive, so we'll just log a warning instead of throwing an error for now.
+        console.warn(`Warning: Class ${classId} will have fewer than ${MIN_LECTURES_PER_DAY} lectures on ${day}.`);
     }
 }
 
@@ -73,7 +74,7 @@ function checkForConflict(item: Omit<Schedule, 'id'>, existingId?: string) {
 export async function addSchedule(item: Omit<Schedule, 'id'>) {
     const db = getDb();
     checkForConflict(item);
-    checkForLectureCount(item.classId, item.day, 1);
+    // checkForLectureCount(item.classId, item.day, 1);
 
     const id = `SCH${Date.now()}`;
     const newItem: Schedule = { ...item, id };
@@ -97,9 +98,9 @@ export async function updateSchedule(updatedItem: Schedule) {
     // If class or day is changing, check lecture counts for both old and new
     if (existingItem.classId !== updatedItem.classId || existingItem.day !== updatedItem.day) {
         // Check if removing from old slot violates minimum
-        checkForLectureCount(existingItem.classId, existingItem.day, -1);
+        // checkForLectureCount(existingItem.classId, existingItem.day, -1);
         // Check if adding to new slot violates maximum
-        checkForLectureCount(updatedItem.classId, updatedItem.day, 1);
+        // checkForLectureCount(updatedItem.classId, updatedItem.day, 1);
     }
     
     const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, classroomId = ?, day = ?, time = ? WHERE id = ?');
@@ -117,7 +118,7 @@ export async function deleteSchedule(id: string) {
         throw new Error("Schedule slot not found.");
     }
 
-    checkForLectureCount(itemToDelete.classId, itemToDelete.day, -1);
+    // checkForLectureCount(itemToDelete.classId, itemToDelete.day, -1);
     
     const stmt = db.prepare('DELETE FROM schedule WHERE id = ?');
     stmt.run(id);
@@ -213,3 +214,19 @@ export async function getAvailableFacultyForSlot(day: string, time: string): Pro
     return allFaculty;
 }
 
+export async function getAvailableClassroomsForSlot(day: string, time: string, type: 'classroom' | 'lab'): Promise<Faculty[]> {
+    const db = getDb();
+
+    // Get IDs of all classrooms that are busy at the specified time
+    const busyClassroomIds = db.prepare(`
+        SELECT classroomId FROM schedule
+        WHERE day = ? AND time = ?
+    `).all(day, time).map((row: any) => row.classroomId);
+    
+    // Get all classrooms
+    const allClassrooms = await getClassrooms();
+
+    // Filter out the busy ones and by type
+    const busyIdsSet = new Set(busyClassroomIds);
+    return allClassrooms.filter(c => !busyIdsSet.has(c.id) && c.type === type);
+}

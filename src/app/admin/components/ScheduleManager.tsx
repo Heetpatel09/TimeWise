@@ -19,13 +19,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getSchedule, addSchedule, updateSchedule, deleteSchedule } from '@/lib/services/schedule';
+import { getSchedule, addSchedule, updateSchedule, deleteSchedule, getAvailableFacultyForSlot, getAvailableClassroomsForSlot } from '@/lib/services/schedule';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,16 @@ import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -80,6 +90,13 @@ export default function ScheduleManager() {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
   const { toast } = useToast();
+
+  const [isResolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [resolvingSlot, setResolvingSlot] = useState<Schedule | null>(null);
+  const [availableFaculty, setAvailableFaculty] = useState<Faculty[]>([]);
+  const [availableClassrooms, setAvailableClassrooms] = useState<Classroom[]>([]);
+  const [resolution, setResolution] = useState<{facultyId?: string, classroomId?: string}>({});
+  const [isResolving, setIsResolving] = useState(false);
 
   async function loadAllData() {
     setIsDataLoading(true);
@@ -130,7 +147,7 @@ export default function ScheduleManager() {
       if (schedule.length > 0) {
           findConflicts();
       }
-  }, [schedule]);
+  }, [schedule, classes, faculty, classrooms]);
 
   const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom') => {
     switch (type) {
@@ -185,6 +202,48 @@ export default function ScheduleManager() {
     setCurrentSlot({});
     setFormOpen(true);
   };
+
+  const openResolveDialog = async (slot: Schedule) => {
+    setResolvingSlot(slot);
+    const slotConflicts = conflicts[slot.id] || [];
+
+    if (slotConflicts.some(c => c.type === 'faculty')) {
+        const available = await getAvailableFacultyForSlot(slot.day, slot.time);
+        setAvailableFaculty(available);
+    }
+    if (slotConflicts.some(c => c.type === 'classroom')) {
+        const subjectType = getRelationInfo(slot.subjectId, 'subject')?.type || 'theory';
+        const available = await getAvailableClassroomsForSlot(slot.day, slot.time, subjectType);
+        setAvailableClassrooms(available);
+    }
+    
+    setResolveDialogOpen(true);
+  }
+
+  const handleResolveConflict = async () => {
+    if (!resolvingSlot) return;
+    
+    const updatedSlot = { ...resolvingSlot, ...resolution };
+    if (updatedSlot.facultyId === resolvingSlot.facultyId && updatedSlot.classroomId === resolvingSlot.classroomId) {
+        toast({ title: "No changes", description: "Please select a new faculty or classroom to resolve the conflict.", variant: "destructive" });
+        return;
+    }
+
+    setIsResolving(true);
+    try {
+        await updateSchedule(updatedSlot);
+        toast({ title: "Conflict Resolved", description: "The schedule slot has been updated." });
+        setResolveDialogOpen(false);
+        setResolvingSlot(null);
+        setResolution({});
+        await loadAllData();
+    } catch(error: any) {
+        toast({ title: 'Error', description: error.message || 'Failed to resolve conflict.', variant: 'destructive' });
+    } finally {
+        setIsResolving(false);
+    }
+  }
+
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -275,8 +334,8 @@ export default function ScheduleManager() {
                           <TableRow 
                             key={slot.id}
                             className={cn(
-                                isSpecial && `bg-[#4A0080] text-white hover:bg-[#4A0080]/90`,
-                                isConflicting && 'bg-destructive/20 hover:bg-destructive/30'
+                                isSpecial && 'bg-purple-900/20 text-foreground hover:bg-purple-900/30',
+                                isConflicting && !isSpecial && 'bg-destructive/20 hover:bg-destructive/30'
                             )}
                           >
                             <TableCell>{slot.time}</TableCell>
@@ -284,7 +343,12 @@ export default function ScheduleManager() {
                             <TableCell>
                                 <div className="flex items-center gap-2">
                                   {subject?.name}
-                                  {isSpecial && <Star className="h-3 w-3 text-yellow-400" />}
+                                  {isSpecial && (
+                                    <Tooltip>
+                                        <TooltipTrigger><Star className="h-3 w-3 text-yellow-400" /></TooltipTrigger>
+                                        <TooltipContent><p>Special Subject</p></TooltipContent>
+                                    </Tooltip>
+                                  )}
                                 </div>
                             </TableCell>
                             <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name}</TableCell>
@@ -309,6 +373,11 @@ export default function ScheduleManager() {
                                 </div>
                             </TableCell>
                             <TableCell className="text-right">
+                              {isConflicting && (
+                                <Button variant="outline" size="sm" className="mr-2" onClick={() => openResolveDialog(slot)}>
+                                  <ShieldCheck className="h-4 w-4 mr-2" /> Resolve
+                                </Button>
+                              )}
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" className="h-8 w-8 p-0" disabled={isSpecial}>
@@ -317,7 +386,25 @@ export default function ScheduleManager() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDelete(slot.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                   <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                                <Trash2 className="h-4 w-4 mr-2" />Delete
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete the schedule slot.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(slot.id)}>Continue</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -349,7 +436,6 @@ export default function ScheduleManager() {
                 <SelectContent>{days.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            {/* Repeat for time, class, subject, faculty */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Time</Label>
               <Select value={currentSlot?.time} onValueChange={(v) => setCurrentSlot({ ...currentSlot, time: v })}>
@@ -393,6 +479,69 @@ export default function ScheduleManager() {
         </DialogContent>
       </Dialog>
       
+      <Dialog open={isResolveDialogOpen} onOpenChange={setResolveDialogOpen}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Resolve Schedule Conflict</DialogTitle>
+                  <DialogDescription>
+                      Suggestions to resolve conflicts for {resolvingSlot?.day}, {resolvingSlot?.time}.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                  {(conflicts[resolvingSlot?.id || ''] || []).map(c => (
+                      <div key={c.type}>
+                          <p className="font-semibold text-destructive">{c.message}</p>
+                          {c.type === 'faculty' && (
+                              <div className="grid grid-cols-4 items-center gap-4 mt-2">
+                                  <Label className="text-right">New Faculty</Label>
+                                  <Select 
+                                    onValueChange={(v) => setResolution(prev => ({...prev, facultyId: v}))}
+                                  >
+                                      <SelectTrigger className="col-span-3"><SelectValue placeholder="Select available faculty" /></SelectTrigger>
+                                      <SelectContent>
+                                        {availableFaculty.length > 0 ? (
+                                            availableFaculty.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)
+                                        ) : (
+                                            <div className="p-2 text-sm text-muted-foreground">No other faculty available.</div>
+                                        )}
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                          )}
+                          {c.type === 'classroom' && (
+                              <div className="grid grid-cols-4 items-center gap-4 mt-2">
+                                  <Label className="text-right">New Classroom</Label>
+                                   <Select 
+                                    onValueChange={(v) => setResolution(prev => ({...prev, classroomId: v}))}
+                                  >
+                                      <SelectTrigger className="col-span-3"><SelectValue placeholder="Select available classroom" /></SelectTrigger>
+                                      <SelectContent>
+                                         {availableClassrooms.length > 0 ? (
+                                            availableClassrooms.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)
+                                        ) : (
+                                            <div className="p-2 text-sm text-muted-foreground">No other classrooms available.</div>
+                                        )}
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                          )}
+                          {c.type === 'class' && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                                This class has multiple activities scheduled. Please edit one of the conflicting slots to resolve this.
+                            </p>
+                          )}
+                      </div>
+                  ))}
+              </div>
+              <DialogFooter>
+                  <Button variant="outline" onClick={() => setResolveDialogOpen(false)} disabled={isResolving}>Cancel</Button>
+                  <Button onClick={handleResolveConflict} disabled={isResolving}>
+                    {isResolving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Resolution
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }
