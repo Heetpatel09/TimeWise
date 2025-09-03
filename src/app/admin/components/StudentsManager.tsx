@@ -198,11 +198,11 @@ export default function StudentsManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentStudent?.name || ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} className="col-span-3" disabled={isSubmitting} />
+              <Input id="name" value={currentStudent?.name ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} className="col-span-3" disabled={isSubmitting} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentStudent?.email || ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} className="col-span-3" disabled={isSubmitting} />
+              <Input id="email" type="email" value={currentStudent?.email ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} className="col-span-3" disabled={isSubmitting} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="class" className="text-right">Class</Label>

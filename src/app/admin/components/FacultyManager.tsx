@@ -190,15 +190,15 @@ export default function FacultyManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentFaculty?.name || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="name" value={currentFaculty?.name ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentFaculty?.email || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="email" type="email" value={currentFaculty?.email ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>
-              <Input id="department" value={currentFaculty?.department || ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="department" value={currentFaculty?.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>

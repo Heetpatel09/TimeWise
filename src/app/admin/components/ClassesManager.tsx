@@ -184,15 +184,15 @@ export default function ClassesManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentClass?.name || ''} onChange={(e) => setCurrentClass({ ...currentClass, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="name" value={currentClass?.name ?? ''} onChange={(e) => setCurrentClass({ ...currentClass, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="semester" className="text-right">Semester</Label>
-              <Input id="semester" type="number" min="1" max="8" value={currentClass?.semester || ''} onChange={(e) => setCurrentClass({ ...currentClass, semester: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="semester" type="number" min="1" max="8" value={currentClass?.semester ?? ''} onChange={(e) => setCurrentClass({ ...currentClass, semester: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>
-              <Input id="department" value={currentClass?.department || ''} onChange={(e) => setCurrentClass({ ...currentClass, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="department" value={currentClass?.department ?? ''} onChange={(e) => setCurrentClass({ ...currentClass, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>

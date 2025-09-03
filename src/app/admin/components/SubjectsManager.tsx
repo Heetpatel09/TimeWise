@@ -202,7 +202,7 @@ export default function SubjectsManager() {
               </Label>
               <Input
                 id="name"
-                value={currentSubject?.name || ''}
+                value={currentSubject?.name ?? ''}
                 onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })}
                 className="col-span-3"
                 disabled={isSubmitting}
@@ -214,7 +214,7 @@ export default function SubjectsManager() {
               </Label>
               <Input
                 id="code"
-                value={currentSubject?.code || ''}
+                value={currentSubject?.code ?? ''}
                 onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })}
                 className="col-span-3"
                 disabled={isSubmitting}
@@ -222,7 +222,7 @@ export default function SubjectsManager() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="semester" className="text-right">Semester</Label>
-              <Input id="semester" type="number" min="1" max="8" value={currentSubject?.semester || ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="semester" type="number" min="1" max="8" value={currentSubject?.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">
