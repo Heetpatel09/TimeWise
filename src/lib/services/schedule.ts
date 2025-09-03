@@ -119,3 +119,26 @@ export async function deleteSchedule(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+export async function replaceSchedule(schedule: Omit<Schedule, 'id'>[]) {
+    const dbInstance = getDb();
+    
+    const transaction = dbInstance.transaction(() => {
+        // Clear the existing schedule and related requests
+        dbInstance.prepare('DELETE FROM schedule').run();
+        dbInstance.prepare('DELETE FROM schedule_change_requests').run();
+        dbInstance.prepare('DELETE FROM new_slot_requests').run();
+
+        const insertStmt = dbInstance.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
+
+        for (const item of schedule) {
+            const id = `SCH${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
+            insertStmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time);
+        }
+    });
+
+    transaction();
+    
+    revalidateAll();
+    return Promise.resolve({ success: true });
+}

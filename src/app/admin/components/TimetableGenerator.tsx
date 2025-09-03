@@ -7,8 +7,7 @@ import { Loader2, Sparkles, AlertCircle, Save, AlertTriangle } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { generateTimetable } from '@/ai/flows/generate-timetable-flow';
 import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
-import { db } from '@/lib/db';
-import { revalidatePath } from 'next/cache';
+import { replaceSchedule } from '@/lib/services/schedule';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,33 +28,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-
-// This is a client-side action, so we can't use the server-side services directly.
-// This function will be stringified and sent to the browser.
-// So we define a new action here.
-async function saveSchedule(schedule: Omit<Schedule, 'id'>[]) {
-    'use server';
-    const dbInstance = db();
-    
-    // Clear the existing schedule
-    dbInstance.prepare('DELETE FROM schedule').run();
-    dbInstance.prepare('DELETE FROM schedule_change_requests').run();
-    dbInstance.prepare('DELETE FROM new_slot_requests').run();
-
-
-    const insertStmt = dbInstance.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
-
-    const transaction = dbInstance.transaction((items: Omit<Schedule, 'id'>[]) => {
-        for (const item of items) {
-            const id = `SCH${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
-            insertStmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time);
-        }
-    });
-
-    transaction(schedule);
-    
-    revalidatePath('/admin', 'layout');
-}
 
 
 interface TimetableGeneratorProps {
@@ -94,8 +66,9 @@ export default function TimetableGenerator({ classes, subjects, faculty, classro
     if (!generatedSchedule) return;
     startSaving(async () => {
         try {
-            await saveSchedule(generatedSchedule);
+            await replaceSchedule(generatedSchedule);
             toast({ title: 'Schedule Saved', description: 'The new timetable has been saved and is now active.' });
+            setGeneratedSchedule(null); // Clear the preview after saving
         } catch (err: any) {
             toast({ title: 'Save Failed', description: err.message, variant: 'destructive' });
         }
