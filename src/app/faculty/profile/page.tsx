@@ -71,9 +71,11 @@ export default function FacultyProfilePage() {
 
       setIsSaving(true);
       try {
+        const originalEmail = user.email; // Use original email for password update
         const updatedFaculty = await updateFaculty(facultyMember);
+
         if (newPassword) {
-            await updatePassword(user.email, newPassword);
+            await updatePassword(originalEmail, newPassword);
         }
         
         const updatedUser = { 

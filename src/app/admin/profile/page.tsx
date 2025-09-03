@@ -56,12 +56,15 @@ export default function AdminProfilePage() {
 
         setIsSaving(true);
         try {
+            const originalEmail = user.email; // Capture original email for password update
             const updatedUser = await updateAdmin({ id: user.id, name, email, avatar });
+            
             if (newPassword) {
-                // Always use the email from the auth context for password updates,
-                // as this is the key in the users table.
-                await updatePassword(user.email, newPassword);
+                // Always use the original email from the auth context for password updates,
+                // as this is the key in the users table before the potential email change.
+                await updatePassword(originalEmail, newPassword);
             }
+
             setAuthUser(updatedUser);
             toast({
                 title: 'Profile Updated',

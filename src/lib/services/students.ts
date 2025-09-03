@@ -75,7 +75,8 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.id);
     
     revalidateAll();
-    return updatedItem;
+    const updatedStudent = { ...updatedItem, avatar: updatedItem.avatar || `https://avatar.vercel.sh/${updatedItem.email}.png`};
+    return updatedStudent;
 }
 
 export async function deleteStudent(id: string) {

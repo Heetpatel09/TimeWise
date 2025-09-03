@@ -79,9 +79,11 @@ export default function StudentProfilePage() {
 
       setIsSaving(true);
       try {
+        const originalEmail = user.email; // Use original email for password update
         const updatedStudent = await updateStudent(student);
+
         if (newPassword) {
-            await updatePassword(user.email, newPassword);
+            await updatePassword(originalEmail, newPassword);
         }
         
         const updatedUser = { 
