@@ -280,7 +280,7 @@ export default function FacultyDashboard() {
           </Card>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+            <Card className="lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <Flame className="w-6 h-6 mr-2 text-orange-500"/>
@@ -293,7 +293,7 @@ export default function FacultyDashboard() {
                     <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
                 </CardContent>
             </Card>
-            <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
+            <Card className="flex flex-col lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
                 <CardHeader>
                 <CardTitle>Request Leave</CardTitle>
                 <CardDescription>Submit a request for a leave of absence.</CardDescription>
@@ -310,7 +310,7 @@ export default function FacultyDashboard() {
                 </Button>
                 </CardFooter>
             </Card>
-            <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
+            <Card className="flex flex-col lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
                 <CardHeader>
                 <CardTitle>Manage Schedule</CardTitle>
                 <CardDescription>View your weekly schedule and request changes.</CardDescription>
