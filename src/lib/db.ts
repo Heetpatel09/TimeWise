@@ -163,24 +163,15 @@ function initializeDb() {
         });
 
         students.forEach(s => {
-          insertUser.run(s.email, s.id, 'student123', 'student');
+          if (s.email === 'abc@example.com') {
+            insertUser.run(s.email, s.id, '123', 'student');
+          } else {
+            insertUser.run(s.email, s.id, 'student123', 'student');
+          }
         });
-
-        // Ensure the specific student credential is set as requested, overwriting the loop's value.
-        insertUser.run('abc@example.com', 'STU001', '123', 'student');
     })();
     console.log('Database initialized and seeded successfully.');
   } 
-  
-  // Ensure admin user exists, just in case it was deleted or seed failed partially.
-  const adminExists = db.prepare('SELECT 1 FROM user_credentials WHERE email = ?').get(adminUser.email);
-  if (!adminExists) {
-      console.log('Admin user not found. Seeding admin credentials...');
-      const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
-      insertUser.run(adminUser.email, adminUser.id, adminUser.password, adminUser.role);
-      console.log('Admin user seeded.');
-  }
-
 
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
@@ -198,3 +189,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
