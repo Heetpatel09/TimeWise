@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { EnrichedSchedule, Student } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Library } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +15,16 @@ interface TimetableData {
     student: Student;
     schedule: EnrichedSchedule[];
 }
+
+const ALL_TIME_SLOTS = [
+    '07:30 AM - 08:30 AM',
+    '08:30 AM - 09:30 AM',
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM'
+];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function TimetableView() {
   const { user } = useAuth();
@@ -41,13 +51,16 @@ export default function TimetableView() {
     const doc = new jsPDF();
     doc.text(`Timetable for ${data.student.name} (${className})`, 14, 16);
     
-    const tableData = studentSchedule.map(slot => [
-        slot.day,
-        slot.time,
-        slot.subjectName,
-        slot.facultyName,
-        slot.classroomName,
-    ]);
+    const tableData = DAYS.flatMap(day => {
+        const daySlots = ALL_TIME_SLOTS.map(time => {
+            const slot = studentSchedule.find(s => s.day === day && s.time === time);
+            if (slot) {
+                return [day, time, slot.subjectName, slot.facultyName, slot.classroomName];
+            }
+            return [day, time, 'Library Slot', '-', '-'];
+        });
+        return daySlots;
+    });
 
     (doc as any).autoTable({
         head: [['Day', 'Time', 'Subject', 'Faculty', 'Classroom']],
@@ -57,12 +70,29 @@ export default function TimetableView() {
 
     doc.save('my_timetable.pdf');
   }
-
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const scheduleByDay = days.map(day => ({
-    day,
-    slots: studentSchedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
-  }));
+  
+  const scheduleByDay = DAYS.map(day => {
+    const daySlots = studentSchedule.filter(slot => slot.day === day);
+    const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
+        const scheduledSlot = daySlots.find(slot => slot.time === time);
+        if (scheduledSlot) {
+            return scheduledSlot;
+        }
+        return {
+            id: `${day}-${time}-library`,
+            time: time,
+            subjectName: 'Library Slot',
+            facultyName: '-',
+            classroomName: '-',
+            day: day,
+            isLibrary: true,
+        };
+    });
+    return {
+        day,
+        slots: fullDaySchedule.sort((a,b) => a.time.localeCompare(b.time)),
+    }
+  });
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -97,10 +127,21 @@ export default function TimetableView() {
                     <TableBody>
                     {slots.map((slot) => (
                         <TableRow key={slot.id}>
-                        <TableCell>{slot.time}</TableCell>
-                        <TableCell>{slot.subjectName}</TableCell>
-                        <TableCell>{slot.facultyName}</TableCell>
-                        <TableCell>{slot.classroomName}</TableCell>
+                            <TableCell>{slot.time}</TableCell>
+                            {(slot as any).isLibrary ? (
+                                <TableCell colSpan={3} className="text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                        <Library className="h-4 w-4" />
+                                        <span>Library Slot</span>
+                                    </div>
+                                </TableCell>
+                            ) : (
+                                <>
+                                    <TableCell>{(slot as EnrichedSchedule).subjectName}</TableCell>
+                                    <TableCell>{(slot as EnrichedSchedule).facultyName}</TableCell>
+                                    <TableCell>{(slot as EnrichedSchedule).classroomName}</TableCell>
+                                </>
+                            )}
                         </TableRow>
                     ))}
                     </TableBody>
