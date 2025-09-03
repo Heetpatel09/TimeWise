@@ -20,7 +20,7 @@ export async function login(email: string, password: string): Promise<User> {
         let details: any;
         if (credentialEntry.role === 'admin') {
             details = {
-                id: 'admin',
+                id: credentialEntry.userId,
                 name: 'Admin User',
                 email: 'admin@timewise.app',
                 avatar: `https://avatar.vercel.sh/admin@timewise.app.png`,
