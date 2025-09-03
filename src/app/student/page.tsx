@@ -291,6 +291,21 @@ export default function StudentDashboard() {
                         <TimetableView />
                     </CardContent>
                 </Card>
+            </div>
+            <div className="md:col-span-1 space-y-8">
+                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+                    <CardHeader>
+                         <CardTitle className="flex items-center">
+                            <Flame className="w-6 h-6 mr-2 text-orange-500"/>
+                            Attendance Streak
+                        </CardTitle>
+                        <CardDescription>Keep it up! Don't miss a class.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                        <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{student?.streak || 0}</div>
+                        <p className="text-muted-foreground mt-2">Days in a row</p>
+                    </CardContent>
+                </Card>
                 <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-300">
                     <CardHeader>
                         <CardTitle className="flex items-center">
@@ -340,38 +355,6 @@ export default function StudentDashboard() {
                       </Popover>
                     </CardContent>
                 </Card>
-            </div>
-            <div className="md:col-span-1 space-y-8">
-                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                    <CardHeader>
-                         <CardTitle className="flex items-center">
-                            <Flame className="w-6 h-6 mr-2 text-orange-500"/>
-                            Attendance Streak
-                        </CardTitle>
-                        <CardDescription>Keep it up! Don't miss a class.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                        <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{student?.streak || 0}</div>
-                        <p className="text-muted-foreground mt-2">Days in a row</p>
-                    </CardContent>
-                </Card>
-                 <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
-                    <CardHeader>
-                        <CardTitle className='flex items-center'><BookOpen className="mr-2 h-5 w-5" />Course Catalog</CardTitle>
-                        <CardDescription>View subjects for your semester.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                        <p className="text-sm text-muted-foreground">
-                            Browse all the subjects offered in your current semester.
-                        </p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button onClick={() => setCatalogOpen(true)}>
-                            <BookOpen className="mr-2 h-4 w-4" />
-                            View Subjects
-                        </Button>
-                    </CardFooter>
-                </Card>
                  <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
                     <CardHeader>
                     <CardTitle>Request Leave</CardTitle>
@@ -389,27 +372,22 @@ export default function StudentDashboard() {
                     </Button>
                     </CardFooter>
                 </Card>
-                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
+                 <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
                     <CardHeader>
-                         <CardTitle className="flex items-center">
-                            <Bell className="w-5 h-5 mr-2"/>
-                            Notifications
-                        </CardTitle>
-                        <CardDescription>Updates and announcements will appear here.</CardDescription>
+                        <CardTitle className='flex items-center'><BookOpen className="mr-2 h-5 w-5" />Course Catalog</CardTitle>
+                        <CardDescription>View subjects for your semester.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                         {notifications.length > 0 ? (
-                            <ul className="space-y-3">
-                                {notifications.slice(0, 5).map(n => (
-                                    <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary animate-in fade-in slide-in-from-top-2 duration-300">{n.message}</li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>No new notifications.</p>
-                            </div>
-                        )}
+                    <CardContent className="flex-grow">
+                        <p className="text-sm text-muted-foreground">
+                            Browse all the subjects offered in your current semester.
+                        </p>
                     </CardContent>
+                    <CardFooter>
+                        <Button onClick={() => setCatalogOpen(true)}>
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            View Subjects
+                        </Button>
+                    </CardFooter>
                 </Card>
             </div>
         </div>
@@ -565,3 +543,4 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
+
