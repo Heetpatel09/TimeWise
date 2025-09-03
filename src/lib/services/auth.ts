@@ -26,6 +26,7 @@ export async function login(email: string, password: string): Promise<User> {
             id: credentialEntry.userId,
             name: 'Admin', 
             email: credentialEntry.email,
+            avatar: `https://avatar.vercel.sh/${credentialEntry.email}.png`
         };
     } else if (credentialEntry.role === 'faculty') {
         details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
@@ -79,6 +80,7 @@ export async function addCredential(credential: {userId: string, email: string, 
         throw new Error("Email is already in use by another account.");
     }
     else {
+        // A previous credential for this user might exist with an old email.
         db.prepare('DELETE FROM user_credentials WHERE userId = ?').run(credential.userId);
 
         const stmt = db.prepare('INSERT INTO user_credentials (userId, email, password, role) VALUES (?, ?, ?, ?)');
