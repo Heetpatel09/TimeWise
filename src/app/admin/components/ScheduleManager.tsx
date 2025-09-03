@@ -104,8 +104,8 @@ export default function ScheduleManager() {
         await deleteSchedule(id);
         toast({ title: 'Slot Deleted', description: 'The schedule slot has been removed.' });
         loadAllData();
-     } catch (error) {
-        toast({ title: 'Error', description: 'Failed to delete slot.', variant: 'destructive' });
+     } catch (error: any) {
+        toast({ title: 'Error', description: error.message || 'Failed to delete slot.', variant: 'destructive' });
      }
   };
 
