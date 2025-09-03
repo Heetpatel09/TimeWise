@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus, Bell } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
@@ -280,55 +280,6 @@ export default function FacultyDashboard() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 space-y-6">
-                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Flame className="w-6 h-6 mr-2 text-orange-500"/>
-                                Teaching Streak
-                            </CardTitle>
-                            <CardDescription>For your consistent dedication.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-center">
-                            <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
-                            <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
-                        <CardHeader>
-                            <CardTitle>Request Leave</CardTitle>
-                            <CardDescription>Submit a request for a leave of absence.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
-                            </p>
-                        </CardContent>
-                        <CardFooter>
-                            <Button onClick={() => setLeaveDialogOpen(true)}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                Open Leave Form
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
-                        <CardHeader>
-                            <CardTitle>Manage Schedule</CardTitle>
-                            <CardDescription>View your weekly schedule and request changes.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
-                            </p>
-                        </CardContent>
-                        <CardFooter>
-                            <Button onClick={() => setScheduleModalOpen(true)}>
-                                View Schedule <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
-
                 <div className="lg:col-span-2">
                      <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200 h-full">
                         <CardHeader>
@@ -378,6 +329,54 @@ export default function FacultyDashboard() {
                                 )}
                               </Popover>
                         </CardContent>
+                    </Card>
+                </div>
+                 <div className="lg:col-span-1 space-y-6">
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <Flame className="w-6 h-6 mr-2 text-orange-500"/>
+                                Teaching Streak
+                            </CardTitle>
+                            <CardDescription>For your consistent dedication.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
+                            <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
+                        <CardHeader>
+                            <CardTitle>Request Leave</CardTitle>
+                            <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => setLeaveDialogOpen(true)}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                Open Leave Form
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
+                        <CardHeader>
+                            <CardTitle>Manage Schedule</CardTitle>
+                            <CardDescription>View your weekly schedule and request changes.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => setScheduleModalOpen(true)}>
+                                View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardFooter>
                     </Card>
                 </div>
             </div>
@@ -524,6 +523,7 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   );
 }
+
 
 
 
