@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -18,9 +18,13 @@ import HallOfFamePage from './hall-of-fame/page';
 import LeaveRequestsPage from './leave-requests/page';
 import ScheduleRequestsPage from './schedule-requests/page';
 import NewSlotRequestsPage from './components/NewSlotRequestsPage';
+import TimetableGenerator from './components/TimetableGenerator';
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
+import { getClasses } from '@/lib/services/classes';
+import { getSubjects } from '@/lib/services/subjects';
+import { getClassrooms } from '@/lib/services/classrooms';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 
@@ -32,6 +36,7 @@ const managementCards = [
   { tab: "faculty", title: "Faculty", icon: UserCheck, description: "Handle faculty profiles." },
   { tab: "students", title: "Students", icon: Users, description: "Administer student records." },
   { tab: "schedule", title: "Schedule", icon: Calendar, description: "Create and view timetables." },
+  { tab: "generate-timetable", title: "Generate Timetable", icon: Sparkles, description: "Use AI to create a schedule." },
   { tab: "leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
   { tab: "hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate champions." },
   { tab: "leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or deny leaves." },
@@ -133,6 +138,12 @@ const AdminDashboardHome = () => {
 const AdminDashboardContent = () => {
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab');
+    const { user } = useAuth();
+
+    const { data: classes } = useQuery({ queryKey: ['classes'], queryFn: getClasses });
+    const { data: subjects } = useQuery({ queryKey: ['subjects'], queryFn: getSubjects });
+    const { data: faculty } = useQuery({ queryKey: ['faculty'], queryFn: getFaculty });
+    const { data: classrooms } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
 
     const getTitleForTab = (tab: string | null) => {
       if (!tab) return "Admin Dashboard";
@@ -156,6 +167,17 @@ const AdminDashboardContent = () => {
             case 'leave-requests': content = <LeaveRequestsPage />; break;
             case 'schedule-requests': content = <ScheduleRequestsPage />; break;
             case 'new-slot-requests': content = <NewSlotRequestsPage />; break;
+            case 'generate-timetable': 
+                content = (classes && subjects && faculty && classrooms) ? (
+                    <TimetableGenerator 
+                        classes={classes} 
+                        subjects={subjects} 
+                        faculty={faculty} 
+                        classrooms={classrooms}
+                        role="admin"
+                    />
+                ) : <div>Loading generation data...</div>;
+                break;
             default: return <AdminDashboardHome />;
         }
 

@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus, Bell, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
@@ -31,6 +31,7 @@ import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from 
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday, getDay } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 
 function getDatesInRange(startDate: Date, endDate: Date) {
@@ -90,8 +91,6 @@ function ScheduleCalendar({
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
 
-    // This is a simplification; a real implementation would need to map recurring days (e.g. 'Monday') to actual dates.
-    // For this demo, we'll just check if the day of the week matches.
     eachDayOfInterval({start: monthStart, end: monthEnd}).forEach(date => {
         const dayName = format(date, 'EEEE'); // Monday, Tuesday etc.
         const todaysScheduledSlots = schedule.filter(s => s.day === dayName);
@@ -152,12 +151,12 @@ function ScheduleCalendar({
             </div>
         </CardHeader>
         <CardContent className="flex-grow">
-            <div className="hidden md:grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="py-2 border-t">{day}</div>
                 ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-7 h-full">
+            <div className="grid grid-cols-7 h-full">
                 {daysInMonth.map(renderDayCell)}
             </div>
         </CardContent>
@@ -339,45 +338,56 @@ export default function FacultyDashboard() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                             <div className="w-full">
-                                <ScheduleCalendar 
-                                    schedule={schedule} 
-                                    leaveRequests={leaveRequests} 
-                                    events={events}
-                                    onDayClick={handleDayClick}
-                                />
-                            </div>
-                        </PopoverTrigger>
-                        {selectedDateEvents.length > 0 && (
-                            <PopoverContent className="w-80">
-                            <div className="grid gap-4">
-                                <div className="space-y-2">
-                                <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                    You have {selectedDateEvents.length} event(s) today.
-                                </p>
-                                </div>
-                                <div className="grid gap-2">
-                                {selectedDateEvents.map(event => (
-                                    <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
-                                    <p className="text-sm font-medium">{event.title}</p>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="h-full flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <CalendarDays className="w-5 h-5 mr-2" />
+                                Monthly Calendar
+                            </CardTitle>
+                            <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                    <div className="w-full">
+                                        <ScheduleCalendar 
+                                            schedule={schedule} 
+                                            leaveRequests={leaveRequests} 
+                                            events={events}
+                                            onDayClick={handleDayClick}
+                                        />
                                     </div>
-                                ))}
-                                </div>
-                                <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
-                                <Plus className="h-4 w-4 mr-2"/>
-                                Add Event
-                                </Button>
-                            </div>
-                            </PopoverContent>
-                        )}
-                    </Popover>
+                                </PopoverTrigger>
+                                {selectedDateEvents.length > 0 && (
+                                    <PopoverContent className="w-80">
+                                    <div className="grid gap-4">
+                                        <div className="space-y-2">
+                                        <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
+                                        <p className="text-sm text-muted-foreground">
+                                            You have {selectedDateEvents.length} event(s) today.
+                                        </p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                        {selectedDateEvents.map(event => (
+                                            <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
+                                            <p className="text-sm font-medium">{event.title}</p>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                            </div>
+                                        ))}
+                                        </div>
+                                        <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
+                                        <Plus className="h-4 w-4 mr-2"/>
+                                        Add Event
+                                        </Button>
+                                    </div>
+                                    </PopoverContent>
+                                )}
+                            </Popover>
+                        </CardContent>
+                    </Card>
                 </div>
                  <div className="lg:col-span-1 space-y-6">
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
@@ -423,6 +433,25 @@ export default function FacultyDashboard() {
                         <CardFooter>
                             <Button onClick={() => setScheduleModalOpen(true)}>
                                 View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
+                        <CardHeader>
+                            <CardTitle className="flex items-center"><Sparkles className="mr-2 h-5 w-5 text-purple-500" />Generate Timetable</CardTitle>
+                            <CardDescription>Use AI to visualize a potential weekly schedule.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                See what an AI-generated schedule could look like. This is a planning tool and will not affect the current schedule.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button asChild variant="secondary">
+                                <Link href="/admin?tab=generate-timetable">
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Open Generator
+                                </Link>
                             </Button>
                         </CardFooter>
                     </Card>
