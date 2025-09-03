@@ -24,24 +24,27 @@ const dbFilePath = './timewise.db';
 
 // This is a temporary measure to ensure the new schema is applied.
 // It will delete the old database file one time if it exists.
-if (fs.existsSync(dbFilePath)) {
-    const oldDb = new Database(dbFilePath);
+const ensureLatestSchema = () => {
+  if (fs.existsSync(dbFilePath)) {
+    const testDb = new Database(dbFilePath);
     try {
-        oldDb.prepare('SELECT profileCompleted FROM students LIMIT 1').get();
+      // Check for a column that exists in the new schema but not the old one.
+      testDb.prepare('SELECT profileCompleted FROM students LIMIT 1').get();
     } catch (e) {
-        console.log('Old database schema detected. Re-creating database file.');
-        oldDb.close();
-        fs.unlinkSync(dbFilePath);
+      console.log('Old database schema detected. Re-creating database file to apply updates.');
+      testDb.close();
+      fs.unlinkSync(dbFilePath);
     } finally {
-        if (oldDb.open) {
-            oldDb.close();
-        }
+      if (testDb.open) {
+        testDb.close();
+      }
     }
-}
-
+  }
+};
 
 function initializeDb() {
-  const dbExists = fs.existsSync(dbFilePath);
+  // Ensure the DB schema is up-to-date before connecting
+  ensureLatestSchema();
   
   db = new Database(dbFilePath);
 

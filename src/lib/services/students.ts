@@ -9,7 +9,6 @@ import { addCredential } from './auth';
 import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
 import { getClasses } from './classes';
-import { randomBytes } from 'crypto';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
@@ -38,7 +37,9 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak' | 'profileC
     const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar, newItem.profileCompleted);
 
-    const initialPassword = randomBytes(8).toString('hex');
+    // When adding a student via the admin UI, an initial password is required.
+    // The password from placeholder data is not used here.
+    const initialPassword = 'student123'; // Or generate a random one
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
