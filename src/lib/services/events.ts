@@ -45,15 +45,34 @@ export async function checkForEventReminders(userId: string) {
   const todaysEvents = db.prepare('SELECT * FROM events WHERE userId = ? AND date = ? AND reminder = 1').all(userId, today) as Event[];
 
   for (const event of todaysEvents) {
+    const now = new Date();
+    let shouldRemind = false;
+
+    if (event.reminderTime) {
+      const [hours, minutes] = event.reminderTime.split(':').map(Number);
+      const reminderDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+      
+      // Check if reminder time is within the last minute
+      if (now >= reminderDateTime && now.getTime() - reminderDateTime.getTime() < 60000) {
+        shouldRemind = true;
+      }
+    } else {
+        // If no time is set, remind at the beginning of the day (e.g., on login)
+        shouldRemind = true;
+    }
+
+    if (!shouldRemind) continue;
+
+
     let message = `Reminder: "${event.title}" is today!`;
     if (event.reminderTime) {
         const time = event.reminderTime;
         // Basic AM/PM formatting
-        let [hours, minutes] = time.split(':');
+        let [hours, minutesStr] = time.split(':');
         let hoursNum = parseInt(hours);
         const ampm = hoursNum >= 12 ? 'PM' : 'AM';
         hoursNum = hoursNum % 12 || 12; // Convert to 12-hour format
-        const formattedTime = `${hoursNum}:${minutes} ${ampm}`;
+        const formattedTime = `${hoursNum}:${minutesStr} ${ampm}`;
         message = `Reminder for ${formattedTime}: "${event.title}" is today!`;
     }
     
@@ -62,7 +81,7 @@ export async function checkForEventReminders(userId: string) {
         SELECT 1 FROM notifications 
         WHERE userId = ? AND message = ? AND createdAt > ?
         LIMIT 1
-    `).get(userId, message, new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString());
+    `).get(userId, message, new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString());
     
     if (!recentNotification) {
       await addNotification({
