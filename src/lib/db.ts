@@ -30,19 +30,7 @@ function initializeDb() {
     console.log('Database does not exist, creating and seeding...');
     createSchemaAndSeed();
   } else {
-    console.log('Database exists, checking schema...');
-    // Add migration logic here if needed in the future
-    // For now, we assume if the file exists, the schema is correct.
-    // A simple check for a newer column can decide if we need to migrate/re-create.
-    try {
-        db.prepare('SELECT profileCompleted FROM faculty LIMIT 1').get();
-    } catch (e) {
-        console.log('Detected old schema, re-creating database.');
-        db.close();
-        fs.unlinkSync(dbFilePath);
-        db = new Database(dbFilePath);
-        createSchemaAndSeed();
-    }
+    console.log('Database exists. Persistence is enabled.');
   }
 
   db.pragma('journal_mode = WAL');
