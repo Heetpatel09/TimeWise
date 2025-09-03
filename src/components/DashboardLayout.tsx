@@ -2,26 +2,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  useSidebar,
-  SidebarInset,
-  SidebarTrigger,
-  SidebarSeparator,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenuBadge,
-} from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,15 +76,12 @@ const navItems = {
 type Role = 'admin' | 'faculty' | 'student';
 
 function TimeWiseLogo() {
-  const { state } = useSidebar();
   return (
     <Link href="/" className="flex items-center gap-2">
        <div className="relative w-8 h-8">
           <BrainCircuit className="w-full h-full text-primary" />
       </div>
-      {state === 'expanded' && (
-        <span className="text-xl font-bold text-sidebar-primary font-headline">TimeWise</span>
-      )}
+      <span className="text-xl font-bold text-primary font-headline">TimeWise</span>
     </Link>
   );
 }
@@ -224,7 +203,7 @@ function UserProfile() {
   );
 }
 
-function MobileNav() {
+function NavMenu() {
     const { user } = useAuth();
     const role = user?.role;
     const items = role ? navItems[role] : [];
@@ -234,154 +213,30 @@ function MobileNav() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                    <Menu className="h-6 w-6" />
-                    <span className="sr-only">Open Menu</span>
+                <Button variant="outline" className="flex items-center gap-2">
+                    <Menu className="h-5 w-5" />
+                    <span className="hidden sm:inline">Menu</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="start" className="w-64">
                 <DropdownMenuLabel>Navigation</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     {items.map((item, index) => {
-                        if (item.label === 'Dashboard' || item.label === 'My Dashboard') {
-                            const Icon = item.icon;
-                            return (
-                                <DropdownMenuItem key={index} asChild>
-                                    <Link href={item.href}>
-                                        <Icon className="mr-2 h-4 w-4" />
-                                        <span>{item.label}</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                            );
-                        }
-                        if (role === 'admin' && item.tab) {
-                            const Icon = item.icon;
-                            return (
-                                <DropdownMenuItem key={index} asChild>
-                                    <Link href={item.href}>
-                                        <Icon className="mr-2 h-4 w-4" />
-                                        <span>{item.label}</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                            );
-                        }
-                        return null;
+                        const Icon = item.icon;
+                        return (
+                            <DropdownMenuItem key={index} asChild>
+                                <Link href={item.href}>
+                                    <Icon className="mr-2 h-4 w-4" />
+                                    <span>{item.label}</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        );
                     })}
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                   <Link href={`/${user.role}/profile`}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
-                    </Link>
-                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     )
-}
-
-function Nav() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const [isClient, setIsClient] = React.useState(false);
-  const [pendingLeaveRequestsCount, setPendingLeaveRequestsCount] = useState<number | null>(null);
-  const [pendingScheduleRequestsCount, setPendingScheduleRequestsCount] = useState<number | null>(null);
-  
-  useEffect(() => {
-    setIsClient(true);
-    if (user?.role === 'admin') {
-      getLeaveRequests().then(requests => {
-        setPendingLeaveRequestsCount(requests.filter(r => r.status === 'pending').length);
-      });
-      getScheduleChangeRequests().then(requests => {
-        setPendingScheduleRequestsCount(requests.filter(r => r.status === 'pending').length);
-      });
-    }
-  }, [user]);
-
-  if (!isClient || !user) {
-    return null; // Don't render on the server to avoid hydration mismatch
-  }
-  
-  const role = user.role;
-  const adminItems = navItems['admin'];
-  
-  const isActive = (item: {href: string, tab?: string}) => {
-    if (item.href.includes('?tab=')) {
-        const currentTab = searchParams.get('tab');
-        return currentTab === item.tab;
-    }
-     if (pathname.startsWith('/admin') && item.href === '/admin') {
-        return !searchParams.get('tab');
-     }
-    return pathname === item.href;
-  }
-
-  return (
-    <SidebarMenu>
-      {role !== 'admin' ? (
-          navItems[role].map((item) => {
-            const Icon = item.icon;
-            return (
-              <SidebarMenuItem key={item.href}>
-                 <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={isActive(item)}
-                    tooltip={item.label}
-                  >
-                    <Icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                 </Link>
-              </SidebarMenuItem>
-            );
-          })
-      ): (
-        <>
-            <SidebarMenuItem>
-                <Link href="/admin">
-                    <SidebarMenuButton isActive={!searchParams.get('tab')} tooltip="Dashboard">
-                        <LayoutGrid /><span>Dashboard</span>
-                    </SidebarMenuButton>
-                </Link>
-            </SidebarMenuItem>
-            <SidebarSeparator />
-            <SidebarGroup>
-                <SidebarGroupLabel>Management</SidebarGroupLabel>
-                <SidebarGroupContent>
-                    <SidebarMenu>
-                        {adminItems.filter(item => item.tab).map((item) => {
-                            const Icon = item.icon;
-                            let badgeCount: number | null | undefined = undefined;
-                            if (item.tab === 'leave-requests') badgeCount = pendingLeaveRequestsCount;
-                            if (item.tab === 'schedule-requests') badgeCount = pendingScheduleRequestsCount;
-
-                            return (
-                            <SidebarMenuItem key={item.tab}>
-                                <Link href={item.href}>
-                                <SidebarMenuButton
-                                    isActive={isActive(item)}
-                                    tooltip={item.label}
-                                    size="sm"
-                                >
-                                    <Icon />
-                                    <span>{item.label}</span>
-                                    {badgeCount !== null && badgeCount !== undefined && badgeCount > 0 && <SidebarMenuBadge className="animate-pulse">{badgeCount}</SidebarMenuBadge>}
-                                    {badgeCount === null && <Loader2 className='absolute right-2 top-1.5 h-4 w-4 animate-spin' />}
-                                </SidebarMenuButton>
-                                </Link>
-                            </SidebarMenuItem>
-                            )
-                        })}
-                    </SidebarMenu>
-                </SidebarGroupContent>
-            </SidebarGroup>
-        </>
-      )}
-    </SidebarMenu>
-  );
 }
 
 export default function DashboardLayout({
@@ -435,34 +290,15 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <TimeWiseLogo />
-        </SidebarHeader>
-        <SidebarContent>
-          <Nav />
-        </SidebarContent>
-        <SidebarFooter>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <Link href={`/${role}/profile`}>
-                        <SidebarMenuButton tooltip="Settings">
-                        <Settings />
-                        <span>Settings</span>
-                        </SidebarMenuButton>
-                    </Link>
-                </SidebarMenuItem>
-            </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="flex flex-col h-screen">
-        <header className="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-sidebar shadow-sm">
-          <div className="flex items-center gap-2">
-            <MobileNav />
-            <h1 className="text-xl md:text-2xl font-semibold font-headline">{pageTitle}</h1>
+      <div className="flex flex-col min-h-screen">
+        <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card shadow-sm">
+          <div className="flex items-center gap-4">
+             <TimeWiseLogo />
+             <NavMenu />
           </div>
+
           <div className="flex items-center gap-2 sm:gap-4">
+             <h1 className="hidden md:block text-xl font-semibold font-headline">{pageTitle}</h1>
             <Badge variant="outline" className="hidden sm:flex items-center text-sm">
                 {getRoleIcon()}
                 {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -471,10 +307,9 @@ export default function DashboardLayout({
             <UserProfile />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in slide-in-from-bottom-8 duration-500">
             {children}
         </main>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
   );
 }
