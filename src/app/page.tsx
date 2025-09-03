@@ -171,7 +171,7 @@ export default function Home() {
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
           <TimeWiseLogo />
         </div>
-        <p className="mt-6 text-lg md:text-xl max-w-2xl text-primary/90 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+        <p className="mt-6 text-lg md:text-xl max-w-2xl text-primary/90 font-medium animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
             Developed with scalability, security, and ease of use in mind, TimeWise represents a step forward in modern academic management, ensuring that students and faculty can focus on learning and teaching while the system takes care of the rest.
         </p>
 
