@@ -27,9 +27,11 @@ export async function getTimetableDataForStudent(studentId: string) {
             sch.day,
             sch.time,
             sub.name as subjectName,
+            sub.isSpecial as subjectIsSpecial,
             fac.name as facultyName,
             cls.name as className,
-            crm.name as classroomName
+            crm.name as classroomName,
+            crm.type as classroomType
         FROM schedule sch
         JOIN subjects sub ON sch.subjectId = sub.id
         JOIN faculty fac ON sch.facultyId = fac.id
@@ -38,7 +40,12 @@ export async function getTimetableDataForStudent(studentId: string) {
         WHERE sch.classId = ?
     `).all(student.classId) as EnrichedSchedule[];
 
-    return { student, schedule };
+    const enrichedSchedule = schedule.map(s => ({
+        ...s,
+        subjectIsSpecial: !!s.subjectIsSpecial
+    }))
+
+    return { student, schedule: enrichedSchedule };
 }
 
 export async function getSubjectsForStudent(studentId: string): Promise<Subject[]> {

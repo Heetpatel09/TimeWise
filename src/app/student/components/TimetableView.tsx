@@ -13,7 +13,7 @@ import { getTimetableDataForStudent, getSubjectsForStudent } from '../actions';
 import { Badge } from '@/components/ui/badge';
 
 interface TimetableData {
-    student: Student;
+    student: Student & { className: string };
     schedule: EnrichedSchedule[];
 }
 
@@ -60,7 +60,7 @@ export default function TimetableView() {
               getTimetableDataForStudent(user.id),
               getSubjectsForStudent(user.id)
             ]);
-            setData(timetableData);
+            setData(timetableData as TimetableData);
             setSubjects(subjectData);
             setIsLoading(false);
         }
@@ -69,7 +69,7 @@ export default function TimetableView() {
   }, [user]);
 
   const studentSchedule = data?.schedule || [];
-  const className = (data?.student as any)?.className || '';
+  const className = data?.student?.className || '';
 
   const exportPDF = () => {
     if (!data?.student) return;
