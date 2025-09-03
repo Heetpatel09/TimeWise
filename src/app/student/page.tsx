@@ -274,8 +274,8 @@ export default function StudentDashboard() {
 
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
-        <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-2 space-y-8">
+        <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-8">
                  <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
                     <CardHeader>
                         <CardTitle>Welcome, {user?.name || 'Student'}!</CardTitle>
@@ -292,7 +292,7 @@ export default function StudentDashboard() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="md:col-span-1 space-y-8">
+            <div className="lg:col-span-1 space-y-8">
                 <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                     <CardHeader>
                          <CardTitle className="flex items-center">
@@ -437,7 +437,7 @@ export default function StudentDashboard() {
                   id="start-date" 
                   type="date" 
                   value={leaveStartDate}
-                  onChange={(e) => setLeaveStartDate(e.target.value || '')}
+                  onChange={(e) => setLeaveStartDate(e.target.value ?? '')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -447,7 +447,7 @@ export default function StudentDashboard() {
                   id="end-date" 
                   type="date"
                   value={leaveEndDate}
-                  onChange={(e) => setLeaveEndDate(e.target.value || '')}
+                  onChange={(e) => setLeaveEndDate(e.target.value ?? '')}
                   disabled={isSubmitting}
                 />
               </div>

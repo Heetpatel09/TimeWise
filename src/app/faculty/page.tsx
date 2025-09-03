@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useTransition, useMemo } from 'react';
@@ -117,9 +116,9 @@ function ScheduleCalendar({
     return (
       <div
         key={day.toString()}
-        className={`h-36 border-t border-r border-gray-200 dark:border-gray-700 p-1 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
+        className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
           !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
-        }`}
+        } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
         onClick={() => onDayClick(day)}
       >
         <div className="flex justify-between items-center">
@@ -153,12 +152,12 @@ function ScheduleCalendar({
             </div>
         </CardHeader>
         <CardContent className="flex-grow">
-            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
+            <div className="hidden md:grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="py-2 border-t">{day}</div>
                 ))}
             </div>
-            <div className="grid grid-cols-7 h-full">
+            <div className="grid grid-cols-1 md:grid-cols-7 h-full">
                 {daysInMonth.map(renderDayCell)}
             </div>
         </CardContent>
@@ -340,10 +339,10 @@ export default function FacultyDashboard() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                 <div className="lg:col-span-2">
+                <div className="lg:col-span-2">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <div>
+                             <div className="w-full">
                                 <ScheduleCalendar 
                                     schedule={schedule} 
                                     leaveRequests={leaveRequests} 
