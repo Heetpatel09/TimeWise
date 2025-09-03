@@ -39,9 +39,18 @@ const managementCards = [
 ];
 
 const AdminDashboardHome = () => {
-    const { data: students, isLoading: studentsLoading } = useQuery({ queryKey: ['students'], queryFn: getStudents });
-    const { data: faculty, isLoading: facultyLoading } = useQuery({ queryKey: ['faculty'], queryFn: getFaculty });
-    const { data: schedule, isLoading: scheduleLoading } = useQuery({ queryKey: ['schedule'], queryFn: getSchedule });
+    const { data: students, isLoading: studentsLoading } = useQuery({ 
+      queryKey: ['students'], 
+      queryFn: getStudents 
+    });
+    const { data: faculty, isLoading: facultyLoading } = useQuery({ 
+      queryKey: ['faculty'], 
+      queryFn: getFaculty 
+    });
+    const { data: schedule, isLoading: scheduleLoading } = useQuery({ 
+      queryKey: ['schedule'], 
+      queryFn: getSchedule 
+    });
 
     const totalStudents = students?.length || 0;
     const totalFaculty = faculty?.length || 0;

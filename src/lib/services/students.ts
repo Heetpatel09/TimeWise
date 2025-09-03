@@ -18,7 +18,8 @@ export async function getStudents(): Promise<Student[]> {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM students');
   const results = stmt.all() as any[];
-  return results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }));
+  // Ensure plain objects are returned
+  return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
 }
 
 export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak?: number }) {

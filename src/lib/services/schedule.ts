@@ -14,7 +14,9 @@ function revalidateAll() {
 export async function getSchedule(): Promise<Schedule[]> {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM schedule');
-  return stmt.all() as Schedule[];
+  const results = stmt.all() as Schedule[];
+  // Ensure plain objects are returned
+  return JSON.parse(JSON.stringify(results));
 }
 
 const MIN_LECTURES_PER_DAY = 4;
