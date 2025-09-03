@@ -16,38 +16,66 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell, CalendarDays } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell, CalendarDays, Circle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
-import { addLeaveRequest } from '@/lib/services/leave';
+import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
 import { getFaculty } from '@/lib/services/faculty';
-import type { Faculty as FacultyType, Notification, EnrichedSchedule } from '@/lib/types';
+import type { Faculty as FacultyType, Notification, EnrichedSchedule, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser } from '@/lib/services/notifications';
 import { getSchedule } from '@/lib/services/schedule';
 import { Calendar } from '@/components/ui/calendar';
-import { parse, getDay } from 'date-fns';
+import { getDay } from 'date-fns';
+import { holidays } from '@/lib/holidays';
 
-function ScheduleCalendar({ schedule }: { schedule: EnrichedSchedule[] }) {
+function getDatesInRange(startDate: Date, endDate: Date) {
+  const dates = [];
+  let currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return dates;
+}
+
+function ScheduleCalendar({ schedule, leaveRequests }: { schedule: EnrichedSchedule[], leaveRequests: LeaveRequest[] }) {
     const scheduledDates = schedule.map(slot => {
-        // This is a bit of a hack since we don't have real dates
-        // We'll simulate the current week
         const dayOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].indexOf(slot.day);
         const today = new Date();
-        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday ...
+        const currentDay = today.getDay(); 
         const result = new Date();
         result.setDate(today.getDate() - (currentDay - 1) + dayOfWeek);
         return result;
     });
 
+    const approvedLeaveDates = leaveRequests
+        .filter(lr => lr.status === 'approved')
+        .flatMap(lr => getDatesInRange(new Date(lr.startDate), new Date(lr.endDate)));
+
+    const holidayDates = holidays.map(h => h.date);
+
     return (
         <Calendar
             mode="multiple"
             selected={scheduledDates}
-            className="rounded-md border"
-            classNames={{
-              day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
+            modifiers={{
+                leave: approvedLeaveDates,
+                holiday: holidayDates,
             }}
+            modifiersClassNames={{
+                leave: 'bg-destructive/20 text-destructive-foreground',
+                holiday: 'text-blue-600',
+                selected: 'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground'
+            }}
+            className="rounded-md border"
+            footer={
+              <div className="text-sm text-muted-foreground p-2 flex flex-col gap-2">
+                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-primary fill-primary" /> Scheduled Class</div>
+                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-blue-600 fill-blue-600" /> Holiday</div>
+                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 bg-destructive/20 text-destructive-foreground" /> Approved Leave</div>
+              </div>
+            }
         />
     )
 }
@@ -64,6 +92,7 @@ export default function FacultyDashboard() {
   const [currentFaculty, setCurrentFaculty] = useState<FacultyType | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -71,10 +100,11 @@ export default function FacultyDashboard() {
     async function loadData() {
         if (user) {
             setIsLoading(true);
-            const [allFaculty, userNotifications, allSchedule] = await Promise.all([
+            const [allFaculty, userNotifications, allSchedule, allLeaveRequests] = await Promise.all([
                 getFaculty(),
                 getNotificationsForUser(user.id),
-                getSchedule()
+                getSchedule(),
+                getLeaveRequests()
             ]);
             
             const fac = allFaculty.find(f => f.id === user.id);
@@ -82,6 +112,7 @@ export default function FacultyDashboard() {
             
             const facultySchedule = allSchedule.filter(s => s.facultyId === user.id) as EnrichedSchedule[];
             setSchedule(facultySchedule);
+            setLeaveRequests(allLeaveRequests.filter(lr => lr.requesterId === user.id));
 
             setNotifications(userNotifications);
             setIsLoading(false);
@@ -197,7 +228,7 @@ export default function FacultyDashboard() {
                     <CardDescription>Your teaching days at a glance.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
-                   <ScheduleCalendar schedule={schedule} />
+                   <ScheduleCalendar schedule={schedule} leaveRequests={leaveRequests} />
                 </CardContent>
             </Card>
          </div>

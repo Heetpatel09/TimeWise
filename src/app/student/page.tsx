@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
-import type { Student, Notification, Subject, EnrichedSchedule } from '@/lib/types';
+import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,32 +16,60 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { addLeaveRequest } from '@/lib/services/leave';
+import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
 import { getSubjectsForStudent, getTimetableDataForStudent } from './actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
+import { holidays } from '@/lib/holidays';
 
-function ScheduleCalendar({ schedule }: { schedule: EnrichedSchedule[] }) {
+function getDatesInRange(startDate: Date, endDate: Date) {
+  const dates = [];
+  let currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return dates;
+}
+
+function ScheduleCalendar({ schedule, leaveRequests }: { schedule: EnrichedSchedule[], leaveRequests: LeaveRequest[] }) {
     const scheduledDates = schedule.map(slot => {
-        // This is a bit of a hack since we don't have real dates
-        // We'll simulate the current week
         const dayOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].indexOf(slot.day);
         const today = new Date();
-        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday ...
+        const currentDay = today.getDay(); 
         const result = new Date();
         result.setDate(today.getDate() - (currentDay - 1) + dayOfWeek);
         return result;
     });
 
+    const approvedLeaveDates = leaveRequests
+        .filter(lr => lr.status === 'approved')
+        .flatMap(lr => getDatesInRange(new Date(lr.startDate), new Date(lr.endDate)));
+
+    const holidayDates = holidays.map(h => h.date);
+
     return (
         <Calendar
             mode="multiple"
             selected={scheduledDates}
-            className="rounded-md border"
-             classNames={{
-              day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
+            modifiers={{
+                leave: approvedLeaveDates,
+                holiday: holidayDates,
             }}
+            modifiersClassNames={{
+                leave: 'bg-destructive/20 text-destructive-foreground',
+                holiday: 'text-blue-600',
+                selected: 'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground'
+            }}
+            className="rounded-md border"
+            footer={
+              <div className="text-sm text-muted-foreground p-2 flex flex-col gap-2">
+                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-primary fill-primary" /> Scheduled Class</div>
+                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-blue-600 fill-blue-600" /> Holiday</div>
+                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 bg-destructive/20 text-destructive-foreground" /> Approved Leave</div>
+              </div>
+            }
         />
     )
 }
@@ -59,16 +87,18 @@ export default function StudentDashboard() {
   const [isCatalogOpen, setCatalogOpen] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     async function loadData() {
       if (user) {
         setIsLoading(true);
-        const [studentData, userNotifications, timetableData] = await Promise.all([
+        const [studentData, userNotifications, timetableData, allLeaveRequests] = await Promise.all([
             getStudents(),
             getNotificationsForUser(user.id),
-            getTimetableDataForStudent(user.id)
+            getTimetableDataForStudent(user.id),
+            getLeaveRequests()
         ]);
         const currentStudent = studentData.find(s => s.id === user.id);
         if (currentStudent) {
@@ -79,6 +109,7 @@ export default function StudentDashboard() {
         
         setNotifications(userNotifications);
         setSchedule(timetableData.schedule);
+        setLeaveRequests(allLeaveRequests.filter(lr => lr.requesterId === user.id));
         setIsLoading(false);
       }
     }
@@ -163,7 +194,7 @@ export default function StudentDashboard() {
                         <CardDescription>Your class days at a glance.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex justify-center">
-                       <ScheduleCalendar schedule={schedule} />
+                       <ScheduleCalendar schedule={schedule} leaveRequests={leaveRequests} />
                     </CardContent>
                 </Card>
             </div>
