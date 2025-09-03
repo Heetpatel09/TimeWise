@@ -56,7 +56,7 @@ export default function AdminProfilePage() {
 
         setIsSaving(true);
         try {
-            const updatedUser = await updateAdmin({ ...user, name, email, avatar });
+            const updatedUser = await updateAdmin({ id: user.id, name, email, avatar });
             
             if (newPassword) {
                 await addCredential({

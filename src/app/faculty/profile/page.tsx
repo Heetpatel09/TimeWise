@@ -73,7 +73,6 @@ export default function FacultyProfilePage() {
       try {
         const updatedFacultyResult = await updateFaculty(facultyMember);
 
-        // If email or password has changed, update credentials
         if (newPassword || updatedFacultyResult.email !== user.email) {
             await addCredential({
                 userId: user.id,
