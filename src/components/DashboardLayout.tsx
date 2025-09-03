@@ -216,7 +216,7 @@ export default function DashboardLayout({
   }
 
   return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-background/80">
         <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card shadow-sm">
           <div className="flex items-center gap-4">
              <TimeWiseLogo />
