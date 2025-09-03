@@ -1,4 +1,5 @@
 
+'use server';
 
 import Database from 'better-sqlite3';
 import {
@@ -13,32 +14,19 @@ import {
   classrooms,
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
+import fs from 'fs';
 
 // This will be our singleton database instance
 let db: Database.Database;
+const dbFilePath = './timewise.db';
 
 function initializeDb() {
-    console.log('Initializing database connection...');
-    db = new Database(':memory:');
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON'); // Enforce foreign key constraints
+  console.log('Initializing database connection...');
+  const dbExists = fs.existsSync(dbFilePath);
+  db = new Database(dbFilePath);
 
-    console.log('Running initial database setup...');
-
-    // Drop tables in reverse order of dependency to avoid foreign key errors
-    db.exec(`
-      DROP TABLE IF EXISTS notifications;
-      DROP TABLE IF EXISTS new_slot_requests;
-      DROP TABLE IF EXISTS schedule_change_requests;
-      DROP TABLE IF EXISTS leave_requests;
-      DROP TABLE IF EXISTS schedule;
-      DROP TABLE IF EXISTS students;
-      DROP TABLE IF EXISTS faculty;
-      DROP TABLE IF EXISTS classrooms;
-      DROP TABLE IF EXISTS classes;
-      DROP TABLE IF EXISTS subjects;
-      DROP TABLE IF EXISTS users;
-    `);
+  if (!dbExists) {
+    console.log('Database file not found, running initial setup...');
 
     db.exec(`
       CREATE TABLE subjects (
@@ -162,15 +150,20 @@ function initializeDb() {
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
-        // Auth users
         insertUser.run('admin@timewise.app', 'admin', 'admin123', 'admin');
         faculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty'));
         students.forEach(s => insertUser.run(s.email, s.id, 'student123', 'student'));
 
     })();
-    console.log('Database initialized successfully.');
-    return db;
+    console.log('Database initialized and seeded successfully.');
+  }
+
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+
+  return db;
 }
+
 
 // Initialize and export the database connection
 const getDb = () => {
@@ -181,3 +174,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
