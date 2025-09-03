@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { UserCog, Loader2, Eye, EyeOff } from 'lucide-react';
+import { UserCog, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { updateAdmin, updatePassword } from '@/lib/services/auth';
+import Link from 'next/link';
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
@@ -57,7 +58,7 @@ export default function AdminProfilePage() {
         try {
             const updatedUser = await updateAdmin({ id: user.id, name, email, avatar });
             if (newPassword) {
-                await updatePassword(updatedUser.email, newPassword);
+                await updatePassword(user.email, newPassword);
             }
             setAuthUser(updatedUser);
             toast({
@@ -78,6 +79,12 @@ export default function AdminProfilePage() {
 
   return (
     <DashboardLayout pageTitle="My Profile" role="admin">
+        <Button asChild variant="outline" size="sm" className="mb-4">
+            <Link href="/admin">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+            </Link>
+        </Button>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">

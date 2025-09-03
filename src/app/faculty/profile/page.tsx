@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { UserCheck, Loader2, Eye, EyeOff } from 'lucide-react';
+import { UserCheck, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getFaculty, updateFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { updatePassword } from '@/lib/services/auth';
+import Link from 'next/link';
 
 
 export default function FacultyProfilePage() {
@@ -73,7 +74,7 @@ export default function FacultyProfilePage() {
       try {
         const updatedFaculty = await updateFaculty(facultyMember);
         if (newPassword) {
-            await updatePassword(updatedFaculty.email, newPassword);
+            await updatePassword(user.email, newPassword);
         }
         
         const updatedUser = { 
@@ -122,6 +123,12 @@ export default function FacultyProfilePage() {
 
   return (
     <DashboardLayout pageTitle="My Profile" role="faculty">
+        <Button asChild variant="outline" size="sm" className="mb-4">
+            <Link href="/faculty">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+            </Link>
+        </Button>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
