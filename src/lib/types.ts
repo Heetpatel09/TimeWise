@@ -30,7 +30,6 @@ export interface Faculty {
   department: string;
   streak: number;
   avatar?: string;
-  isSubstitute?: boolean;
 }
 
 export interface Classroom {
@@ -91,13 +90,4 @@ export interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
-}
-
-export interface SubstituteAssignment {
-    id: string;
-    scheduleId: string;
-    originalFacultyId: string;
-    substituteFacultyId: string;
-    date: string; // YYYY-MM-DD
-    status: 'pending' | 'approved' | 'rejected';
 }
