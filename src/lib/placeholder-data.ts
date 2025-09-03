@@ -1,11 +1,11 @@
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom } from './types';
 
 export const subjects: Subject[] = [
-  { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101', isSpecial: true, type: 'theory' },
-  { id: 'SUB002', name: 'Data Structures and Algorithms', code: 'CS201', isSpecial: false, type: 'lab' },
-  { id: 'SUB003', name: 'Database Management Systems', code: 'CS301', isSpecial: false, type: 'theory' },
-  { id: 'SUB004', name: 'Operating Systems', code: 'CS302', isSpecial: false, type: 'lab' },
-  { id: 'SUB005', name: 'Machine Learning', code: 'AI401', isSpecial: true, type: 'lab' },
+  { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101', isSpecial: true, type: 'theory', semester: 1 },
+  { id: 'SUB002', name: 'Data Structures and Algorithms', code: 'CS201', isSpecial: false, type: 'lab', semester: 3 },
+  { id: 'SUB003', name: 'Database Management Systems', code: 'CS301', isSpecial: false, type: 'theory', semester: 5 },
+  { id: 'SUB004', name: 'Operating Systems', code: 'CS302', isSpecial: false, type: 'lab', semester: 5 },
+  { id: 'SUB005', name: 'Machine Learning', code: 'AI401', isSpecial: true, type: 'lab', semester: 7 },
 ];
 
 export const classes: Class[] = [

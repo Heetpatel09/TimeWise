@@ -2,7 +2,7 @@
 'use server';
 
 import { db as getDb } from '@/lib/db';
-import type { Student, EnrichedSchedule } from '@/lib/types';
+import type { Student, EnrichedSchedule, Subject } from '@/lib/types';
 
 export async function getTimetableDataForStudent(studentId: string) {
     const db = getDb();
@@ -39,4 +39,21 @@ export async function getTimetableDataForStudent(studentId: string) {
     `).all(student.classId) as EnrichedSchedule[];
 
     return { student, schedule };
+}
+
+export async function getSubjectsForStudent(studentId: string): Promise<Subject[]> {
+    const db = getDb();
+    const studentClass: { semester: number } | undefined = db.prepare(`
+        SELECT c.semester 
+        FROM students s
+        JOIN classes c ON s.classId = c.id
+        WHERE s.id = ?
+    `).get(studentId) as any;
+
+    if (!studentClass) {
+        return [];
+    }
+
+    const subjects = db.prepare('SELECT * FROM subjects WHERE semester = ?').all(studentClass.semester) as any[];
+    return subjects.map(s => ({ ...s, isSpecial: !!s.isSpecial }));
 }

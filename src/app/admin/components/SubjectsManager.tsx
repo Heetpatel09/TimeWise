@@ -90,7 +90,7 @@ export default function SubjectsManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentSubject({ isSpecial: false, type: 'theory' });
+    setCurrentSubject({ isSpecial: false, type: 'theory', semester: 1 });
     setDialogOpen(true);
   };
 
@@ -113,6 +113,7 @@ export default function SubjectsManager() {
               <TableHead>Name</TableHead>
               <TableHead>Code</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Semester</TableHead>
               <TableHead>Special</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -128,6 +129,7 @@ export default function SubjectsManager() {
                         {subject.type}
                     </Badge>
                 </TableCell>
+                <TableCell>{subject.semester}</TableCell>
                 <TableCell>
                   {subject.isSpecial && <Badge variant="secondary"><Star className="h-3 w-3 mr-1" />Special</Badge>}
                 </TableCell>
@@ -189,6 +191,10 @@ export default function SubjectsManager() {
                 className="col-span-3"
                 disabled={isSubmitting}
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="semester" className="text-right">Semester</Label>
+              <Input id="semester" type="number" min="1" max="8" value={currentSubject?.semester || ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">

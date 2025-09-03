@@ -45,7 +45,8 @@ function initializeDb() {
           name TEXT NOT NULL,
           code TEXT NOT NULL,
           isSpecial BOOLEAN NOT NULL DEFAULT 0,
-          type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory'
+          type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory',
+          semester INTEGER NOT NULL
       );
       CREATE TABLE classes (
           id TEXT PRIMARY KEY,
@@ -124,7 +125,7 @@ function initializeDb() {
       );
     `);
 
-    const insertSubject = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type) VALUES (?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
@@ -136,7 +137,7 @@ function initializeDb() {
     const insertUser = db.prepare('INSERT INTO users (email, id, password, role) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null));

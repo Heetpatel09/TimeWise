@@ -6,6 +6,7 @@ export interface Subject {
   code: string;
   isSpecial?: boolean;
   type: 'theory' | 'lab';
+  semester: number;
 }
 
 export interface Class {
