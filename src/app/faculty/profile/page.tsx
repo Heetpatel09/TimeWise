@@ -21,8 +21,8 @@ export default function FacultyProfilePage() {
   const { user, setUser: setAuthUser } = useAuth();
   const { toast } = useToast();
   const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
-  const [newPassword, setNewPassword] useState('');
-  const [confirmPassword, setConfirmPassword] useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
@@ -71,13 +71,12 @@ export default function FacultyProfilePage() {
 
       setIsSaving(true);
       try {
-        const updatedFaculty = await updateFaculty(facultyMember);
+        const updatedFacultyResult = await updateFaculty(facultyMember);
 
-        // Add new credentials for the potentially new email.
         if (newPassword) {
             await addCredential({
                 userId: user.id,
-                email: updatedFaculty.email,
+                email: updatedFacultyResult.email,
                 password: newPassword,
                 role: 'faculty',
             });
@@ -85,9 +84,9 @@ export default function FacultyProfilePage() {
         
         const updatedUser = { 
             ...user, 
-            name: updatedFaculty.name, 
-            email: updatedFaculty.email, 
-            avatar: updatedFaculty.avatar || user.avatar 
+            name: updatedFacultyResult.name, 
+            email: updatedFacultyResult.email, 
+            avatar: updatedFacultyResult.avatar || user.avatar 
         };
         setAuthUser(updatedUser);
         toast({

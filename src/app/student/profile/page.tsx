@@ -79,12 +79,12 @@ export default function StudentProfilePage() {
 
       setIsSaving(true);
       try {
-        const updatedStudent = await updateStudent(student);
+        const updatedStudentResult = await updateStudent(student);
 
         if (newPassword) {
             await addCredential({
                 userId: user.id,
-                email: updatedStudent.email,
+                email: updatedStudentResult.email,
                 password: newPassword,
                 role: 'student',
             });
@@ -92,9 +92,9 @@ export default function StudentProfilePage() {
         
         const updatedUser = { 
             ...user, 
-            name: updatedStudent.name, 
-            email: updatedStudent.email, 
-            avatar: updatedStudent.avatar || user.avatar 
+            name: updatedStudentResult.name, 
+            email: updatedStudentResult.email, 
+            avatar: updatedStudentResult.avatar || user.avatar 
         };
         setAuthUser(updatedUser);
         toast({
