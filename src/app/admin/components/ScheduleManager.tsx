@@ -25,11 +25,9 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Sparkles, AlertTriangle, CheckCircle, Loader2, Download } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
-import { handleResolveConflicts } from '../actions';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -42,10 +40,7 @@ export default function ScheduleManager() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
-  const [isResultOpen, setResultOpen] = useState(false);
   const [currentSlot, setCurrentSlot] = useState<Partial<Schedule> | null>(null);
-  const [conflictResult, setConflictResult] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const { toast } = useToast();
 
@@ -119,33 +114,6 @@ export default function ScheduleManager() {
     setFormOpen(true);
   };
 
-  const onResolveConflicts = async () => {
-    setIsLoading(true);
-    setResultOpen(true);
-    setConflictResult(null);
-    try {
-      const result = await handleResolveConflicts(schedule);
-      setConflictResult(result);
-    } catch (error) {
-      console.error(error);
-      setConflictResult({ hasConflicts: true, resolvedSchedules: '[]', conflictDetails: JSON.stringify({ error: 'Failed to process schedules.' }) });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const renderConflictDetails = () => {
-    if(!conflictResult?.conflictDetails) return null;
-    try {
-      const details = JSON.parse(conflictResult.conflictDetails);
-      return <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-        <code className="text-white">{JSON.stringify(details, null, 2)}</code>
-      </pre>;
-    } catch(e) {
-      return <p>{conflictResult.conflictDetails}</p>;
-    }
-  }
-
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("Master Schedule", 14, 16);
@@ -184,10 +152,6 @@ export default function ScheduleManager() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <div className='flex gap-2'>
-            <Button onClick={onResolveConflicts} variant="outline">
-                <Sparkles className="h-4 w-4 mr-2" />
-                Resolve Conflicts
-            </Button>
             <Button onClick={exportPDF} variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
@@ -310,55 +274,6 @@ export default function ScheduleManager() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isResultOpen} onOpenChange={setResultOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Conflict Resolution Report</DialogTitle>
-          </DialogHeader>
-          {isLoading && <div className="flex items-center justify-center p-10"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-4">Analyzing Schedule...</span></div>}
-          {conflictResult && (
-            <div>
-              {conflictResult.hasConflicts ? (
-                 <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Conflicts Detected!</AlertTitle>
-                  <AlertDescription>
-                    The AI has found conflicts in the schedule. See details below.
-                    {renderConflictDetails()}
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertTitle>No Conflicts Found</AlertTitle>
-                  <AlertDescription>
-                    The current schedule is free of conflicts.
-                  </AlertDescription>
-                </Alert>
-              )}
-              {conflictResult.hasConflicts && conflictResult.resolvedSchedules && (
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-2">Suggested Resolution</h3>
-                  <Button onClick={async () => {
-                    const newSchedule = JSON.parse(conflictResult.resolvedSchedules);
-                    for (const slot of newSchedule) {
-                        // This is a simple update logic. A more robust solution would
-                        // diff the schedules and only update changed slots.
-                        await updateSchedule(slot);
-                    }
-                    loadAllData();
-                    setResultOpen(false);
-                    toast({ title: 'Schedule Applied', description: 'The suggested schedule has been applied.' });
-                  }}>Apply Suggested Schedule</Button>
-                  <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-                    <code className="text-white">{JSON.stringify(JSON.parse(conflictResult.resolvedSchedules), null, 2)}</code>
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
