@@ -2,11 +2,11 @@
 
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
 import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
@@ -23,9 +23,8 @@ import { getSubjectsForStudent, getTimetableDataForStudent } from './actions';
 import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
 import { holidays } from '@/lib/holidays';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 
 function getDatesInRange(startDate: Date, endDate: Date) {
@@ -49,59 +48,112 @@ function ScheduleCalendar({
   events: Event[],
   onDayClick: (date: Date) => void,
 }) {
-    const scheduledDates = schedule.map(slot => {
-        const dayOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].indexOf(slot.day);
-        const today = new Date();
-        const currentDay = today.getDay(); 
-        const result = new Date();
-        result.setDate(today.getDate() - (currentDay - 1) + dayOfWeek);
-        return result;
-    });
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    const approvedLeaveDates = leaveRequests
+  const daysInMonth = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  const approvedLeaveDates = useMemo(() => 
+    new Set(leaveRequests
         .filter(lr => lr.status === 'approved')
-        .flatMap(lr => getDatesInRange(new Date(lr.startDate), new Date(lr.endDate)));
+        .flatMap(lr => getDatesInRange(new Date(lr.startDate), new Date(lr.endDate)))
+        .map(d => format(d, 'yyyy-MM-dd')))
+  , [leaveRequests]);
 
-    const holidayDates = holidays.map(h => h.date);
+  const holidayDates = useMemo(() =>
+    new Set(holidays.map(h => format(h.date, 'yyyy-MM-dd')))
+  , []);
+  
+  const eventDates = useMemo(() => {
+    const dateMap = new Map<string, Event[]>();
+    events.forEach(e => {
+      const dateStr = format(parseISO(e.date), 'yyyy-MM-dd');
+      if (!dateMap.has(dateStr)) {
+        dateMap.set(dateStr, []);
+      }
+      dateMap.get(dateStr)!.push(e);
+    });
+    return dateMap;
+  }, [events]);
 
-    const eventDates = events.map(e => parseISO(e.date));
+  const scheduleDates = useMemo(() => {
+    const dateMap = new Map<string, EnrichedSchedule[]>();
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
 
+    eachDayOfInterval({start: monthStart, end: monthEnd}).forEach(date => {
+        const dayName = format(date, 'EEEE'); // Monday, Tuesday etc.
+        const todaysScheduledSlots = schedule.filter(s => s.day === dayName);
+        if (todaysScheduledSlots.length > 0) {
+            dateMap.set(format(date, 'yyyy-MM-dd'), todaysScheduledSlots);
+        }
+    });
+    return dateMap;
+  }, [schedule, currentMonth]);
+
+
+  const renderDayCell = (day: Date) => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const isCurrentMonth = isSameMonth(day, currentMonth);
+    const isCurrentToday = isToday(day);
+
+    const dayEvents = eventDates.get(dayStr) || [];
+    const daySchedule = scheduleDates.get(dayStr) || [];
+    const isLeave = approvedLeaveDates.has(dayStr);
+    const isHoliday = holidayDates.has(dayStr);
+    
     return (
-        <Calendar
-            mode="single"
-            onDayClick={onDayClick}
-            selected={scheduledDates}
-            modifiers={{
-                leave: approvedLeaveDates,
-                holiday: holidayDates,
-                event: eventDates,
-            }}
-            modifiersClassNames={{
-                leave: 'bg-destructive/20 text-destructive-foreground',
-                holiday: 'text-blue-600',
-                event: 'relative',
-                selected: 'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground'
-            }}
-            components={{
-              DayContent: (props) => {
-                const isEvent = eventDates.some(d => format(d, 'yyyy-MM-dd') === format(props.date, 'yyyy-MM-dd'));
-                return <div className="relative w-full h-full flex items-center justify-center">
-                  {props.date.getDate()}
-                  {isEvent && <Dot className="absolute bottom-[-10px] w-6 h-6 text-accent" />}
-                </div>
-              }
-            }}
-            className="rounded-md border"
-            footer={
-              <div className="text-sm text-muted-foreground p-2 flex flex-col gap-2">
-                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-primary fill-primary" /> Scheduled Class</div>
-                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-blue-600 fill-blue-600" /> Holiday</div>
-                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 bg-destructive/20 text-destructive-foreground" /> Approved Leave</div>
-                  <div className="flex items-center gap-2"><Dot className="w-6 h-6 text-accent" /> Personal Event</div>
-              </div>
-            }
-        />
-    )
+      <div
+        key={day.toString()}
+        className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
+          !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
+        } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
+        onClick={() => onDayClick(day)}
+      >
+        <div className="flex justify-between items-center">
+            <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
+              {format(day, 'd')}
+            </time>
+        </div>
+        <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
+            {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
+            {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
+            {daySchedule.slice(0, 1).map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
+            {dayEvents.slice(0, 1).map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
+            {(daySchedule.length + dayEvents.length) > 1 && <div className="text-muted-foreground">+ {daySchedule.length + dayEvents.length - 1} more</div>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+     <Card className="h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{format(currentMonth, 'MMMM yyyy')}</CardTitle>
+            <div className="flex gap-2">
+                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+        </CardHeader>
+        <CardContent className="flex-grow">
+            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="py-2 border-t">{day}</div>
+                ))}
+            </div>
+            <div className="grid grid-cols-7 h-full">
+                {daysInMonth.map(renderDayCell)}
+            </div>
+        </CardContent>
+    </Card>
+  )
 }
 
 export default function StudentDashboard() {
@@ -219,8 +271,10 @@ export default function StudentDashboard() {
 
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
-    const eventsOnDay = events.filter(e => e.date === format(date, 'yyyy-MM-dd'));
-    if (eventsOnDay.length === 0) {
+    const eventsOnDay = events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+    if (eventsOnDay.length > 0) {
+      // Logic to show popover is handled by PopoverTrigger
+    } else {
       setEventDialogOpen(true);
     }
   };
@@ -263,7 +317,7 @@ export default function StudentDashboard() {
     });
   }
 
-  const selectedDateEvents = selectedDate ? events.filter(e => e.date === format(selectedDate, 'yyyy-MM-dd')) : [];
+  const selectedDateEvents = selectedDate ? events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')) : [];
 
   if (isLoading) {
     return (
@@ -275,130 +329,135 @@ export default function StudentDashboard() {
 
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
-        <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-8">
-                 <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-                    <CardHeader>
-                        <CardTitle>Welcome, {user?.name || 'Student'}!</CardTitle>
-                        <CardDescription>Here's your dashboard with your schedule and other useful links.</CardDescription>
-                    </CardHeader>
-                </Card>
-                <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <CalendarDays className="w-5 h-5 mr-2" />
-                            Monthly Calendar
-                        </CardTitle>
-                        <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex justify-center">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <div>
-                                <ScheduleCalendar 
-                                schedule={schedule} 
-                                leaveRequests={leaveRequests} 
-                                events={events}
-                                onDayClick={handleDayClick}
-                                />
-                            </div>
-                            </PopoverTrigger>
-                            {selectedDateEvents.length > 0 && (
-                            <PopoverContent className="w-80">
-                                <div className="grid gap-4">
-                                <div className="space-y-2">
-                                    <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                    You have {selectedDateEvents.length} event(s) today.
-                                    </p>
-                                </div>
-                                <div className="grid gap-2">
-                                    {selectedDateEvents.map(event => (
-                                    <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
-                                        <p className="text-sm font-medium">{event.title}</p>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                                        <Trash2 className="h-4 w-4" />
+       <div className="space-y-6">
+            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 col-span-full">
+                <CardHeader>
+                    <CardTitle>Welcome, {user?.name || 'Student'}!</CardTitle>
+                    <CardDescription>
+                        Here's your dashboard with your schedule and other useful links.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="h-full flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <CalendarDays className="w-5 h-5 mr-2" />
+                                Monthly Calendar
+                            </CardTitle>
+                            <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                    <div className="w-full">
+                                        <ScheduleCalendar 
+                                            schedule={schedule} 
+                                            leaveRequests={leaveRequests} 
+                                            events={events}
+                                            onDayClick={handleDayClick}
+                                        />
+                                    </div>
+                                </PopoverTrigger>
+                                {selectedDateEvents.length > 0 && (
+                                    <PopoverContent className="w-80">
+                                    <div className="grid gap-4">
+                                        <div className="space-y-2">
+                                        <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
+                                        <p className="text-sm text-muted-foreground">
+                                            You have {selectedDateEvents.length} event(s) today.
+                                        </p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                        {selectedDateEvents.map(event => (
+                                            <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
+                                            <p className="text-sm font-medium">{event.title}</p>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                            </div>
+                                        ))}
+                                        </div>
+                                        <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
+                                        <Plus className="h-4 w-4 mr-2"/>
+                                        Add Event
                                         </Button>
                                     </div>
-                                    ))}
-                                </div>
-                                <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
-                                    <Plus className="h-4 w-4 mr-2"/>
-                                    Add Event
-                                </Button>
-                                </div>
-                            </PopoverContent>
-                            )}
-                      </Popover>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="lg:col-span-1 space-y-8">
-                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                    <CardHeader>
-                         <CardTitle className="flex items-center">
-                            <Flame className="w-6 h-6 mr-2 text-orange-500"/>
-                            Attendance Streak
-                        </CardTitle>
-                        <CardDescription>Keep it up! Don't miss a class.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                        <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{student?.streak || 0}</div>
-                        <p className="text-muted-foreground mt-2">Days in a row</p>
-                    </CardContent>
-                </Card>
-                <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
-                    <CardHeader>
-                        <CardTitle>My Timetable</CardTitle>
-                        <CardDescription>View your detailed weekly schedule.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
+                                    </PopoverContent>
+                                )}
+                            </Popover>
+                        </CardContent>
+                    </Card>
+                </div>
+                 <div className="lg:col-span-1 space-y-6">
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300 flex flex-col">
+                        <CardHeader>
+                            <CardTitle>My Timetable</CardTitle>
+                            <CardDescription>View your detailed weekly schedule.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                            <p className="text-sm text-muted-foreground">
+                                Access your full timetable to see all your classes for the week.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => setTimetableModalOpen(true)}>
+                                View Timetable <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <Flame className="w-6 h-6 mr-2 text-orange-500"/>
+                                Attendance Streak
+                            </CardTitle>
+                            <CardDescription>Keep it up! Don't miss a class.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{student?.streak || 0}</div>
+                            <p className="text-muted-foreground mt-2">Days in a row</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
+                        <CardHeader>
+                        <CardTitle>Request Leave</CardTitle>
+                        <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
                         <p className="text-sm text-muted-foreground">
-                            Access your full timetable to see all your classes for the week.
+                            Need to take time off? Fill out the leave request form for approval.
                         </p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button onClick={() => setTimetableModalOpen(true)}>
-                            View Timetable <ArrowRight className="ml-2 h-4 w-4" />
+                        </CardContent>
+                        <CardFooter>
+                        <Button onClick={() => setLeaveDialogOpen(true)}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            Open Leave Form
                         </Button>
-                    </CardFooter>
-                </Card>
-                 <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
-                    <CardHeader>
-                    <CardTitle>Request Leave</CardTitle>
-                    <CardDescription>Submit a request for a leave of absence.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground">
-                        Need to take time off? Fill out the leave request form for approval.
-                    </p>
-                    </CardContent>
-                    <CardFooter>
-                    <Button onClick={() => setLeaveDialogOpen(true)}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        Open Leave Form
-                    </Button>
-                    </CardFooter>
-                </Card>
-                 <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
-                    <CardHeader>
-                        <CardTitle className='flex items-center'><BookOpen className="mr-2 h-5 w-5" />Course Catalog</CardTitle>
-                        <CardDescription>View subjects for your semester.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                        <p className="text-sm text-muted-foreground">
-                            Browse all the subjects offered in your current semester.
-                        </p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button onClick={() => setCatalogOpen(true)}>
-                            <BookOpen className="mr-2 h-4 w-4" />
-                            View Subjects
-                        </Button>
-                    </CardFooter>
-                </Card>
+                        </CardFooter>
+                    </Card>
+                    <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
+                        <CardHeader>
+                            <CardTitle className='flex items-center'><BookOpen className="mr-2 h-5 w-5" />Course Catalog</CardTitle>
+                            <CardDescription>View subjects for your semester.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                            <p className="text-sm text-muted-foreground">
+                                Browse all the subjects offered in your current semester.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => setCatalogOpen(true)}>
+                                <BookOpen className="mr-2 h-4 w-4" />
+                                View Subjects
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
             </div>
-        </div>
+       </div>
 
         <Dialog open={isTimetableModalOpen} onOpenChange={setTimetableModalOpen}>
             <DialogContent className="max-w-4xl">
@@ -569,3 +628,4 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
+
