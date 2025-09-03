@@ -436,25 +436,6 @@ export default function FacultyDashboard() {
                             </Button>
                         </CardFooter>
                     </Card>
-                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
-                        <CardHeader>
-                            <CardTitle className="flex items-center"><Sparkles className="mr-2 h-5 w-5 text-purple-500" />Generate Timetable</CardTitle>
-                            <CardDescription>Use AI to visualize a potential weekly schedule.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                See what an AI-generated schedule could look like. This is a planning tool and will not affect the current schedule.
-                            </p>
-                        </CardContent>
-                        <CardFooter>
-                            <Button asChild variant="secondary">
-                                <Link href="/admin?tab=generate-timetable">
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Open Generator
-                                </Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
                 </div>
             </div>
        </div>

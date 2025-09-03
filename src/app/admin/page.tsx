@@ -36,7 +36,6 @@ const managementCards = [
   { tab: "faculty", title: "Faculty", icon: UserCheck, description: "Handle faculty profiles." },
   { tab: "students", title: "Students", icon: Users, description: "Administer student records." },
   { tab: "schedule", title: "Schedule", icon: Calendar, description: "Create and view timetables." },
-  { tab: "generate-timetable", title: "Generate Timetable", icon: Sparkles, description: "Use AI to create a schedule." },
   { tab: "leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
   { tab: "hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate champions." },
   { tab: "leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or deny leaves." },
@@ -167,17 +166,6 @@ const AdminDashboardContent = () => {
             case 'leave-requests': content = <LeaveRequestsPage />; break;
             case 'schedule-requests': content = <ScheduleRequestsPage />; break;
             case 'new-slot-requests': content = <NewSlotRequestsPage />; break;
-            case 'generate-timetable': 
-                content = (classes && subjects && faculty && classrooms) ? (
-                    <TimetableGenerator 
-                        classes={classes} 
-                        subjects={subjects} 
-                        faculty={faculty} 
-                        classrooms={classrooms}
-                        role="admin"
-                    />
-                ) : <div>Loading generation data...</div>;
-                break;
             default: return <AdminDashboardHome />;
         }
 

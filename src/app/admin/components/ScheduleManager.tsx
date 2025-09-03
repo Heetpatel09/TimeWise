@@ -25,13 +25,14 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -61,6 +62,11 @@ const ALL_TIME_SLOTS = [
 
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:30') && !t.includes('12:00'));
 
+interface Conflict {
+  type: 'faculty' | 'classroom' | 'class';
+  message: string;
+}
+
 
 export default function ScheduleManager() {
   const [schedule, setSchedule] = useState<Schedule[]>([]);
@@ -71,6 +77,7 @@ export default function ScheduleManager() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [currentSlot, setCurrentSlot] = useState<Partial<Schedule> | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
   const { toast } = useToast();
 
   async function loadAllData() {
@@ -93,6 +100,36 @@ export default function ScheduleManager() {
   useEffect(() => {
     loadAllData();
   }, [])
+  
+  useEffect(() => {
+      const findConflicts = () => {
+          const newConflicts: Record<string, Conflict[]> = {};
+          for (const slot of schedule) {
+              if (!newConflicts[slot.id]) newConflicts[slot.id] = [];
+              
+              const conflictingSlots = schedule.filter(s => s.id !== slot.id && s.day === slot.day && s.time === slot.time);
+              
+              for (const otherSlot of conflictingSlots) {
+                  // Faculty conflict
+                  if (slot.facultyId === otherSlot.facultyId) {
+                      newConflicts[slot.id].push({ type: 'faculty', message: `Faculty Conflict: ${getRelationInfo(slot.facultyId, 'faculty')?.name} is double-booked.`});
+                  }
+                  // Classroom conflict
+                  if (slot.classroomId === otherSlot.classroomId) {
+                       newConflicts[slot.id].push({ type: 'classroom', message: `Classroom Conflict: ${getRelationInfo(slot.classroomId, 'classroom')?.name} is double-booked.`});
+                  }
+                   // Class conflict
+                  if (slot.classId === otherSlot.classId) {
+                       newConflicts[slot.id].push({ type: 'class', message: `Class Conflict: ${getRelationInfo(slot.classId, 'class')?.name} has multiple activities.`});
+                  }
+              }
+          }
+          setConflicts(newConflicts);
+      }
+      if (schedule.length > 0) {
+          findConflicts();
+      }
+  }, [schedule]);
 
   const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom') => {
     switch (type) {
@@ -180,7 +217,7 @@ export default function ScheduleManager() {
   }
 
   return (
-    <div>
+    <TooltipProvider>
       <div className="flex justify-between items-center mb-4">
         <div className='flex gap-2'>
             <Button onClick={exportPDF} variant="outline">
@@ -218,10 +255,16 @@ export default function ScheduleManager() {
                         {slots.map((slot) => {
                           const subject = getRelationInfo(slot.subjectId, 'subject');
                           const isSpecial = subject?.isSpecial;
+                          const slotConflicts = conflicts[slot.id] || [];
+                          const isConflicting = slotConflicts.length > 0;
+                          
                           return (
                           <TableRow 
                             key={slot.id}
-                            className={isSpecial ? `bg-[#4A0080] text-white hover:bg-[#4A0080]/90` : ''}
+                            className={cn(
+                                isSpecial && `bg-[#4A0080] text-white hover:bg-[#4A0080]/90`,
+                                isConflicting && 'bg-destructive/20 hover:bg-destructive/30'
+                            )}
                           >
                             <TableCell>{slot.time}</TableCell>
                             <TableCell>{getRelationInfo(slot.classId, 'class')?.name}</TableCell>
@@ -232,7 +275,26 @@ export default function ScheduleManager() {
                                 </div>
                             </TableCell>
                             <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name}</TableCell>
-                            <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                {getRelationInfo(slot.classroomId, 'classroom')?.name}
+                                {isConflicting && (
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <div className="p-2">
+                                                <h4 className="font-bold mb-2">Conflicts Detected:</h4>
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                    {slotConflicts.map((c, i) => <li key={i}>{c.message}</li>)}
+                                                </ul>
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                                </div>
+                            </TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -318,6 +380,6 @@ export default function ScheduleManager() {
         </DialogContent>
       </Dialog>
       
-    </div>
+    </TooltipProvider>
   );
 }
