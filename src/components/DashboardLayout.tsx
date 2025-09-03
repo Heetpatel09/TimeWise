@@ -11,7 +11,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import {
   Popover,
@@ -25,53 +24,16 @@ import {
   Settings,
   UserCog,
   UserCheck,
-  Book,
-  School,
-  Users,
-  Calendar,
-  LayoutGrid,
   BrainCircuit,
-  Mail,
-  PencilRuler,
   Loader2,
   Bell,
-  CheckCheck,
-  Trophy,
-  Award,
-  Warehouse,
-  Menu,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
-import type { LeaveRequest, Notification } from '@/lib/types';
-import { getLeaveRequests } from '@/lib/services/leave';
-import { getScheduleChangeRequests } from '@/lib/services/schedule-changes';
+import type { Notification } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser, markNotificationAsRead } from '@/lib/services/notifications';
 
-const navItems = {
-  admin: [
-    { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
-    { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
-    { href: '/admin?tab=classes', label: 'Classes', icon: School, tab: 'classes' },
-    { href: '/admin?tab=classrooms', label: 'Classrooms', icon: Warehouse, tab: 'classrooms' },
-    { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
-    { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
-    { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
-    { href: '/admin?tab=leaderboards', label: 'Leaderboards', icon: Trophy, tab: 'leaderboards' },
-    { href: '/admin?tab=hall-of-fame', label: 'Hall of Fame', icon: Award, tab: 'hall-of-fame' },
-    { href: '/admin?tab=leave-requests', label: 'Leave Requests', icon: Mail, tab: 'leave-requests' },
-    { href: '/admin?tab=schedule-requests', label: 'Schedule Requests', icon: PencilRuler, tab: 'schedule-requests' },
-  ],
-  faculty: [
-    { href: '/faculty', label: 'My Dashboard', icon: LayoutGrid },
-    { href: '/faculty/profile', label: 'My Profile', icon: Settings },
-  ],
-  student: [
-    { href: '/student', label: 'My Dashboard', icon: LayoutGrid },
-    { href: '/student/profile', label: 'My Profile', icon: Settings },
-  ],
-};
 
 type Role = 'admin' | 'faculty' | 'student';
 
@@ -203,42 +165,6 @@ function UserProfile() {
   );
 }
 
-function NavMenu() {
-    const { user } = useAuth();
-    const role = user?.role;
-    const items = role ? navItems[role] : [];
-    
-    if (!user) return null;
-
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                    <Menu className="h-5 w-5" />
-                    <span className="hidden sm:inline">Menu</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel>Navigation</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    {items.map((item, index) => {
-                        const Icon = item.icon;
-                        return (
-                            <DropdownMenuItem key={index} asChild>
-                                <Link href={item.href}>
-                                    <Icon className="mr-2 h-4 w-4" />
-                                    <span>{item.label}</span>
-                                </Link>
-                            </DropdownMenuItem>
-                        );
-                    })}
-                </DropdownMenuGroup>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
-}
-
 export default function DashboardLayout({
   children,
   pageTitle,
@@ -294,11 +220,12 @@ export default function DashboardLayout({
         <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card shadow-sm">
           <div className="flex items-center gap-4">
              <TimeWiseLogo />
-             <NavMenu />
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-             <h1 className="hidden md:block text-xl font-semibold font-headline">{pageTitle}</h1>
+            <Link href={`/${role}`} className="hidden md:block">
+              <h1 className="text-xl font-semibold font-headline hover:text-primary transition-colors">{pageTitle}</h1>
+            </Link>
             <Badge variant="outline" className="hidden sm:flex items-center text-sm">
                 {getRoleIcon()}
                 {role.charAt(0).toUpperCase() + role.slice(1)}

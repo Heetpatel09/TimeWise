@@ -1,111 +1,101 @@
 
 'use client';
-import { useSearchParams } from 'next/navigation';
-import DashboardLayout from "@/components/DashboardLayout";
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse } from "lucide-react";
-import SubjectsManager from "./components/SubjectsManager";
-import ClassesManager from "./components/ClassesManager";
-import ClassroomsManager from "./components/ClassroomsManager";
-import FacultyManager from "./components/FacultyManager";
-import StudentsManager from "./components/StudentsManager";
-import ScheduleManager from "./components/ScheduleManager";
-import LeaveRequestsPage from "./leave-requests/page";
-import ScheduleRequestsPage from "./schedule-requests/page";
-import LeaderboardManager from './components/LeaderboardManager';
-import HallOfFamePage from './hall-of-fame/page';
-import Link from "next/link";
-import React from 'react';
-import { Button } from '@/components/ui/button';
+import DashboardLayout from "@/components/DashboardLayout";
 
-const AdminDashboardHome = () => (
-    <Card>
-        <CardHeader>
-            <CardTitle>Welcome, Admin!</CardTitle>
-            <CardDescription>From this dashboard, you can manage all aspects of the university schedule.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">1,254</div>
-                        <p className="text-xs text-muted-foreground">+5% from last semester</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Faculty</CardTitle>
-                        <UserCheck className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">78</div>
-                         <p className="text-xs text-muted-foreground">+2 since last year</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Classes Scheduled</CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">342</div>
-                         <p className="text-xs text-muted-foreground">for the upcoming week</p>
-                    </CardContent>
-                </Card>
-            </div>
-        </CardContent>
-    </Card>
-)
+const AdminDashboard = () => {
 
-export default function AdminDashboard() {
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab');
-
-  const tabs = [
-    { value: "subjects", label: "Subjects", icon: Book, component: <SubjectsManager /> },
-    { value: "classes", label: "Classes", icon: School, component: <ClassesManager /> },
-    { value: "classrooms", label: "Classrooms", icon: Warehouse, component: <ClassroomsManager /> },
-    { value: "faculty", label: "Faculty", icon: UserCheck, component: <FacultyManager /> },
-    { value: "students", label: "Students", icon: Users, component: <StudentsManager /> },
-    { value: "schedule", label: "Schedule", icon: Calendar, component: <ScheduleManager /> },
-    { value: "leaderboards", label: "Leaderboards", icon: Trophy, component: <LeaderboardManager /> },
-    { value: "hall-of-fame", label: "Hall of Fame", icon: Award, component: <HallOfFamePage /> },
-    { value: "leave-requests", label: "Leave Requests", icon: Mail, component: <LeaveRequestsPage /> },
-    { value: "schedule-requests", label: "Schedule Requests", icon: PencilRuler, component: <ScheduleRequestsPage /> },
+  const managementCards = [
+    { title: "Subjects", icon: Book, href: "/admin?tab=subjects", description: "Manage all course subjects." },
+    { title: "Classes", icon: School, href: "/admin?tab=classes", description: "Organize classes and semesters." },
+    { title: "Classrooms", icon: Warehouse, href: "/admin?tab=classrooms", description: "Manage rooms and labs." },
+    { title: "Faculty", icon: UserCheck, href: "/admin?tab=faculty", description: "Handle faculty profiles." },
+    { title: "Students", icon: Users, href: "/admin?tab=students", description: "Administer student records." },
+    { title: "Schedule", icon: Calendar, href: "/admin?tab=schedule", description: "Create and view timetables." },
+    { title: "Leaderboards", icon: Trophy, href: "/admin?tab=leaderboards", description: "View top performers." },
+    { title: "Hall of Fame", icon: Award, href: "/admin?tab=hall-of-fame", description: "Celebrate champions." },
+    { title: "Leave Requests", icon: Mail, href: "/admin?tab=leave-requests", description: "Approve or deny leaves." },
+    { title: "Schedule Requests", icon: PencilRuler, href: "/admin?tab=schedule-requests", description: "Handle change requests." },
   ];
-
-  const activeTab = tab || 'dashboard';
-  const selectedTabContents = tab ? tabs.find(t => t.value === tab)?.component : <AdminDashboardHome />;
-
 
   return (
     <DashboardLayout pageTitle="Admin Dashboard" role="admin">
-       {!tab ? (
-         <AdminDashboardHome />
-       ): (
-        <React.Fragment>
-          {tab === 'leave-requests' || tab === 'schedule-requests' || tab === 'leaderboards' || tab === 'hall-of-fame'
-            ? selectedTabContents
-            : (
-                <Card>
-                    <CardHeader>
-                    <CardTitle>{tabs.find(t => t.value === tab)?.label} Management</CardTitle>
-                    <CardDescription>
-                        {`Add, edit, or delete ${tabs.find(t => t.value === tab)?.label.toLowerCase()} from the system.`}
-                    </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    {selectedTabContents}
-                    </CardContent>
-                </Card>
-            )
-          }
-        </React.Fragment>
-       )}
+      <div className="space-y-8">
+        <Card>
+          <CardHeader>
+              <CardTitle>Welcome, Admin!</CardTitle>
+              <CardDescription>From this dashboard, you can manage all aspects of the university schedule.</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                          <div className="text-2xl font-bold">1,254</div>
+                          <p className="text-xs text-muted-foreground">+5% from last semester</p>
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total Faculty</CardTitle>
+                          <UserCheck className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                          <div className="text-2xl font-bold">78</div>
+                          <p className="text-xs text-muted-foreground">+2 since last year</p>
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Classes Scheduled</CardTitle>
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                          <div className="text-2xl font-bold">342</div>
+                          <p className="text-xs text-muted-foreground">for the upcoming week</p>
+                      </CardContent>
+                  </Card>
+              </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Management Sections</CardTitle>
+            <CardDescription>Click a card to navigate to the respective management page.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {managementCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <Link href={card.href} key={card.title}>
+                    <Card className="hover:bg-accent hover:shadow-lg transition-all duration-300 group h-full flex flex-col">
+                      <CardHeader className="flex-grow">
+                        <div className="mb-4 bg-primary/10 text-primary w-12 h-12 rounded-lg flex items-center justify-center">
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <CardTitle className="text-lg">{card.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                         <p className="text-xs text-muted-foreground">{card.description}</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </DashboardLayout>
   );
-}
+};
+
+export default AdminDashboard;
