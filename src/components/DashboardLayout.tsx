@@ -24,7 +24,6 @@ import {
   Settings,
   UserCog,
   UserCheck,
-  BrainCircuit,
   Loader2,
   Bell,
 } from 'lucide-react';
@@ -41,7 +40,7 @@ function TimeWiseLogo() {
   return (
     <Link href="/" className="flex items-center gap-2">
        <div className="relative w-8 h-8">
-          <BrainCircuit className="w-full h-full text-primary" />
+          <Settings className="w-full h-full text-primary" />
       </div>
       <span className="text-xl font-bold text-primary font-headline">TimeWise</span>
     </Link>
