@@ -109,3 +109,11 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface Event {
+  id: string;
+  userId: string;
+  date: string;
+  title: string;
+  createdAt: string;
+}

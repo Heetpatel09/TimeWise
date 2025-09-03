@@ -17,21 +17,49 @@ import {
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
+import path from 'path';
 
 // This will be our singleton database instance
 let db: Database.Database;
 const dbFilePath = './timewise.db';
 
-function initializeDb() {
-  const dbExists = fs.existsSync(dbFilePath);
-  db = new Database(dbFilePath);
+// A flag to indicate if the schema has been checked in the current run.
+let schemaChecked = false;
+const schemaVersion = 9; // Increment this to force re-initialization
+const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
-  if (!dbExists) {
-    console.log('Database does not exist, creating and seeding...');
-    createSchemaAndSeed();
-  } else {
-    console.log('Database exists. Persistence is enabled.');
+
+function getDbVersion() {
+  if (fs.existsSync(versionFilePath)) {
+    return parseInt(fs.readFileSync(versionFilePath, 'utf-8'), 10);
   }
+  return 0;
+}
+
+function setDbVersion(version: number) {
+  fs.writeFileSync(versionFilePath, version.toString(), 'utf-8');
+}
+
+
+function initializeDb() {
+  const currentVersion = getDbVersion();
+  const dbExists = fs.existsSync(dbFilePath);
+
+  if (dbExists && currentVersion < schemaVersion) {
+    console.log(`Database schema is outdated (v${currentVersion} < v${schemaVersion}). Deleting and re-creating.`);
+    fs.unlinkSync(dbFilePath);
+  }
+
+  db = new Database(dbFilePath);
+  
+  if (!dbExists || currentVersion < schemaVersion) {
+    console.log('Database does not exist or is outdated, creating and seeding...');
+    createSchemaAndSeed();
+    setDbVersion(schemaVersion);
+  } else {
+    console.log('Database exists and schema is up to date. Persistence is enabled.');
+  }
+
 
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
@@ -143,6 +171,13 @@ function createSchemaAndSeed() {
       password TEXT,
       requiresPasswordChange BOOLEAN NOT NULL DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS events (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        date TEXT NOT NULL,
+        title TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+    );
   `);
   
   // Seed the database
@@ -180,6 +215,9 @@ function createSchemaAndSeed() {
         insertUser.run('abc@example.com', 'STU001', '123', 'student', 1);
         insertUser.run('bob@example.com', 'STU002', 'student123', 'student', 1);
         insertUser.run('charlie@example.com', 'STU003', 'student123', 'student', 1);
+        insertUser.run('stu004@example.com', 'STU004', 'student123', 'student', 1);
+        insertUser.run('stu005@example.com', 'STU005', 'student123', 'student', 1);
+        insertUser.run('stu006@example.com', 'STU006', 'student123', 'student', 1);
     })();
     console.log('Database initialized and seeded successfully.');
 }
