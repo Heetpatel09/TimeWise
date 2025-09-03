@@ -13,42 +13,39 @@ type CredentialEntry = {
 
 export async function login(email: string, password: string): Promise<User> {
     const db = getDb();
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const credentialEntry: CredentialEntry | undefined = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(email) as any;
+    
+    const credentialEntry: CredentialEntry | undefined = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(email) as any;
 
-            if (credentialEntry && credentialEntry.password === password) {
-                let details: any;
-                if (credentialEntry.role === 'admin') {
-                    details = {
-                        id: 'admin',
-                        name: 'Admin User',
-                        email: 'admin@timewise.app',
-                        avatar: `https://avatar.vercel.sh/admin@timewise.app.png`,
-                    };
-                } else if (credentialEntry.role === 'faculty') {
-                    details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
-                } else {
-                    details = db.prepare('SELECT * FROM students WHERE id = ?').get(credentialEntry.userId);
-                }
+    if (credentialEntry && credentialEntry.password === password) {
+        let details: any;
+        if (credentialEntry.role === 'admin') {
+            details = {
+                id: 'admin',
+                name: 'Admin User',
+                email: 'admin@timewise.app',
+                avatar: `https://avatar.vercel.sh/admin@timewise.app.png`,
+            };
+        } else if (credentialEntry.role === 'faculty') {
+            details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
+        } else {
+            details = db.prepare('SELECT * FROM students WHERE id = ?').get(credentialEntry.userId);
+        }
 
-                if (!details) {
-                    return reject(new Error('User details not found.'));
-                }
+        if (!details) {
+            throw new Error('User details not found.');
+        }
 
-                const user: User = {
-                    id: details.id,
-                    name: details.name,
-                    email: details.email, // Use the primary email from the profile table
-                    avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
-                    role: credentialEntry.role,
-                };
-                resolve(user);
-            } else {
-                reject(new Error('Invalid email or password.'));
-            }
-        }, 500); // Simulate network delay
-    });
+        const user: User = {
+            id: details.id,
+            name: details.name,
+            email: details.email, // Use the primary email from the profile table
+            avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
+            role: credentialEntry.role,
+        };
+        return user;
+    } else {
+        throw new Error('Invalid email or password.');
+    }
 }
 
 export async function updateAdmin(updatedDetails: { id: string; name: string, email: string, avatar: string }): Promise<User> {
