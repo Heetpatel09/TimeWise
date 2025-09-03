@@ -33,6 +33,8 @@ import { getFaculty } from '@/lib/services/faculty';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAvailableFacultyForSlot, getScheduleForFacultyInRange } from '@/lib/services/schedule';
+import { Card, CardContent } from '@/components/ui/card';
+
 
 export default function LeaveRequestsPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
