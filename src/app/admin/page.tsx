@@ -87,7 +87,7 @@ const AdminDashboardHome = () => (
               <Link href={`/admin?tab=${card.tab}`} key={card.title}>
                 <Card className="hover:bg-accent hover:shadow-lg transition-all duration-300 group h-full flex flex-col">
                   <CardHeader className="flex-grow">
-                    <div className="mb-4 bg-primary/10 text-primary w-12 h-12 rounded-lg flex items-center justify-center">
+                    <div className="mb-4 bg-card text-primary w-12 h-12 rounded-lg flex items-center justify-center border">
                       <Icon className="w-6 h-6" />
                     </div>
                     <CardTitle className="text-lg">{card.title}</CardTitle>
