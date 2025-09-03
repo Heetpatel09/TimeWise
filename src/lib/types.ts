@@ -78,7 +78,7 @@ export interface ScheduleChangeRequest {
   scheduleId: string;
   facultyId: string;
   reason: string;
-  status: 'pending' | 'resolved';
+  status: 'pending' | 'resolved' | 'rejected';
   requestedClassroomId?: string;
 }
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { ScheduleChangeRequest } from '@/lib/types';
+import { addNotification } from './notifications';
 
 export async function getScheduleChangeRequests(): Promise<ScheduleChangeRequest[]> {
   const db = getDb();
@@ -23,12 +24,25 @@ export async function addScheduleChangeRequest(request: Omit<ScheduleChangeReque
     return Promise.resolve(newRequest);
 }
 
-export async function updateScheduleChangeRequestStatus(id: string, status: 'resolved') {
+export async function updateScheduleChangeRequestStatus(id: string, status: 'resolved' | 'rejected') {
     const db = getDb();
     const stmt = db.prepare('UPDATE schedule_change_requests SET status = ? WHERE id = ?');
     stmt.run(status, id);
+    
+    const request = db.prepare('SELECT * FROM schedule_change_requests WHERE id = ?').get(id) as ScheduleChangeRequest | undefined;
+
+    if (request) {
+        let message = `Your schedule change request for slot ${request.scheduleId} has been ${status}.`;
+        if (status === 'rejected') {
+            message = `Your schedule change request has been rejected. Please contact administration for details.`
+        }
+        await addNotification({
+            userId: request.facultyId,
+            message: message,
+        });
+    }
+
     revalidatePath('/admin', 'layout');
     revalidatePath('/faculty', 'layout');
-    const request = db.prepare('SELECT * FROM schedule_change_requests WHERE id = ?').get(id) as ScheduleChangeRequest | undefined;
     return Promise.resolve(request);
 }

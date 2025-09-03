@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import type { ScheduleChangeRequest, Schedule, Faculty, Class, Subject, Classroom } from '@/lib/types';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, X, Loader2 } from 'lucide-react';
 import { getScheduleChangeRequests, updateScheduleChangeRequestStatus } from '@/lib/services/schedule-changes';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClasses } from '@/lib/services/classes';
@@ -22,6 +22,7 @@ export default function ScheduleRequestsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   async function loadData() {
       setIsLoading(true);
@@ -46,14 +47,15 @@ export default function ScheduleRequestsPage() {
     loadData();
   }, []);
 
-  const handleRequestStatus = async (id: string, status: 'resolved') => {
-    const originalRequests = requests;
-    setRequests(requests.map(req => req.id === id ? { ...req, status } : req));
+  const handleRequestStatus = async (id: string, status: 'resolved' | 'rejected') => {
+    setIsUpdating(id);
     try {
       await updateScheduleChangeRequestStatus(id, status);
-      loadData(); // Re-fetch to confirm and get latest state
+      await loadData();
     } catch (error) {
-      setRequests(originalRequests);
+      console.error("Failed to update status", error);
+    } finally {
+        setIsUpdating(null);
     }
   };
   
@@ -70,7 +72,16 @@ export default function ScheduleRequestsPage() {
   };
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
-  const resolvedRequests = requests.filter(r => r.status === 'resolved');
+  const resolvedRequests = requests.filter(r => r.status !== 'pending');
+
+  const getStatusVariant = (status: ScheduleChangeRequest['status']) => {
+    switch(status) {
+        case 'pending': return 'secondary';
+        case 'resolved': return 'default';
+        case 'rejected': return 'destructive';
+        default: return 'outline';
+    }
+  }
 
   const renderRequestTable = (reqs: ScheduleChangeRequest[]) => (
     <div className="border rounded-lg">
@@ -109,17 +120,24 @@ export default function ScheduleRequestsPage() {
                     )}
                 </TableCell>
                 <TableCell>
-                    <Badge variant={request.status === 'pending' ? 'secondary' : 'default'}>
-                    {request.status}
+                    <Badge variant={getStatusVariant(request.status)}>
+                        {request.status}
                     </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                     {request.status === 'pending' && (
-                    <div className="flex gap-2 justify-end">
-                        <Button size="icon" variant="outline" className="h-8 w-8 bg-blue-100 text-blue-700 hover:bg-blue-200" onClick={() => handleRequestStatus(request.id, 'resolved')}>
-                            <Check className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    isUpdating === request.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                    ) : (
+                        <div className="flex gap-2 justify-end">
+                            <Button size="icon" variant="outline" className="h-8 w-8 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleRequestStatus(request.id, 'resolved')}>
+                                <Check className="h-4 w-4" />
+                            </Button>
+                             <Button size="icon" variant="outline" className="h-8 w-8 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleRequestStatus(request.id, 'rejected')}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )
                     )}
                 </TableCell>
                 </TableRow>
