@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSchedule } from '@/lib/services/schedule';
-import type { Schedule, Class, Subject, Classroom } from '@/lib/types';
+import type { Schedule, Class, Subject, Classroom, Faculty } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Send, Loader2 } from 'lucide-react';
+import { Download, Send, Loader2, UserSwitch } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -17,8 +18,10 @@ import { addScheduleChangeRequest } from '@/lib/services/schedule-changes';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getClassrooms } from '@/lib/services/classrooms';
+import { getFaculty } from '@/lib/services/faculty';
 import { useAuth } from '@/context/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { addSubstituteAssignment } from '@/lib/services/substitutions';
 
 
 export default function ScheduleView() {
@@ -27,11 +30,20 @@ export default function ScheduleView() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [substituteTeachers, setSubstituteTeachers] = useState<Faculty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setDialogOpen] = useState(false);
+  
+  const [isChangeDialogOpen, setChangeDialogOpen] = useState(false);
+  const [isSubstituteDialogOpen, setSubstituteDialogOpen] = useState(false);
+  
   const [selectedSlot, setSelectedSlot] = useState<Schedule | null>(null);
+  
   const [requestMessage, setRequestMessage] = useState('');
   const [requestedClassroomId, setRequestedClassroomId] = useState<string | undefined>();
+  
+  const [substituteDate, setSubstituteDate] = useState('');
+  const [selectedSubstituteId, setSelectedSubstituteId] = useState<string | undefined>();
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -39,16 +51,30 @@ export default function ScheduleView() {
     async function loadData() {
       if (user) {
         setIsLoading(true);
-        const [allSchedule, classData, subjectData, classroomData] = await Promise.all([
+        const [allSchedule, classData, subjectData, classroomData, allFaculty] = await Promise.all([
           getSchedule(),
           getClasses(),
           getSubjects(),
           getClassrooms(),
+          getFaculty(),
         ]);
+        
+        const facultyData = allFaculty.find(f => f.id === user.id);
+        if (facultyData?.isSubstitute) {
+            // Logic for substitute teacher view is in faculty page
+            setIsLoading(false);
+            return;
+        }
+
         setFacultySchedule(allSchedule.filter(s => s.facultyId === user.id));
         setClasses(classData);
         setSubjects(subjectData);
         setClassrooms(classroomData);
+        // A substitute cannot substitute for a subject they also teach as main faculty.
+        const facultySubjectIds = allSchedule.filter(s => s.facultyId === user.id).map(s => s.subjectId);
+        const availableSubstitutes = allFaculty.filter(f => f.isSubstitute && !facultySubjectIds.includes(allSchedule.find(s => s.facultyId === f.id)?.subjectId || ''));
+        setSubstituteTeachers(availableSubstitutes);
+
         setIsLoading(false);
       }
     }
@@ -64,10 +90,15 @@ export default function ScheduleView() {
     }
   };
 
-  const handleRequestChange = (slot: Schedule) => {
+  const openChangeDialog = (slot: Schedule) => {
     setSelectedSlot(slot);
-    setDialogOpen(true);
+    setChangeDialogOpen(true);
   };
+  
+  const openSubstituteDialog = (slot: Schedule) => {
+    setSelectedSlot(slot);
+    setSubstituteDialogOpen(true);
+  }
 
   const handleSubmitRequest = async () => {
     if (!selectedSlot || !requestMessage) {
@@ -83,7 +114,7 @@ export default function ScheduleView() {
             reason: requestMessage,
             requestedClassroomId: requestedClassroomId,
         });
-        setDialogOpen(false);
+        setChangeDialogOpen(false);
         setRequestMessage('');
         setRequestedClassroomId(undefined);
         toast({
@@ -96,6 +127,34 @@ export default function ScheduleView() {
         setIsSubmitting(false);
     }
   };
+
+  const handleSubmitSubstitute = async () => {
+      if (!selectedSlot || !substituteDate || !selectedSubstituteId) {
+          toast({ title: 'Missing Information', description: 'Please select a date and a substitute.', variant: 'destructive' });
+          return;
+      }
+      if (!user) return;
+      setIsSubmitting(true);
+      try {
+          await addSubstituteAssignment({
+              scheduleId: selectedSlot.id,
+              originalFacultyId: user.id,
+              substituteFacultyId: selectedSubstituteId,
+              date: substituteDate,
+          });
+          setSubstituteDialogOpen(false);
+          setSubstituteDate('');
+          setSelectedSubstituteId(undefined);
+          toast({
+              title: "Substitute Assigned",
+              description: "The substitution request has been sent to the admin for approval."
+          })
+      } catch (error) {
+          toast({ title: 'Error', description: 'Failed to assign substitute.', variant: 'destructive'});
+      } finally {
+          setIsSubmitting(false);
+      }
+  }
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -165,9 +224,15 @@ export default function ScheduleView() {
                         <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
                         <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => handleRequestChange(slot)}>
-                            Request Change
-                          </Button>
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="outline" size="sm" onClick={() => openSubstituteDialog(slot)}>
+                                <UserSwitch className="h-4 w-4 mr-2" />
+                                Assign Substitute
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => openChangeDialog(slot)}>
+                                Request Change
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -180,7 +245,7 @@ export default function ScheduleView() {
         ))}
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={isChangeDialogOpen} onOpenChange={setChangeDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Request Schedule Change</DialogTitle>
@@ -216,10 +281,54 @@ export default function ScheduleView() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setChangeDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
             <Button onClick={handleSubmitRequest} disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                 Send Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isSubstituteDialogOpen} onOpenChange={setSubstituteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Assign Substitute</DialogTitle>
+            <DialogDescription>
+                Assign a substitute teacher for this class on a specific date.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2 p-4 rounded-md border bg-muted/50">
+                <p><strong>Class:</strong> {getRelationName(selectedSlot?.classId || '', 'class')}</p>
+                <p><strong>Subject:</strong> {getRelationName(selectedSlot?.subjectId || '', 'subject')}</p>
+                <p><strong>Time:</strong> {selectedSlot?.day}, {selectedSlot?.time}</p>
+            </div>
+            <div className="grid w-full gap-1.5">
+                <Label htmlFor="substitute-date">Date</Label>
+                <Input
+                    id="substitute-date"
+                    type="date"
+                    value={substituteDate}
+                    onChange={(e) => setSubstituteDate(e.target.value)}
+                    disabled={isSubmitting}
+                />
+            </div>
+             <div className="grid w-full gap-1.5">
+                <Label htmlFor="substitute-teacher">Substitute Teacher</Label>
+                <Select value={selectedSubstituteId} onValueChange={setSelectedSubstituteId} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue placeholder="Select a substitute" /></SelectTrigger>
+                    <SelectContent>
+                        {substituteTeachers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubstituteDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSubmitSubstitute} disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserSwitch className="h-4 w-4 mr-2" />}
+                Request Substitute
             </Button>
           </DialogFooter>
         </DialogContent>

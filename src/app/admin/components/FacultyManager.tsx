@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, UserCheck, UserX } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 export default function FacultyManager() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
@@ -82,7 +84,7 @@ export default function FacultyManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentFaculty({});
+    setCurrentFaculty({ isSubstitute: false });
     setDialogOpen(true);
   };
   
@@ -103,6 +105,7 @@ export default function FacultyManager() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -123,8 +126,15 @@ export default function FacultyManager() {
                     </div>
                   </div>
                 </TableCell>
+                <TableCell>
+                  {fac.isSubstitute ? (
+                    <Badge variant="secondary"><UserX className="h-3 w-3 mr-1" />Substitute</Badge>
+                  ) : (
+                    <Badge variant="outline"><UserCheck className="h-3 w-3 mr-1" />Faculty</Badge>
+                  )}
+                </TableCell>
                 <TableCell>{fac.department}</TableCell>
-                <TableCell>{fac.streak}</TableCell>
+                <TableCell>{fac.isSubstitute ? 'N/A' : fac.streak}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -174,7 +184,17 @@ export default function FacultyManager() {
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="streak" className="text-right">Streak</Label>
-              <Input id="streak" type="number" value={currentFaculty?.streak ?? 0} onChange={(e) => setCurrentFaculty({ ...currentFaculty, streak: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="streak" type="number" value={currentFaculty?.streak ?? 0} onChange={(e) => setCurrentFaculty({ ...currentFaculty, streak: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting || currentFaculty?.isSubstitute}/>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="isSubstitute" className="text-right">Substitute?</Label>
+              <Switch
+                id="isSubstitute"
+                checked={currentFaculty?.isSubstitute || false}
+                onCheckedChange={(checked) => setCurrentFaculty({ ...currentFaculty, isSubstitute: checked, streak: checked ? 0 : currentFaculty?.streak })}
+                className="col-span-3"
+                disabled={isSubmitting}
+              />
             </div>
           </div>
           <DialogFooter>

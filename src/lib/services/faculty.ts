@@ -15,8 +15,10 @@ function revalidateAll() {
 }
 
 export async function getFaculty(): Promise<Faculty[]> {
-  const stmt = db.prepare('SELECT * FROM faculty');
-  return stmt.all() as Faculty[];
+  const stmt = db.prepare('SELECT id, name, email, department, streak, avatar, isSubstitute FROM faculty');
+  const results = stmt.all() as any[];
+  // better-sqlite3 returns 0/1 for booleans
+  return results.map(f => ({ ...f, isSubstitute: !!f.isSubstitute }));
 }
 
 export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak?: number }) {
@@ -28,8 +30,8 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`
     };
     
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar);
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar, isSubstitute) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar, newItem.isSubstitute ? 1 : 0);
 
     const initialPassword = 'faculty123';
     await addUser({
@@ -67,8 +69,8 @@ export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
         await updateUserEmail(oldFaculty.email, updatedItem.email);
     }
     
-    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.id);
+    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ?, isSubstitute = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.isSubstitute ? 1 : 0, updatedItem.id);
     
     revalidateAll();
     return updatedItem;
