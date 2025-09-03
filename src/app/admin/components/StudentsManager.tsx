@@ -179,10 +179,6 @@ export default function StudentsManager() {
                 </SelectContent>
               </Select>
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="streak" className="text-right">Streak</Label>
-              <Input id="streak" type="number" value={currentStudent?.streak || 0} onChange={(e) => setCurrentStudent({ ...currentStudent, streak: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
