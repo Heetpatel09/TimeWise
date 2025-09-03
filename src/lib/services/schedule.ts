@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -16,8 +17,35 @@ export async function getSchedule(): Promise<Schedule[]> {
   return stmt.all() as Schedule[];
 }
 
+function checkForConflict(item: Omit<Schedule, 'id'>, existingId?: string) {
+    const db = getDb();
+    
+    // Check for class conflict
+    let stmt = db.prepare('SELECT id FROM schedule WHERE classId = ? AND day = ? AND time = ? AND id != ?');
+    let conflict = stmt.get(item.classId, item.day, item.time, existingId || '');
+    if (conflict) {
+        throw new Error('This class is already scheduled for another subject at this time.');
+    }
+
+    // Check for faculty conflict
+    stmt = db.prepare('SELECT id FROM schedule WHERE facultyId = ? AND day = ? AND time = ? AND id != ?');
+    conflict = stmt.get(item.facultyId, item.day, item.time, existingId || '');
+    if (conflict) {
+        throw new Error('This faculty member is already scheduled for another class at this time.');
+    }
+
+    // Check for classroom conflict
+    stmt = db.prepare('SELECT id FROM schedule WHERE classroomId = ? AND day = ? AND time = ? AND id != ?');
+    conflict = stmt.get(item.classroomId, item.day, item.time, existingId || '');
+    if (conflict) {
+        throw new Error('This classroom is already booked at this time.');
+    }
+}
+
 export async function addSchedule(item: Omit<Schedule, 'id'>) {
     const db = getDb();
+    checkForConflict(item);
+
     const id = `SCH${Date.now()}`;
     const newItem: Schedule = { ...item, id };
     const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -28,11 +56,14 @@ export async function addSchedule(item: Omit<Schedule, 'id'>) {
 
 export async function updateSchedule(updatedItem: Schedule) {
     const db = getDb();
+    checkForConflict(updatedItem, updatedItem.id);
+    
     const existing = db.prepare('SELECT * FROM schedule WHERE id = ?').get(updatedItem.id);
     if (existing) {
         const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, classroomId = ?, day = ?, time = ? WHERE id = ?');
         stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time, updatedItem.id);
     } else {
+        // This case should ideally not be hit if we are "updating", but as a fallback:
         const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
         stmt.run(updatedItem.id, updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time);
     }

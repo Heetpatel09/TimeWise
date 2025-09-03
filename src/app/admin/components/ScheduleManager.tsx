@@ -88,8 +88,8 @@ export default function ScheduleManager() {
             loadAllData();
             setFormOpen(false);
             setCurrentSlot(null);
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to save slot.', variant: 'destructive' });
+        } catch (error: any) {
+            toast({ title: 'Error Creating Slot', description: error.message, variant: 'destructive' });
         }
     }
   };
@@ -174,42 +174,44 @@ export default function ScheduleManager() {
             </CardHeader>
             <CardContent>
               {slots.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Faculty</TableHead>
-                      <TableHead>Classroom</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {slots.map((slot) => (
-                      <TableRow key={slot.id}>
-                        <TableCell>{slot.time}</TableCell>
-                        <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
-                        <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
-                        <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
-                        <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(slot.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Class</TableHead>
+                          <TableHead>Subject</TableHead>
+                          <TableHead>Faculty</TableHead>
+                          <TableHead>Classroom</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {slots.map((slot) => (
+                          <TableRow key={slot.id}>
+                            <TableCell className="whitespace-nowrap">{slot.time}</TableCell>
+                            <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
+                            <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
+                            <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
+                            <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDelete(slot.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                </div>
               ) : (
                 <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
               )}
@@ -264,8 +266,8 @@ export default function ScheduleManager() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Classroom</Label>
-              <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })} disabled={!selectedSubjectType}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder={selectedSubjectType ? `Select a ${selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
+              <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })} disabled={!currentSlot?.subjectId}>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder={currentSlot?.subjectId ? `Select a ${selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
                 <SelectContent>{filteredClassrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
