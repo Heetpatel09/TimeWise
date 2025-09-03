@@ -25,7 +25,7 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Coffee } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,13 +94,13 @@ export default function ScheduleManager() {
     loadAllData();
   }, [])
 
-  const getRelationName = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom') => {
+  const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom') => {
     switch (type) {
-      case 'class': return classes.find(c => c.id === id)?.name;
-      case 'subject': return subjects.find(s => s.id === id)?.name;
-      case 'faculty': return faculty.find(f => f.id === id)?.name;
-      case 'classroom': return classrooms.find(cr => cr.id === id)?.name;
-      default: return 'N/A';
+      case 'class': return classes.find(c => c.id === id);
+      case 'subject': return subjects.find(s => s.id === id);
+      case 'faculty': return faculty.find(f => f.id === id);
+      case 'classroom': return classrooms.find(cr => cr.id === id);
+      default: return undefined;
     }
   };
 
@@ -150,10 +150,10 @@ export default function ScheduleManager() {
     const tableData = schedule.map(slot => [
         slot.day,
         slot.time,
-        getRelationName(slot.classId, 'class'),
-        getRelationName(slot.subjectId, 'subject'),
-        getRelationName(slot.facultyId, 'faculty'),
-        getRelationName(slot.classroomId, 'classroom'),
+        getRelationInfo(slot.classId, 'class')?.name,
+        getRelationInfo(slot.subjectId, 'subject')?.name,
+        getRelationInfo(slot.facultyId, 'faculty')?.name,
+        getRelationInfo(slot.classroomId, 'classroom')?.name,
     ]);
 
     (doc as any).autoTable({
@@ -215,18 +215,29 @@ export default function ScheduleManager() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {slots.map((slot) => (
-                          <TableRow key={slot.id}>
+                        {slots.map((slot) => {
+                          const subject = getRelationInfo(slot.subjectId, 'subject');
+                          const isSpecial = subject?.isSpecial;
+                          return (
+                          <TableRow 
+                            key={slot.id}
+                            className={isSpecial ? `bg-[#4A0080] text-white hover:bg-[#4A0080]/90` : ''}
+                          >
                             <TableCell>{slot.time}</TableCell>
-                            <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
-                            <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
-                            <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
-                            <TableCell>{getRelationName(slot.classroomId, 'classroom')}</TableCell>
+                            <TableCell>{getRelationInfo(slot.classId, 'class')?.name}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {subject?.name}
+                                  {isSpecial && <Star className="h-3 w-3 text-yellow-400" />}
+                                </div>
+                            </TableCell>
+                            <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name}</TableCell>
+                            <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name}</TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                  <Button variant="ghost" className="h-8 w-8 p-0" disabled={isSpecial}>
+                                    <MoreHorizontal className={`h-4 w-4 ${isSpecial ? 'text-gray-300' : ''}`} />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -236,7 +247,7 @@ export default function ScheduleManager() {
                               </DropdownMenu>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        )})}
                       </TableBody>
                     </Table>
                 </div>
