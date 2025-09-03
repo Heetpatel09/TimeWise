@@ -166,10 +166,10 @@ function initializeDb() {
         insertUser.run('neumann@example.com', 'FAC004', 'faculty123', 'faculty', 0);
         insertUser.run('knuth@example.com', 'FAC005', 'faculty123', 'faculty', 0);
         insertUser.run('abhinav@example.com', 'FAC006', 'faculty123', 'faculty', 0);
-
-        insertUser.run('abc@example.com', 'STU001', '123', 'student', 0);
-        insertUser.run('bob@example.com', 'STU002', 'student123', 'student', 0);
-        insertUser.run('charlie@example.com', 'STU003', 'student123', 'student', 0);
+        
+        insertUser.run('abc@example.com', 'STU001', '123', 'student', 1);
+        insertUser.run('bob@example.com', 'STU002', 'student123', 'student', 1);
+        insertUser.run('charlie@example.com', 'STU003', 'student123', 'student', 1);
     })();
     console.log('Database initialized and seeded successfully.');
   } 
