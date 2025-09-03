@@ -33,7 +33,7 @@ export default function StudentsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState<Partial<Student> | null>(null);
+  const [currentStudent, setCurrentStudent] = useState<Partial<Student>>({});
   const [newStudentCredentials, setNewStudentCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
   const { toast } = useToast();
 
@@ -73,7 +73,7 @@ export default function StudentsManager() {
         }
         await loadData();
         setDialogOpen(false);
-        setCurrentStudent(null);
+        setCurrentStudent({});
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -187,7 +187,10 @@ export default function StudentsManager() {
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) setCurrentStudent({});
+        setDialogOpen(isOpen);
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{currentStudent?.id ? 'Edit Student' : 'Add Student'}</DialogTitle>
@@ -198,11 +201,11 @@ export default function StudentsManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentStudent?.name ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} className="col-span-3" disabled={isSubmitting} />
+              <Input id="name" value={currentStudent.name ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} className="col-span-3" disabled={isSubmitting} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentStudent?.email ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} className="col-span-3" disabled={isSubmitting} />
+              <Input id="email" type="email" value={currentStudent.email ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} className="col-span-3" disabled={isSubmitting} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="class" className="text-right">Class</Label>

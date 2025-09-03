@@ -30,7 +30,7 @@ export default function FacultyManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty> | null>(null);
+  const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
   const { toast } = useToast();
 
@@ -64,7 +64,7 @@ export default function FacultyManager() {
         }
         await loadData();
         setDialogOpen(false);
-        setCurrentFaculty(null);
+        setCurrentFaculty({});
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -94,7 +94,7 @@ export default function FacultyManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentFaculty({ });
+    setCurrentFaculty({});
     setDialogOpen(true);
   };
   
@@ -179,7 +179,10 @@ export default function FacultyManager() {
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) setCurrentFaculty({});
+        setDialogOpen(isOpen);
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
@@ -190,15 +193,15 @@ export default function FacultyManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentFaculty?.name ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="name" value={currentFaculty.name ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentFaculty?.email ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="email" type="email" value={currentFaculty.email ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>
-              <Input id="department" value={currentFaculty?.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="department" value={currentFaculty.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
           </div>
           <DialogFooter>

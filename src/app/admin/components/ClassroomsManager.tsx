@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,7 @@ export default function ClassroomsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentClassroom, setCurrentClassroom] = useState<Partial<Classroom> | null>(null);
+  const [currentClassroom, setCurrentClassroom] = useState<Partial<Classroom>>({});
   const { toast } = useToast();
 
   async function loadData() {
@@ -64,7 +65,7 @@ export default function ClassroomsManager() {
         }
         await loadData();
         setDialogOpen(false);
-        setCurrentClassroom(null);
+        setCurrentClassroom({});
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -149,7 +150,10 @@ export default function ClassroomsManager() {
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) setCurrentClassroom({});
+        setDialogOpen(isOpen);
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{currentClassroom?.id ? 'Edit Classroom' : 'Add Classroom'}</DialogTitle>
@@ -160,7 +164,7 @@ export default function ClassroomsManager() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentClassroom?.name || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="name" value={currentClassroom.name || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">Type</Label>

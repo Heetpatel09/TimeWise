@@ -45,7 +45,7 @@ export default function SubjectsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentSubject, setCurrentSubject] = useState<Partial<Subject> | null>(null);
+  const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
   const { toast } = useToast();
 
   async function loadData() {
@@ -77,7 +77,7 @@ export default function SubjectsManager() {
         }
         await loadData();
         setDialogOpen(false);
-        setCurrentSubject(null);
+        setCurrentSubject({});
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -187,7 +187,10 @@ export default function SubjectsManager() {
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) setCurrentSubject({});
+        setDialogOpen(isOpen);
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{currentSubject?.id ? 'Edit Subject' : 'Add Subject'}</DialogTitle>
@@ -202,7 +205,7 @@ export default function SubjectsManager() {
               </Label>
               <Input
                 id="name"
-                value={currentSubject?.name ?? ''}
+                value={currentSubject.name ?? ''}
                 onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })}
                 className="col-span-3"
                 disabled={isSubmitting}
@@ -214,7 +217,7 @@ export default function SubjectsManager() {
               </Label>
               <Input
                 id="code"
-                value={currentSubject?.code ?? ''}
+                value={currentSubject.code ?? ''}
                 onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })}
                 className="col-span-3"
                 disabled={isSubmitting}
@@ -222,7 +225,7 @@ export default function SubjectsManager() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="semester" className="text-right">Semester</Label>
-              <Input id="semester" type="number" min="1" max="8" value={currentSubject?.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} className="col-span-3" disabled={isSubmitting}/>
+              <Input id="semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">
@@ -245,7 +248,7 @@ export default function SubjectsManager() {
                <div className="col-span-3 flex items-center space-x-2">
                  <Switch
                     id="special"
-                    checked={currentSubject?.isSpecial || false}
+                    checked={currentSubject.isSpecial || false}
                     onCheckedChange={(checked) => setCurrentSubject({ ...currentSubject, isSpecial: checked })}
                     disabled={isSubmitting}
                 />
