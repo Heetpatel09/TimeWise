@@ -167,14 +167,16 @@ export default function Home() {
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
 
 
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center animate-in fade-in slide-in-from-bottom-8 duration-500">
-        <TimeWiseLogo />
-        <p className="mt-6 text-lg md:text-xl max-w-2xl text-primary/80">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <TimeWiseLogo />
+        </div>
+        <p className="mt-6 text-lg md:text-xl max-w-2xl text-primary/80 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
             The intelligent, AI-powered solution for effortless academic scheduling.
             Simplify complexity, resolve conflicts, and create perfect timetables in minutes.
         </p>
 
-        <div className="mt-12">
+        <div className="mt-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
              <Dialog open={isDialogOpen} onOpenChange={(open) => {
                 if (!open) setSelectedRole(null);
                 setDialogOpen(open);
