@@ -62,3 +62,10 @@ export const scheduleChangeRequests: ScheduleChangeRequest[] = [
 export const notifications: Notification[] = [
     { id: 'NOT001', userId: 'FAC001', message: 'Your leave request from 2024-07-20 to 2024-07-21 has been approved.', isRead: true, createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
 ];
+export const adminUser = {
+  id: 'admin-user',
+  name: 'Admin',
+  email: 'admin@timewise.app',
+  password: 'admin123',
+  role: 'admin',
+};

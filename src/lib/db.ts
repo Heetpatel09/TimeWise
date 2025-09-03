@@ -12,6 +12,7 @@ import {
   scheduleChangeRequests,
   notifications,
   classrooms,
+  adminUser
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
@@ -150,7 +151,7 @@ function initializeDb() {
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
-        insertUser.run('admin@timewise.app', 'admin', 'admin123', 'admin');
+        insertUser.run(adminUser.email, adminUser.id, adminUser.password, adminUser.role);
         faculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty'));
         students.forEach(s => insertUser.run(s.email, s.id, 'student123', 'student'));
 
