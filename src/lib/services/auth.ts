@@ -58,7 +58,7 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
         if (!oldEntry) return reject(new Error('Admin user not found'));
 
         if (oldEntry.email !== updatedDetails.email) {
-            db.prepare('UPDATE users SET email = ? WHERE id = ? AND role = ?').run(updatedDetails.email, updatedDetails.id, 'admin');
+            updateUserEmail(oldEntry.email, updatedDetails.email);
         }
 
         const user: User = {

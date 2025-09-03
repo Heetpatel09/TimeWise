@@ -74,6 +74,8 @@ export default function FacultyProfilePage() {
       try {
         const updatedFaculty = await updateFaculty(facultyMember);
         if (newPassword) {
+            // Always use the email from the auth context for password updates,
+            // as this is the key in the users table.
             await updatePassword(user.email, newPassword);
         }
         
