@@ -27,6 +27,7 @@ export const faculty: Faculty[] = [
   { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering', streak: 15 },
   { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', department: 'Computer Engineering', streak: 0 },
   { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', department: 'Computer Engineering', streak: 0 },
+  { id: 'FAC006', name: 'Dr. Abhinav', email: 'abhinav@example.com', department: 'Computer Engineering', streak: 25 },
 ];
 
 export const classrooms: Classroom[] = [
