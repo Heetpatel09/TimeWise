@@ -159,6 +159,8 @@ function initializeDb() {
         faculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty'));
         students.forEach(s => insertUser.run(s.email, s.id, 'student123', 'student'));
 
+        // Overwrite specific student credential for testing
+        insertUser.run('abc@example.com', 'STU001', '123', 'student');
     })();
     console.log('Database initialized and seeded successfully.');
   } 

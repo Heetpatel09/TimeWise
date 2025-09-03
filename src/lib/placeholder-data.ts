@@ -17,7 +17,7 @@ export const classes: Class[] = [
 ];
 
 export const students: Student[] = [
-  { id: 'STU001', name: 'Alice Johnson', email: 'alice@example.com', classId: 'CLS004', streak: 12 },
+  { id: 'STU001', name: 'Alice Johnson', email: 'abc@example.com', classId: 'CLS004', streak: 12 },
   { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003', streak: 5 },
   { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004', streak: 23 },
 ];
