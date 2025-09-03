@@ -2,16 +2,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/db';
+import { db as getDb } from '@/lib/db';
 import type { LeaveRequest } from '@/lib/types';
 import { addNotification } from './notifications';
 
 export async function getLeaveRequests(): Promise<LeaveRequest[]> {
+    const db = getDb();
     const stmt = db.prepare('SELECT * FROM leave_requests ORDER BY startDate DESC');
     return stmt.all() as LeaveRequest[];
 }
 
 export async function addLeaveRequest(request: Omit<LeaveRequest, 'id' | 'status'>) {
+    const db = getDb();
     const id = `LR${Date.now()}`;
     const status = 'pending';
     const stmt = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -24,6 +26,7 @@ export async function addLeaveRequest(request: Omit<LeaveRequest, 'id' | 'status
 }
 
 export async function updateLeaveRequestStatus(id: string, status: 'approved' | 'rejected') {
+    const db = getDb();
     const stmt = db.prepare('UPDATE leave_requests SET status = ? WHERE id = ?');
     stmt.run(status, id);
     
@@ -43,6 +46,7 @@ export async function updateLeaveRequestStatus(id: string, status: 'approved' | 
 }
 
 export async function deleteResolvedLeaveRequests() {
+    const db = getDb();
     const stmt = db.prepare("DELETE FROM leave_requests WHERE status != 'pending'");
     stmt.run();
     revalidatePath('/admin', 'layout');

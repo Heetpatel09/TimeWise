@@ -17,29 +17,10 @@ import type { Faculty, Student } from './types';
 let db: Database.Database;
 
 function initializeDb() {
-    if (db) {
-        return db;
-    }
-
     console.log('Initializing database connection...');
-    db = new Database('local.db');
+    db = new Database(':memory:');
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON'); // Enforce foreign key constraints
-
-    // Drop tables in the correct order to avoid foreign key constraint errors
-    db.exec(`
-      DROP TABLE IF EXISTS substitute_assignments;
-      DROP TABLE IF EXISTS schedule_change_requests;
-      DROP TABLE IF EXISTS leave_requests;
-      DROP TABLE IF EXISTS notifications;
-      DROP TABLE IF EXISTS schedule;
-      DROP TABLE IF EXISTS students;
-      DROP TABLE IF EXISTS faculty;
-      DROP TABLE IF EXISTS subjects;
-      DROP TABLE IF EXISTS classes;
-      DROP TABLE IF EXISTS classrooms;
-      DROP TABLE IF EXISTS users;
-    `);
 
     console.log('Running initial database setup...');
 
@@ -65,8 +46,7 @@ function initializeDb() {
           email TEXT NOT NULL UNIQUE,
           department TEXT NOT NULL,
           streak INTEGER NOT NULL,
-          avatar TEXT,
-          isSubstitute BOOLEAN NOT NULL DEFAULT 0
+          avatar TEXT
       );
        CREATE TABLE students (
           id TEXT PRIMARY KEY,
@@ -124,23 +104,12 @@ function initializeDb() {
           password TEXT,
           role TEXT NOT NULL
       );
-      CREATE TABLE substitute_assignments (
-          id TEXT PRIMARY KEY,
-          scheduleId TEXT NOT NULL,
-          originalFacultyId TEXT NOT NULL,
-          substituteFacultyId TEXT NOT NULL,
-          date TEXT NOT NULL,
-          status TEXT NOT NULL,
-          FOREIGN KEY (scheduleId) REFERENCES schedule(id) ON DELETE CASCADE,
-          FOREIGN KEY (originalFacultyId) REFERENCES faculty(id) ON DELETE CASCADE,
-          FOREIGN KEY (substituteFacultyId) REFERENCES faculty(id) ON DELETE CASCADE
-      );
     `);
 
     const insertSubject = db.prepare('INSERT INTO subjects (id, name, code) VALUES (?, ?, ?)');
     const insertClass = db.prepare('INSERT INTO classes (id, name, year, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar, isSubstitute) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT INTO classrooms (id, name) VALUES (?, ?)');
     const insertSchedule = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -151,9 +120,9 @@ function initializeDb() {
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code));
         classes.forEach(c => insertClass.run(c.id, c.name, c.year, c.department));
-        students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null));
-        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.isSubstitute ? 1 : 0));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name));
+        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null));
+        students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null));
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status));
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
@@ -170,6 +139,11 @@ function initializeDb() {
 }
 
 // Initialize and export the database connection
-const dbInstance = initializeDb();
+const getDb = () => {
+    if (!db) {
+        db = initializeDb();
+    }
+    return db;
+}
 
-export { dbInstance as db };
+export { getDb as db };

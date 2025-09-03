@@ -1,10 +1,11 @@
 
 'use server';
 
-import { db } from '@/lib/db';
+import { db as getDb } from '@/lib/db';
 import type { Student, EnrichedSchedule } from '@/lib/types';
 
 export async function getTimetableDataForStudent(studentId: string) {
+    const db = getDb();
     const student: (Student & { className: string }) | undefined = db.prepare(`
         SELECT s.*, c.name as className
         FROM students s

@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/db';
+import { db as getDb } from '@/lib/db';
 import type { Notification } from '@/lib/types';
 
 function revalidateAll() {
@@ -10,12 +10,14 @@ function revalidateAll() {
 }
 
 export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
+    const db = getDb();
     const stmt = db.prepare('SELECT *, isRead as isReadBool FROM notifications WHERE userId = ? ORDER BY createdAt DESC');
     const results = stmt.all(userId) as any[];
     return results.map(n => ({...n, isRead: !!n.isReadBool }));
 }
 
 export async function addNotification(notification: Omit<Notification, 'id' | 'isRead' | 'createdAt'>) {
+    const db = getDb();
     const id = `NOT${Date.now()}`;
     const isRead = false;
     const createdAt = new Date().toISOString();
@@ -28,6 +30,7 @@ export async function addNotification(notification: Omit<Notification, 'id' | 'i
 }
 
 export async function markNotificationAsRead(id: string) {
+    const db = getDb();
     const stmt = db.prepare('UPDATE notifications SET isRead = 1 WHERE id = ?');
     stmt.run(id);
     revalidateAll();

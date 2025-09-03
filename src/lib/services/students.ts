@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/db';
+import { db as getDb } from '@/lib/db';
 import type { Student } from '@/lib/types';
 import { addUser, updateUserEmail } from './auth';
 import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
@@ -15,11 +15,13 @@ function revalidateAll() {
 }
 
 export async function getStudents(): Promise<Student[]> {
+  const db = getDb();
   const stmt = db.prepare('SELECT * FROM students');
   return stmt.all() as Student[];
 }
 
 export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak?: number }) {
+    const db = getDb();
     const id = `STU${Date.now()}`;
     const newItem: Student = {
         ...item,
@@ -61,6 +63,7 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
 }
 
 export async function updateStudent(updatedItem: Student): Promise<Student> {
+    const db = getDb();
     const oldStudent: Student | undefined = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as any;
 
     if (oldStudent && oldStudent.email !== updatedItem.email) {
@@ -75,6 +78,7 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
 }
 
 export async function deleteStudent(id: string) {
+    const db = getDb();
     const stmt = db.prepare('DELETE FROM students WHERE id = ?');
     stmt.run(id);
     revalidateAll();

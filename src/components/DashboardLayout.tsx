@@ -56,16 +56,14 @@ import {
   Trophy,
   Award,
   Warehouse,
-  UserSwitch,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
-import type { LeaveRequest, Notification, SubstituteAssignment } from '@/lib/types';
+import type { LeaveRequest, Notification } from '@/lib/types';
 import { getLeaveRequests } from '@/lib/services/leave';
 import { getScheduleChangeRequests } from '@/lib/services/schedule-changes';
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser, markNotificationAsRead } from '@/lib/services/notifications';
-import { getSubstituteAssignments } from '@/lib/services/substitutions';
 
 const navItems = {
   admin: [
@@ -218,7 +216,6 @@ function Nav() {
   const [isClient, setIsClient] = React.useState(false);
   const [pendingLeaveRequestsCount, setPendingLeaveRequestsCount] = useState<number | null>(null);
   const [pendingScheduleRequestsCount, setPendingScheduleRequestsCount] = useState<number | null>(null);
-  const [pendingSubstitutionRequestsCount, setPendingSubstitutionRequestsCount] = useState<number | null>(null);
   
   useEffect(() => {
     setIsClient(true);
@@ -229,9 +226,6 @@ function Nav() {
       getScheduleChangeRequests().then(requests => {
         setPendingScheduleRequestsCount(requests.filter(r => r.status === 'pending').length);
       });
-      getSubstituteAssignments().then(requests => {
-        setPendingSubstitutionRequestsCount(requests.filter(r => r.status === 'pending').length);
-      })
     }
   }, [user]);
 
@@ -253,7 +247,6 @@ function Nav() {
       { href: '/admin?tab=hall-of-fame', label: 'Hall of Fame', icon: Award, tab: 'hall-of-fame' },
       { href: '/admin?tab=leave-requests', label: 'Leave Requests', icon: Mail, tab: 'leave-requests', badge: pendingLeaveRequestsCount },
       { href: '/admin?tab=schedule-requests', label: 'Schedule Requests', icon: PencilRuler, tab: 'schedule-requests', badge: pendingScheduleRequestsCount },
-      { href: '/admin?tab=substitutions', label: 'Substitutions', icon: UserSwitch, tab: 'substitutions', badge: pendingSubstitutionRequestsCount },
   ]
   const isActive = (item: {href: string, tab?: string}) => {
     if (item.href.includes('?tab=')) {

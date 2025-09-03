@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, UserSwitch } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse } from "lucide-react";
 import SubjectsManager from "./components/SubjectsManager";
 import ClassesManager from "./components/ClassesManager";
 import ClassroomsManager from "./components/ClassroomsManager";
@@ -14,7 +14,6 @@ import LeaveRequestsPage from "./leave-requests/page";
 import ScheduleRequestsPage from "./schedule-requests/page";
 import LeaderboardManager from './components/LeaderboardManager';
 import HallOfFamePage from './hall-of-fame/page';
-import SubstitutionsPage from './substitutions/page';
 import Link from "next/link";
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -94,7 +93,6 @@ export default function AdminDashboard() {
     { value: "hall-of-fame", label: "Hall of Fame", icon: Award, component: <HallOfFamePage /> },
     { value: "leave-requests", label: "Leave Requests", icon: Mail, component: <LeaveRequestsPage /> },
     { value: "schedule-requests", label: "Schedule Requests", icon: PencilRuler, component: <ScheduleRequestsPage /> },
-    { value: "substitutions", label: "Substitutions", icon: UserSwitch, component: <SubstitutionsPage /> },
   ];
 
   const activeTab = tab || 'dashboard';
@@ -107,7 +105,7 @@ export default function AdminDashboard() {
          <AdminDashboardHome />
        ): (
         <React.Fragment>
-          {tab === 'leave-requests' || tab === 'schedule-requests' || tab === 'leaderboards' || tab === 'hall-of-fame' || tab === 'substitutions'
+          {tab === 'leave-requests' || tab === 'schedule-requests' || tab === 'leaderboards' || tab === 'hall-of-fame'
             ? selectedTabContents
             : (
                 <Card>

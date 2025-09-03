@@ -16,10 +16,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell, UserX } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
-import SubstituteAssignmentsView from './components/SubstituteAssignmentsView';
 import { addLeaveRequest } from '@/lib/services/leave';
 import { getFaculty } from '@/lib/services/faculty';
 import type { Faculty as FacultyType, Notification } from '@/lib/types';
@@ -106,7 +105,6 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   }
   
-  const isSubstitute = currentFaculty?.isSubstitute;
 
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
@@ -116,83 +114,62 @@ export default function FacultyDashboard() {
                 <CardHeader>
                 <CardTitle>Welcome, {currentFaculty?.name || "Faculty Member"}!</CardTitle>
                 <CardDescription>
-                    {isSubstitute 
-                        ? "Here are the classes you've been assigned to substitute."
-                        : "This is your central hub for managing your schedule and administrative tasks."}
+                    This is your central hub for managing your schedule and administrative tasks.
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isSubstitute ? (
-                        <SubstituteAssignmentsView />
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card className="flex flex-col">
-                                <CardHeader>
-                                <CardTitle>Request Leave</CardTitle>
-                                <CardDescription>Submit a request for a leave of absence.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                <p className="text-sm text-muted-foreground">
-                                    Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
-                                </p>
-                                </CardContent>
-                                <CardFooter>
-                                <Button onClick={() => setLeaveDialogOpen(true)}>
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    Open Leave Form
-                                </Button>
-                                </CardFooter>
-                            </Card>
-                            <Card className="flex flex-col">
-                                <CardHeader>
-                                <CardTitle>Manage Schedule</CardTitle>
-                                <CardDescription>View your weekly schedule and request changes.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                <p className="text-sm text-muted-foreground">
-                                    Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
-                                </p>
-                                </CardContent>
-                                <CardFooter>
-                                <Button onClick={() => setScheduleModalOpen(true)}>
-                                    View Schedule <ArrowRight className="ml-2 h-4 w-4" />
-                                </Button>
-                                </CardFooter>
-                            </Card>
-                        </div>
-                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="flex flex-col">
+                            <CardHeader>
+                            <CardTitle>Request Leave</CardTitle>
+                            <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                            <p className="text-sm text-muted-foreground">
+                                Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
+                            </p>
+                            </CardContent>
+                            <CardFooter>
+                            <Button onClick={() => setLeaveDialogOpen(true)}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                Open Leave Form
+                            </Button>
+                            </CardFooter>
+                        </Card>
+                        <Card className="flex flex-col">
+                            <CardHeader>
+                            <CardTitle>Manage Schedule</CardTitle>
+                            <CardDescription>View your weekly schedule and request changes.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                            <p className="text-sm text-muted-foreground">
+                                Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
+                            </p>
+                            </CardContent>
+                            <CardFooter>
+                            <Button onClick={() => setScheduleModalOpen(true)}>
+                                View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
                 </CardContent>
             </Card>
          </div>
          <div className="lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-            {isSubstitute ? (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <UserX className="w-6 h-6 mr-2 text-blue-500"/>
-                            Substitute Role
-                        </CardTitle>
-                        <CardDescription>You are logged in as a substitute teacher.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">Your assigned classes are shown on the left. Please check back for any new assignments.</p>
-                    </CardContent>
-                </Card>
-            ) : (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Flame className="w-6 h-6 mr-2 text-orange-500"/>
-                            Teaching Streak
-                        </CardTitle>
-                        <CardDescription>For your consistent dedication.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                        <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
-                        <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
-                    </CardContent>
-                </Card>
-            )}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center">
+                        <Flame className="w-6 h-6 mr-2 text-orange-500"/>
+                        Teaching Streak
+                    </CardTitle>
+                    <CardDescription>For your consistent dedication.</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                    <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
+                    <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader>
                         <CardTitle className="flex items-center">

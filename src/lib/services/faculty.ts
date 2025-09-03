@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/db';
+import { db as getDb } from '@/lib/db';
 import type { Faculty } from '@/lib/types';
 import { addUser, updateUserEmail } from './auth';
 import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
@@ -15,13 +15,14 @@ function revalidateAll() {
 }
 
 export async function getFaculty(): Promise<Faculty[]> {
-  const stmt = db.prepare('SELECT id, name, email, department, streak, avatar, isSubstitute FROM faculty');
+  const db = getDb();
+  const stmt = db.prepare('SELECT id, name, email, department, streak, avatar FROM faculty');
   const results = stmt.all() as any[];
-  // better-sqlite3 returns 0/1 for booleans
-  return results.map(f => ({ ...f, isSubstitute: !!f.isSubstitute }));
+  return results;
 }
 
 export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak?: number }) {
+    const db = getDb();
     const id = `FAC${Date.now()}`;
     const newItem: Faculty = {
         ...item,
@@ -30,8 +31,8 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`
     };
     
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar, isSubstitute) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar, newItem.isSubstitute ? 1 : 0);
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar);
 
     const initialPassword = 'faculty123';
     await addUser({
@@ -63,20 +64,22 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
 }
 
 export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
+    const db = getDb();
     const oldFaculty: Faculty | undefined = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as any;
     
     if (oldFaculty && oldFaculty.email !== updatedItem.email) {
         await updateUserEmail(oldFaculty.email, updatedItem.email);
     }
     
-    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ?, isSubstitute = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.isSubstitute ? 1 : 0, updatedItem.id);
+    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.id);
     
     revalidateAll();
     return updatedItem;
 }
 
 export async function deleteFaculty(id: string) {
+    const db = getDb();
     const stmt = db.prepare('DELETE FROM faculty WHERE id = ?');
     stmt.run(id);
     revalidateAll();

@@ -1,15 +1,17 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/db';
+import { db as getDb } from '@/lib/db';
 import type { ScheduleChangeRequest } from '@/lib/types';
 
 export async function getScheduleChangeRequests(): Promise<ScheduleChangeRequest[]> {
+  const db = getDb();
   const stmt = db.prepare('SELECT * FROM schedule_change_requests');
   return stmt.all() as ScheduleChangeRequest[];
 }
 
 export async function addScheduleChangeRequest(request: Omit<ScheduleChangeRequest, 'id' | 'status'>) {
+    const db = getDb();
     const id = `SCR${Date.now()}`;
     const status = 'pending';
     const stmt = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
@@ -22,6 +24,7 @@ export async function addScheduleChangeRequest(request: Omit<ScheduleChangeReque
 }
 
 export async function updateScheduleChangeRequestStatus(id: string, status: 'resolved') {
+    const db = getDb();
     const stmt = db.prepare('UPDATE schedule_change_requests SET status = ? WHERE id = ?');
     stmt.run(status, id);
     revalidatePath('/admin', 'layout');
