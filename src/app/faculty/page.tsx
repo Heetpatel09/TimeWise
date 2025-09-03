@@ -280,7 +280,7 @@ export default function FacultyDashboard() {
           </Card>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+            <Card className="flex flex-col lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <Flame className="w-6 h-6 mr-2 text-orange-500"/>
@@ -288,7 +288,7 @@ export default function FacultyDashboard() {
                     </CardTitle>
                     <CardDescription>For your consistent dedication.</CardDescription>
                 </CardHeader>
-                <CardContent className="text-center">
+                <CardContent className="text-center flex-grow">
                     <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
                     <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
                 </CardContent>
@@ -336,7 +336,7 @@ export default function FacultyDashboard() {
                 </CardTitle>
                 <CardDescription>Your teaching days and personal events at a glance. Click a day to add an event.</CardDescription>
             </CardHeader>
-            <CardContent className="flex">
+            <CardContent>
                 <Popover>
                     <PopoverTrigger asChild>
                       <div className='w-full'>
@@ -480,7 +480,7 @@ export default function FacultyDashboard() {
                       disabled={isSubmitting}
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
+                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="reminder" className="text-right flex items-center gap-2">
                         <Bell className="w-4 h-4" />
                         Reminder
@@ -494,7 +494,7 @@ export default function FacultyDashboard() {
                         />
                     </div>
                 </div>
-                 {eventReminder && (
+                {eventReminder && (
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="reminder-time" className="text-right">Time</Label>
                         <Input 
@@ -520,3 +520,4 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   );
 }
+
