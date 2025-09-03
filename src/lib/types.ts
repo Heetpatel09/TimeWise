@@ -11,7 +11,7 @@ export interface Subject {
 export interface Class {
   id: string;
   name: string;
-  year: number;
+  semester: number;
   department: string;
 }
 

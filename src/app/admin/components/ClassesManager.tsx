@@ -108,7 +108,7 @@ export default function ClassesManager() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Year</TableHead>
+              <TableHead>Semester</TableHead>
               <TableHead>Department</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -117,7 +117,7 @@ export default function ClassesManager() {
             {classes.map((cls) => (
               <TableRow key={cls.id}>
                 <TableCell className="font-medium">{cls.name}</TableCell>
-                <TableCell>{cls.year}</TableCell>
+                <TableCell>{cls.semester}</TableCell>
                 <TableCell>{cls.department}</TableCell>
                 <TableCell className="text-right">
                    <DropdownMenu>
@@ -159,8 +159,8 @@ export default function ClassesManager() {
               <Input id="name" value={currentClass?.name || ''} onChange={(e) => setCurrentClass({ ...currentClass, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="year" className="text-right">Year</Label>
-              <Input id="year" type="number" value={currentClass?.year || ''} onChange={(e) => setCurrentClass({ ...currentClass, year: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
+              <Label htmlFor="semester" className="text-right">Semester</Label>
+              <Input id="semester" type="number" min="1" max="8" value={currentClass?.semester || ''} onChange={(e) => setCurrentClass({ ...currentClass, semester: parseInt(e.target.value) || 0 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">Department</Label>

@@ -50,7 +50,7 @@ function initializeDb() {
       CREATE TABLE classes (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
-          year INTEGER NOT NULL,
+          semester INTEGER NOT NULL,
           department TEXT NOT NULL
       );
        CREATE TABLE classrooms (
@@ -125,7 +125,7 @@ function initializeDb() {
     `);
 
     const insertSubject = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type) VALUES (?, ?, ?, ?, ?)');
-    const insertClass = db.prepare('INSERT INTO classes (id, name, year, department) VALUES (?, ?, ?, ?)');
+    const insertClass = db.prepare('INSERT INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT INTO classrooms (id, name, type) VALUES (?, ?, ?)');
@@ -137,7 +137,7 @@ function initializeDb() {
 
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type));
-        classes.forEach(c => insertClass.run(c.id, c.name, c.year, c.department));
+        classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null));
         students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null));

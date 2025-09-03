@@ -9,10 +9,10 @@ export const subjects: Subject[] = [
 ];
 
 export const classes: Class[] = [
-  { id: 'CLS001', name: 'FE COMP', year: 1, department: 'Computer Engineering' },
-  { id: 'CLS002', name: 'SE COMP', year: 2, department: 'Computer Engineering' },
-  { id: 'CLS003', name: 'TE COMP', year: 3, department: 'Computer Engineering' },
-  { id: 'CLS004', name: 'BE COMP', year: 4, department: 'Computer Engineering' },
+  { id: 'CLS001', name: 'FE COMP', semester: 1, department: 'Computer Engineering' },
+  { id: 'CLS002', name: 'SE COMP', semester: 3, department: 'Computer Engineering' },
+  { id: 'CLS003', name: 'TE COMP', semester: 5, department: 'Computer Engineering' },
+  { id: 'CLS004', name: 'BE COMP', semester: 7, department: 'Computer Engineering' },
 ];
 
 export const students: Student[] = [
