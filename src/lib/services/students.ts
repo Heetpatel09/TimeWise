@@ -24,7 +24,10 @@ export async function getStudents(): Promise<Student[]> {
   return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
 }
 
-export async function addStudent(item: Omit<Student, 'id' | 'streak' | 'profileCompleted'> & { streak?: number, profileCompleted?: number }) {
+export async function addStudent(
+    item: Omit<Student, 'id' | 'streak' | 'profileCompleted'> & { streak?: number, profileCompleted?: number },
+    password?: string
+) {
     const db = getDb();
     const id = `STU${Date.now()}`;
     const newItem: Student = {
@@ -39,7 +42,7 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak' | 'profileC
     stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar, newItem.profileCompleted);
 
     // When adding a student via the admin UI, an initial password is required.
-    const initialPassword = randomBytes(8).toString('hex');
+    const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
@@ -66,7 +69,7 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak' | 'profileC
     }
 
     revalidateAll();
-    return Promise.resolve({ ...newItem, initialPassword });
+    return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
 }
 
 export async function updateStudent(updatedItem: Student): Promise<Student> {

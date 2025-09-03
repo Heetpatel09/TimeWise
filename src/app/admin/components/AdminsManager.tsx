@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getAdmins, addAdmin, updateAdmin, deleteAdmin } from '@/lib/services/admins';
 import type { Admin } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useAuth } from '@/context/AuthContext';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 
 export default function AdminsManager() {
   const { user: authUser } = useAuth();
@@ -34,6 +36,9 @@ export default function AdminsManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentAdmin, setCurrentAdmin] = useState<Partial<Admin>>({});
   const [newAdminCredentials, setNewAdminCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
+  const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
+  const [manualPassword, setManualPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   async function loadData() {
@@ -54,19 +59,29 @@ export default function AdminsManager() {
 
   const handleSave = async () => {
     if (currentAdmin && currentAdmin.name && currentAdmin.email) {
+      if (!currentAdmin.id && passwordOption === 'manual' && !manualPassword) {
+        toast({ title: "Password Required", description: "Please enter a password for the new admin.", variant: "destructive" });
+        return;
+      }
+
       setIsSubmitting(true);
       try {
         if (currentAdmin.id) {
           await updateAdmin(currentAdmin as Admin);
           toast({ title: "Admin Updated", description: "The admin's details have been saved." });
         } else {
-          const result = await addAdmin(currentAdmin as Omit<Admin, 'id'>);
+          const result = await addAdmin(
+            currentAdmin as Omit<Admin, 'id'>, 
+            passwordOption === 'manual' ? manualPassword : undefined
+          );
           toast({ title: "Admin Added", description: "The new admin has been created." });
           setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
         }
         await loadData();
         setDialogOpen(false);
         setCurrentAdmin({});
+        setManualPassword('');
+        setPasswordOption('auto');
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -97,6 +112,8 @@ export default function AdminsManager() {
   
   const openNewDialog = () => {
     setCurrentAdmin({});
+    setPasswordOption('auto');
+    setManualPassword('');
     setDialogOpen(true);
   };
   
@@ -183,7 +200,11 @@ export default function AdminsManager() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
-        if (!isOpen) setCurrentAdmin({});
+        if (!isOpen) {
+            setCurrentAdmin({});
+            setManualPassword('');
+            setPasswordOption('auto');
+        }
         setDialogOpen(isOpen);
       }}>
         <DialogContent className="sm:max-w-[425px]">
@@ -202,6 +223,47 @@ export default function AdminsManager() {
               <Label htmlFor="email" className="text-right">Email</Label>
               <Input id="email" type="email" value={currentAdmin.email ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
+            {!currentAdmin.id && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                   <Label className="text-right">Password</Label>
+                   <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="col-span-3 flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="auto" id="auto" />
+                        <Label htmlFor="auto">Auto-generate</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="manual" id="manual" />
+                        <Label htmlFor="manual">Manual</Label>
+                      </div>
+                   </RadioGroup>
+                </div>
+                 {passwordOption === 'manual' && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="manual-password" className="text-right">Set Password</Label>
+                        <div className="col-span-3 relative">
+                            <Input 
+                                id="manual-password" 
+                                type={showPassword ? "text" : "password"}
+                                value={manualPassword} 
+                                onChange={(e) => setManualPassword(e.target.value)} 
+                                className="pr-10"
+                                disabled={isSubmitting}
+                            />
+                             <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute inset-y-0 right-0 h-full px-3"
+                                onClick={() => setShowPassword(!showPassword)}
+                                >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
@@ -230,15 +292,17 @@ export default function AdminsManager() {
                     <Label>Email</Label>
                     <Input readOnly value={newAdminCredentials?.email} />
                   </div>
-                   <div>
-                    <Label>Initial Password</Label>
-                    <div className="flex items-center gap-2">
-                      <Input readOnly type="text" value={newAdminCredentials?.initialPassword} />
-                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(newAdminCredentials?.initialPassword || '')}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                  {newAdminCredentials?.initialPassword && (
+                    <div>
+                        <Label>Initial Password</Label>
+                        <div className="flex items-center gap-2">
+                        <Input readOnly type="text" value={newAdminCredentials?.initialPassword} />
+                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(newAdminCredentials?.initialPassword || '')}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                        </div>
                     </div>
-                  </div>
+                  )}
                   <p className="text-xs text-muted-foreground pt-2">The admin will be required to change this password on their first login.</p>
                 </div>
               </AlertDescription>

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function FacultyManager() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
@@ -32,6 +33,9 @@ export default function FacultyManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
+  const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
+  const [manualPassword, setManualPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   async function loadData() {
@@ -52,19 +56,28 @@ export default function FacultyManager() {
 
   const handleSave = async () => {
     if (currentFaculty) {
+       if (!currentFaculty.id && passwordOption === 'manual' && !manualPassword) {
+        toast({ title: "Password Required", description: "Please enter a password for the new faculty member.", variant: "destructive" });
+        return;
+      }
       setIsSubmitting(true);
       try {
         if (currentFaculty.id) {
           await updateFaculty(currentFaculty as Faculty);
           toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
         } else {
-          const result = await addFaculty(currentFaculty as Omit<Faculty, 'id'>);
+          const result = await addFaculty(
+            currentFaculty as Omit<Faculty, 'id'>,
+            passwordOption === 'manual' ? manualPassword : undefined
+          );
           toast({ title: "Faculty Added", description: "The new faculty member has been created." });
           setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
         }
         await loadData();
         setDialogOpen(false);
         setCurrentFaculty({});
+        setPasswordOption('auto');
+        setManualPassword('');
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -95,6 +108,8 @@ export default function FacultyManager() {
   
   const openNewDialog = () => {
     setCurrentFaculty({});
+    setPasswordOption('auto');
+    setManualPassword('');
     setDialogOpen(true);
   };
   
@@ -180,7 +195,11 @@ export default function FacultyManager() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
-        if (!isOpen) setCurrentFaculty({});
+        if (!isOpen) {
+            setCurrentFaculty({});
+            setManualPassword('');
+            setPasswordOption('auto');
+        }
         setDialogOpen(isOpen);
       }}>
         <DialogContent className="sm:max-w-[425px]">
@@ -203,6 +222,47 @@ export default function FacultyManager() {
               <Label htmlFor="department" className="text-right">Department</Label>
               <Input id="department" value={currentFaculty.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
+            {!currentFaculty.id && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                   <Label className="text-right">Password</Label>
+                   <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="col-span-3 flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="auto" id="auto-faculty" />
+                        <Label htmlFor="auto-faculty">Auto-generate</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="manual" id="manual-faculty" />
+                        <Label htmlFor="manual-faculty">Manual</Label>
+                      </div>
+                   </RadioGroup>
+                </div>
+                 {passwordOption === 'manual' && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="manual-password-faculty" className="text-right">Set Password</Label>
+                        <div className="col-span-3 relative">
+                            <Input 
+                                id="manual-password-faculty" 
+                                type={showPassword ? "text" : "password"}
+                                value={manualPassword} 
+                                onChange={(e) => setManualPassword(e.target.value)} 
+                                className="pr-10"
+                                disabled={isSubmitting}
+                            />
+                             <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute inset-y-0 right-0 h-full px-3"
+                                onClick={() => setShowPassword(!showPassword)}
+                                >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
@@ -219,7 +279,7 @@ export default function FacultyManager() {
           <DialogHeader>
             <DialogTitle>Faculty Member Created</DialogTitle>
             <DialogDescription>
-              Share the following credentials with the new faculty member so they can log in. The password is randomly generated for security.
+              Share the following credentials with the new faculty member so they can log in. The password is randomly generated for security if not specified.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -231,15 +291,17 @@ export default function FacultyManager() {
                     <Label>Email</Label>
                     <Input readOnly value={newFacultyCredentials?.email} />
                   </div>
-                   <div>
-                    <Label>Initial Password</Label>
-                    <div className="flex items-center gap-2">
-                      <Input readOnly type="text" value={newFacultyCredentials?.initialPassword} />
-                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(newFacultyCredentials?.initialPassword || '')}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                  {newFacultyCredentials?.initialPassword && (
+                    <div>
+                        <Label>Initial Password</Label>
+                        <div className="flex items-center gap-2">
+                        <Input readOnly type="text" value={newFacultyCredentials?.initialPassword} />
+                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(newFacultyCredentials?.initialPassword || '')}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                        </div>
                     </div>
-                  </div>
+                  )}
                   <p className="text-xs text-muted-foreground pt-2">The faculty member will be required to change this password on their first login.</p>
                 </div>
               </AlertDescription>

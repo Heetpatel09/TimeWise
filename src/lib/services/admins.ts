@@ -18,7 +18,7 @@ export async function getAdmins(): Promise<Admin[]> {
   return JSON.parse(JSON.stringify(results.map(a => ({ ...a, avatar: a.avatar || `https://avatar.vercel.sh/${a.email}.png` }))));
 }
 
-export async function addAdmin(item: Omit<Admin, 'id'>) {
+export async function addAdmin(item: Omit<Admin, 'id'>, password?: string) {
     const db = getDb();
     const id = `ADM${Date.now()}`;
     const newItem: Admin = {
@@ -30,7 +30,7 @@ export async function addAdmin(item: Omit<Admin, 'id'>) {
     const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar) VALUES (?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.avatar);
 
-    const initialPassword = randomBytes(8).toString('hex');
+    const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
@@ -40,7 +40,9 @@ export async function addAdmin(item: Omit<Admin, 'id'>) {
     });
 
     revalidateAll();
-    return Promise.resolve({ ...newItem, initialPassword });
+    
+    // Only return the generated password if it was auto-generated
+    return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
 }
 
 export async function updateAdmin(updatedItem: Admin): Promise<Admin> {

@@ -24,7 +24,10 @@ export async function getFaculty(): Promise<Faculty[]> {
   return JSON.parse(JSON.stringify(results.map(f => ({ ...f, avatar: f.avatar || `https://avatar.vercel.sh/${f.email}.png` }))));
 }
 
-export async function addFaculty(item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted'> & { streak?: number, profileCompleted?: number }) {
+export async function addFaculty(
+    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted'> & { streak?: number, profileCompleted?: number },
+    password?: string
+) {
     const db = getDb();
     const id = `FAC${Date.now()}`;
     const newItem: Faculty = {
@@ -38,7 +41,7 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak' | 'profileC
     const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar, newItem.profileCompleted);
 
-    const initialPassword = randomBytes(8).toString('hex');
+    const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
@@ -65,7 +68,7 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak' | 'profileC
 
 
     revalidateAll();
-    return Promise.resolve({ ...newItem, initialPassword });
+    return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
 }
 
 export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
