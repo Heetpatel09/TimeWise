@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight, Settings } from 'lucide-react';
+import { LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight, BrainCircuit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
@@ -25,7 +25,7 @@ import Image from 'next/image';
 const TimeWiseLogo = () => (
   <div className="flex items-center justify-center gap-2 md:gap-4">
     <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0">
-        <Settings className="w-full h-full text-primary animation-rotate" />
+        <BrainCircuit className="w-full h-full text-primary" />
     </div>
     <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-primary">
       TimeWise

@@ -26,6 +26,7 @@ import {
   UserCheck,
   Loader2,
   Bell,
+  BrainCircuit,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
@@ -40,7 +41,7 @@ function TimeWiseLogo() {
   return (
     <Link href="/" className="flex items-center gap-2">
        <div className="relative w-8 h-8">
-          <Settings className="w-full h-full text-primary" />
+          <BrainCircuit className="w-full h-full text-primary" />
       </div>
       <span className="text-xl font-bold text-primary font-headline">TimeWise</span>
     </Link>
