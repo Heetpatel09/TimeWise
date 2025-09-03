@@ -30,11 +30,13 @@ export interface Faculty {
   department: string;
   streak: number;
   avatar?: string;
+  isSubstitute?: boolean;
 }
 
 export interface Classroom {
   id: string;
   name: string;
+  type: 'classroom' | 'lab';
 }
 
 export interface Schedule {
@@ -52,6 +54,7 @@ export interface EnrichedSchedule extends Schedule {
     facultyName: string;
     className: string;
     classroomName: string;
+    classroomType: 'classroom' | 'lab';
 }
 
 export interface User {
@@ -88,4 +91,13 @@ export interface Notification {
   message: string;
   isRead: boolean;
   createdAt: string;
+}
+
+export interface SubstituteAssignment {
+    id: string;
+    scheduleId: string;
+    originalFacultyId: string;
+    substituteFacultyId: string;
+    date: string; // YYYY-MM-DD
+    status: 'pending' | 'approved' | 'rejected';
 }

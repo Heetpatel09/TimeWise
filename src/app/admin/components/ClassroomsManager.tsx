@@ -19,11 +19,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getClassrooms, addClassroom, updateClassroom, deleteClassroom } from '@/lib/services/classrooms';
 import type { Classroom } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 export default function ClassroomsManager() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
@@ -50,7 +52,7 @@ export default function ClassroomsManager() {
   }, []);
 
   const handleSave = async () => {
-    if (currentClassroom) {
+    if (currentClassroom && currentClassroom.name && currentClassroom.type) {
       setIsSubmitting(true);
       try {
         if (currentClassroom.id) {
@@ -68,6 +70,8 @@ export default function ClassroomsManager() {
       } finally {
         setIsSubmitting(false);
       }
+    } else {
+        toast({ title: "Missing Information", description: "Please provide a name and type.", variant: "destructive" });
     }
   };
 
@@ -87,7 +91,7 @@ export default function ClassroomsManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentClassroom({});
+    setCurrentClassroom({type: 'classroom'});
     setDialogOpen(true);
   };
   
@@ -108,6 +112,7 @@ export default function ClassroomsManager() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -115,6 +120,9 @@ export default function ClassroomsManager() {
             {classrooms.map((cls) => (
               <TableRow key={cls.id}>
                 <TableCell className="font-medium">{cls.name}</TableCell>
+                 <TableCell className="capitalize">
+                  <Badge variant={cls.type === 'lab' ? 'secondary' : 'outline'}>{cls.type}</Badge>
+                </TableCell>
                 <TableCell className="text-right">
                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -153,6 +161,18 @@ export default function ClassroomsManager() {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
               <Input id="name" value={currentClassroom?.name || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">Type</Label>
+                 <Select value={currentClassroom?.type} onValueChange={(v: 'classroom' | 'lab') => setCurrentClassroom({ ...currentClassroom, type: v })} disabled={isSubmitting}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="classroom">Classroom</SelectItem>
+                        <SelectItem value="lab">Lab</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
           </div>
           <DialogFooter>

@@ -1,4 +1,4 @@
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom } from './types';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, SubstituteAssignment } from './types';
 
 export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101' },
@@ -22,18 +22,18 @@ export const students: Student[] = [
 ];
 
 export const faculty: Faculty[] = [
-  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', department: 'Computer Engineering', streak: 45 },
-  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', department: 'Computer Engineering', streak: 8 },
-  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering', streak: 15 },
-  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', department: 'Computer Engineering', streak: 0 },
-  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', department: 'Computer Engineering', streak: 0 },
+  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', department: 'Computer Engineering', streak: 45, isSubstitute: false },
+  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', department: 'Computer Engineering', streak: 8, isSubstitute: false },
+  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering', streak: 15, isSubstitute: false },
+  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', department: 'Computer Engineering', streak: 0, isSubstitute: true },
+  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', department: 'Computer Engineering', streak: 0, isSubstitute: true },
 ];
 
 export const classrooms: Classroom[] = [
-    { id: 'CR001', name: 'Room 101' },
-    { id: 'CR002', name: 'Room 102' },
-    { id: 'CR003', name: 'Lab A' },
-    { id: 'CR004', name: 'Lab B' },
+    { id: 'CR001', name: 'Room 101', type: 'classroom' },
+    { id: 'CR002', name: 'Room 102', type: 'classroom' },
+    { id: 'CR003', name: 'Lab A', type: 'lab' },
+    { id: 'CR004', name: 'Lab B', type: 'lab' },
 ]
 
 export const schedule: Schedule[] = [
@@ -60,4 +60,10 @@ export const scheduleChangeRequests: ScheduleChangeRequest[] = [
 
 export const notifications: Notification[] = [
     { id: 'NOT001', userId: 'FAC001', message: 'Your leave request from 2024-07-20 to 2024-07-21 has been approved.', isRead: true, createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
+];
+
+
+export const substituteAssignments: SubstituteAssignment[] = [
+  { id: 'SUBASG001', scheduleId: 'SCH001', originalFacultyId: 'FAC001', substituteFacultyId: 'FAC004', date: '2024-09-05', status: 'pending' },
+  { id: 'SUBASG002', scheduleId: 'SCH003', originalFacultyId: 'FAC003', substituteFacultyId: 'FAC005', date: '2024-09-06', status: 'approved' },
 ];
