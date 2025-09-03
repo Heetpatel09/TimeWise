@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus, Bell } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
@@ -26,11 +27,12 @@ import type { Faculty as FacultyType, Notification, EnrichedSchedule, LeaveReque
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser } from '@/lib/services/notifications';
 import { getSchedule } from '@/lib/services/schedule';
-import { Calendar } from '@/components/ui/calendar';
 import { holidays } from '@/lib/holidays';
 import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday, getDay } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+
 
 function getDatesInRange(startDate: Date, endDate: Date) {
   const dates = [];
@@ -42,69 +44,126 @@ function getDatesInRange(startDate: Date, endDate: Date) {
   return dates;
 }
 
-function ScheduleCalendar({ 
-  schedule, 
+function ScheduleCalendar({
+  schedule,
   leaveRequests,
   events,
   onDayClick,
-}: { 
-  schedule: EnrichedSchedule[], 
+}: {
+  schedule: EnrichedSchedule[],
   leaveRequests: LeaveRequest[],
   events: Event[],
   onDayClick: (date: Date) => void,
 }) {
-    const scheduledDates = schedule.map(slot => {
-        const dayOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].indexOf(slot.day);
-        const today = new Date();
-        const currentDay = today.getDay(); 
-        const result = new Date();
-        result.setDate(today.getDate() - (currentDay - 1) + dayOfWeek);
-        return result;
-    });
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    const approvedLeaveDates = leaveRequests
+  const daysInMonth = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  const approvedLeaveDates = useMemo(() => 
+    new Set(leaveRequests
         .filter(lr => lr.status === 'approved')
-        .flatMap(lr => getDatesInRange(new Date(lr.startDate), new Date(lr.endDate)));
+        .flatMap(lr => getDatesInRange(new Date(lr.startDate), new Date(lr.endDate)))
+        .map(d => format(d, 'yyyy-MM-dd')))
+  , [leaveRequests]);
 
-    const holidayDates = holidays.map(h => h.date);
-    const eventDates = events.map(e => parseISO(e.date));
+  const holidayDates = useMemo(() =>
+    new Set(holidays.map(h => format(h.date, 'yyyy-MM-dd')))
+  , []);
+  
+  const eventDates = useMemo(() => {
+    const dateMap = new Map<string, Event[]>();
+    events.forEach(e => {
+      const dateStr = format(parseISO(e.date), 'yyyy-MM-dd');
+      if (!dateMap.has(dateStr)) {
+        dateMap.set(dateStr, []);
+      }
+      dateMap.get(dateStr)!.push(e);
+    });
+    return dateMap;
+  }, [events]);
 
+  const scheduleDates = useMemo(() => {
+    const dateMap = new Map<string, EnrichedSchedule[]>();
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+
+    // This is a simplification; a real implementation would need to map recurring days (e.g. 'Monday') to actual dates.
+    // For this demo, we'll just check if the day of the week matches.
+    eachDayOfInterval({start: monthStart, end: monthEnd}).forEach(date => {
+        const dayName = format(date, 'EEEE'); // Monday, Tuesday etc.
+        const todaysScheduledSlots = schedule.filter(s => s.day === dayName);
+        if (todaysScheduledSlots.length > 0) {
+            dateMap.set(format(date, 'yyyy-MM-dd'), todaysScheduledSlots);
+        }
+    });
+    return dateMap;
+  }, [schedule, currentMonth]);
+
+
+  const renderDayCell = (day: Date) => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const isCurrentMonth = isSameMonth(day, currentMonth);
+    const isCurrentToday = isToday(day);
+
+    const dayEvents = eventDates.get(dayStr) || [];
+    const daySchedule = scheduleDates.get(dayStr) || [];
+    const isLeave = approvedLeaveDates.has(dayStr);
+    const isHoliday = holidayDates.has(dayStr);
+    
     return (
-        <Calendar
-            mode="single"
-            onDayClick={onDayClick}
-            selected={scheduledDates}
-            modifiers={{
-                leave: approvedLeaveDates,
-                holiday: holidayDates,
-                event: eventDates,
-            }}
-            modifiersClassNames={{
-                leave: 'bg-destructive/20 text-destructive-foreground',
-                holiday: 'text-blue-600',
-                event: 'relative',
-                selected: 'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground'
-            }}
-            components={{
-              DayContent: (props) => {
-                const isEvent = eventDates.some(d => format(d, 'yyyy-MM-dd') === format(props.date, 'yyyy-MM-dd'));
-                return <div className="relative w-full h-full flex items-center justify-center">
-                  {props.date.getDate()}
-                  {isEvent && <Dot className="absolute bottom-[-10px] w-6 h-6 text-accent" />}
-                </div>
-              }
-            }}
-            className="rounded-md border w-full"
-            footer={
-              <div className="text-sm text-muted-foreground p-2 flex flex-col gap-2">
-                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-primary fill-primary" /> Scheduled Class</div>
-                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-blue-600 fill-blue-600" /> Holiday</div>
-                  <div className="flex items-center gap-2"><Circle className="w-3 h-3 bg-destructive/20 text-destructive-foreground" /> Approved Leave</div>
-                   <div className="flex items-center gap-2"><Dot className="w-6 h-6 text-accent" /> Personal Event</div>
-              </div>
-            }
-        />
-    )
+      <div
+        key={day.toString()}
+        className={`h-36 border-t border-r border-gray-200 dark:border-gray-700 p-1 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
+          !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
+        }`}
+        onClick={() => onDayClick(day)}
+      >
+        <div className="flex justify-between items-center">
+            <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
+              {format(day, 'd')}
+            </time>
+        </div>
+        <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
+            {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
+            {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
+            {daySchedule.slice(0, 1).map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
+            {dayEvents.slice(0, 1).map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
+            {(daySchedule.length + dayEvents.length) > 1 && <div className="text-muted-foreground">+ {daySchedule.length + dayEvents.length - 1} more</div>}
+        </div>
+      </div>
+    );
+  };
+
+
+  return (
+     <Card className="h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{format(currentMonth, 'MMMM yyyy')}</CardTitle>
+            <div className="flex gap-2">
+                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+        </CardHeader>
+        <CardContent className="flex-grow">
+            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="py-2 border-t">{day}</div>
+                ))}
+            </div>
+            <div className="grid grid-cols-7 h-full">
+                {daysInMonth.map(renderDayCell)}
+            </div>
+        </CardContent>
+    </Card>
+  )
 }
 
 
@@ -213,8 +272,10 @@ export default function FacultyDashboard() {
   
    const handleDayClick = (date: Date) => {
     setSelectedDate(date);
-    const eventsOnDay = events.filter(e => e.date === format(date, 'yyyy-MM-dd'));
-    if (eventsOnDay.length === 0) {
+    const eventsOnDay = events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+    if (eventsOnDay.length > 0) {
+      // Logic to show popover is handled by PopoverTrigger
+    } else {
       setEventDialogOpen(true);
     }
   };
@@ -257,7 +318,7 @@ export default function FacultyDashboard() {
     });
   }
 
-  const selectedDateEvents = selectedDate ? events.filter(e => e.date === format(selectedDate, 'yyyy-MM-dd')) : [];
+  const selectedDateEvents = selectedDate ? events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')) : [];
 
   if (isLoading) {
     return <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
@@ -279,56 +340,45 @@ export default function FacultyDashboard() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                     <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200 h-full">
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <CalendarDays className="w-5 h-5 mr-2" />
-                                Monthly Calendar
-                            </CardTitle>
-                            <CardDescription>Your teaching days and personal events at a glance. Click a day to add an event.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                  <div className='w-full'>
-                                    <ScheduleCalendar 
-                                      schedule={schedule} 
-                                      leaveRequests={leaveRequests} 
-                                      events={events}
-                                      onDayClick={handleDayClick}
-                                    />
-                                  </div>
-                                </PopoverTrigger>
-                                {selectedDateEvents.length > 0 && (
-                                  <PopoverContent className="w-80">
-                                    <div className="grid gap-4">
-                                      <div className="space-y-2">
-                                        <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                          You have {selectedDateEvents.length} event(s) today.
-                                        </p>
-                                      </div>
-                                      <div className="grid gap-2">
-                                        {selectedDateEvents.map(event => (
-                                          <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
-                                            <p className="text-sm font-medium">{event.title}</p>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                       <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
-                                        <Plus className="h-4 w-4 mr-2"/>
-                                        Add Event
-                                       </Button>
+                 <div className="lg:col-span-2">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <div>
+                                <ScheduleCalendar 
+                                    schedule={schedule} 
+                                    leaveRequests={leaveRequests} 
+                                    events={events}
+                                    onDayClick={handleDayClick}
+                                />
+                            </div>
+                        </PopoverTrigger>
+                        {selectedDateEvents.length > 0 && (
+                            <PopoverContent className="w-80">
+                            <div className="grid gap-4">
+                                <div className="space-y-2">
+                                <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                    You have {selectedDateEvents.length} event(s) today.
+                                </p>
+                                </div>
+                                <div className="grid gap-2">
+                                {selectedDateEvents.map(event => (
+                                    <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
+                                    <p className="text-sm font-medium">{event.title}</p>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                     </div>
-                                  </PopoverContent>
-                                )}
-                              </Popover>
-                        </CardContent>
-                    </Card>
+                                ))}
+                                </div>
+                                <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
+                                <Plus className="h-4 w-4 mr-2"/>
+                                Add Event
+                                </Button>
+                            </div>
+                            </PopoverContent>
+                        )}
+                    </Popover>
                 </div>
                  <div className="lg:col-span-1 space-y-6">
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
