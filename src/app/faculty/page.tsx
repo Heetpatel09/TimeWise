@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -270,7 +269,7 @@ export default function FacultyDashboard() {
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
        <div className="space-y-6">
-            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 col-span-full">
                 <CardHeader>
                     <CardTitle>Welcome, {user?.name || "Faculty Member"}!</CardTitle>
                     <CardDescription>
@@ -523,8 +522,3 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   );
 }
-
-
-
-
-
