@@ -104,7 +104,9 @@ export default function StudentsManager() {
     setDialogOpen(true);
   };
 
-  const getClassName = (classId: string) => classes.find(c => c.id === classId)?.name || 'N/A';
+  const getStudentClassInfo = (classId: string) => {
+    return classes.find(c => c.id === classId) || null;
+  }
   
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -124,12 +126,15 @@ export default function StudentsManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Class</TableHead>
+              <TableHead>Semester</TableHead>
               <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map((student) => (
+            {students.map((student) => {
+              const classInfo = getStudentClassInfo(student.classId);
+              return (
               <TableRow key={student.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
@@ -143,7 +148,8 @@ export default function StudentsManager() {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{getClassName(student.classId)}</TableCell>
+                <TableCell>{classInfo?.name || 'N/A'}</TableCell>
+                <TableCell>{classInfo?.semester || 'N/A'}</TableCell>
                 <TableCell>{student.streak}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -182,7 +188,7 @@ export default function StudentsManager() {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </div>
