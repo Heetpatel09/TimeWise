@@ -211,7 +211,17 @@ export default function ScheduleManager() {
   }));
 
   const selectedSubjectType = subjects.find(s => s.id === currentSlot?.subjectId)?.type;
-  const filteredClassrooms = classrooms.filter(c => !selectedSubjectType || c.type === selectedSubjectType);
+  
+  const filteredClassrooms = classrooms.filter(c => {
+      if (!selectedSubjectType) return false; // Don't show any classrooms if a subject isn't selected
+      if (selectedSubjectType === 'lab') {
+          return c.type === 'lab';
+      }
+      if (selectedSubjectType === 'theory') {
+          return c.type === 'classroom';
+      }
+      return false;
+  });
 
   if (isDataLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -369,7 +379,7 @@ export default function ScheduleManager() {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Classroom</Label>
               <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })} disabled={!currentSlot?.subjectId}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder={currentSlot?.subjectId ? `Select a ${selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder={currentSlot?.subjectId ? `Select a ${selectedSubjectType === 'theory' ? 'classroom' : selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
                 <SelectContent>{filteredClassrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
