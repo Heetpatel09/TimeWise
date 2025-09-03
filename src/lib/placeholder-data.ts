@@ -37,12 +37,12 @@ export const classrooms: Classroom[] = [
 ]
 
 export const schedule: Schedule[] = [
-  { id: 'SCH001', classId: 'CLS004', subjectId: 'SUB003', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '09:00 - 10:00' },
-  { id: 'SCH002', classId: 'CLS004', subjectId: 'SUB002', facultyId: 'FAC002', classroomId: 'CR003', day: 'Monday', time: '10:00 - 11:00' },
-  { id: 'SCH003', classId: 'CLS003', subjectId: 'SUB002', facultyId: 'FAC003', classroomId: 'CR003', day: 'Tuesday', time: '11:00 - 12:00' },
-  { id: 'SCH004', classId: 'CLS004', subjectId: 'SUB004', facultyId: 'FAC003', classroomId: 'CR004', day: 'Wednesday', time: '14:00 - 15:00' },
+  { id: 'SCH001', classId: 'CLS004', subjectId: 'SUB003', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '09:00 AM - 10:00 AM' },
+  { id: 'SCH002', classId: 'CLS004', subjectId: 'SUB002', facultyId: 'FAC002', classroomId: 'CR003', day: 'Monday', time: '10:00 AM - 11:00 AM' },
+  { id: 'SCH003', classId: 'CLS003', subjectId: 'SUB002', facultyId: 'FAC003', classroomId: 'CR003', day: 'Tuesday', time: '11:00 AM - 12:00 PM' },
+  { id: 'SCH004', classId: 'CLS004', subjectId: 'SUB004', facultyId: 'FAC003', classroomId: 'CR004', day: 'Wednesday', time: '02:00 PM - 03:00 PM' },
   // Intentional conflict for demo purposes: Same faculty, same time, different class/classroom
-  { id: 'SCH005', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR002', day: 'Monday', time: '09:00 - 10:00' },
+  { id: 'SCH005', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR002', day: 'Monday', time: '09:00 AM - 10:00 AM' },
 ];
 
 export const leaveRequests: LeaveRequest[] = [
