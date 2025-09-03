@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { getSchedule } from '@/lib/services/schedule';
 import type { Schedule, Class, Subject, Classroom, EnrichedSchedule } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Send, Loader2, Star, Library } from 'lucide-react';
+import { Download, Send, Loader2, Star, Library, Coffee } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -24,12 +24,15 @@ import { Badge } from '@/components/ui/badge';
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
     '08:30 AM - 09:30 AM',
+    '09:30 AM - 10:00 AM', // Break
     '10:00 AM - 11:00 AM',
     '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM', // Break
     '01:00 PM - 02:00 PM',
     '02:00 PM - 03:00 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -169,6 +172,14 @@ export default function ScheduleView() {
   const scheduleByDay = DAYS.map(day => {
     const daySlots = facultySchedule.filter(slot => slot.day === day);
     const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
+        if (BREAK_SLOTS.includes(time)) {
+            return {
+                id: `${day}-${time}-break`,
+                time: time,
+                isBreak: true,
+                day: day,
+            };
+        }
         const scheduledSlot = daySlots.find(slot => slot.time === time);
         if (scheduledSlot) {
             return scheduledSlot;
@@ -223,12 +234,19 @@ export default function ScheduleView() {
                       <TableBody>
                         {slots.map((slot: any) => (
                           <TableRow key={slot.id}>
-                            <TableCell className="whitespace-nowrap">{slot.time}</TableCell>
+                            <TableCell>{slot.time}</TableCell>
                             {slot.isLibrary ? (
                                <TableCell colSpan={4} className="text-muted-foreground">
                                     <div className="flex items-center gap-2">
                                         <Library className="h-4 w-4" />
                                         <span>Library Slot</span>
+                                    </div>
+                                </TableCell>
+                            ) : slot.isBreak ? (
+                                <TableCell colSpan={4} className="text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                        <Coffee className="h-4 w-4" />
+                                        <span>Break</span>
                                     </div>
                                 </TableCell>
                             ) : (
@@ -317,5 +335,3 @@ export default function ScheduleView() {
     </div>
   );
 }
-
-    

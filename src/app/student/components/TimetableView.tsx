@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { EnrichedSchedule, Student } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, Library } from 'lucide-react';
+import { Download, Loader2, Library, Coffee } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
@@ -19,12 +19,16 @@ interface TimetableData {
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
     '08:30 AM - 09:30 AM',
+    '09:30 AM - 10:00 AM', // Break
     '10:00 AM - 11:00 AM',
     '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM', // Break
     '01:00 PM - 02:00 PM',
     '02:00 PM - 03:00 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -68,6 +72,9 @@ export default function TimetableView() {
     
     const tableData = DAYS.flatMap(day => {
         const daySlots = ALL_TIME_SLOTS.map(time => {
+            if (BREAK_SLOTS.includes(time)) {
+                return [day, time, 'Break', '-', '-'];
+            }
             const slot = studentSchedule.find(s => s.day === day && s.time === time);
             if (slot) {
                 return [day, time, slot.subjectName, slot.facultyName, slot.classroomName];
@@ -89,6 +96,14 @@ export default function TimetableView() {
   const scheduleByDay = DAYS.map(day => {
     const daySlots = studentSchedule.filter(slot => slot.day === day);
     const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
+        if (BREAK_SLOTS.includes(time)) {
+             return {
+                id: `${day}-${time}-break`,
+                time: time,
+                isBreak: true,
+                day: day,
+            };
+        }
         const scheduledSlot = daySlots.find(slot => slot.time === time);
         if (scheduledSlot) {
             return scheduledSlot;
@@ -143,12 +158,19 @@ export default function TimetableView() {
                         <TableBody>
                         {slots.map((slot) => (
                             <TableRow key={slot.id}>
-                                <TableCell className="whitespace-nowrap">{slot.time}</TableCell>
+                                <TableCell>{slot.time}</TableCell>
                                 {(slot as any).isLibrary ? (
                                     <TableCell colSpan={3} className="text-muted-foreground">
                                         <div className="flex items-center gap-2">
                                             <Library className="h-4 w-4" />
                                             <span>Library Slot</span>
+                                        </div>
+                                    </TableCell>
+                                ) : (slot as any).isBreak ? (
+                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Coffee className="h-4 w-4" />
+                                            <span>Break</span>
                                         </div>
                                     </TableCell>
                                 ) : (
@@ -173,5 +195,3 @@ export default function TimetableView() {
     </div>
   );
 }
-
-    

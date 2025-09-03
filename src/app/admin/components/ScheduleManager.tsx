@@ -25,7 +25,7 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Coffee } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,6 +47,20 @@ function sortTime(a: string, b: string) {
     };
     return toDate(a).getTime() - toDate(b).getTime();
 }
+
+const ALL_TIME_SLOTS = [
+    '07:30 AM - 08:30 AM',
+    '08:30 AM - 09:30 AM',
+    '09:30 AM - 10:00 AM', // Break
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM', // Break
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM'
+];
+
+const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:30') && !t.includes('12:00'));
+
 
 export default function ScheduleManager() {
   const [schedule, setSchedule] = useState<Schedule[]>([]);
@@ -152,15 +166,7 @@ export default function ScheduleManager() {
   }
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const times = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
-  ];
-
+  
   const scheduleByDay = days.map(day => ({
     day,
     slots: schedule.filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time)),
@@ -211,7 +217,7 @@ export default function ScheduleManager() {
                       <TableBody>
                         {slots.map((slot) => (
                           <TableRow key={slot.id}>
-                            <TableCell className="whitespace-nowrap">{slot.time}</TableCell>
+                            <TableCell>{slot.time}</TableCell>
                             <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
                             <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
                             <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
@@ -262,7 +268,7 @@ export default function ScheduleManager() {
               <Label className="text-right">Time</Label>
               <Select value={currentSlot?.time} onValueChange={(v) => setCurrentSlot({ ...currentSlot, time: v })}>
                 <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Time" /></SelectTrigger>
-                <SelectContent>{times.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                <SelectContent>{LECTURE_TIME_SLOTS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -304,5 +310,3 @@ export default function ScheduleManager() {
     </div>
   );
 }
-
-    
