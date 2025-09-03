@@ -1,5 +1,4 @@
 
-
 export interface Subject {
   id: string;
   name: string;
@@ -86,6 +85,17 @@ export interface ScheduleChangeRequest {
   reason: string;
   status: 'pending' | 'resolved' | 'rejected';
   requestedClassroomId?: string;
+}
+
+export interface NewSlotRequest {
+    id: string;
+    facultyId: string;
+    classId: string;
+    subjectId: string;
+    classroomId: string;
+    day: string;
+    time: string;
+    status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface Notification {

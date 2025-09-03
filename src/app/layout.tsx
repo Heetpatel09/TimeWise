@@ -3,11 +3,14 @@ import { Toaster } from "@/components/ui/toaster";
 import Image from 'next/image';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: 'TimeWise',
   description: 'Smart Timetable Scheduler',
 };
+
+const queryClient = new QueryClient();
 
 export default function RootLayout({
   children,
@@ -31,9 +34,11 @@ export default function RootLayout({
             data-ai-hint="abstract background"
           />
         </div>
-        <AuthProvider>
-            {children}
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                {children}
+            </AuthProvider>
+        </QueryClientProvider>
         <Toaster />
       </body>
     </html>

@@ -28,6 +28,7 @@ function initializeDb() {
     // Drop tables in reverse order of dependency to avoid foreign key errors
     db.exec(`
       DROP TABLE IF EXISTS notifications;
+      DROP TABLE IF EXISTS new_slot_requests;
       DROP TABLE IF EXISTS schedule_change_requests;
       DROP TABLE IF EXISTS leave_requests;
       DROP TABLE IF EXISTS schedule;
@@ -109,6 +110,20 @@ function initializeDb() {
           FOREIGN KEY (scheduleId) REFERENCES schedule(id) ON DELETE CASCADE,
           FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
           FOREIGN KEY (requestedClassroomId) REFERENCES classrooms(id) ON DELETE SET NULL
+      );
+      CREATE TABLE new_slot_requests (
+          id TEXT PRIMARY KEY,
+          facultyId TEXT NOT NULL,
+          classId TEXT NOT NULL,
+          subjectId TEXT NOT NULL,
+          classroomId TEXT NOT NULL,
+          day TEXT NOT NULL,
+          time TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
+          FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
+          FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
+          FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
       );
       CREATE TABLE notifications (
           id TEXT PRIMARY KEY,

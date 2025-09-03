@@ -1,0 +1,72 @@
+
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { db as getDb } from '@/lib/db';
+import type { NewSlotRequest } from '@/lib/types';
+import { addNotification } from './notifications';
+import { addSchedule } from './schedule';
+
+export async function getNewSlotRequests(): Promise<NewSlotRequest[]> {
+  const db = getDb();
+  const stmt = db.prepare('SELECT * FROM new_slot_requests');
+  return stmt.all() as NewSlotRequest[];
+}
+
+export async function addSlotRequest(request: Omit<NewSlotRequest, 'id' | 'status'>) {
+    const db = getDb();
+    const id = `NSR${Date.now()}`;
+    const status = 'pending';
+    const stmt = db.prepare('INSERT INTO new_slot_requests (id, facultyId, classId, subjectId, classroomId, day, time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, request.facultyId, request.classId, request.subjectId, request.classroomId, request.day, request.time, status);
+
+    const newRequest: NewSlotRequest = { ...request, id, status };
+    revalidatePath('/admin/layout');
+    revalidatePath('/faculty/layout');
+    return Promise.resolve(newRequest);
+}
+
+export async function updateNewSlotRequestStatus(id: string, status: 'approved' | 'rejected') {
+    const db = getDb();
+    
+    const request = db.prepare('SELECT * FROM new_slot_requests WHERE id = ?').get(id) as NewSlotRequest | undefined;
+    if (!request) {
+        throw new Error("Request not found");
+    }
+
+    if (status === 'approved') {
+        try {
+            await addSchedule({
+                classId: request.classId,
+                subjectId: request.subjectId,
+                facultyId: request.facultyId,
+                classroomId: request.classroomId,
+                day: request.day as any,
+                time: request.time
+            });
+        } catch (error: any) {
+            await addNotification({
+                userId: request.facultyId,
+                message: `Your new slot request for ${request.day} at ${request.time} was rejected due to a scheduling conflict: ${error.message}.`
+            });
+            const rejectStmt = db.prepare("UPDATE new_slot_requests SET status = 'rejected' WHERE id = ?");
+            rejectStmt.run(id);
+            revalidatePath('/admin', 'layout');
+            revalidatePath('/faculty', 'layout');
+            throw error; // Propagate error to the calling component
+        }
+    }
+    
+    const stmt = db.prepare('UPDATE new_slot_requests SET status = ? WHERE id = ?');
+    stmt.run(status, id);
+
+    let message = `Your new slot request for ${request.day} at ${request.time} has been ${status}.`;
+    await addNotification({
+        userId: request.facultyId,
+        message: message,
+    });
+
+    revalidatePath('/admin', 'layout');
+    revalidatePath('/faculty', 'layout');
+    return Promise.resolve(request);
+}

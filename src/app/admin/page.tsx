@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -17,6 +17,12 @@ import LeaderboardManager from './components/LeaderboardManager';
 import HallOfFamePage from './hall-of-fame/page';
 import LeaveRequestsPage from './leave-requests/page';
 import ScheduleRequestsPage from './schedule-requests/page';
+import NewSlotRequestsPage from './components/NewSlotRequestsPage';
+import { getStudents } from '@/lib/services/students';
+import { getFaculty } from '@/lib/services/faculty';
+import { getSchedule } from '@/lib/services/schedule';
+import { useQuery } from '@tanstack/react-query';
+
 
 const managementCards = [
   { tab: "subjects", title: "Subjects", icon: Book, description: "Manage all course subjects." },
@@ -29,81 +35,89 @@ const managementCards = [
   { tab: "hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate champions." },
   { tab: "leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or deny leaves." },
   { tab: "schedule-requests", title: "Schedule Requests", icon: PencilRuler, description: "Handle change requests." },
+  { tab: "new-slot-requests", title: "New Slot Requests", icon: PlusSquare, description: "Handle new slot requests." },
 ];
 
-const AdminDashboardHome = () => (
-  <div className="space-y-8">
-    <Card className="animate-in fade-in-0 duration-500">
-      <CardHeader>
-          <CardTitle>Welcome, Admin!</CardTitle>
-          <CardDescription>From this dashboard, you can manage all aspects of the university schedule.</CardDescription>
-      </CardHeader>
-      <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-300">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                      <div className="text-2xl font-bold">1,254</div>
-                      <p className="text-xs text-muted-foreground">+5% from last semester</p>
-                  </CardContent>
-              </Card>
-              <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Faculty</CardTitle>
-                      <UserCheck className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                      <div className="text-2xl font-bold">78</div>
-                      <p className="text-xs text-muted-foreground">+2 since last year</p>
-                  </CardContent>
-              </Card>
-              <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-500">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Classes Scheduled</CardTitle>
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                      <div className="text-2xl font-bold">342</div>
-                      <p className="text-xs text-muted-foreground">for the upcoming week</p>
-                  </CardContent>
-              </Card>
-          </div>
-      </CardContent>
-    </Card>
-    
-    <Card className="animate-in fade-in-0 duration-500 delay-200">
-      <CardHeader>
-        <CardTitle>Management Sections</CardTitle>
-        <CardDescription>Click a card to navigate to the respective management page.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {managementCards.map((card, index) => {
-            const Icon = card.icon;
-            return (
-              <Link href={`/admin?tab=${card.tab}`} key={card.title}>
-                <Card className="hover:bg-accent hover:shadow-lg transition-all duration-300 group h-full flex flex-col animate-in fade-in-0 zoom-in-95" style={{ animationDelay: `${300 + index * 50}ms`}}>
-                  <CardHeader className="flex-grow">
-                    <div className="mb-4 bg-card text-primary w-12 h-12 rounded-lg flex items-center justify-center border">
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <CardTitle className="text-lg">{card.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                     <p className="text-xs text-muted-foreground">{card.description}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+const AdminDashboardHome = () => {
+    const { data: students, isLoading: studentsLoading } = useQuery({ queryKey: ['students'], queryFn: getStudents });
+    const { data: faculty, isLoading: facultyLoading } = useQuery({ queryKey: ['faculty'], queryFn: getFaculty });
+    const { data: schedule, isLoading: scheduleLoading } = useQuery({ queryKey: ['schedule'], queryFn: getSchedule });
+
+    const totalStudents = students?.length || 0;
+    const totalFaculty = faculty?.length || 0;
+    const totalScheduled = schedule?.length || 0;
+
+    return (
+        <div className="space-y-8">
+            <Card className="animate-in fade-in-0 duration-500">
+            <CardHeader>
+                <CardTitle>Welcome, Admin!</CardTitle>
+                <CardDescription>From this dashboard, you can manage all aspects of the university schedule.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-300">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{studentsLoading ? '...' : totalStudents}</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Faculty</CardTitle>
+                            <UserCheck className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{facultyLoading ? '...' : totalFaculty}</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-500">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Classes Scheduled</CardTitle>
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{scheduleLoading ? '...' : totalScheduled}</div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </CardContent>
+            </Card>
+            
+            <Card className="animate-in fade-in-0 duration-500 delay-200">
+            <CardHeader>
+                <CardTitle>Management Sections</CardTitle>
+                <CardDescription>Click a card to navigate to the respective management page.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {managementCards.map((card, index) => {
+                    const Icon = card.icon;
+                    return (
+                    <Link href={`/admin?tab=${card.tab}`} key={card.title}>
+                        <Card className="hover:bg-accent hover:shadow-lg transition-all duration-300 group h-full flex flex-col animate-in fade-in-0 zoom-in-95" style={{ animationDelay: `${300 + index * 50}ms`}}>
+                        <CardHeader className="flex-grow">
+                            <div className="mb-4 bg-card text-primary w-12 h-12 rounded-lg flex items-center justify-center border">
+                            <Icon className="w-6 h-6" />
+                            </div>
+                            <CardTitle className="text-lg">{card.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xs text-muted-foreground">{card.description}</p>
+                        </CardContent>
+                        </Card>
+                    </Link>
+                    );
+                })}
+                </div>
+            </CardContent>
+            </Card>
         </div>
-      </CardContent>
-    </Card>
-  </div>
-);
+    )
+};
 
 const AdminDashboardContent = () => {
     const searchParams = useSearchParams();
@@ -130,6 +144,7 @@ const AdminDashboardContent = () => {
             case 'hall-of-fame': content = <HallOfFamePage />; break;
             case 'leave-requests': content = <LeaveRequestsPage />; break;
             case 'schedule-requests': content = <ScheduleRequestsPage />; break;
+            case 'new-slot-requests': content = <NewSlotRequestsPage />; break;
             default: return <AdminDashboardHome />;
         }
 

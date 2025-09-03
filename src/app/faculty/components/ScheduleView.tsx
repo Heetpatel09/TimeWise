@@ -6,10 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getSchedule } from '@/lib/services/schedule';
-import type { Schedule, Class, Subject, Classroom, EnrichedSchedule } from '@/lib/types';
+import { getSchedule, addSchedule } from '@/lib/services/schedule';
+import type { Schedule, Class, Subject, Classroom, EnrichedSchedule, NewSlotRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Send, Loader2, Star, Library, Coffee } from 'lucide-react';
+import { Download, Send, Loader2, Star, Library, Coffee, PlusSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -20,6 +20,8 @@ import { getClassrooms } from '@/lib/services/classrooms';
 import { useAuth } from '@/context/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { addSlotRequest } from '@/lib/services/new-slot-requests';
+
 
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
@@ -60,8 +62,12 @@ export default function ScheduleView() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [isChangeDialogOpen, setChangeDialogOpen] = useState(false);
+  const [isNewSlotDialogOpen, setNewSlotDialogOpen] = useState(false);
   
   const [selectedSlot, setSelectedSlot] = useState<EnrichedSchedule | null>(null);
+  const [selectedLibrarySlot, setSelectedLibrarySlot] = useState<{day:string, time:string} | null>(null);
+
+  const [newSlotRequest, setNewSlotRequest] = useState<Partial<Omit<NewSlotRequest, 'id' | 'status' | 'facultyId'>>>({});
   
   const [requestMessage, setRequestMessage] = useState('');
   const [requestedClassroomId, setRequestedClassroomId] = useState<string | undefined>();
@@ -69,39 +75,40 @@ export default function ScheduleView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function loadData() {
-      if (user) {
-        setIsLoading(true);
-        const [allSchedule, classData, subjectData, classroomData] = await Promise.all([
-          getSchedule(),
-          getClasses(),
-          getSubjects(),
-          getClassrooms(),
-        ]);
-        
-        const enrichedSchedule = allSchedule
-            .filter(s => s.facultyId === user.id)
-            .map(s => {
-                const classroom = classroomData.find(cr => cr.id === s.classroomId);
-                const subject = subjectData.find(sub => sub.id === s.subjectId);
-                return {
-                    ...s,
-                    className: classData.find(c => c.id === s.classId)?.name || 'N/A',
-                    subjectName: subject?.name || 'N/A',
-                    subjectIsSpecial: subject?.isSpecial || false,
-                    classroomName: classroom?.name || 'N/A',
-                    classroomType: classroom?.type || 'classroom'
-                }
-            })
+  async function loadData() {
+    if (user) {
+      setIsLoading(true);
+      const [allSchedule, classData, subjectData, classroomData] = await Promise.all([
+        getSchedule(),
+        getClasses(),
+        getSubjects(),
+        getClassrooms(),
+      ]);
+      
+      const enrichedSchedule = allSchedule
+          .filter(s => s.facultyId === user.id)
+          .map(s => {
+              const classroom = classroomData.find(cr => cr.id === s.classroomId);
+              const subject = subjectData.find(sub => sub.id === s.subjectId);
+              return {
+                  ...s,
+                  className: classData.find(c => c.id === s.classId)?.name || 'N/A',
+                  subjectName: subject?.name || 'N/A',
+                  subjectIsSpecial: subject?.isSpecial || false,
+                  classroomName: classroom?.name || 'N/A',
+                  classroomType: classroom?.type || 'classroom'
+              }
+          })
 
-        setFacultySchedule(enrichedSchedule);
-        setClasses(classData);
-        setSubjects(subjectData);
-        setClassrooms(classroomData);
-        setIsLoading(false);
-      }
+      setFacultySchedule(enrichedSchedule);
+      setClasses(classData);
+      setSubjects(subjectData);
+      setClassrooms(classroomData);
+      setIsLoading(false);
     }
+  }
+
+  useEffect(() => {
     loadData();
   }, [user]);
 
@@ -118,6 +125,11 @@ export default function ScheduleView() {
     setSelectedSlot(slot);
     setChangeDialogOpen(true);
   };
+
+  const openNewSlotDialog = (day: string, time: string) => {
+    setSelectedLibrarySlot({day, time});
+    setNewSlotDialogOpen(true);
+  }
   
   const handleSubmitRequest = async () => {
     if (!selectedSlot || !requestMessage) {
@@ -147,6 +159,33 @@ export default function ScheduleView() {
     }
   };
 
+  const handleSubmitNewSlot = async () => {
+    if (!user || !selectedLibrarySlot || !newSlotRequest.classId || !newSlotRequest.subjectId || !newSlotRequest.classroomId) {
+        toast({ title: 'Missing Information', description: 'Please fill out all fields.', variant: 'destructive' });
+        return;
+    }
+    setIsSubmitting(true);
+    try {
+        await addSlotRequest({
+            ...newSlotRequest,
+            facultyId: user.id,
+            day: selectedLibrarySlot.day,
+            time: selectedLibrarySlot.time,
+        } as Omit<NewSlotRequest, 'id' | 'status'>);
+
+        toast({
+            title: "Request Sent",
+            description: "Your request for a new slot has been sent to the admin for approval.",
+        });
+        setNewSlotDialogOpen(false);
+        setNewSlotRequest({});
+
+    } catch (error: any) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive'});
+    } finally {
+        setIsSubmitting(false);
+    }
+  }
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -199,6 +238,10 @@ export default function ScheduleView() {
   
   const availableClassrooms = classrooms.filter(cr => cr.id !== selectedSlot?.classroomId && cr.type === selectedSlot?.classroomType);
 
+  const selectedSubjectType = subjects.find(s => s.id === newSlotRequest?.subjectId)?.type;
+  const filteredClassroomsForNewSlot = classrooms.filter(c => !selectedSubjectType || c.type === selectedSubjectType);
+
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -236,12 +279,20 @@ export default function ScheduleView() {
                           <TableRow key={slot.id}>
                             <TableCell>{slot.time}</TableCell>
                             {slot.isLibrary ? (
-                               <TableCell colSpan={4} className="text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                        <Library className="h-4 w-4" />
-                                        <span>Library Slot</span>
-                                    </div>
+                               <>
+                                <TableCell colSpan={3} className="text-muted-foreground">
+                                     <div className="flex items-center gap-2">
+                                         <Library className="h-4 w-4" />
+                                         <span>Library Slot</span>
+                                     </div>
+                                 </TableCell>
+                                 <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" onClick={() => openNewSlotDialog(slot.day, slot.time)}>
+                                        <PlusSquare className="h-4 w-4 mr-2" />
+                                        Request Slot
+                                    </Button>
                                 </TableCell>
+                               </>
                             ) : slot.isBreak ? (
                                 <TableCell colSpan={4} className="text-muted-foreground">
                                     <div className="flex items-center gap-2">
@@ -281,6 +332,50 @@ export default function ScheduleView() {
           </Card>
         ))}
       </div>
+
+       <Dialog open={isNewSlotDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) setNewSlotRequest({});
+        setNewSlotDialogOpen(isOpen);
+       }}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Request New Schedule Slot</DialogTitle>
+                <DialogDescription>
+                    Request a new class for {selectedLibrarySlot?.day}, {selectedLibrarySlot?.time}.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Class</Label>
+                    <Select value={newSlotRequest?.classId} onValueChange={(v) => setNewSlotRequest({ ...newSlotRequest, classId: v })}>
+                        <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Class" /></SelectTrigger>
+                        <SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Subject</Label>
+                    <Select value={newSlotRequest?.subjectId} onValueChange={(v) => setNewSlotRequest({ ...newSlotRequest, subjectId: v, classroomId: undefined })}>
+                        <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                        <SelectContent>{subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Classroom</Label>
+                    <Select value={newSlotRequest?.classroomId} onValueChange={(v) => setNewSlotRequest({ ...newSlotRequest, classroomId: v })} disabled={!newSlotRequest.subjectId}>
+                        <SelectTrigger className="col-span-3"><SelectValue placeholder={newSlotRequest.subjectId ? `Select a ${selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
+                        <SelectContent>{filteredClassroomsForNewSlot.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setNewSlotDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                <Button onClick={handleSubmitNewSlot} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                    Send Request
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+       </Dialog>
 
       <Dialog open={isChangeDialogOpen} onOpenChange={(isOpen) => {
         if (!isOpen) {
