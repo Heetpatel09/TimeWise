@@ -26,6 +26,21 @@ const ALL_TIME_SLOTS = [
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
+function sortTime(a: string, b: string) {
+    const toDate = (time: string) => {
+        const [timePart, modifier] = time.split(' ');
+        let [hours, minutes] = timePart.split(':');
+        if (hours === '12') {
+            hours = '0';
+        }
+        if (modifier === 'PM') {
+            hours = (parseInt(hours, 10) + 12).toString();
+        }
+        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+    };
+    return toDate(a).getTime() - toDate(b).getTime();
+}
+
 export default function TimetableView() {
   const { user } = useAuth();
   const [data, setData] = useState<TimetableData | null>(null);
@@ -90,7 +105,7 @@ export default function TimetableView() {
     });
     return {
         day,
-        slots: fullDaySchedule.sort((a,b) => a.time.localeCompare(b.time)),
+        slots: fullDaySchedule.sort((a,b) => sortTime(a.time, b.time)),
     }
   });
 
@@ -115,37 +130,39 @@ export default function TimetableView() {
             </CardHeader>
             <CardContent>
                 {slots.length > 0 ? (
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Subject</TableHead>
-                        <TableHead>Faculty</TableHead>
-                        <TableHead>Classroom</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {slots.map((slot) => (
-                        <TableRow key={slot.id}>
-                            <TableCell>{slot.time}</TableCell>
-                            {(slot as any).isLibrary ? (
-                                <TableCell colSpan={3} className="text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                        <Library className="h-4 w-4" />
-                                        <span>Library Slot</span>
-                                    </div>
-                                </TableCell>
-                            ) : (
-                                <>
-                                    <TableCell>{(slot as EnrichedSchedule).subjectName}</TableCell>
-                                    <TableCell>{(slot as EnrichedSchedule).facultyName}</TableCell>
-                                    <TableCell>{(slot as EnrichedSchedule).classroomName}</TableCell>
-                                </>
-                            )}
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Time</TableHead>
+                            <TableHead>Subject</TableHead>
+                            <TableHead>Faculty</TableHead>
+                            <TableHead>Classroom</TableHead>
                         </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                        {slots.map((slot) => (
+                            <TableRow key={slot.id}>
+                                <TableCell className="whitespace-nowrap">{slot.time}</TableCell>
+                                {(slot as any).isLibrary ? (
+                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Library className="h-4 w-4" />
+                                            <span>Library Slot</span>
+                                        </div>
+                                    </TableCell>
+                                ) : (
+                                    <>
+                                        <TableCell>{(slot as EnrichedSchedule).subjectName}</TableCell>
+                                        <TableCell>{(slot as EnrichedSchedule).facultyName}</TableCell>
+                                        <TableCell>{(slot as EnrichedSchedule).classroomName}</TableCell>
+                                    </>
+                                )}
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </div>
                 ) : (
                 <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
                 )}
@@ -156,3 +173,5 @@ export default function TimetableView() {
     </div>
   );
 }
+
+    

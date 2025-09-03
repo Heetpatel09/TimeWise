@@ -33,6 +33,21 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 
+function sortTime(a: string, b: string) {
+    const toDate = (time: string) => {
+        const [timePart, modifier] = time.split(' ');
+        let [hours, minutes] = timePart.split(':');
+        if (hours === '12') {
+            hours = '0';
+        }
+        if (modifier === 'PM') {
+            hours = (parseInt(hours, 10) + 12).toString();
+        }
+        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+    };
+    return toDate(a).getTime() - toDate(b).getTime();
+}
+
 export default function ScheduleManager() {
   const [schedule, setSchedule] = useState<Schedule[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -148,7 +163,7 @@ export default function ScheduleManager() {
 
   const scheduleByDay = days.map(day => ({
     day,
-    slots: schedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
+    slots: schedule.filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time)),
   }));
 
   const selectedSubjectType = subjects.find(s => s.id === currentSlot?.subjectId)?.type;
@@ -196,7 +211,7 @@ export default function ScheduleManager() {
                       <TableBody>
                         {slots.map((slot) => (
                           <TableRow key={slot.id}>
-                            <TableCell>{slot.time}</TableCell>
+                            <TableCell className="whitespace-nowrap">{slot.time}</TableCell>
                             <TableCell>{getRelationName(slot.classId, 'class')}</TableCell>
                             <TableCell>{getRelationName(slot.subjectId, 'subject')}</TableCell>
                             <TableCell>{getRelationName(slot.facultyId, 'faculty')}</TableCell>
@@ -289,3 +304,5 @@ export default function ScheduleManager() {
     </div>
   );
 }
+
+    

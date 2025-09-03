@@ -31,6 +31,22 @@ const ALL_TIME_SLOTS = [
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
+function sortTime(a: string, b: string) {
+    const toDate = (time: string) => {
+        const [timePart, modifier] = time.split(' ');
+        let [hours, minutes] = timePart.split(':');
+        if (hours === '12') {
+            hours = '0';
+        }
+        if (modifier === 'PM') {
+            hours = (parseInt(hours, 10) + 12).toString();
+        }
+        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+    };
+    return toDate(a).getTime() - toDate(b).getTime();
+}
+
+
 export default function ScheduleView() {
   const { user } = useAuth();
   const [facultySchedule, setFacultySchedule] = useState<EnrichedSchedule[]>([]);
@@ -166,7 +182,7 @@ export default function ScheduleView() {
     });
     return {
         day,
-        slots: fullDaySchedule.sort((a,b) => a.time.localeCompare(b.time)),
+        slots: fullDaySchedule.sort((a,b) => sortTime(a.time, b.time)),
     }
   });
   
@@ -193,52 +209,54 @@ export default function ScheduleView() {
             </CardHeader>
             <CardContent>
               {slots.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Classroom</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {slots.map((slot: any) => (
-                      <TableRow key={slot.id}>
-                        <TableCell>{slot.time}</TableCell>
-                        {slot.isLibrary ? (
-                           <TableCell colSpan={4} className="text-muted-foreground">
-                                <div className="flex items-center gap-2">
-                                    <Library className="h-4 w-4" />
-                                    <span>Library Slot</span>
-                                </div>
-                            </TableCell>
-                        ) : (
-                          <>
-                            <TableCell>{(slot as EnrichedSchedule).className}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                              {(slot as EnrichedSchedule).subjectName}
-                              {(slot as EnrichedSchedule).subjectIsSpecial && <Star className="h-3 w-3 text-yellow-500" />}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={(slot as EnrichedSchedule).classroomType === 'lab' ? 'secondary' : 'outline'}>
-                                {(slot as EnrichedSchedule).classroomName}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <Button variant="outline" size="sm" onClick={() => openChangeDialog(slot)} disabled={(slot as EnrichedSchedule).subjectIsSpecial}>
-                                    Request Change
-                                </Button>
-                            </TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Class</TableHead>
+                          <TableHead>Subject</TableHead>
+                          <TableHead>Classroom</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {slots.map((slot: any) => (
+                          <TableRow key={slot.id}>
+                            <TableCell className="whitespace-nowrap">{slot.time}</TableCell>
+                            {slot.isLibrary ? (
+                               <TableCell colSpan={4} className="text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                        <Library className="h-4 w-4" />
+                                        <span>Library Slot</span>
+                                    </div>
+                                </TableCell>
+                            ) : (
+                              <>
+                                <TableCell>{(slot as EnrichedSchedule).className}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                  {(slot as EnrichedSchedule).subjectName}
+                                  {(slot as EnrichedSchedule).subjectIsSpecial && <Star className="h-3 w-3 text-yellow-500" />}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={(slot as EnrichedSchedule).classroomType === 'lab' ? 'secondary' : 'outline'}>
+                                    {(slot as EnrichedSchedule).classroomName}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" onClick={() => openChangeDialog(slot)} disabled={(slot as EnrichedSchedule).subjectIsSpecial}>
+                                        Request Change
+                                    </Button>
+                                </TableCell>
+                              </>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                </div>
               ) : (
                 <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>              )}
             </CardContent>
@@ -300,3 +318,4 @@ export default function ScheduleView() {
   );
 }
 
+    
