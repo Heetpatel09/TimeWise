@@ -22,6 +22,7 @@ import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 
 
 const managementCards = [
@@ -39,6 +40,7 @@ const managementCards = [
 ];
 
 const AdminDashboardHome = () => {
+    const { user } = useAuth();
     const { data: students, isLoading: studentsLoading } = useQuery({ 
       queryKey: ['students'], 
       queryFn: getStudents 
@@ -60,7 +62,7 @@ const AdminDashboardHome = () => {
         <div className="space-y-8">
             <Card className="animate-in fade-in-0 duration-500">
             <CardHeader>
-                <CardTitle>Welcome, Admin!</CardTitle>
+                <CardTitle>Welcome, {user?.name || 'Admin'}!</CardTitle>
                 <CardDescription>From this dashboard, you can manage all aspects of the university schedule.</CardDescription>
             </CardHeader>
             <CardContent>

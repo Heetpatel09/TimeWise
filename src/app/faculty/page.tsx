@@ -112,7 +112,7 @@ export default function FacultyDashboard() {
          <div className="lg:col-span-2">
             <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
                 <CardHeader>
-                <CardTitle>Welcome, {currentFaculty?.name || "Faculty Member"}!</CardTitle>
+                <CardTitle>Welcome, {user?.name || "Faculty Member"}!</CardTitle>
                 <CardDescription>
                     This is your central hub for managing your schedule and administrative tasks.
                 </CardDescription>

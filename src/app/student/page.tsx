@@ -111,8 +111,14 @@ export default function StudentDashboard() {
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
         <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-2">
-                <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+            <div className="md:col-span-2 space-y-8">
+                 <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+                    <CardHeader>
+                        <CardTitle>Welcome, {user?.name || 'Student'}!</CardTitle>
+                        <CardDescription>Here's your dashboard with your schedule and other useful links.</CardDescription>
+                    </CardHeader>
+                </Card>
+                <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
                     <CardHeader>
                         <CardTitle>My Timetable</CardTitle>
                         <CardDescription>Your weekly class schedule.</CardDescription>
