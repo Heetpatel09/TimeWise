@@ -16,37 +16,36 @@ export async function login(email: string, password: string): Promise<User> {
     
     const credentialEntry: CredentialEntry | undefined = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(email) as any;
 
-    if (credentialEntry && credentialEntry.password === password) {
-        let details: any;
-        if (credentialEntry.role === 'admin') {
-            // Admin user is a special case and doesn't have a record in faculty/students table
-            details = {
-                id: credentialEntry.userId,
-                name: 'Admin', 
-                email: credentialEntry.email,
-                avatar: `https://avatar.vercel.sh/${credentialEntry.email}.png`
-            };
-        } else if (credentialEntry.role === 'faculty') {
-            details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
-        } else {
-            details = db.prepare('SELECT * FROM students WHERE id = ?').get(credentialEntry.userId);
-        }
-
-        if (!details) {
-            throw new Error('User details not found.');
-        }
-
-        const user: User = {
-            id: details.id,
-            name: details.name,
-            email: details.email,
-            avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
-            role: credentialEntry.role,
-        };
-        return user;
-    } else {
+    if (!credentialEntry || credentialEntry.password !== password) {
         throw new Error('Invalid email or password.');
     }
+    
+    let details: any;
+    if (credentialEntry.role === 'admin') {
+        details = {
+            id: credentialEntry.userId,
+            name: 'Admin', 
+            email: credentialEntry.email,
+        };
+    } else if (credentialEntry.role === 'faculty') {
+        details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
+    } else {
+        details = db.prepare('SELECT * FROM students WHERE id = ?').get(credentialEntry.userId);
+    }
+
+    if (!details) {
+        throw new Error('User details not found.');
+    }
+
+    const user: User = {
+        id: details.id,
+        name: details.name,
+        email: details.email,
+        avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
+        role: credentialEntry.role,
+    };
+    
+    return user;
 }
 
 export async function updateAdmin(updatedDetails: { id: string; name: string, email: string, avatar: string }): Promise<User> {
