@@ -157,18 +157,12 @@ export default function ScheduleRequestsPage() {
   }
 
   return (
-    <Card>
-        <CardHeader>
-          <CardTitle>Schedule Change Requests</CardTitle>
-          <CardDescription>Review and mark faculty schedule change requests as resolved.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <h3 className='text-lg font-semibold mb-2'>Pending ({pendingRequests.length})</h3>
-            {pendingRequests.length > 0 ? renderRequestTable(pendingRequests) : <p className="text-muted-foreground text-center py-8">No pending requests.</p>}
-            
-            <h3 className='text-lg font-semibold mt-6 mb-2'>Resolved ({resolvedRequests.length})</h3>
-            {resolvedRequests.length > 0 ? renderRequestTable(resolvedRequests) : <p className="text-muted-foreground text-center py-8">No resolved requests.</p>}
-        </CardContent>
-    </Card>
+    <div>
+        <h3 className='text-lg font-semibold mb-2'>Pending ({pendingRequests.length})</h3>
+        {pendingRequests.length > 0 ? renderRequestTable(pendingRequests) : <p className="text-muted-foreground text-center py-8">No pending requests.</p>}
+        
+        <h3 className='text-lg font-semibold mt-6 mb-2'>Resolved ({resolvedRequests.length})</h3>
+        {resolvedRequests.length > 0 ? renderRequestTable(resolvedRequests) : <p className="text-muted-foreground text-center py-8">No resolved requests.</p>}
+    </div>
   );
 }

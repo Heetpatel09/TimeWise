@@ -116,21 +116,36 @@ const AdminDashboardContent = () => {
     };
     
     const pageTitle = getTitleForTab(tab);
-
+    
     const renderContent = () => {
+        let content;
         switch (tab) {
-            case 'subjects': return <SubjectsManager />;
-            case 'classes': return <ClassesManager />;
-            case 'classrooms': return <ClassroomsManager />;
-            case 'faculty': return <FacultyManager />;
-            case 'students': return <StudentsManager />;
-            case 'schedule': return <ScheduleManager />;
-            case 'leaderboards': return <LeaderboardManager />;
-            case 'hall-of-fame': return <HallOfFamePage />;
-            case 'leave-requests': return <LeaveRequestsPage />;
-            case 'schedule-requests': return <ScheduleRequestsPage />;
+            case 'subjects': content = <SubjectsManager />; break;
+            case 'classes': content = <ClassesManager />; break;
+            case 'classrooms': content = <ClassroomsManager />; break;
+            case 'faculty': content = <FacultyManager />; break;
+            case 'students': content = <StudentsManager />; break;
+            case 'schedule': content = <ScheduleManager />; break;
+            case 'leaderboards': content = <LeaderboardManager />; break;
+            case 'hall-of-fame': content = <HallOfFamePage />; break;
+            case 'leave-requests': content = <LeaveRequestsPage />; break;
+            case 'schedule-requests': content = <ScheduleRequestsPage />; break;
             default: return <AdminDashboardHome />;
         }
+
+        const cardInfo = managementCards.find(c => c.tab === tab);
+
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>{cardInfo?.title}</CardTitle>
+                    <CardDescription>{cardInfo?.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {content}
+                </CardContent>
+            </Card>
+        )
     }
 
     return (
