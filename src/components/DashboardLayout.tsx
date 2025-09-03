@@ -221,11 +221,14 @@ export default function DashboardLayout({
           <div className="flex items-center gap-4">
              <TimeWiseLogo />
           </div>
-
-          <div className="flex items-center gap-2 sm:gap-4">
+          
+          <div className="absolute left-1/2 -translate-x-1/2">
             <Link href={`/${role}`} className="hidden md:block">
               <h1 className="text-xl font-semibold font-headline hover:text-primary transition-colors">{pageTitle}</h1>
             </Link>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4">
             <Badge variant="outline" className="hidden sm:flex items-center text-sm">
                 {getRoleIcon()}
                 {role.charAt(0).toUpperCase() + role.slice(1)}
