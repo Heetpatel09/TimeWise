@@ -56,13 +56,13 @@ export default function AdminProfilePage() {
 
         setIsSaving(true);
         try {
-            const originalEmail = user.email; // Capture original email for password update
-            const updatedUser = await updateAdmin({ id: user.id, name, email, avatar });
+            // This is a simplified user object for admin, so we pass the state directly.
+            const updatedDetails = { id: user.id, name, email, avatar };
+            const updatedUser = await updateAdmin(updatedDetails);
             
             if (newPassword) {
-                // Always use the original email from the auth context for password updates,
-                // as this is the key in the users table before the potential email change.
-                await updatePassword(originalEmail, newPassword);
+                // Use the potentially new email from the form state.
+                await updatePassword(updatedDetails.email, newPassword);
             }
 
             setAuthUser(updatedUser);
