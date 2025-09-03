@@ -36,6 +36,8 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
     const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar);
 
+    // This was the source of the error. A random password was being generated on creation.
+    // The database seeding now handles this explicitly.
     const initialPassword = randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,

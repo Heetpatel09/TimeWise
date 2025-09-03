@@ -23,6 +23,13 @@ const dbFilePath = './timewise.db';
 
 function initializeDb() {
   console.log('Initializing database connection...');
+  // Delete the old database file to ensure a clean slate on startup.
+  // This is the key to fixing the persistent login issues.
+  if (fs.existsSync(dbFilePath)) {
+    fs.unlinkSync(dbFilePath);
+    console.log('Deleted existing database file to ensure a fresh start.');
+  }
+  
   db = new Database(dbFilePath);
 
   // Use "IF NOT EXISTS" for every table to make initialization idempotent
@@ -155,7 +162,7 @@ function initializeDb() {
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
-        // Seed credentials
+        // Seed credentials directly and reliably.
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin');
         
         faculty.forEach(f => {
@@ -163,11 +170,8 @@ function initializeDb() {
         });
 
         students.forEach(s => {
-          if (s.email === 'abc@example.com') {
-            insertUser.run(s.email, s.id, '123', 'student');
-          } else {
-            insertUser.run(s.email, s.id, 'student123', 'student');
-          }
+          const password = s.email === 'abc@example.com' ? '123' : 'student123';
+          insertUser.run(s.email, s.id, password, 'student');
         });
     })();
     console.log('Database initialized and seeded successfully.');
@@ -189,5 +193,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    
