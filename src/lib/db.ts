@@ -23,11 +23,14 @@ const dbFilePath = './timewise.db';
 
 function initializeDb() {
   console.log('Initializing database connection...');
-  const dbExists = fs.existsSync(dbFilePath);
   db = new Database(dbFilePath);
 
-  if (!dbExists) {
-    console.log('Database file not found, running initial setup...');
+  // Check if tables exist. If not, create them.
+  const tableCheck = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='user_credentials'`);
+  const tableExists = tableCheck.get();
+
+  if (!tableExists) {
+    console.log('Database tables not found, running initial setup...');
 
     db.exec(`
       CREATE TABLE subjects (
@@ -158,18 +161,17 @@ function initializeDb() {
     })();
     console.log('Database initialized and seeded successfully.');
   } else {
-    console.log('Database file found. Skipping initial seed.');
+    console.log('Database tables found. Skipping initial seed.');
   }
 
-  // Ensure admin user exists
+  // Ensure admin user exists, just in case it was deleted or seed failed partially.
   const adminExists = db.prepare('SELECT 1 FROM user_credentials WHERE email = ?').get(adminUser.email);
   if (!adminExists) {
       console.log('Admin user not found. Seeding admin credentials...');
-      const insertUser = db.prepare('INSERT INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
+      const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
       insertUser.run(adminUser.email, adminUser.id, adminUser.password, adminUser.role);
       console.log('Admin user seeded.');
   }
-
 
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
@@ -187,5 +189,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    
