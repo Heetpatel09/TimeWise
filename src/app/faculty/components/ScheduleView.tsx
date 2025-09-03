@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { getSchedule } from '@/lib/services/schedule';
 import type { Schedule, Class, Subject, Classroom, EnrichedSchedule } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Send, Loader2, Star } from 'lucide-react';
+import { Download, Send, Loader2, Star, Library } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -20,6 +20,16 @@ import { getClassrooms } from '@/lib/services/classrooms';
 import { useAuth } from '@/context/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+
+const ALL_TIME_SLOTS = [
+    '07:30 AM - 08:30 AM',
+    '08:30 AM - 09:30 AM',
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM'
+];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function ScheduleView() {
   const { user } = useAuth();
@@ -140,11 +150,25 @@ export default function ScheduleView() {
     doc.save('my_schedule.pdf');
   }
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const scheduleByDay = days.map(day => ({
-    day,
-    slots: facultySchedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
-  }));
+  const scheduleByDay = DAYS.map(day => {
+    const daySlots = facultySchedule.filter(slot => slot.day === day);
+    const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
+        const scheduledSlot = daySlots.find(slot => slot.time === time);
+        if (scheduledSlot) {
+            return scheduledSlot;
+        }
+        return {
+            id: `${day}-${time}-library`,
+            time: time,
+            day: day,
+            isLibrary: true,
+        };
+    });
+    return {
+        day,
+        slots: fullDaySchedule.sort((a,b) => a.time.localeCompare(b.time)),
+    }
+  });
   
   const availableClassrooms = classrooms.filter(cr => cr.id !== selectedSlot?.classroomId && cr.type === selectedSlot?.classroomType);
 
@@ -180,26 +204,37 @@ export default function ScheduleView() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {slots.map((slot) => (
+                    {slots.map((slot: any) => (
                       <TableRow key={slot.id}>
                         <TableCell>{slot.time}</TableCell>
-                        <TableCell>{slot.className}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                           {slot.subjectName}
-                           {slot.subjectIsSpecial && <Star className="h-3 w-3 text-yellow-500" />}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={slot.classroomType === 'lab' ? 'secondary' : 'outline'}>
-                            {slot.classroomName}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                            <Button variant="outline" size="sm" onClick={() => openChangeDialog(slot)} disabled={slot.subjectIsSpecial}>
-                                Request Change
-                            </Button>
-                        </TableCell>
+                        {slot.isLibrary ? (
+                           <TableCell colSpan={4} className="text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                    <Library className="h-4 w-4" />
+                                    <span>Library Slot</span>
+                                </div>
+                            </TableCell>
+                        ) : (
+                          <>
+                            <TableCell>{(slot as EnrichedSchedule).className}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                              {(slot as EnrichedSchedule).subjectName}
+                              {(slot as EnrichedSchedule).subjectIsSpecial && <Star className="h-3 w-3 text-yellow-500" />}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={(slot as EnrichedSchedule).classroomType === 'lab' ? 'secondary' : 'outline'}>
+                                {(slot as EnrichedSchedule).classroomName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <Button variant="outline" size="sm" onClick={() => openChangeDialog(slot)} disabled={(slot as EnrichedSchedule).subjectIsSpecial}>
+                                    Request Change
+                                </Button>
+                            </TableCell>
+                          </>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -264,3 +299,4 @@ export default function ScheduleView() {
     </div>
   );
 }
+
