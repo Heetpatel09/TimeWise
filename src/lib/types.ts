@@ -4,6 +4,7 @@ export interface Subject {
   id: string;
   name: string;
   code: string;
+  isSpecial?: boolean;
 }
 
 export interface Class {
@@ -54,6 +55,7 @@ export interface EnrichedSchedule extends Schedule {
     className: string;
     classroomName: string;
     classroomType: 'classroom' | 'lab';
+    subjectIsSpecial: boolean;
 }
 
 export interface User {

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { getSchedule } from '@/lib/services/schedule';
 import type { Schedule, Class, Subject, Classroom, EnrichedSchedule } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Send, Loader2 } from 'lucide-react';
+import { Download, Send, Loader2, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -55,10 +55,12 @@ export default function ScheduleView() {
             .filter(s => s.facultyId === user.id)
             .map(s => {
                 const classroom = classroomData.find(cr => cr.id === s.classroomId);
+                const subject = subjectData.find(sub => sub.id === s.subjectId);
                 return {
                     ...s,
                     className: classData.find(c => c.id === s.classId)?.name || 'N/A',
-                    subjectName: subjectData.find(sub => sub.id === s.subjectId)?.name || 'N/A',
+                    subjectName: subject?.name || 'N/A',
+                    subjectIsSpecial: subject?.isSpecial || false,
                     classroomName: classroom?.name || 'N/A',
                     classroomType: classroom?.type || 'classroom'
                 }
@@ -182,14 +184,19 @@ export default function ScheduleView() {
                       <TableRow key={slot.id}>
                         <TableCell>{slot.time}</TableCell>
                         <TableCell>{slot.className}</TableCell>
-                        <TableCell>{slot.subjectName}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                           {slot.subjectName}
+                           {slot.subjectIsSpecial && <Star className="h-3 w-3 text-yellow-500" />}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={slot.classroomType === 'lab' ? 'secondary' : 'outline'}>
                             {slot.classroomName}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                            <Button variant="outline" size="sm" onClick={() => openChangeDialog(slot)}>
+                            <Button variant="outline" size="sm" onClick={() => openChangeDialog(slot)} disabled={slot.subjectIsSpecial}>
                                 Request Change
                             </Button>
                         </TableCell>

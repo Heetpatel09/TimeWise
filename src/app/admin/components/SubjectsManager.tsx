@@ -21,9 +21,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
 import type { Subject } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 export default function SubjectsManager() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -87,7 +89,7 @@ export default function SubjectsManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentSubject({});
+    setCurrentSubject({ isSpecial: false });
     setDialogOpen(true);
   };
 
@@ -109,6 +111,7 @@ export default function SubjectsManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Code</TableHead>
+              <TableHead>Special</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -117,6 +120,9 @@ export default function SubjectsManager() {
               <TableRow key={subject.id}>
                 <TableCell className="font-medium">{subject.name}</TableCell>
                 <TableCell>{subject.code}</TableCell>
+                <TableCell>
+                  {subject.isSpecial && <Badge variant="secondary"><Star className="h-3 w-3 mr-1" />Special</Badge>}
+                </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -175,6 +181,20 @@ export default function SubjectsManager() {
                 className="col-span-3"
                 disabled={isSubmitting}
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="special" className="text-right">
+                Special
+              </Label>
+               <div className="col-span-3 flex items-center space-x-2">
+                 <Switch
+                    id="special"
+                    checked={currentSubject?.isSpecial || false}
+                    onCheckedChange={(checked) => setCurrentSubject({ ...currentSubject, isSpecial: checked })}
+                    disabled={isSubmitting}
+                />
+                <Label htmlFor="special" className="text-sm text-muted-foreground">This is a fixed, non-reschedulable subject.</Label>
+              </div>
             </div>
           </div>
           <DialogFooter>
