@@ -36,15 +36,46 @@ const resolveScheduleConflictsPrompt = ai.definePrompt({
   output: {schema: ResolveScheduleConflictsOutputSchema},
   prompt: `You are an AI assistant specialized in resolving university class scheduling conflicts.
 
-Your task is to identify and resolve any conflicts in the provided schedule. A conflict occurs if:
+Your task is to identify and resolve any conflicts in the provided schedule JSON. A conflict occurs if:
 1.  A faculty member is scheduled for two different classes at the same time.
 2.  A class is scheduled for two different subjects at the same time.
 3.  A classroom is booked for two different classes at the same time.
 
-You will receive the current schedule, plus lists of all available classes, subjects, faculty members, and classrooms. You will also receive workload constraints.
+You will receive the current schedule and all available parameters as JSON strings.
 
+**Schedules JSON Structure:**
+\`\`\`json
+[
+  {
+    "id": "SCH001",
+    "classId": "CLS004",
+    "subjectId": "SUB005",
+    "facultyId": "FAC001",
+    "classroomId": "CR001",
+    "day": "Monday",
+    "time": "09:00 - 10:00"
+  },
+  ...
+]
+\`\`\`
 Schedules: {{{schedules}}}
+
+
+**Parameters JSON Structure:**
+\`\`\`json
+{
+  "classes": [{"id": "CLS001", "name": "FE COMP", ...}],
+  "subjects": [{"id": "SUB001", "name": "Intro to CS", ...}],
+  "faculty": [{"id": "FAC001", "name": "Dr. Turing", ...}],
+  "classrooms": [{"id": "CR001", "name": "Room 101", ...}],
+  "constraints": {
+    "faculty": { "max_classes_per_day": 4, "max_classes_per_week": 10 },
+    "class": { "max_classes_per_day": 5 }
+  }
+}
+\`\`\`
 Parameters: {{{parameters}}}
+
 
 Your goals are:
 1.  **Detect Conflicts:** Analyze the schedule to find all instances of conflicts based on the rules above.
