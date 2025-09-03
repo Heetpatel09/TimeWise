@@ -142,7 +142,7 @@ function initializeDb() {
     const insertLeaveRequest = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertScheduleChangeRequest = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
     const insertNotification = db.prepare('INSERT INTO notifications (id, userId, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?)');
-    const insertUser = db.prepare('INSERT INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
+    const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester));
