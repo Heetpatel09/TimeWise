@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getFaculty, updateFaculty } from '@/lib/services/faculty';
 import type { Faculty } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
-import { updatePassword } from '@/lib/services/auth';
+import { addCredential } from '@/lib/services/auth';
 import Link from 'next/link';
 
 
@@ -21,8 +21,8 @@ export default function FacultyProfilePage() {
   const { user, setUser: setAuthUser } = useAuth();
   const { toast } = useToast();
   const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPassword, setNewPassword] useState('');
+  const [confirmPassword, setConfirmPassword] useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
@@ -73,9 +73,14 @@ export default function FacultyProfilePage() {
       try {
         const updatedFaculty = await updateFaculty(facultyMember);
 
-        if (newPassword) {
-            await updatePassword(updatedFaculty.email, newPassword);
-        }
+        // Add new credentials for the potentially new email.
+        // Also add new credentials for the old email if the password changed.
+        await addCredential({
+            userId: user.id,
+            email: updatedFaculty.email,
+            password: newPassword || 'faculty123', // Use new password, or default if not changed
+            role: 'faculty',
+        });
         
         const updatedUser = { 
             ...user, 

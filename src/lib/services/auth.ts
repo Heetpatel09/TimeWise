@@ -4,8 +4,8 @@
 import { db as getDb } from '@/lib/db';
 import type { User } from '@/lib/types';
 
-type UserStoreEntry = {
-    id: string;
+type CredentialEntry = {
+    userId: string;
     password?: string;
     role: 'admin' | 'faculty' | 'student';
     email: string;
@@ -15,21 +15,21 @@ export async function login(email: string, password: string): Promise<User> {
     const db = getDb();
     return new Promise((resolve, reject) => {
         setTimeout(() => {
-            const userEntry: UserStoreEntry | undefined = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+            const credentialEntry: CredentialEntry | undefined = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(email) as any;
 
-            if (userEntry && userEntry.password === password) {
+            if (credentialEntry && credentialEntry.password === password) {
                 let details: any;
-                if (userEntry.role === 'admin') {
+                if (credentialEntry.role === 'admin') {
                     details = {
                         id: 'admin',
                         name: 'Admin User',
                         email: 'admin@timewise.app',
                         avatar: `https://avatar.vercel.sh/admin@timewise.app.png`,
                     };
-                } else if (userEntry.role === 'faculty') {
-                    details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(userEntry.id);
+                } else if (credentialEntry.role === 'faculty') {
+                    details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
                 } else {
-                    details = db.prepare('SELECT * FROM students WHERE id = ?').get(userEntry.id);
+                    details = db.prepare('SELECT * FROM students WHERE id = ?').get(credentialEntry.userId);
                 }
 
                 if (!details) {
@@ -39,9 +39,9 @@ export async function login(email: string, password: string): Promise<User> {
                 const user: User = {
                     id: details.id,
                     name: details.name,
-                    email: details.email,
+                    email: details.email, // Use the primary email from the profile table
                     avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
-                    role: userEntry.role,
+                    role: credentialEntry.role,
                 };
                 resolve(user);
             } else {
@@ -52,15 +52,8 @@ export async function login(email: string, password: string): Promise<User> {
 }
 
 export async function updateAdmin(updatedDetails: { id: string; name: string, email: string, avatar: string }): Promise<User> {
-    const db = getDb();
-    
-    const oldEntry: UserStoreEntry | undefined = db.prepare('SELECT * FROM users WHERE id = ? AND role = ?').get(updatedDetails.id, 'admin') as any;
-    if (!oldEntry) throw new Error('Admin user not found');
-
-    if (oldEntry.email !== updatedDetails.email) {
-        await updateUserEmail(oldEntry.email, updatedDetails.email);
-    }
-
+    // Admin details are not stored in a separate profile table, so we just return the user object.
+    // The email and password will be handled by the updateCredential function.
     const user: User = {
         id: 'admin',
         name: updatedDetails.name,
@@ -71,38 +64,16 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
     return user;
 }
   
-export async function updatePassword(email: string, newPassword: string): Promise<void> {
+export async function addCredential(credential: {userId: string, email: string, password?: string, role: 'admin' | 'faculty' | 'student'}): Promise<void> {
     const db = getDb();
-    const result = db.prepare('UPDATE users SET password = ? WHERE email = ?').run(newPassword, email);
-    if (result.changes > 0) {
-        return;
+    const existing: { count: number } | undefined = db.prepare('SELECT count(*) as count FROM user_credentials WHERE email = ?').get(credential.email) as any;
+    if (existing && existing.count > 0) {
+        // If email exists, update the password.
+        const stmt = db.prepare('UPDATE user_credentials SET password = ? WHERE email = ?');
+        stmt.run(credential.password, credential.email);
     } else {
-        throw new Error('User not found when trying to update password.');
+        // If email doesn't exist, insert new credential.
+        const stmt = db.prepare('INSERT INTO user_credentials (userId, email, password, role) VALUES (?, ?, ?, ?)');
+        stmt.run(credential.userId, credential.email, credential.password, credential.role);
     }
-}
-  
-export async function updateUserEmail(oldEmail: string, newEmail: string): Promise<void> {
-    const db = getDb();
-    if (oldEmail === newEmail) return;
-
-    const newEmailExists: { count: number } | undefined = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get(newEmail) as any;
-    if (newEmailExists && newEmailExists.count > 0) {
-        throw new Error('New email is already taken.');
-    }
-    
-    const result = db.prepare('UPDATE users SET email = ? WHERE email = ?').run(newEmail, oldEmail);
-    if (result.changes > 0) {
-        return;
-    } else {
-        throw new Error('User not found when trying to update email.');
-    }
-}
-  
-export async function addUser(user: {id: string, email: string, password?: string, role: 'faculty' | 'student'}): Promise<void> {
-    const db = getDb();
-    const existingUser: { count: number } | undefined = db.prepare('SELECT count(*) as count FROM users WHERE email = ?').get(user.email) as any;
-    if (existingUser && existingUser.count > 0) {
-        throw new Error("User with this email already exists.");
-    }
-    db.prepare('INSERT INTO users (id, email, password, role) VALUES (?, ?, ?, ?)').run(user.id, user.email, user.password, user.role);
 }

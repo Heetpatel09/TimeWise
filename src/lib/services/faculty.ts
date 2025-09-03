@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { Faculty } from '@/lib/types';
-import { addUser, updateUserEmail } from './auth';
+import { addCredential } from './auth';
 import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
 
@@ -36,8 +36,8 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
     stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar);
 
     const initialPassword = 'faculty123';
-    await addUser({
-      id: newItem.id,
+    await addCredential({
+      userId: newItem.id,
       email: newItem.email,
       password: initialPassword,
       role: 'faculty',
@@ -66,11 +66,6 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
 
 export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
     const db = getDb();
-    const oldFaculty: Faculty | undefined = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as any;
-    
-    if (oldFaculty && oldFaculty.email !== updatedItem.email) {
-        await updateUserEmail(oldFaculty.email, updatedItem.email);
-    }
     
     const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ? WHERE id = ?');
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.id);

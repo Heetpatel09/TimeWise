@@ -14,7 +14,7 @@ import { getStudents, updateStudent } from '@/lib/services/students';
 import { getClasses } from '@/lib/services/classes';
 import type { Student, Class } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
-import { updatePassword } from '@/lib/services/auth';
+import { addCredential } from '@/lib/services/auth';
 import Link from 'next/link';
 
 
@@ -81,9 +81,12 @@ export default function StudentProfilePage() {
       try {
         const updatedStudent = await updateStudent(student);
 
-        if (newPassword) {
-            await updatePassword(updatedStudent.email, newPassword);
-        }
+        await addCredential({
+            userId: user.id,
+            email: updatedStudent.email,
+            password: newPassword || 'student123',
+            role: 'student',
+        });
         
         const updatedUser = { 
             ...user, 

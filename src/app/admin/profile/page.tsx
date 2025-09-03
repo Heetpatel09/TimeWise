@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCog, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
-import { updateAdmin, updatePassword } from '@/lib/services/auth';
+import { updateAdmin, addCredential } from '@/lib/services/auth';
 import Link from 'next/link';
 
 export default function AdminProfilePage() {
@@ -61,8 +61,12 @@ export default function AdminProfilePage() {
             const updatedUser = await updateAdmin(updatedDetails);
             
             if (newPassword) {
-                // Use the potentially new email from the form state.
-                await updatePassword(updatedDetails.email, newPassword);
+                await addCredential({
+                    userId: user.id,
+                    email: updatedDetails.email,
+                    password: newPassword,
+                    role: 'admin',
+                });
             }
 
             setAuthUser(updatedUser);

@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { Student } from '@/lib/types';
-import { addUser, updateUserEmail } from './auth';
+import { addCredential } from './auth';
 import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
 import { getClasses } from './classes';
@@ -35,8 +35,8 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
     const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar);
 
-    await addUser({
-      id: newItem.id,
+    await addCredential({
+      userId: newItem.id,
       email: newItem.email,
       password: 'student123',
       role: 'student',
@@ -66,11 +66,6 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
 
 export async function updateStudent(updatedItem: Student): Promise<Student> {
     const db = getDb();
-    const oldStudent: Student | undefined = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as any;
-
-    if (oldStudent && oldStudent.email !== updatedItem.email) {
-        await updateUserEmail(oldStudent.email, updatedItem.email);
-    }
     
     const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ? WHERE id = ?');
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.id);
