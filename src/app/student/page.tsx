@@ -6,7 +6,7 @@ import { useEffect, useState, useTransition } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2 } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
 import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
@@ -120,6 +120,7 @@ export default function StudentDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [isCatalogOpen, setCatalogOpen] = useState(false);
+  const [isTimetableModalOpen, setTimetableModalOpen] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -284,11 +285,51 @@ export default function StudentDashboard() {
                 </Card>
                 <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
                     <CardHeader>
-                        <CardTitle>My Timetable</CardTitle>
-                        <CardDescription>Your weekly class schedule.</CardDescription>
+                        <CardTitle className="flex items-center">
+                            <CalendarDays className="w-5 h-5 mr-2" />
+                            Monthly Calendar
+                        </CardTitle>
+                        <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <TimetableView />
+                    <CardContent className="flex justify-center">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <div>
+                                <ScheduleCalendar 
+                                schedule={schedule} 
+                                leaveRequests={leaveRequests} 
+                                events={events}
+                                onDayClick={handleDayClick}
+                                />
+                            </div>
+                            </PopoverTrigger>
+                            {selectedDateEvents.length > 0 && (
+                            <PopoverContent className="w-80">
+                                <div className="grid gap-4">
+                                <div className="space-y-2">
+                                    <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                    You have {selectedDateEvents.length} event(s) today.
+                                    </p>
+                                </div>
+                                <div className="grid gap-2">
+                                    {selectedDateEvents.map(event => (
+                                    <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
+                                        <p className="text-sm font-medium">{event.title}</p>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
+                                        <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    ))}
+                                </div>
+                                <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
+                                    <Plus className="h-4 w-4 mr-2"/>
+                                    Add Event
+                                </Button>
+                                </div>
+                            </PopoverContent>
+                            )}
+                      </Popover>
                     </CardContent>
                 </Card>
             </div>
@@ -306,54 +347,21 @@ export default function StudentDashboard() {
                         <p className="text-muted-foreground mt-2">Days in a row</p>
                     </CardContent>
                 </Card>
-                <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-300">
+                <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
                     <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <CalendarDays className="w-5 h-5 mr-2" />
-                            Monthly Calendar
-                        </CardTitle>
-                        <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
+                        <CardTitle>My Timetable</CardTitle>
+                        <CardDescription>View your detailed weekly schedule.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex justify-center">
-                       <Popover>
-                        <PopoverTrigger asChild>
-                          <div>
-                            <ScheduleCalendar 
-                              schedule={schedule} 
-                              leaveRequests={leaveRequests} 
-                              events={events}
-                              onDayClick={handleDayClick}
-                            />
-                          </div>
-                        </PopoverTrigger>
-                        {selectedDateEvents.length > 0 && (
-                          <PopoverContent className="w-80">
-                            <div className="grid gap-4">
-                              <div className="space-y-2">
-                                <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  You have {selectedDateEvents.length} event(s) today.
-                                </p>
-                              </div>
-                              <div className="grid gap-2">
-                                {selectedDateEvents.map(event => (
-                                  <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
-                                    <p className="text-sm font-medium">{event.title}</p>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                               <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
-                                <Plus className="h-4 w-4 mr-2"/>
-                                Add Event
-                               </Button>
-                            </div>
-                          </PopoverContent>
-                        )}
-                      </Popover>
+                    <CardContent className="flex-grow">
+                        <p className="text-sm text-muted-foreground">
+                            Access your full timetable to see all your classes for the week.
+                        </p>
                     </CardContent>
+                    <CardFooter>
+                        <Button onClick={() => setTimetableModalOpen(true)}>
+                            View Timetable <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </CardFooter>
                 </Card>
                  <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
                     <CardHeader>
@@ -391,6 +399,24 @@ export default function StudentDashboard() {
                 </Card>
             </div>
         </div>
+
+        <Dialog open={isTimetableModalOpen} onOpenChange={setTimetableModalOpen}>
+            <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>My Weekly Timetable</DialogTitle>
+                    <DialogDescription>
+                        Here are your scheduled classes for the week.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[70vh] overflow-y-auto p-1">
+                    <TimetableView />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setTimetableModalOpen(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
 
         <Dialog open={isCatalogOpen} onOpenChange={setCatalogOpen}>
             <DialogContent className="sm:max-w-md">
@@ -543,4 +569,3 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
-
