@@ -2,14 +2,15 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { EnrichedSchedule, Student } from '@/lib/types';
+import type { EnrichedSchedule, Student, Subject } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, Library, Coffee } from 'lucide-react';
+import { Download, Loader2, Library, Coffee, Star } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
-import { getTimetableDataForStudent } from '../actions';
+import { getTimetableDataForStudent, getSubjectsForStudent } from '../actions';
+import { Badge } from '@/components/ui/badge';
 
 interface TimetableData {
     student: Student;
@@ -48,14 +49,19 @@ function sortTime(a: string, b: string) {
 export default function TimetableView() {
   const { user } = useAuth();
   const [data, setData] = useState<TimetableData | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     async function loadData() {
         if (user?.id) {
             setIsLoading(true);
-            const timetableData = await getTimetableDataForStudent(user.id);
+            const [timetableData, subjectData] = await Promise.all([
+              getTimetableDataForStudent(user.id),
+              getSubjectsForStudent(user.id)
+            ]);
             setData(timetableData);
+            setSubjects(subjectData);
             setIsLoading(false);
         }
     }
@@ -106,7 +112,11 @@ export default function TimetableView() {
         }
         const scheduledSlot = daySlots.find(slot => slot.time === time);
         if (scheduledSlot) {
-            return scheduledSlot;
+            const subject = subjects.find(sub => sub.id === scheduledSlot.subjectId);
+            return {
+              ...scheduledSlot,
+              subjectIsSpecial: subject?.isSpecial || false,
+            };
         }
         return {
             id: `${day}-${time}-library`,
@@ -157,7 +167,10 @@ export default function TimetableView() {
                         </TableHeader>
                         <TableBody>
                         {slots.map((slot) => (
-                            <TableRow key={slot.id}>
+                            <TableRow 
+                                key={slot.id}
+                                className={(slot as EnrichedSchedule).subjectIsSpecial ? `bg-[#4A0080] text-white hover:bg-[#4A0080]/90` : ''}
+                            >
                                 <TableCell>{slot.time}</TableCell>
                                 {(slot as any).isLibrary ? (
                                     <TableCell colSpan={3} className="text-muted-foreground">
@@ -175,9 +188,18 @@ export default function TimetableView() {
                                     </TableCell>
                                 ) : (
                                     <>
-                                        <TableCell>{(slot as EnrichedSchedule).subjectName}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                {(slot as EnrichedSchedule).subjectName}
+                                                {(slot as EnrichedSchedule).subjectIsSpecial && <Star className="h-3 w-3 text-yellow-400" />}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>{(slot as EnrichedSchedule).facultyName}</TableCell>
-                                        <TableCell>{(slot as EnrichedSchedule).classroomName}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={(slot as EnrichedSchedule).subjectIsSpecial ? 'default' : 'outline'}>
+                                                {(slot as EnrichedSchedule).classroomName}
+                                            </Badge>
+                                        </TableCell>
                                     </>
                                 )}
                             </TableRow>
