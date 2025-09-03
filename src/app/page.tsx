@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Image from 'next/image';
 
 const TimeWiseLogo = () => (
   <div className="flex items-center justify-center gap-2 md:gap-4">
@@ -165,17 +164,6 @@ export default function Home() {
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
-
-       <div className="fixed inset-0 z-[-1]">
-          <Image
-            src="https://storage.googleapis.com/studio-hosting-storage/v1/b/prj-B4Z_1s2V-pPz8a/files/9b3f36a8-a3f2-498c-a99f-7c7d425f1847"
-            alt="Abstract background"
-            fill
-            style={{ objectFit: 'cover' }}
-            priority
-            data-ai-hint="abstract background"
-          />
-        </div>
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
           <TimeWiseLogo />
