@@ -46,6 +46,12 @@ const nextConfig: NextConfig = {
         hostname: 'avatar.vercel.sh',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },

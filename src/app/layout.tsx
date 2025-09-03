@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className="font-body antialiased" suppressHydrationWarning>
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="/background.jpg"
+            src="https://storage.googleapis.com/studio-hosting-storage/v1/b/prj-B4Z_1s2V-pPz8a/files/9b3f36a8-a3f2-498c-a99f-7c7d425f1847"
             alt="Abstract background"
             fill
             style={{ objectFit: 'cover' }}
