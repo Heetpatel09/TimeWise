@@ -25,112 +25,113 @@ function initializeDb() {
   console.log('Initializing database connection...');
   db = new Database(dbFilePath);
 
-  // Check if tables exist. If not, create them.
-  const tableCheck = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='subjects'`);
-  const tableExists = tableCheck.get();
-
-  if (!tableExists) {
-    console.log('Database tables not found, running initial setup...');
-
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS subjects (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          code TEXT NOT NULL,
-          isSpecial BOOLEAN NOT NULL DEFAULT 0,
-          type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory',
-          semester INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS classes (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          semester INTEGER NOT NULL,
-          department TEXT NOT NULL
-      );
-       CREATE TABLE IF NOT EXISTS classrooms (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          type TEXT NOT NULL CHECK(type IN ('classroom', 'lab'))
-      );
-      CREATE TABLE IF NOT EXISTS faculty (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          email TEXT NOT NULL,
-          department TEXT NOT NULL,
-          streak INTEGER NOT NULL,
-          avatar TEXT
-      );
-       CREATE TABLE IF NOT EXISTS students (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          email TEXT NOT NULL,
-          classId TEXT NOT NULL,
-          streak INTEGER NOT NULL,
-          avatar TEXT,
-          FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
-      );
-      CREATE TABLE IF NOT EXISTS schedule (
-          id TEXT PRIMARY KEY,
-          classId TEXT NOT NULL,
-          subjectId TEXT NOT NULL,
-          facultyId TEXT NOT NULL,
-          classroomId TEXT NOT NULL,
-          day TEXT NOT NULL,
-          time TEXT NOT NULL,
-          FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
-          FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
-          FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
-          FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
-      );
-      CREATE TABLE IF NOT EXISTS leave_requests (
-          id TEXT PRIMARY KEY,
-          requesterId TEXT NOT NULL,
-          requesterName TEXT NOT NULL,
-          requesterRole TEXT NOT NULL,
-          startDate TEXT NOT NULL,
-          endDate TEXT NOT NULL,
-          reason TEXT NOT NULL,
-          status TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS schedule_change_requests (
-          id TEXT PRIMARY KEY,
-          scheduleId TEXT NOT NULL,
-          facultyId TEXT NOT NULL,
-          reason TEXT NOT NULL,
-          status TEXT NOT NULL,
-          requestedClassroomId TEXT,
-          FOREIGN KEY (scheduleId) REFERENCES schedule(id) ON DELETE CASCADE,
-          FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
-          FOREIGN KEY (requestedClassroomId) REFERENCES classrooms(id) ON DELETE SET NULL
-      );
-      CREATE TABLE IF NOT EXISTS new_slot_requests (
-          id TEXT PRIMARY KEY,
-          facultyId TEXT NOT NULL,
-          classId TEXT NOT NULL,
-          subjectId TEXT NOT NULL,
-          classroomId TEXT NOT NULL,
-          day TEXT NOT NULL,
-          time TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'pending',
-          FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
-          FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
-          FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
-          FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
-      );
-      CREATE TABLE IF NOT EXISTS notifications (
-          id TEXT PRIMARY KEY,
-          userId TEXT NOT NULL,
-          message TEXT NOT NULL,
-          isRead BOOLEAN NOT NULL DEFAULT 0,
-          createdAt TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS user_credentials (
-        email TEXT PRIMARY KEY,
+  // Use "IF NOT EXISTS" for every table to make initialization idempotent
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS subjects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        code TEXT NOT NULL,
+        isSpecial BOOLEAN NOT NULL DEFAULT 0,
+        type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory',
+        semester INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS classes (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        semester INTEGER NOT NULL,
+        department TEXT NOT NULL
+    );
+     CREATE TABLE IF NOT EXISTS classrooms (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('classroom', 'lab'))
+    );
+    CREATE TABLE IF NOT EXISTS faculty (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        department TEXT NOT NULL,
+        streak INTEGER NOT NULL,
+        avatar TEXT
+    );
+     CREATE TABLE IF NOT EXISTS students (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        classId TEXT NOT NULL,
+        streak INTEGER NOT NULL,
+        avatar TEXT,
+        FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS schedule (
+        id TEXT PRIMARY KEY,
+        classId TEXT NOT NULL,
+        subjectId TEXT NOT NULL,
+        facultyId TEXT NOT NULL,
+        classroomId TEXT NOT NULL,
+        day TEXT NOT NULL,
+        time TEXT NOT NULL,
+        FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
+        FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
+        FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
+        FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS leave_requests (
+        id TEXT PRIMARY KEY,
+        requesterId TEXT NOT NULL,
+        requesterName TEXT NOT NULL,
+        requesterRole TEXT NOT NULL,
+        startDate TEXT NOT NULL,
+        endDate TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS schedule_change_requests (
+        id TEXT PRIMARY KEY,
+        scheduleId TEXT NOT NULL,
+        facultyId TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL,
+        requestedClassroomId TEXT,
+        FOREIGN KEY (scheduleId) REFERENCES schedule(id) ON DELETE CASCADE,
+        FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
+        FOREIGN KEY (requestedClassroomId) REFERENCES classrooms(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS new_slot_requests (
+        id TEXT PRIMARY KEY,
+        facultyId TEXT NOT NULL,
+        classId TEXT NOT NULL,
+        subjectId TEXT NOT NULL,
+        classroomId TEXT NOT NULL,
+        day TEXT NOT NULL,
+        time TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
+        FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
+        FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
+        FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
-        role TEXT NOT NULL CHECK(role IN ('admin', 'faculty', 'student')),
-        password TEXT
-      );
-    `);
+        message TEXT NOT NULL,
+        isRead BOOLEAN NOT NULL DEFAULT 0,
+        createdAt TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS user_credentials (
+      email TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('admin', 'faculty', 'student')),
+      password TEXT
+    );
+  `);
+  
+  // Check if seeding is needed by looking for any faculty member.
+  // This is a proxy to see if the initial data has been inserted.
+  const seedCheck = db.prepare(`SELECT id FROM faculty LIMIT 1`).get();
+
+  if (!seedCheck) {
+    console.log('Database appears empty, running initial data seeding...');
 
     const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
