@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { LeaveRequest } from '@/lib/types';
 import { addNotification } from './notifications';
+import { adminUser } from '../placeholder-data';
 
 export async function getLeaveRequests(): Promise<LeaveRequest[]> {
     const db = getDb();
@@ -18,6 +19,12 @@ export async function addLeaveRequest(request: Omit<LeaveRequest, 'id' | 'status
     const status = 'pending';
     const stmt = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     stmt.run(id, request.requesterId, request.requesterName, request.requesterRole, request.startDate, request.endDate, request.reason, status);
+
+    // Notify the admin
+    await addNotification({
+      userId: adminUser.id,
+      message: `${request.requesterName} (${request.requesterRole}) has submitted a new leave request.`
+    });
 
     const newRequest: LeaveRequest = { ...request, id, status };
     revalidatePath('/admin', 'layout');

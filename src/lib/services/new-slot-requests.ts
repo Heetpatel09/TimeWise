@@ -6,6 +6,8 @@ import { db as getDb } from '@/lib/db';
 import type { NewSlotRequest } from '@/lib/types';
 import { addNotification } from './notifications';
 import { addSchedule } from './schedule';
+import { adminUser } from '../placeholder-data';
+import { getFaculty } from './faculty';
 
 export async function getNewSlotRequests(): Promise<NewSlotRequest[]> {
   const db = getDb();
@@ -19,6 +21,14 @@ export async function addSlotRequest(request: Omit<NewSlotRequest, 'id' | 'statu
     const status = 'pending';
     const stmt = db.prepare('INSERT INTO new_slot_requests (id, facultyId, classId, subjectId, classroomId, day, time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     stmt.run(id, request.facultyId, request.classId, request.subjectId, request.classroomId, request.day, request.time, status);
+
+    const faculty = (await getFaculty()).find(f => f.id === request.facultyId);
+    if (faculty) {
+      await addNotification({
+        userId: adminUser.id,
+        message: `${faculty.name} has requested a new class slot.`
+      });
+    }
 
     const newRequest: NewSlotRequest = { ...request, id, status };
     revalidatePath('/admin/layout');
