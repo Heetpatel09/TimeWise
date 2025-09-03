@@ -81,11 +81,11 @@ export default function StudentProfilePage() {
       try {
         const updatedStudentResult = await updateStudent(student);
 
-        if (newPassword) {
+        if (newPassword || updatedStudentResult.email !== user.email) {
             await addCredential({
                 userId: user.id,
                 email: updatedStudentResult.email,
-                password: newPassword,
+                password: newPassword || undefined,
                 role: 'student',
             });
         }
@@ -97,6 +97,7 @@ export default function StudentProfilePage() {
             avatar: updatedStudentResult.avatar || user.avatar 
         };
         setAuthUser(updatedUser);
+
         toast({
           title: 'Profile Updated',
           description: 'Your changes have been saved successfully.',

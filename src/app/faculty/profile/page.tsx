@@ -42,7 +42,7 @@ export default function FacultyProfilePage() {
     loadFaculty();
   }, [user]);
   
-  const handleFieldChange = (field: keyof Omit<Faculty, 'avatar' | 'id'>, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Faculty, 'id' | 'avatar'>, value: any) => {
     if (facultyMember) {
         setFacultyMember({ ...facultyMember, [field]: value });
     }
@@ -73,11 +73,12 @@ export default function FacultyProfilePage() {
       try {
         const updatedFacultyResult = await updateFaculty(facultyMember);
 
-        if (newPassword) {
+        // If email or password has changed, update credentials
+        if (newPassword || updatedFacultyResult.email !== user.email) {
             await addCredential({
                 userId: user.id,
                 email: updatedFacultyResult.email,
-                password: newPassword,
+                password: newPassword || undefined,
                 role: 'faculty',
             });
         }
@@ -89,6 +90,7 @@ export default function FacultyProfilePage() {
             avatar: updatedFacultyResult.avatar || user.avatar 
         };
         setAuthUser(updatedUser);
+        
         toast({
           title: 'Profile Updated',
           description: 'Your changes have been saved successfully.',

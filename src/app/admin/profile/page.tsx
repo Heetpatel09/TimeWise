@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCog, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
-import { addCredential } from '@/lib/services/auth';
+import { addCredential, updateAdmin } from '@/lib/services/auth';
 import Link from 'next/link';
 
 export default function AdminProfilePage() {
@@ -56,9 +56,7 @@ export default function AdminProfilePage() {
 
         setIsSaving(true);
         try {
-            // For admin, we don't have a specific update service like student/faculty
-            // We just update the credentials and the user object in the context
-            const updatedUser = { ...user, name, email, avatar };
+            const updatedUser = await updateAdmin({ ...user, name, email, avatar });
             
             if (newPassword) {
                 await addCredential({
@@ -141,9 +139,9 @@ export default function AdminProfilePage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isSaving}
-                readOnly // Admin email is the primary key and shouldn't be changed
+                disabled
               />
+               <p className="text-xs text-muted-foreground">Admin email cannot be changed.</p>
             </div>
              <div className="space-y-2">
               <Label htmlFor="password">New Password</Label>
