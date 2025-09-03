@@ -23,11 +23,11 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import Image from 'next/image';
 
 const TimeWiseLogo = () => (
-  <div className="flex items-center justify-center gap-4">
-    <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
-        <BrainCircuit className="w-full h-full" style={{ color: '#420080' }} />
+  <div className="flex items-center justify-center gap-2 md:gap-4">
+    <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0">
+        <BrainCircuit className="w-full h-full text-primary" />
     </div>
-    <h1 className="text-5xl md:text-7xl font-bold tracking-wider font-headline" style={{ color: '#420080' }}>
+    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-primary">
       TimeWise
     </h1>
   </div>
@@ -111,7 +111,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
               />
             </div>
           </div>
-          <DialogFooter className="sm:justify-between gap-2">
+          <DialogFooter className="sm:justify-between gap-2 flex-col sm:flex-row">
             <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>Back</Button>
             <Button type="submit" className="w-full sm:w-auto" disabled={isLoading} style={{ backgroundColor: '#420080', color: '#DOAFEF' }}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
@@ -169,7 +169,7 @@ export default function Home() {
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center animate-in fade-in slide-in-from-bottom-8 duration-500">
         <TimeWiseLogo />
-        <p className="mt-6 text-lg md:text-xl max-w-2xl" style={{ color: '#420080' }}>
+        <p className="mt-6 text-lg md:text-xl max-w-2xl text-primary/80">
             The intelligent, AI-powered solution for effortless academic scheduling.
             Simplify complexity, resolve conflicts, and create perfect timetables in minutes.
         </p>

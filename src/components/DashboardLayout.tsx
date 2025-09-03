@@ -29,6 +29,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import {
   Popover,
@@ -56,6 +57,7 @@ import {
   Trophy,
   Award,
   Warehouse,
+  Menu,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
@@ -68,12 +70,24 @@ import { getNotificationsForUser, markNotificationAsRead } from '@/lib/services/
 const navItems = {
   admin: [
     { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
+    { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
+    { href: '/admin?tab=classes', label: 'Classes', icon: School, tab: 'classes' },
+    { href: '/admin?tab=classrooms', label: 'Classrooms', icon: Warehouse, tab: 'classrooms' },
+    { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
+    { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
+    { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
+    { href: '/admin?tab=leaderboards', label: 'Leaderboards', icon: Trophy, tab: 'leaderboards' },
+    { href: '/admin?tab=hall-of-fame', label: 'Hall of Fame', icon: Award, tab: 'hall-of-fame' },
+    { href: '/admin?tab=leave-requests', label: 'Leave Requests', icon: Mail, tab: 'leave-requests' },
+    { href: '/admin?tab=schedule-requests', label: 'Schedule Requests', icon: PencilRuler, tab: 'schedule-requests' },
   ],
   faculty: [
     { href: '/faculty', label: 'My Dashboard', icon: LayoutGrid },
+    { href: '/faculty/profile', label: 'My Profile', icon: Settings },
   ],
   student: [
     { href: '/student', label: 'My Dashboard', icon: LayoutGrid },
+    { href: '/student/profile', label: 'My Profile', icon: Settings },
   ],
 };
 
@@ -96,7 +110,6 @@ function TimeWiseLogo() {
 function NotificationsBell() {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [hasUnread, setHasUnread] = useState(false);
 
     useEffect(() => {
@@ -112,9 +125,11 @@ function NotificationsBell() {
 
     const handleMarkAsRead = async (id: string) => {
         await markNotificationAsRead(id);
-        const updatedNotifications = await getNotificationsForUser(user!.id);
-        setNotifications(updatedNotifications);
-        setHasUnread(updatedNotifications.some(n => !n.isRead));
+        if (user) {
+            const updatedNotifications = await getNotificationsForUser(user.id);
+            setNotifications(updatedNotifications);
+            setHasUnread(updatedNotifications.some(n => !n.isRead));
+        }
     }
     
     return (
@@ -209,6 +224,63 @@ function UserProfile() {
   );
 }
 
+function MobileNav() {
+    const { user } = useAuth();
+    const role = user?.role;
+    const items = role ? navItems[role] : [];
+    
+    if (!user) return null;
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Open Menu</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Navigation</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                    {items.map((item, index) => {
+                        if (item.label === 'Dashboard' || item.label === 'My Dashboard') {
+                            const Icon = item.icon;
+                            return (
+                                <DropdownMenuItem key={index} asChild>
+                                    <Link href={item.href}>
+                                        <Icon className="mr-2 h-4 w-4" />
+                                        <span>{item.label}</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            );
+                        }
+                        if (role === 'admin' && item.tab) {
+                            const Icon = item.icon;
+                            return (
+                                <DropdownMenuItem key={index} asChild>
+                                    <Link href={item.href}>
+                                        <Icon className="mr-2 h-4 w-4" />
+                                        <span>{item.label}</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            );
+                        }
+                        return null;
+                    })}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                   <Link href={`/${user.role}/profile`}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                    </Link>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
 function Nav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -234,20 +306,8 @@ function Nav() {
   }
   
   const role = user.role;
-  const items = navItems[role];
+  const adminItems = navItems['admin'];
   
-  const adminTabs = [
-      { href: '/admin?tab=subjects', label: 'Subjects', icon: Book, tab: 'subjects' },
-      { href: '/admin?tab=classes', label: 'Classes', icon: School, tab: 'classes' },
-      { href: '/admin?tab=classrooms', label: 'Classrooms', icon: Warehouse, tab: 'classrooms' },
-      { href: '/admin?tab=faculty', label: 'Faculty', icon: UserCheck, tab: 'faculty' },
-      { href: '/admin?tab=students', label: 'Students', icon: Users, tab: 'students' },
-      { href: '/admin?tab=schedule', label: 'Schedule', icon: Calendar, tab: 'schedule' },
-      { href: '/admin?tab=leaderboards', label: 'Leaderboards', icon: Trophy, tab: 'leaderboards' },
-      { href: '/admin?tab=hall-of-fame', label: 'Hall of Fame', icon: Award, tab: 'hall-of-fame' },
-      { href: '/admin?tab=leave-requests', label: 'Leave Requests', icon: Mail, tab: 'leave-requests', badge: pendingLeaveRequestsCount },
-      { href: '/admin?tab=schedule-requests', label: 'Schedule Requests', icon: PencilRuler, tab: 'schedule-requests', badge: pendingScheduleRequestsCount },
-  ]
   const isActive = (item: {href: string, tab?: string}) => {
     if (item.href.includes('?tab=')) {
         const currentTab = searchParams.get('tab');
@@ -261,51 +321,65 @@ function Nav() {
 
   return (
     <SidebarMenu>
-      {items.map((item) => {
-        const Icon = item.icon;
-        return (
-          <SidebarMenuItem key={item.href}>
-             <Link href={item.href}>
-              <SidebarMenuButton
-                isActive={isActive(item)}
-                tooltip={item.label}
-              >
-                <Icon />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
-             </Link>
-          </SidebarMenuItem>
-        );
-      })}
-       {role === 'admin' && <SidebarSeparator />}
-       {role === 'admin' && (
-         <SidebarGroup>
-            <SidebarGroupLabel>Management</SidebarGroupLabel>
-            <SidebarGroupContent>
-                <SidebarMenu>
-                    {adminTabs.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                        <SidebarMenuItem key={item.tab}>
-                            <Link href={item.href}>
-                            <SidebarMenuButton
-                                isActive={isActive(item)}
-                                tooltip={item.label}
-                                size="sm"
-                            >
-                                <Icon />
-                                <span>{item.label}</span>
-                                {item.badge !== null && item.badge > 0 && <SidebarMenuBadge className="animate-pulse">{item.badge}</SidebarMenuBadge>}
-                                {item.badge === null && <Loader2 className='absolute right-2 top-1.5 h-4 w-4 animate-spin' />}
-                            </SidebarMenuButton>
-                            </Link>
-                        </SidebarMenuItem>
-                        )
-                    })}
-                </SidebarMenu>
-            </SidebarGroupContent>
-        </SidebarGroup>
-       )}
+      {role !== 'admin' ? (
+          navItems[role].map((item) => {
+            const Icon = item.icon;
+            return (
+              <SidebarMenuItem key={item.href}>
+                 <Link href={item.href}>
+                  <SidebarMenuButton
+                    isActive={isActive(item)}
+                    tooltip={item.label}
+                  >
+                    <Icon />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                 </Link>
+              </SidebarMenuItem>
+            );
+          })
+      ): (
+        <>
+            <SidebarMenuItem>
+                <Link href="/admin">
+                    <SidebarMenuButton isActive={!searchParams.get('tab')} tooltip="Dashboard">
+                        <LayoutGrid /><span>Dashboard</span>
+                    </SidebarMenuButton>
+                </Link>
+            </SidebarMenuItem>
+            <SidebarSeparator />
+            <SidebarGroup>
+                <SidebarGroupLabel>Management</SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu>
+                        {adminItems.filter(item => item.tab).map((item) => {
+                            const Icon = item.icon;
+                            let badgeCount: number | null | undefined = undefined;
+                            if (item.tab === 'leave-requests') badgeCount = pendingLeaveRequestsCount;
+                            if (item.tab === 'schedule-requests') badgeCount = pendingScheduleRequestsCount;
+
+                            return (
+                            <SidebarMenuItem key={item.tab}>
+                                <Link href={item.href}>
+                                <SidebarMenuButton
+                                    isActive={isActive(item)}
+                                    tooltip={item.label}
+                                    size="sm"
+                                >
+                                    <Icon />
+                                    <span>{item.label}</span>
+                                    {badgeCount !== null && badgeCount !== undefined && badgeCount > 0 && <SidebarMenuBadge className="animate-pulse">{badgeCount}</SidebarMenuBadge>}
+                                    {badgeCount === null && <Loader2 className='absolute right-2 top-1.5 h-4 w-4 animate-spin' />}
+                                </SidebarMenuButton>
+                                </Link>
+                            </SidebarMenuItem>
+                            )
+                        })}
+                    </SidebarMenu>
+                </SidebarGroupContent>
+            </SidebarGroup>
+        </>
+      )}
     </SidebarMenu>
   );
 }
@@ -384,12 +458,12 @@ export default function DashboardLayout({
       </Sidebar>
       <SidebarInset className="flex flex-col h-screen">
         <header className="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-sidebar shadow-sm">
-          <div className="flex items-center">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-2xl font-semibold ml-4 font-headline">{pageTitle}</h1>
+          <div className="flex items-center gap-2">
+            <MobileNav />
+            <h1 className="text-xl md:text-2xl font-semibold font-headline">{pageTitle}</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="flex items-center text-sm">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Badge variant="outline" className="hidden sm:flex items-center text-sm">
                 {getRoleIcon()}
                 {role.charAt(0).toUpperCase() + role.slice(1)}
             </Badge>

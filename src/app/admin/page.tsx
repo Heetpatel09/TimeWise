@@ -59,7 +59,7 @@ const AdminDashboardHome = () => (
             </div>
              <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-2">Quick Actions</h3>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                     <Link href="/admin?tab=schedule" passHref>
                         <Button variant="outline">
                             <Calendar className="mr-2 h-4 w-4" />
