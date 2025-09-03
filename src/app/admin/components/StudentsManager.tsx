@@ -80,7 +80,9 @@ export default function StudentsManager() {
             passwordOption === 'manual' ? manualPassword : undefined
             );
           toast({ title: "Student Added", description: "The new student has been added." });
-          setNewStudentCredentials({ email: result.email, initialPassword: result.initialPassword });
+          if (result.initialPassword) {
+            setNewStudentCredentials({ email: result.email, initialPassword: result.initialPassword });
+          }
         }
         await loadData();
         setDialogOpen(false);
@@ -310,13 +312,13 @@ export default function StudentsManager() {
                 <div className="space-y-2 mt-2">
                   <div>
                     <Label>Email</Label>
-                    <Input readOnly value={newStudentCredentials?.email} />
+                    <Input readOnly value={newStudentCredentials?.email ?? ''} />
                   </div>
                    {newStudentCredentials?.initialPassword && (
                     <div>
                         <Label>Initial Password</Label>
                         <div className="flex items-center gap-2">
-                        <Input readOnly type="text" value={newStudentCredentials?.initialPassword} />
+                        <Input readOnly type="text" value={newStudentCredentials?.initialPassword ?? ''} />
                         <Button variant="outline" size="icon" onClick={() => copyToClipboard(newStudentCredentials?.initialPassword || '')}>
                             <Copy className="h-4 w-4" />
                         </Button>
@@ -336,3 +338,5 @@ export default function StudentsManager() {
     </div>
   );
 }
+
+    

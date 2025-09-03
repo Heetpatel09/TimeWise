@@ -75,7 +75,9 @@ export default function AdminsManager() {
             passwordOption === 'manual' ? manualPassword : undefined
           );
           toast({ title: "Admin Added", description: "The new admin has been created." });
-          setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
+          if (result.initialPassword) {
+            setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
+          }
         }
         await loadData();
         setDialogOpen(false);
@@ -290,13 +292,13 @@ export default function AdminsManager() {
                 <div className="space-y-2 mt-2">
                   <div>
                     <Label>Email</Label>
-                    <Input readOnly value={newAdminCredentials?.email} />
+                    <Input readOnly value={newAdminCredentials?.email ?? ''} />
                   </div>
                   {newAdminCredentials?.initialPassword && (
                     <div>
                         <Label>Initial Password</Label>
                         <div className="flex items-center gap-2">
-                        <Input readOnly type="text" value={newAdminCredentials?.initialPassword} />
+                        <Input readOnly type="text" value={newAdminCredentials?.initialPassword ?? ''} />
                         <Button variant="outline" size="icon" onClick={() => copyToClipboard(newAdminCredentials?.initialPassword || '')}>
                             <Copy className="h-4 w-4" />
                         </Button>
@@ -316,3 +318,5 @@ export default function AdminsManager() {
     </div>
   );
 }
+
+    

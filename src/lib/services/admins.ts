@@ -71,8 +71,8 @@ export async function updateAdmin(updatedItem: Admin): Promise<Admin> {
 export async function deleteAdmin(id: string) {
     const db = getDb();
     
-    const admins = getAdmins();
-    if ((await admins).length <= 1) {
+    const admins = await getAdmins();
+    if (admins.length <= 1) {
         throw new Error("Cannot delete the last admin.");
     }
 
@@ -82,3 +82,5 @@ export async function deleteAdmin(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+    
