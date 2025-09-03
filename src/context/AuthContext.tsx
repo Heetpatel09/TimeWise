@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -46,8 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   
   const handleSetUser = (updatedUser: User) => {
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setUser(updatedUser);
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const newUser = { ...currentUser, ...updatedUser };
+    localStorage.setItem('user', JSON.stringify(newUser));
+    setUser(newUser);
   }
 
   return (

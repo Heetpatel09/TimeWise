@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -23,27 +24,27 @@ export async function getStudents(): Promise<Student[]> {
   return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
 }
 
-export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak?: number }) {
+export async function addStudent(item: Omit<Student, 'id' | 'streak' | 'profileCompleted'> & { streak?: number, profileCompleted?: number }) {
     const db = getDb();
     const id = `STU${Date.now()}`;
     const newItem: Student = {
         ...item,
         id,
         streak: item.streak || 0,
-        avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`
+        avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
+        profileCompleted: item.profileCompleted || 0,
     };
 
-    const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar);
+    const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar, newItem.profileCompleted);
 
-    // This was the source of the error. A random password was being generated on creation.
-    // The database seeding now handles this explicitly.
     const initialPassword = randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
       password: initialPassword,
       role: 'student',
+      requiresPasswordChange: true
     });
     
     // Generate welcome notification
@@ -61,7 +62,6 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
         });
     } catch (e: any) {
         console.error("Failed to generate welcome notification for student:", e.message);
-        // Don't block user creation if notification fails
     }
 
     revalidateAll();
@@ -76,8 +76,8 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
         throw new Error("Student not found.");
     }
     
-    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.id);
+    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ?, profileCompleted = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.id);
     
     if (oldStudent.email !== updatedItem.email) {
          await addCredential({

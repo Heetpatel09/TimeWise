@@ -1,4 +1,5 @@
 
+
 export interface Subject {
   id: string;
   name: string;
@@ -23,6 +24,7 @@ export interface Student {
   streak: number;
   avatar?: string;
   className?: string; // Optional: can be added when joining with classes table
+  profileCompleted: number;
 }
 
 export interface Faculty {
@@ -65,6 +67,7 @@ export interface User {
     email: string;
     avatar: string;
     role: 'admin' | 'faculty' | 'student';
+    requiresPasswordChange?: boolean;
 }
 
 export interface LeaveRequest {
