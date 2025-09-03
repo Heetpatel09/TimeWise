@@ -459,7 +459,7 @@ export default function StudentDashboard() {
                   id="start-date" 
                   type="date" 
                   value={leaveStartDate}
-                  onChange={(e) => setLeaveStartDate(e.target.value)}
+                  onChange={(e) => setLeaveStartDate(e.target.value || '')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -469,7 +469,7 @@ export default function StudentDashboard() {
                   id="end-date" 
                   type="date"
                   value={leaveEndDate}
-                  onChange={(e) => setLeaveEndDate(e.target.value)}
+                  onChange={(e) => setLeaveEndDate(e.target.value || '')}
                   disabled={isSubmitting}
                 />
               </div>
