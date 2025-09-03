@@ -7,6 +7,7 @@ import type { Faculty } from '@/lib/types';
 import { addCredential } from './auth';
 import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
+import { randomBytes } from 'crypto';
 
 
 function revalidateAll() {
@@ -35,7 +36,7 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
     const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar);
 
-    const initialPassword = 'faculty123';
+    const initialPassword = randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
@@ -77,13 +78,15 @@ export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
 
 export async function deleteFaculty(id: string) {
     const db = getDb();
+
+    // Check if faculty is in use
+    const inUse = db.prepare('SELECT 1 FROM schedule WHERE facultyId = ? LIMIT 1').get(id);
+    if (inUse) {
+        throw new Error("Cannot delete faculty that is currently assigned to a schedule. Please re-assign their classes first.");
+    }
     
     // Also delete from user_credentials
-    const facultyToDelete = db.prepare('SELECT email FROM faculty WHERE id = ?').get(id) as { email: string } | undefined;
-    if (facultyToDelete) {
-        const credStmt = db.prepare('DELETE FROM user_credentials WHERE userId = ?');
-        credStmt.run(id);
-    }
+    db.prepare('DELETE FROM user_credentials WHERE userId = ?').run(id);
 
     const stmt = db.prepare('DELETE FROM faculty WHERE id = ?');
     stmt.run(id);

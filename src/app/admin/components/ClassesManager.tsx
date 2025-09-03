@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,17 @@ import type { Class } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function ClassesManager() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -63,8 +75,8 @@ export default function ClassesManager() {
         await loadData();
         setDialogOpen(false);
         setCurrentClass(null);
-      } catch (error) {
-        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
@@ -81,8 +93,8 @@ export default function ClassesManager() {
       await deleteClass(id);
       await loadData();
       toast({ title: "Class Deleted", description: "The class has been removed." });
-    } catch (error) {
-      toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     }
   };
   
@@ -132,10 +144,26 @@ export default function ClassesManager() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(cls.id)} className="text-destructive focus:text-destructive-foreground">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the class and any associated students and schedule slots.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(cls.id)}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

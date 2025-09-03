@@ -10,10 +10,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getStudents, addStudent, updateStudent, deleteStudent } from '@/lib/services/students';
 import { getClasses } from '@/lib/services/classes';
 import type { Student, Class } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export default function StudentsManager() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -22,6 +34,7 @@ export default function StudentsManager() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Partial<Student> | null>(null);
+  const [newStudentCredentials, setNewStudentCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
   const { toast } = useToast();
 
   async function loadData() {
@@ -30,8 +43,8 @@ export default function StudentsManager() {
       const [studentData, classData] = await Promise.all([getStudents(), getClasses()]);
       setStudents(studentData);
       setClasses(classData);
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to load data.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to load data.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +54,11 @@ export default function StudentsManager() {
     loadData();
   }, []);
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied!', description: 'Password copied to clipboard.' });
+  }
+
   const handleSave = async () => {
     if (currentStudent && currentStudent.classId) {
       setIsSubmitting(true);
@@ -49,14 +67,15 @@ export default function StudentsManager() {
           await updateStudent(currentStudent as Student);
           toast({ title: "Student Updated", description: "The student's details have been saved." });
         } else {
-          await addStudent(currentStudent as Omit<Student, 'id'>);
+          const result = await addStudent(currentStudent as Omit<Student, 'id'>);
           toast({ title: "Student Added", description: "The new student has been added." });
+          setNewStudentCredentials({ email: result.email, initialPassword: result.initialPassword });
         }
         await loadData();
         setDialogOpen(false);
         setCurrentStudent(null);
-      } catch (error) {
-        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
@@ -75,8 +94,8 @@ export default function StudentsManager() {
       await deleteStudent(id);
       await loadData();
       toast({ title: "Student Deleted", description: "The student has been removed." });
-    } catch (error) {
-       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    } catch (error: any) {
+       toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     }
   };
   
@@ -115,7 +134,7 @@ export default function StudentsManager() {
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
                     <Avatar>
-                        <AvatarImage src={`https://avatar.vercel.sh/${student.email}.png`} alt={student.name} />
+                        <AvatarImage src={student.avatar} alt={student.name} />
                         <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -139,10 +158,26 @@ export default function StudentsManager() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(student.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                       <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the student's record.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(student.id)}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -187,6 +222,43 @@ export default function StudentsManager() {
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+       <Dialog open={!!newStudentCredentials} onOpenChange={() => setNewStudentCredentials(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Student Created</DialogTitle>
+            <DialogDescription>
+              Share the following credentials with the new student so they can log in. The password is randomly generated for security.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert>
+              <AlertTitle>Login Credentials</AlertTitle>
+              <AlertDescription>
+                <div className="space-y-2 mt-2">
+                  <div>
+                    <Label>Email</Label>
+                    <Input readOnly value={newStudentCredentials?.email} />
+                  </div>
+                   <div>
+                    <Label>Initial Password</Label>
+                    <div className="flex items-center gap-2">
+                      <Input readOnly type="text" value={newStudentCredentials?.initialPassword} />
+                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(newStudentCredentials?.initialPassword || '')}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-2">The student will be required to change this password on their first login.</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setNewStudentCredentials(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

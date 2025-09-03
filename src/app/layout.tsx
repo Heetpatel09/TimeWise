@@ -24,10 +24,11 @@ export default function RootLayout({
       <body className="font-body antialiased" suppressHydrationWarning>
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://drive.google.com/uc?export=view&id=1QH2yxa47s9VaCWJSVc1z8mdHxAQF3KOP"
-            alt="Background"
+            src="/background.jpg"
+            alt="Abstract background"
             fill
             style={{ objectFit: 'cover' }}
+            priority
             data-ai-hint="abstract background"
           />
         </div>

@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function SubjectsManager() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -66,8 +78,8 @@ export default function SubjectsManager() {
         await loadData();
         setDialogOpen(false);
         setCurrentSubject(null);
-      } catch (error) {
-        toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
@@ -84,8 +96,8 @@ export default function SubjectsManager() {
       await deleteSubject(id);
       await loadData();
       toast({ title: "Subject Deleted", description: "The subject has been removed." });
-    } catch (error) {
-      toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     }
   };
   
@@ -146,10 +158,26 @@ export default function SubjectsManager() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(subject.id)} className="text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                       <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the subject and any associated schedule slots.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(subject.id)}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

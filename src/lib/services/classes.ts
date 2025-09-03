@@ -34,8 +34,20 @@ export async function updateClass(updatedItem: Class) {
 
 export async function deleteClass(id: string) {
     const db = getDb();
+    
+    // Before deleting a class, ensure there are no students in it.
+    const studentCheck = db.prepare('SELECT 1 FROM students WHERE classId = ? LIMIT 1').get(id);
+    if (studentCheck) {
+        throw new Error("Cannot delete class. Please re-assign or delete students in this class first.");
+    }
+    
+    // Also delete associated schedule slots
+    const scheduleStmt = db.prepare('DELETE FROM schedule WHERE classId = ?');
+    scheduleStmt.run(id);
+
     const stmt = db.prepare('DELETE FROM classes WHERE id = ?');
     stmt.run(id);
+    
     revalidateAll();
     return Promise.resolve(id);
 }

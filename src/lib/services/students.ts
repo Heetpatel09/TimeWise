@@ -8,6 +8,7 @@ import { addCredential } from './auth';
 import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
 import { getClasses } from './classes';
+import { randomBytes } from 'crypto';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
@@ -35,10 +36,11 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
     const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar);
 
+    const initialPassword = randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
-      password: 'student123',
+      password: initialPassword,
       role: 'student',
     });
     
@@ -61,7 +63,7 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
     }
 
     revalidateAll();
-    return Promise.resolve(newItem);
+    return Promise.resolve({ ...newItem, initialPassword });
 }
 
 export async function updateStudent(updatedItem: Student): Promise<Student> {

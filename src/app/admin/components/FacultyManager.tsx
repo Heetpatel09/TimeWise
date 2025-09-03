@@ -13,6 +13,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function FacultyManager() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
@@ -77,8 +88,8 @@ export default function FacultyManager() {
       await deleteFaculty(id);
       await loadData();
       toast({ title: "Faculty Deleted", description: "The faculty member has been removed." });
-    } catch (error) {
-       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    } catch (error: any) {
+       toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     }
   };
   
@@ -139,10 +150,26 @@ export default function FacultyManager() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(fac.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the faculty member and any associated schedule slots.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(fac.id)}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -189,7 +216,7 @@ export default function FacultyManager() {
           <DialogHeader>
             <DialogTitle>Faculty Member Created</DialogTitle>
             <DialogDescription>
-              Share the following credentials with the new faculty member so they can log in.
+              Share the following credentials with the new faculty member so they can log in. The password is randomly generated for security.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -204,7 +231,7 @@ export default function FacultyManager() {
                    <div>
                     <Label>Initial Password</Label>
                     <div className="flex items-center gap-2">
-                      <Input readOnly type="password" value={newFacultyCredentials?.initialPassword} />
+                      <Input readOnly type="text" value={newFacultyCredentials?.initialPassword} />
                       <Button variant="outline" size="icon" onClick={() => copyToClipboard(newFacultyCredentials?.initialPassword || '')}>
                         <Copy className="h-4 w-4" />
                       </Button>

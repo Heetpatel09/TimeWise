@@ -35,6 +35,13 @@ export async function updateSubject(updatedItem: Subject) {
 
 export async function deleteSubject(id: string) {
     const db = getDb();
+    
+    // Check if subject is in use
+    const inUse = db.prepare('SELECT 1 FROM schedule WHERE subjectId = ? LIMIT 1').get(id);
+    if (inUse) {
+        throw new Error("Cannot delete subject that is currently in use in the schedule.");
+    }
+    
     const stmt = db.prepare('DELETE FROM subjects WHERE id = ?');
     stmt.run(id);
     revalidateAll();

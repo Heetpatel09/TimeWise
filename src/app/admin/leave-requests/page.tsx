@@ -8,6 +8,7 @@ import type { LeaveRequest } from '@/lib/types';
 import { Check, X, Loader2, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLeaveRequests, updateLeaveRequestStatus, deleteResolvedLeaveRequests } from '@/lib/services/leave';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +25,17 @@ export default function LeaveRequestsPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   async function fetchRequests() {
     setIsLoading(true);
-    const requests = await getLeaveRequests();
-    setLeaveRequests(requests.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()));
+    try {
+        const requests = await getLeaveRequests();
+        setLeaveRequests(requests.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()));
+    } catch(error: any) {
+        toast({ title: 'Error', description: error.message || 'Failed to fetch requests.', variant: 'destructive'});
+    }
     setIsLoading(false);
   }
 
@@ -40,18 +47,26 @@ export default function LeaveRequestsPage() {
     setIsUpdating(id);
     try {
       await updateLeaveRequestStatus(id, status);
-      await fetchRequests(); // Re-fetch to get the latest state
-    } catch (error) {
-      console.error("Failed to update status", error);
-      // Optionally, show an error toast
+      await fetchRequests();
+      toast({ title: 'Success', description: `Request has been ${status}.`});
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to update status.', variant: 'destructive'});
     } finally {
         setIsUpdating(null);
     }
   };
 
   const handleClearHistory = async () => {
-    await deleteResolvedLeaveRequests();
-    await fetchRequests();
+    setIsDeleting(true);
+    try {
+        await deleteResolvedLeaveRequests();
+        await fetchRequests();
+        toast({ title: 'History Cleared', description: 'All resolved leave requests have been deleted.'});
+    } catch (error: any) {
+        toast({ title: 'Error', description: error.message || 'Failed to clear history.', variant: 'destructive'});
+    } finally {
+        setIsDeleting(false);
+    }
   }
   
   const pendingRequests = leaveRequests.filter(r => r.status === 'pending');
@@ -72,8 +87,8 @@ export default function LeaveRequestsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {requests.map((request, index) => (
-            <TableRow key={`${request.id}-${index}`}>
+          {requests.map((request) => (
+            <TableRow key={request.id}>
               <TableCell>{request.requesterName}</TableCell>
                <TableCell className="capitalize">
                 <Badge variant={request.requesterRole === 'faculty' ? 'secondary' : 'outline'}>{request.requesterRole}</Badge>
@@ -132,8 +147,8 @@ export default function LeaveRequestsPage() {
             <div className="flex justify-end mb-4">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={resolvedRequests.length === 0}>
-                    <Trash2 className="mr-2 h-4 w-4" />
+                  <Button variant="destructive" disabled={resolvedRequests.length === 0 || isDeleting}>
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                     Clear History
                   </Button>
                 </AlertDialogTrigger>
