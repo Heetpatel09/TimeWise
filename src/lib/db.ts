@@ -155,11 +155,18 @@ function initializeDb() {
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
-        insertUser.run(adminUser.email, adminUser.id, adminUser.password, adminUser.role);
-        faculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty'));
-        students.forEach(s => insertUser.run(s.email, s.id, 'student123', 'student'));
+        // Seed credentials
+        insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin');
+        
+        faculty.forEach(f => {
+          insertUser.run(f.email, f.id, 'faculty123', 'faculty');
+        });
 
-        // Overwrite specific student credential for testing
+        students.forEach(s => {
+          insertUser.run(s.email, s.id, 'student123', 'student');
+        });
+
+        // Ensure the specific student credential is set as requested, overwriting the loop's value.
         insertUser.run('abc@example.com', 'STU001', '123', 'student');
     })();
     console.log('Database initialized and seeded successfully.');
