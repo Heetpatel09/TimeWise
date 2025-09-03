@@ -21,9 +21,9 @@ export async function login(email: string, password: string): Promise<User> {
         if (credentialEntry.role === 'admin') {
             details = {
                 id: credentialEntry.userId,
-                name: 'Admin User',
-                email: 'admin@timewise.app',
-                avatar: `https://avatar.vercel.sh/admin@timewise.app.png`,
+                name: 'Admin',
+                email: credentialEntry.email,
+                avatar: `https://avatar.vercel.sh/${credentialEntry.email}.png`,
             };
         } else if (credentialEntry.role === 'faculty') {
             details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
@@ -52,7 +52,7 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
     // Admin details are not stored in a separate profile table, so we just return the user object.
     // The email and password will be handled by the updateCredential function.
     const user: User = {
-        id: 'admin',
+        id: 'admin-user',
         name: updatedDetails.name,
         email: updatedDetails.email,
         avatar: updatedDetails.avatar,
@@ -77,3 +77,5 @@ export async function addCredential(credential: {userId: string, email: string, 
         stmt.run(credential.userId, credential.email, credential.password, credential.role);
     }
 }
+
+    

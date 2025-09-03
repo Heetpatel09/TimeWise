@@ -157,7 +157,19 @@ function initializeDb() {
 
     })();
     console.log('Database initialized and seeded successfully.');
+  } else {
+    console.log('Database file found. Skipping initial seed.');
   }
+
+  // Ensure admin user exists
+  const adminExists = db.prepare('SELECT 1 FROM user_credentials WHERE email = ?').get(adminUser.email);
+  if (!adminExists) {
+      console.log('Admin user not found. Seeding admin credentials...');
+      const insertUser = db.prepare('INSERT INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
+      insertUser.run(adminUser.email, adminUser.id, adminUser.password, adminUser.role);
+      console.log('Admin user seeded.');
+  }
+
 
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
@@ -175,3 +187,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    

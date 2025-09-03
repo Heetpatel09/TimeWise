@@ -1,3 +1,4 @@
+
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom } from './types';
 
 export const subjects: Subject[] = [
@@ -68,4 +69,7 @@ export const adminUser = {
   email: 'admin@timewise.app',
   password: 'admin123',
   role: 'admin',
+  avatar: 'https://avatar.vercel.sh/admin.png'
 };
+
+    
