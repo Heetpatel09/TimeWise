@@ -25,7 +25,7 @@ import Image from 'next/image';
 const TimeWiseLogo = () => (
   <div className="flex items-center justify-center gap-2 md:gap-4">
     <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0">
-        <BrainCircuit className="w-full h-full text-primary" />
+        <BrainCircuit className="w-full h-full text-primary animation-pulse" />
     </div>
     <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-primary">
       TimeWise
