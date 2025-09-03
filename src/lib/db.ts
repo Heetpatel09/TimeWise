@@ -26,14 +26,14 @@ function initializeDb() {
   db = new Database(dbFilePath);
 
   // Check if tables exist. If not, create them.
-  const tableCheck = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='user_credentials'`);
+  const tableCheck = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='subjects'`);
   const tableExists = tableCheck.get();
 
   if (!tableExists) {
     console.log('Database tables not found, running initial setup...');
 
     db.exec(`
-      CREATE TABLE subjects (
+      CREATE TABLE IF NOT EXISTS subjects (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           code TEXT NOT NULL,
@@ -41,18 +41,18 @@ function initializeDb() {
           type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory',
           semester INTEGER NOT NULL
       );
-      CREATE TABLE classes (
+      CREATE TABLE IF NOT EXISTS classes (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           semester INTEGER NOT NULL,
           department TEXT NOT NULL
       );
-       CREATE TABLE classrooms (
+       CREATE TABLE IF NOT EXISTS classrooms (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           type TEXT NOT NULL CHECK(type IN ('classroom', 'lab'))
       );
-      CREATE TABLE faculty (
+      CREATE TABLE IF NOT EXISTS faculty (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           email TEXT NOT NULL,
@@ -60,7 +60,7 @@ function initializeDb() {
           streak INTEGER NOT NULL,
           avatar TEXT
       );
-       CREATE TABLE students (
+       CREATE TABLE IF NOT EXISTS students (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           email TEXT NOT NULL,
@@ -69,7 +69,7 @@ function initializeDb() {
           avatar TEXT,
           FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
       );
-      CREATE TABLE schedule (
+      CREATE TABLE IF NOT EXISTS schedule (
           id TEXT PRIMARY KEY,
           classId TEXT NOT NULL,
           subjectId TEXT NOT NULL,
@@ -82,7 +82,7 @@ function initializeDb() {
           FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
           FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
       );
-      CREATE TABLE leave_requests (
+      CREATE TABLE IF NOT EXISTS leave_requests (
           id TEXT PRIMARY KEY,
           requesterId TEXT NOT NULL,
           requesterName TEXT NOT NULL,
@@ -92,7 +92,7 @@ function initializeDb() {
           reason TEXT NOT NULL,
           status TEXT NOT NULL
       );
-      CREATE TABLE schedule_change_requests (
+      CREATE TABLE IF NOT EXISTS schedule_change_requests (
           id TEXT PRIMARY KEY,
           scheduleId TEXT NOT NULL,
           facultyId TEXT NOT NULL,
@@ -103,7 +103,7 @@ function initializeDb() {
           FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
           FOREIGN KEY (requestedClassroomId) REFERENCES classrooms(id) ON DELETE SET NULL
       );
-      CREATE TABLE new_slot_requests (
+      CREATE TABLE IF NOT EXISTS new_slot_requests (
           id TEXT PRIMARY KEY,
           facultyId TEXT NOT NULL,
           classId TEXT NOT NULL,
@@ -117,14 +117,14 @@ function initializeDb() {
           FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
           FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE
       );
-      CREATE TABLE notifications (
+      CREATE TABLE IF NOT EXISTS notifications (
           id TEXT PRIMARY KEY,
           userId TEXT NOT NULL,
           message TEXT NOT NULL,
           isRead BOOLEAN NOT NULL DEFAULT 0,
           createdAt TEXT NOT NULL
       );
-      CREATE TABLE user_credentials (
+      CREATE TABLE IF NOT EXISTS user_credentials (
         email TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
         role TEXT NOT NULL CHECK(role IN ('admin', 'faculty', 'student')),
@@ -132,16 +132,16 @@ function initializeDb() {
       );
     `);
 
-    const insertSubject = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertClass = db.prepare('INSERT INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
-    const insertStudent = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertClassroom = db.prepare('INSERT INTO classrooms (id, name, type) VALUES (?, ?, ?)');
-    const insertSchedule = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const insertLeaveRequest = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertScheduleChangeRequest = db.prepare('INSERT INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertNotification = db.prepare('INSERT INTO notifications (id, userId, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?)');
-    const insertUser = db.prepare('INSERT INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
+    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, classId, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type) VALUES (?, ?, ?)');
+    const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?)');
+    const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester));
@@ -160,10 +160,8 @@ function initializeDb() {
 
     })();
     console.log('Database initialized and seeded successfully.');
-  } else {
-    console.log('Database tables found. Skipping initial seed.');
-  }
-
+  } 
+  
   // Ensure admin user exists, just in case it was deleted or seed failed partially.
   const adminExists = db.prepare('SELECT 1 FROM user_credentials WHERE email = ?').get(adminUser.email);
   if (!adminExists) {
@@ -172,6 +170,7 @@ function initializeDb() {
       insertUser.run(adminUser.email, adminUser.id, adminUser.password, adminUser.role);
       console.log('Admin user seeded.');
   }
+
 
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
