@@ -1,5 +1,7 @@
 
 'use server';
+import { config } from 'dotenv';
+config();
 
 /**
  * @fileOverview A flow for generating a university timetable.
