@@ -21,11 +21,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
 import type { Subject } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star, Beaker, BookOpen } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function SubjectsManager() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -89,7 +90,7 @@ export default function SubjectsManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentSubject({ isSpecial: false });
+    setCurrentSubject({ isSpecial: false, type: 'theory' });
     setDialogOpen(true);
   };
 
@@ -111,6 +112,7 @@ export default function SubjectsManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Code</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Special</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -120,6 +122,12 @@ export default function SubjectsManager() {
               <TableRow key={subject.id}>
                 <TableCell className="font-medium">{subject.name}</TableCell>
                 <TableCell>{subject.code}</TableCell>
+                <TableCell className='capitalize'>
+                    <Badge variant={subject.type === 'lab' ? 'secondary' : 'outline'} className="gap-1">
+                        {subject.type === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                        {subject.type}
+                    </Badge>
+                </TableCell>
                 <TableCell>
                   {subject.isSpecial && <Badge variant="secondary"><Star className="h-3 w-3 mr-1" />Special</Badge>}
                 </TableCell>
@@ -181,6 +189,20 @@ export default function SubjectsManager() {
                 className="col-span-3"
                 disabled={isSubmitting}
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="type" className="text-right">
+                Type
+              </Label>
+              <Select value={currentSubject?.type} onValueChange={(v: 'theory' | 'lab') => setCurrentSubject({ ...currentSubject, type: v })} disabled={isSubmitting}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="theory">Theory</SelectItem>
+                        <SelectItem value="lab">Lab</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="special" className="text-right">

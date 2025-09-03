@@ -211,7 +211,13 @@ export default function ScheduleView() {
         ))}
       </div>
 
-      <Dialog open={isChangeDialogOpen} onOpenChange={setChangeDialogOpen}>
+      <Dialog open={isChangeDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          setRequestedClassroomId(undefined);
+          setRequestMessage('');
+        }
+        setChangeDialogOpen(isOpen);
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Request Schedule Change</DialogTitle>

@@ -144,6 +144,9 @@ export default function ScheduleManager() {
     slots: schedule.filter(slot => slot.day === day).sort((a,b) => a.time.localeCompare(b.time)),
   }));
 
+  const selectedSubjectType = subjects.find(s => s.id === currentSlot?.subjectId)?.type;
+  const filteredClassrooms = classrooms.filter(c => !selectedSubjectType || c.type === selectedSubjectType);
+
   if (isDataLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -247,7 +250,7 @@ export default function ScheduleManager() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Subject</Label>
-              <Select value={currentSlot?.subjectId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, subjectId: v })}>
+              <Select value={currentSlot?.subjectId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, subjectId: v, classroomId: undefined })}>
                 <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Subject" /></SelectTrigger>
                 <SelectContent>{subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
@@ -261,9 +264,9 @@ export default function ScheduleManager() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Classroom</Label>
-              <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Classroom" /></SelectTrigger>
-                <SelectContent>{classrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })} disabled={!selectedSubjectType}>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder={selectedSubjectType ? `Select a ${selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
+                <SelectContent>{filteredClassrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>

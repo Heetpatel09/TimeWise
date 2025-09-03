@@ -5,6 +5,7 @@ export interface Subject {
   name: string;
   code: string;
   isSpecial?: boolean;
+  type: 'theory' | 'lab';
 }
 
 export interface Class {

@@ -1,11 +1,11 @@
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom } from './types';
 
 export const subjects: Subject[] = [
-  { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101', isSpecial: true },
-  { id: 'SUB002', name: 'Data Structures and Algorithms', code: 'CS201', isSpecial: false },
-  { id: 'SUB003', name: 'Database Management Systems', code: 'CS301', isSpecial: false },
-  { id: 'SUB004', name: 'Operating Systems', code: 'CS302', isSpecial: false },
-  { id: 'SUB005', name: 'Machine Learning', code: 'AI401', isSpecial: true },
+  { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101', isSpecial: true, type: 'theory' },
+  { id: 'SUB002', name: 'Data Structures and Algorithms', code: 'CS201', isSpecial: false, type: 'lab' },
+  { id: 'SUB003', name: 'Database Management Systems', code: 'CS301', isSpecial: false, type: 'theory' },
+  { id: 'SUB004', name: 'Operating Systems', code: 'CS302', isSpecial: false, type: 'lab' },
+  { id: 'SUB005', name: 'Machine Learning', code: 'AI401', isSpecial: true, type: 'lab' },
 ];
 
 export const classes: Class[] = [
@@ -37,8 +37,8 @@ export const classrooms: Classroom[] = [
 ]
 
 export const schedule: Schedule[] = [
-  { id: 'SCH001', classId: 'CLS004', subjectId: 'SUB005', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '09:00 - 10:00' },
-  { id: 'SCH002', classId: 'CLS004', subjectId: 'SUB003', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '10:00 - 11:00' },
+  { id: 'SCH001', classId: 'CLS004', subjectId: 'SUB003', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '09:00 - 10:00' },
+  { id: 'SCH002', classId: 'CLS004', subjectId: 'SUB002', facultyId: 'FAC002', classroomId: 'CR003', day: 'Monday', time: '10:00 - 11:00' },
   { id: 'SCH003', classId: 'CLS003', subjectId: 'SUB002', facultyId: 'FAC003', classroomId: 'CR003', day: 'Tuesday', time: '11:00 - 12:00' },
   { id: 'SCH004', classId: 'CLS004', subjectId: 'SUB004', facultyId: 'FAC003', classroomId: 'CR004', day: 'Wednesday', time: '14:00 - 15:00' },
   // Intentional conflict for demo purposes: Same faculty, same time, different class/classroom
