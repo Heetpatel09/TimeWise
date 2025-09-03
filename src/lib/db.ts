@@ -22,30 +22,8 @@ import fs from 'fs';
 let db: Database.Database;
 const dbFilePath = './timewise.db';
 
-// This is a temporary measure to ensure the new schema is applied.
-// It will delete the old database file one time if it exists.
-const ensureLatestSchema = () => {
-  if (fs.existsSync(dbFilePath)) {
-    const testDb = new Database(dbFilePath);
-    try {
-      // Check for a column that exists in the new schema but not the old one.
-      testDb.prepare('SELECT profileCompleted FROM students LIMIT 1').get();
-    } catch (e) {
-      console.log('Old database schema detected. Re-creating database file to apply updates.');
-      testDb.close();
-      fs.unlinkSync(dbFilePath);
-    } finally {
-      if (testDb.open) {
-        testDb.close();
-      }
-    }
-  }
-};
-
 function initializeDb() {
-  // Ensure the DB schema is up-to-date before connecting
-  ensureLatestSchema();
-  
+  const dbExists = fs.existsSync(dbFilePath);
   db = new Database(dbFilePath);
 
   // Use "IF NOT EXISTS" for every table to make initialization idempotent
@@ -151,10 +129,8 @@ function initializeDb() {
     );
   `);
   
-  // Seed the database only if it's newly created
-  const count: {c: number} = db.prepare('SELECT count(*) as c FROM subjects').get() as any;
-
-  if (count.c === 0) {
+  // Seed the database only if it was newly created
+  if (!dbExists) {
     console.log('Database appears empty, running initial data seeding...');
 
     const insertSubject = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
