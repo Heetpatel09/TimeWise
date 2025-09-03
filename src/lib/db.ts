@@ -25,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 10; // Increment this to force re-initialization
+const schemaVersion = 11; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -44,11 +44,6 @@ function setDbVersion(version: number) {
 function initializeDb() {
   const currentVersion = getDbVersion();
   const dbExists = fs.existsSync(dbFilePath);
-
-  if (dbExists && currentVersion < schemaVersion) {
-    console.log(`Database schema is outdated (v${currentVersion} < v${schemaVersion}). Deleting and re-creating.`);
-    fs.unlinkSync(dbFilePath);
-  }
 
   db = new Database(dbFilePath);
   
@@ -71,6 +66,7 @@ function initializeDb() {
 function createSchemaAndSeed() {
    // Use "IF NOT EXISTS" for every table to make initialization idempotent
   db.exec(`
+    DROP TABLE IF EXISTS events;
     CREATE TABLE IF NOT EXISTS subjects (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -171,12 +167,13 @@ function createSchemaAndSeed() {
       password TEXT,
       requiresPasswordChange BOOLEAN NOT NULL DEFAULT 0
     );
-    CREATE TABLE IF NOT EXISTS events (
+    CREATE TABLE events (
         id TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
         date TEXT NOT NULL,
         title TEXT NOT NULL,
         reminder BOOLEAN NOT NULL DEFAULT 1,
+        reminderTime TEXT,
         createdAt TEXT NOT NULL
     );
   `);

@@ -129,6 +129,7 @@ export default function StudentDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventTitle, setEventTitle] = useState('');
   const [eventReminder, setEventReminder] = useState(true);
+  const [reminderTime, setReminderTime] = useState('09:00');
   
   const [isPending, startTransition] = useTransition();
 
@@ -234,7 +235,8 @@ export default function StudentDashboard() {
         userId: user.id,
         date: format(selectedDate, 'yyyy-MM-dd'),
         title: eventTitle,
-        reminder: eventReminder
+        reminder: eventReminder,
+        reminderTime: eventReminder ? reminderTime : undefined
       });
       toast({ title: 'Event Added', description: 'Your event has been saved.' });
       setEventDialogOpen(false);
@@ -511,17 +513,17 @@ export default function StudentDashboard() {
             </DialogHeader>
              <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="event-title" className="text-right">
-                        Title
-                    </Label>
-                    <Input
-                        id="event-title"
-                        value={eventTitle}
-                        onChange={(e) => setEventTitle(e.target.value)}
-                        className="col-span-3"
-                        placeholder="e.g. John's Birthday"
-                        disabled={isSubmitting}
-                    />
+                  <Label htmlFor="event-title" className="text-right">
+                      Title
+                  </Label>
+                  <Input
+                      id="event-title"
+                      value={eventTitle}
+                      onChange={(e) => setEventTitle(e.target.value)}
+                      className="col-span-3"
+                      placeholder="e.g. John's Birthday"
+                      disabled={isSubmitting}
+                  />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="reminder" className="text-right flex items-center gap-2">
@@ -537,6 +539,19 @@ export default function StudentDashboard() {
                         />
                     </div>
                 </div>
+                {eventReminder && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="reminder-time" className="text-right">Time</Label>
+                        <Input 
+                            id="reminder-time"
+                            type="time"
+                            value={reminderTime}
+                            onChange={(e) => setReminderTime(e.target.value)}
+                            className="col-span-3"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                )}
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setEventDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>

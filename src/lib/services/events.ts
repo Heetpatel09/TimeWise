@@ -20,8 +20,8 @@ export async function addEvent(event: Omit<Event, 'id' | 'createdAt'>): Promise<
     const db = getDb();
     const id = `EVT${Date.now()}`;
     const createdAt = new Date().toISOString();
-    const stmt = db.prepare('INSERT INTO events (id, userId, date, title, reminder, createdAt) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, event.userId, event.date, event.title, event.reminder ? 1: 0, createdAt);
+    const stmt = db.prepare('INSERT INTO events (id, userId, date, title, reminder, reminderTime, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, event.userId, event.date, event.title, event.reminder ? 1 : 0, event.reminderTime || null, createdAt);
     
     const newEvent: Event = { ...event, id, createdAt };
     revalidatePath('/student', 'layout');
@@ -45,19 +45,29 @@ export async function checkForEventReminders(userId: string) {
   const todaysEvents = db.prepare('SELECT * FROM events WHERE userId = ? AND date = ? AND reminder = 1').all(userId, today) as Event[];
 
   for (const event of todaysEvents) {
-    const notificationMessage = `Reminder: "${event.title}" is today!`;
+    let message = `Reminder: "${event.title}" is today!`;
+    if (event.reminderTime) {
+        const time = event.reminderTime;
+        // Basic AM/PM formatting
+        let [hours, minutes] = time.split(':');
+        let hoursNum = parseInt(hours);
+        const ampm = hoursNum >= 12 ? 'PM' : 'AM';
+        hoursNum = hoursNum % 12 || 12; // Convert to 12-hour format
+        const formattedTime = `${hoursNum}:${minutes} ${ampm}`;
+        message = `Reminder for ${formattedTime}: "${event.title}" is today!`;
+    }
     
     // To avoid duplicate reminders, check if a similar one was sent recently.
     const recentNotification = db.prepare(`
         SELECT 1 FROM notifications 
         WHERE userId = ? AND message = ? AND createdAt > ?
         LIMIT 1
-    `).get(userId, notificationMessage, new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString());
+    `).get(userId, message, new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString());
     
     if (!recentNotification) {
       await addNotification({
         userId: userId,
-        message: notificationMessage
+        message: message
       });
     }
   }
