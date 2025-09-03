@@ -19,25 +19,28 @@ export async function getSchedule(): Promise<Schedule[]> {
 
 function checkForConflict(item: Omit<Schedule, 'id'>, existingId?: string) {
     const db = getDb();
-    const idToExclude = existingId || '---'; // Use a value that won't exist if no ID is provided
+    const params: (string | number)[] = [item.day, item.time];
+    let queryExclusion = '';
+
+    if (existingId) {
+        queryExclusion = 'AND id != ?';
+        params.push(existingId);
+    }
 
     // Check for class conflict
-    let classConflictStmt = db.prepare('SELECT id FROM schedule WHERE classId = ? AND day = ? AND time = ? AND id != ?');
-    let classConflict = classConflictStmt.get(item.classId, item.day, item.time, idToExclude);
+    const classConflict = db.prepare(`SELECT id FROM schedule WHERE classId = ? AND day = ? AND time = ? ${queryExclusion}`).get(item.classId, ...params);
     if (classConflict) {
         throw new Error('This class is already scheduled for another subject at this time.');
     }
 
     // Check for faculty conflict
-    let facultyConflictStmt = db.prepare('SELECT id FROM schedule WHERE facultyId = ? AND day = ? AND time = ? AND id != ?');
-    let facultyConflict = facultyConflictStmt.get(item.facultyId, item.day, item.time, idToExclude);
+    const facultyConflict = db.prepare(`SELECT id FROM schedule WHERE facultyId = ? AND day = ? AND time = ? ${queryExclusion}`).get(item.facultyId, ...params);
     if (facultyConflict) {
         throw new Error('This faculty member is already scheduled for another class at this time.');
     }
 
     // Check for classroom conflict
-    let classroomConflictStmt = db.prepare('SELECT id FROM schedule WHERE classroomId = ? AND day = ? AND time = ? AND id != ?');
-    let classroomConflict = classroomConflictStmt.get(item.classroomId, item.day, item.time, idToExclude);
+    const classroomConflict = db.prepare(`SELECT id FROM schedule WHERE classroomId = ? AND day = ? AND time = ? ${queryExclusion}`).get(item.classroomId, ...params);
     if (classroomConflict) {
         throw new Error('This classroom is already booked at this time.');
     }
