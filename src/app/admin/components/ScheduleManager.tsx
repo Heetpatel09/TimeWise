@@ -144,6 +144,11 @@ export default function ScheduleManager() {
 
   const handleSave = async () => {
     if (currentSlot) {
+        if (!currentSlot.day || !currentSlot.time || !currentSlot.classId || !currentSlot.subjectId || !currentSlot.facultyId || !currentSlot.classroomId) {
+            toast({ title: 'Missing Information', description: 'Please fill out all fields for the schedule slot.', variant: 'destructive' });
+            return;
+        }
+
         try {
             if (currentSlot.id) {
                 await updateSchedule(currentSlot as Schedule);
@@ -213,14 +218,11 @@ export default function ScheduleManager() {
   const selectedSubjectType = subjects.find(s => s.id === currentSlot?.subjectId)?.type;
   
   const filteredClassrooms = classrooms.filter(c => {
-      if (!selectedSubjectType) return false; // Don't show any classrooms if a subject isn't selected
-      if (selectedSubjectType === 'lab') {
-          return c.type === 'lab';
-      }
+      if (!selectedSubjectType) return false;
       if (selectedSubjectType === 'theory') {
           return c.type === 'classroom';
       }
-      return false;
+      return c.type === selectedSubjectType;
   });
 
   if (isDataLoading) {
@@ -379,7 +381,7 @@ export default function ScheduleManager() {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Classroom</Label>
               <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })} disabled={!currentSlot?.subjectId}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder={currentSlot?.subjectId ? `Select a ${selectedSubjectType === 'theory' ? 'classroom' : selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder={currentSlot?.subjectId ? `Select a ${selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
                 <SelectContent>{filteredClassrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
