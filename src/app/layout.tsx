@@ -2,15 +2,12 @@ import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster";
 import Image from 'next/image';
 import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Providers } from '@/components/Providers';
 
 export const metadata: Metadata = {
   title: 'TimeWise',
   description: 'Smart Timetable Scheduler',
 };
-
-const queryClient = new QueryClient();
 
 export default function RootLayout({
   children,
@@ -34,11 +31,9 @@ export default function RootLayout({
             data-ai-hint="abstract background"
           />
         </div>
-        <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                {children}
-            </AuthProvider>
-        </QueryClientProvider>
+        <Providers>
+            {children}
+        </Providers>
         <Toaster />
       </body>
     </html>
