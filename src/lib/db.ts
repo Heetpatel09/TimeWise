@@ -25,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 11; // Increment this to force re-initialization
+const schemaVersion = 12; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -85,6 +85,12 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         type TEXT NOT NULL CHECK(type IN ('classroom', 'lab'))
+    );
+    CREATE TABLE IF NOT EXISTS admins (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        avatar TEXT
     );
     CREATE TABLE IF NOT EXISTS faculty (
         id TEXT PRIMARY KEY,
@@ -189,6 +195,7 @@ function createSchemaAndSeed() {
     const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
     const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?)');
     const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
+    const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester));
@@ -201,6 +208,7 @@ function createSchemaAndSeed() {
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
+        insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar);
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
         insertUser.run('turing@example.com', 'FAC001', 'faculty123', 'faculty', 1);

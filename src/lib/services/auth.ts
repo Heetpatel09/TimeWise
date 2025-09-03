@@ -4,6 +4,7 @@
 
 import { db as getDb } from '@/lib/db';
 import type { User } from '@/lib/types';
+import { updateAdmin as updateAdminInDb } from './admins';
 
 type CredentialEntry = {
     userId: string;
@@ -23,17 +24,23 @@ export async function login(email: string, password: string): Promise<User> {
     }
     
     let details: any;
-    if (credentialEntry.role === 'admin') {
-        details = {
-            id: credentialEntry.userId,
-            name: 'Admin', 
-            email: credentialEntry.email,
-            avatar: `https://avatar.vercel.sh/${credentialEntry.email}.png`
-        };
-    } else {
-        const tableName = credentialEntry.role === 'faculty' ? 'faculty' : 'students';
-        details = db.prepare(`SELECT * FROM ${tableName} WHERE id = ?`).get(credentialEntry.userId);
+    let tableName: string;
+    
+    switch (credentialEntry.role) {
+        case 'admin':
+            tableName = 'admins';
+            break;
+        case 'faculty':
+            tableName = 'faculty';
+            break;
+        case 'student':
+            tableName = 'students';
+            break;
+        default:
+             throw new Error('User details not found.');
     }
+
+    details = db.prepare(`SELECT * FROM ${tableName} WHERE id = ?`).get(credentialEntry.userId);
     
     if (!details) {
         throw new Error('User details not found.');
@@ -54,11 +61,15 @@ export async function login(email: string, password: string): Promise<User> {
 export async function updateAdmin(updatedDetails: { id: string; name: string, email: string, avatar: string }): Promise<User> {
     const db = getDb();
     
-    const user: User = {
+    const updatedAdmin = await updateAdminInDb({
         id: updatedDetails.id,
         name: updatedDetails.name,
         email: updatedDetails.email,
         avatar: updatedDetails.avatar,
+    });
+    
+    const user: User = {
+        ...updatedAdmin,
         role: 'admin',
     };
     return Promise.resolve(user);

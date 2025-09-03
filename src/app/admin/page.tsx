@@ -1,11 +1,12 @@
 
+
 'use client';
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -18,7 +19,7 @@ import HallOfFamePage from './hall-of-fame/page';
 import LeaveRequestsPage from './leave-requests/page';
 import ScheduleRequestsPage from './schedule-requests/page';
 import NewSlotRequestsPage from './components/NewSlotRequestsPage';
-import TimetableGenerator from './components/TimetableGenerator';
+import AdminsManager from './components/AdminsManager';
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
@@ -33,6 +34,7 @@ const managementCards = [
   { tab: "subjects", title: "Subjects", icon: Book, description: "Manage all course subjects." },
   { tab: "classes", title: "Classes", icon: School, description: "Organize classes and semesters." },
   { tab: "classrooms", title: "Classrooms", icon: Warehouse, description: "Manage rooms and labs." },
+  { tab: "admins", title: "Admins", icon: UserCog, description: "Manage administrator users." },
   { tab: "faculty", title: "Faculty", icon: UserCheck, description: "Handle faculty profiles." },
   { tab: "students", title: "Students", icon: Users, description: "Administer student records." },
   { tab: "schedule", title: "Schedule", icon: Calendar, description: "Create and view timetables." },
@@ -158,6 +160,7 @@ const AdminDashboardContent = () => {
             case 'subjects': content = <SubjectsManager />; break;
             case 'classes': content = <ClassesManager />; break;
             case 'classrooms': content = <ClassroomsManager />; break;
+            case 'admins': content = <AdminsManager />; break;
             case 'faculty': content = <FacultyManager />; break;
             case 'students': content = <StudentsManager />; break;
             case 'schedule': content = <ScheduleManager />; break;

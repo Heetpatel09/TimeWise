@@ -37,6 +37,13 @@ export interface Faculty {
   profileCompleted: number;
 }
 
+export interface Admin {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
 export interface Classroom {
   id: string;
   name: string;
