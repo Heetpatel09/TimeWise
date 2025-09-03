@@ -109,8 +109,8 @@ export default function FacultyDashboard() {
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         <div className="lg:col-span-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <Card>
+         <div className="lg:col-span-2">
+            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
                 <CardHeader>
                 <CardTitle>Welcome, {currentFaculty?.name || "Faculty Member"}!</CardTitle>
                 <CardDescription>
@@ -156,8 +156,8 @@ export default function FacultyDashboard() {
                 </CardContent>
             </Card>
          </div>
-         <div className="lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-            <Card>
+         <div className="lg:col-span-1 space-y-6">
+            <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <Flame className="w-6 h-6 mr-2 text-orange-500"/>
@@ -170,7 +170,7 @@ export default function FacultyDashboard() {
                     <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
                 <CardHeader>
                         <CardTitle className="flex items-center">
                         <Bell className="w-5 h-5 mr-2"/>

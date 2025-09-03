@@ -100,7 +100,7 @@ function NotificationsBell() {
                         {notifications.length > 0 ? notifications.map(n => (
                              <div
                                 key={n.id}
-                                className="grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0"
+                                className="grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0 animate-in fade-in-0"
                             >
                                 <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
                                 <div className="grid gap-1">
@@ -237,7 +237,7 @@ export default function DashboardLayout({
             <UserProfile />
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500">
             {children}
         </main>
       </div>

@@ -14,7 +14,7 @@ const ChampionCard = ({ user, role, achievement }: {
     achievement: string,
 }) => {
     return (
-        <Card className="flex flex-col items-center text-center p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <Card className="flex flex-col items-center text-center p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-in fade-in zoom-in-95">
             <CardHeader className="p-0">
                 <Crown className="w-12 h-12 text-yellow-500 mx-auto" />
                 <CardTitle className="text-2xl mt-4">{user.name}</CardTitle>

@@ -33,14 +33,14 @@ const managementCards = [
 
 const AdminDashboardHome = () => (
   <div className="space-y-8">
-    <Card>
+    <Card className="animate-in fade-in-0 duration-500">
       <CardHeader>
           <CardTitle>Welcome, Admin!</CardTitle>
           <CardDescription>From this dashboard, you can manage all aspects of the university schedule.</CardDescription>
       </CardHeader>
       <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card>
+              <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-300">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Students</CardTitle>
                       <Users className="h-4 w-4 text-muted-foreground" />
@@ -50,7 +50,7 @@ const AdminDashboardHome = () => (
                       <p className="text-xs text-muted-foreground">+5% from last semester</p>
                   </CardContent>
               </Card>
-              <Card>
+              <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Faculty</CardTitle>
                       <UserCheck className="h-4 w-4 text-muted-foreground" />
@@ -60,7 +60,7 @@ const AdminDashboardHome = () => (
                       <p className="text-xs text-muted-foreground">+2 since last year</p>
                   </CardContent>
               </Card>
-              <Card>
+              <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-500">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Classes Scheduled</CardTitle>
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -74,18 +74,18 @@ const AdminDashboardHome = () => (
       </CardContent>
     </Card>
     
-    <Card>
+    <Card className="animate-in fade-in-0 duration-500 delay-200">
       <CardHeader>
         <CardTitle>Management Sections</CardTitle>
         <CardDescription>Click a card to navigate to the respective management page.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {managementCards.map((card) => {
+          {managementCards.map((card, index) => {
             const Icon = card.icon;
             return (
               <Link href={`/admin?tab=${card.tab}`} key={card.title}>
-                <Card className="hover:bg-accent hover:shadow-lg transition-all duration-300 group h-full flex flex-col">
+                <Card className="hover:bg-accent hover:shadow-lg transition-all duration-300 group h-full flex flex-col animate-in fade-in-0 zoom-in-95" style={{ animationDelay: `${300 + index * 50}ms`}}>
                   <CardHeader className="flex-grow">
                     <div className="mb-4 bg-card text-primary w-12 h-12 rounded-lg flex items-center justify-center border">
                       <Icon className="w-6 h-6" />
@@ -136,7 +136,7 @@ const AdminDashboardContent = () => {
         const cardInfo = managementCards.find(c => c.tab === tab);
 
         return (
-            <Card>
+            <Card className="animate-in fade-in-0 duration-500">
                 <CardHeader>
                     <CardTitle>{cardInfo?.title}</CardTitle>
                     <CardDescription>{cardInfo?.description}</CardDescription>

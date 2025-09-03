@@ -111,8 +111,8 @@ export default function StudentDashboard() {
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
         <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <Card>
+            <div className="md:col-span-2">
+                <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
                     <CardHeader>
                         <CardTitle>My Timetable</CardTitle>
                         <CardDescription>Your weekly class schedule.</CardDescription>
@@ -122,8 +122,8 @@ export default function StudentDashboard() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="md:col-span-1 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 delay-300">
-                <Card>
+            <div className="md:col-span-1 space-y-8">
+                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                     <CardHeader>
                          <CardTitle className="flex items-center">
                             <Flame className="w-6 h-6 mr-2 text-orange-500"/>
@@ -136,7 +136,7 @@ export default function StudentDashboard() {
                         <p className="text-muted-foreground mt-2">Days in a row</p>
                     </CardContent>
                 </Card>
-                 <Card className="flex flex-col">
+                 <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
                     <CardHeader>
                         <CardTitle className='flex items-center'><BookOpen className="mr-2 h-5 w-5" />Course Catalog</CardTitle>
                         <CardDescription>View subjects for your semester.</CardDescription>
@@ -153,7 +153,7 @@ export default function StudentDashboard() {
                         </Button>
                     </CardFooter>
                 </Card>
-                 <Card className="flex flex-col">
+                 <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
                     <CardHeader>
                     <CardTitle>Request Leave</CardTitle>
                     <CardDescription>Submit a request for a leave of absence.</CardDescription>
@@ -170,7 +170,7 @@ export default function StudentDashboard() {
                     </Button>
                     </CardFooter>
                 </Card>
-                <Card>
+                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
                     <CardHeader>
                          <CardTitle className="flex items-center">
                             <Bell className="w-5 h-5 mr-2"/>
