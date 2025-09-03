@@ -269,67 +269,17 @@ export default function FacultyDashboard() {
 
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-         <div className="space-y-6">
-            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-                <CardHeader>
-                <CardTitle>Welcome, {user?.name || "Faculty Member"}!</CardTitle>
-                <CardDescription>
-                    This is your central hub for managing your schedule and administrative tasks.
-                </CardDescription>
-                </CardHeader>
-            </Card>
-            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <CalendarDays className="w-5 h-5 mr-2" />
-                        Monthly Calendar
-                    </CardTitle>
-                    <CardDescription>Your teaching days and personal events at a glance. Click a day to add an event.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                   <Popover>
-                        <PopoverTrigger asChild>
-                          <div>
-                            <ScheduleCalendar 
-                              schedule={schedule} 
-                              leaveRequests={leaveRequests} 
-                              events={events}
-                              onDayClick={handleDayClick}
-                            />
-                          </div>
-                        </PopoverTrigger>
-                        {selectedDateEvents.length > 0 && (
-                          <PopoverContent className="w-80">
-                            <div className="grid gap-4">
-                              <div className="space-y-2">
-                                <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  You have {selectedDateEvents.length} event(s) today.
-                                </p>
-                              </div>
-                              <div className="grid gap-2">
-                                {selectedDateEvents.map(event => (
-                                  <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
-                                    <p className="text-sm font-medium">{event.title}</p>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                               <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
-                                <Plus className="h-4 w-4 mr-2"/>
-                                Add Event
-                               </Button>
-                            </div>
-                          </PopoverContent>
-                        )}
-                      </Popover>
-                </CardContent>
-            </Card>
-         </div>
-         <div className="space-y-6">
+       <div className="space-y-6">
+          <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+              <CardHeader>
+              <CardTitle>Welcome, {user?.name || "Faculty Member"}!</CardTitle>
+              <CardDescription>
+                  This is your central hub for managing your schedule and administrative tasks.
+              </CardDescription>
+              </CardHeader>
+          </Card>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                 <CardHeader>
                     <CardTitle className="flex items-center">
@@ -376,7 +326,57 @@ export default function FacultyDashboard() {
                 </Button>
                 </CardFooter>
             </Card>
-         </div>
+        </div>
+
+        <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
+            <CardHeader>
+                <CardTitle className="flex items-center">
+                    <CalendarDays className="w-5 h-5 mr-2" />
+                    Monthly Calendar
+                </CardTitle>
+                <CardDescription>Your teaching days and personal events at a glance. Click a day to add an event.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+                <Popover>
+                    <PopoverTrigger asChild>
+                      <div>
+                        <ScheduleCalendar 
+                          schedule={schedule} 
+                          leaveRequests={leaveRequests} 
+                          events={events}
+                          onDayClick={handleDayClick}
+                        />
+                      </div>
+                    </PopoverTrigger>
+                    {selectedDateEvents.length > 0 && (
+                      <PopoverContent className="w-80">
+                        <div className="grid gap-4">
+                          <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              You have {selectedDateEvents.length} event(s) today.
+                            </p>
+                          </div>
+                          <div className="grid gap-2">
+                            {selectedDateEvents.map(event => (
+                              <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
+                                <p className="text-sm font-medium">{event.title}</p>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                           <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
+                            <Plus className="h-4 w-4 mr-2"/>
+                            Add Event
+                           </Button>
+                        </div>
+                      </PopoverContent>
+                    )}
+                  </Popover>
+            </CardContent>
+        </Card>
        </div>
 
 
