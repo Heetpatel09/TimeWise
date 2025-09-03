@@ -22,13 +22,8 @@ let db: Database.Database;
 const dbFilePath = './timewise.db';
 
 function initializeDb() {
+  const dbExists = fs.existsSync(dbFilePath);
   console.log('Initializing database connection...');
-  // Delete the old database file to ensure a clean slate on startup.
-  // This is the key to fixing the persistent login issues.
-  if (fs.existsSync(dbFilePath)) {
-    fs.unlinkSync(dbFilePath);
-    console.log('Deleted existing database file to ensure a fresh start.');
-  }
   
   db = new Database(dbFilePath);
 
@@ -133,11 +128,8 @@ function initializeDb() {
     );
   `);
   
-  // Check if seeding is needed by looking for any faculty member.
-  // This is a proxy to see if the initial data has been inserted.
-  const seedCheck = db.prepare(`SELECT id FROM faculty LIMIT 1`).get();
-
-  if (!seedCheck) {
+  // Seed the database only if it's newly created
+  if (!dbExists) {
     console.log('Database appears empty, running initial data seeding...');
 
     const insertSubject = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
@@ -162,7 +154,6 @@ function initializeDb() {
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
         
-        // Seed credentials directly and reliably.
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin');
         
         faculty.forEach(f => {
@@ -193,3 +184,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
