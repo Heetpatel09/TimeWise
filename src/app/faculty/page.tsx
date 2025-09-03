@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell, CalendarDays, Circle, Dot, Trash2, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
@@ -137,13 +137,11 @@ export default function FacultyDashboard() {
             setIsLoading(true);
             const [
               allFaculty, 
-              userNotifications, 
               allSchedule, 
               allLeaveRequests,
               userEvents
             ] = await Promise.all([
                 getFaculty(),
-                getNotificationsForUser(user.id),
                 getSchedule(),
                 getLeaveRequests(),
                 getEventsForUser(user.id)
@@ -156,7 +154,6 @@ export default function FacultyDashboard() {
             setSchedule(facultySchedule);
             setLeaveRequests(allLeaveRequests.filter(lr => lr.requesterId === user.id));
             setEvents(userEvents);
-            setNotifications(userNotifications);
             setIsLoading(false);
         }
     }
@@ -272,113 +269,118 @@ export default function FacultyDashboard() {
 
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
-      <div className="space-y-6">
+       <div className="space-y-6">
             <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-              <CardHeader>
-              <CardTitle>Welcome, {user?.name || "Faculty Member"}!</CardTitle>
-              <CardDescription>
-                  This is your central hub for managing your schedule and administrative tasks.
-              </CardDescription>
-              </CardHeader>
-          </Card>
-           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                 <Card className="flex flex-col lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Flame className="w-6 h-6 mr-2 text-orange-500"/>
-                            Teaching Streak
-                        </CardTitle>
-                        <CardDescription>For your consistent dedication.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-center flex-grow">
-                        <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
-                        <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
-                    </CardContent>
-                </Card>
-                <Card className="flex flex-col lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
-                    <CardHeader>
-                    <CardTitle>Request Leave</CardTitle>
-                    <CardDescription>Submit a request for a leave of absence.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground">
-                        Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
-                    </p>
-                    </CardContent>
-                    <CardFooter>
-                    <Button onClick={() => setLeaveDialogOpen(true)}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        Open Leave Form
-                    </Button>
-                    </CardFooter>
-                </Card>
-                <Card className="flex flex-col lg:col-span-1 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
-                    <CardHeader>
-                    <CardTitle>Manage Schedule</CardTitle>
-                    <CardDescription>View your weekly schedule and request changes.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground">
-                        Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
-                    </p>
-                    </CardContent>
-                    <CardFooter>
-                    <Button onClick={() => setScheduleModalOpen(true)}>
-                        View Schedule <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                    </CardFooter>
-                </Card>
-           </div>
-        
-            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200 h-full">
                 <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <CalendarDays className="w-5 h-5 mr-2" />
-                        Monthly Calendar
-                    </CardTitle>
-                    <CardDescription>Your teaching days and personal events at a glance. Click a day to add an event.</CardDescription>
+                    <CardTitle>Welcome, {user?.name || "Faculty Member"}!</CardTitle>
+                    <CardDescription>
+                        This is your central hub for managing your schedule and administrative tasks.
+                    </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                          <div className='w-full'>
-                            <ScheduleCalendar 
-                              schedule={schedule} 
-                              leaveRequests={leaveRequests} 
-                              events={events}
-                              onDayClick={handleDayClick}
-                            />
-                          </div>
-                        </PopoverTrigger>
-                        {selectedDateEvents.length > 0 && (
-                          <PopoverContent className="w-80">
-                            <div className="grid gap-4">
-                              <div className="space-y-2">
-                                <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  You have {selectedDateEvents.length} event(s) today.
-                                </p>
-                              </div>
-                              <div className="grid gap-2">
-                                {selectedDateEvents.map(event => (
-                                  <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
-                                    <p className="text-sm font-medium">{event.title}</p>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                               <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
-                                <Plus className="h-4 w-4 mr-2"/>
-                                Add Event
-                               </Button>
-                            </div>
-                          </PopoverContent>
-                        )}
-                      </Popover>
-                </CardContent>
             </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 space-y-6">
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <Flame className="w-6 h-6 mr-2 text-orange-500"/>
+                                Teaching Streak
+                            </CardTitle>
+                            <CardDescription>For your consistent dedication.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
+                            <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
+                        <CardHeader>
+                            <CardTitle>Request Leave</CardTitle>
+                            <CardDescription>Submit a request for a leave of absence.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => setLeaveDialogOpen(true)}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                Open Leave Form
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
+                        <CardHeader>
+                            <CardTitle>Manage Schedule</CardTitle>
+                            <CardDescription>View your weekly schedule and request changes.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => setScheduleModalOpen(true)}>
+                                View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+
+                <div className="lg:col-span-2">
+                     <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200 h-full">
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <CalendarDays className="w-5 h-5 mr-2" />
+                                Monthly Calendar
+                            </CardTitle>
+                            <CardDescription>Your teaching days and personal events at a glance. Click a day to add an event.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                  <div className='w-full'>
+                                    <ScheduleCalendar 
+                                      schedule={schedule} 
+                                      leaveRequests={leaveRequests} 
+                                      events={events}
+                                      onDayClick={handleDayClick}
+                                    />
+                                  </div>
+                                </PopoverTrigger>
+                                {selectedDateEvents.length > 0 && (
+                                  <PopoverContent className="w-80">
+                                    <div className="grid gap-4">
+                                      <div className="space-y-2">
+                                        <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
+                                        <p className="text-sm text-muted-foreground">
+                                          You have {selectedDateEvents.length} event(s) today.
+                                        </p>
+                                      </div>
+                                      <div className="grid gap-2">
+                                        {selectedDateEvents.map(event => (
+                                          <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
+                                            <p className="text-sm font-medium">{event.title}</p>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                       <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
+                                        <Plus className="h-4 w-4 mr-2"/>
+                                        Add Event
+                                       </Button>
+                                    </div>
+                                  </PopoverContent>
+                                )}
+                              </Popover>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
        </div>
 
 
@@ -522,6 +524,7 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   );
 }
+
 
 
 
