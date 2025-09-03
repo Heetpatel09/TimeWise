@@ -34,6 +34,7 @@ export interface Faculty {
   department: string;
   streak: number;
   avatar?: string;
+  profileCompleted: number;
 }
 
 export interface Classroom {

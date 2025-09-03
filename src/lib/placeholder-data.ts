@@ -17,18 +17,18 @@ export const classes: Class[] = [
 ];
 
 export const students: Student[] = [
-  { id: 'STU001', name: 'Alice Johnson', email: 'abc@example.com', classId: 'CLS004', streak: 12 },
-  { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003', streak: 5 },
-  { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004', streak: 23 },
+  { id: 'STU001', name: 'Alice Johnson', email: 'abc@example.com', classId: 'CLS004', streak: 12, profileCompleted: 0 },
+  { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003', streak: 5, profileCompleted: 0 },
+  { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004', streak: 23, profileCompleted: 0 },
 ];
 
 export const faculty: Faculty[] = [
-  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', department: 'Computer Engineering', streak: 45 },
-  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', department: 'Computer Engineering', streak: 8 },
-  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering', streak: 15 },
-  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', department: 'Computer Engineering', streak: 0 },
-  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', department: 'Computer Engineering', streak: 0 },
-  { id: 'FAC006', name: 'Dr. Abhinav', email: 'abhinav@example.com', department: 'Computer Engineering', streak: 25 },
+  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', department: 'Computer Engineering', streak: 45, profileCompleted: 0 },
+  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', department: 'Computer Engineering', streak: 8, profileCompleted: 0 },
+  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', department: 'Computer Engineering', streak: 15, profileCompleted: 0 },
+  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', department: 'Computer Engineering', streak: 0, profileCompleted: 0 },
+  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', department: 'Computer Engineering', streak: 0, profileCompleted: 0 },
+  { id: 'FAC006', name: 'Dr. Abhinav', email: 'abhinav@example.com', department: 'Computer Engineering', streak: 25, profileCompleted: 0 },
 ];
 
 export const classrooms: Classroom[] = [

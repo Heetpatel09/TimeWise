@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -17,24 +18,25 @@ function revalidateAll() {
 
 export async function getFaculty(): Promise<Faculty[]> {
   const db = getDb();
-  const stmt = db.prepare('SELECT id, name, email, department, streak, avatar FROM faculty');
+  const stmt = db.prepare('SELECT * FROM faculty');
   const results = stmt.all() as any[];
   // Ensure plain objects are returned
   return JSON.parse(JSON.stringify(results.map(f => ({ ...f, avatar: f.avatar || `https://avatar.vercel.sh/${f.email}.png` }))));
 }
 
-export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak?: number }) {
+export async function addFaculty(item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted'> & { streak?: number, profileCompleted?: number }) {
     const db = getDb();
     const id = `FAC${Date.now()}`;
     const newItem: Faculty = {
         ...item,
         id,
         streak: item.streak || 0,
-        avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`
+        avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
+        profileCompleted: item.profileCompleted || 0
     };
     
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar);
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar, newItem.profileCompleted);
 
     const initialPassword = randomBytes(8).toString('hex');
     await addCredential({
@@ -42,6 +44,7 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
       email: newItem.email,
       password: initialPassword,
       role: 'faculty',
+      requiresPasswordChange: true,
     });
 
     // Generate welcome notification
@@ -72,8 +75,8 @@ export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
         throw new Error("Faculty member not found.");
     }
     
-    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.id);
+    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ?, profileCompleted = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.id);
 
     if (oldFaculty.email !== updatedItem.email) {
         await addCredential({

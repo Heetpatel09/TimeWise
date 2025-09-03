@@ -26,7 +26,34 @@ function initializeDb() {
   const dbExists = fs.existsSync(dbFilePath);
   db = new Database(dbFilePath);
 
-  // Use "IF NOT EXISTS" for every table to make initialization idempotent
+  if (!dbExists) {
+    console.log('Database does not exist, creating and seeding...');
+    createSchemaAndSeed();
+  } else {
+    console.log('Database exists, checking schema...');
+    // Add migration logic here if needed in the future
+    // For now, we assume if the file exists, the schema is correct.
+    // A simple check for a newer column can decide if we need to migrate/re-create.
+    try {
+        db.prepare('SELECT profileCompleted FROM faculty LIMIT 1').get();
+    } catch (e) {
+        console.log('Detected old schema, re-creating database.');
+        db.close();
+        fs.unlinkSync(dbFilePath);
+        db = new Database(dbFilePath);
+        createSchemaAndSeed();
+    }
+  }
+
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+
+  return db;
+}
+
+
+function createSchemaAndSeed() {
+   // Use "IF NOT EXISTS" for every table to make initialization idempotent
   db.exec(`
     CREATE TABLE IF NOT EXISTS subjects (
         id TEXT PRIMARY KEY,
@@ -53,7 +80,8 @@ function initializeDb() {
         email TEXT NOT NULL,
         department TEXT NOT NULL,
         streak INTEGER NOT NULL,
-        avatar TEXT
+        avatar TEXT,
+        profileCompleted INTEGER NOT NULL DEFAULT 0
     );
      CREATE TABLE IF NOT EXISTS students (
         id TEXT PRIMARY KEY,
@@ -129,14 +157,11 @@ function initializeDb() {
     );
   `);
   
-  // Seed the database only if it was newly created
-  if (!dbExists) {
-    console.log('Database appears empty, running initial data seeding...');
-
+  // Seed the database
     const insertSubject = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertFaculty = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT INTO classrooms (id, name, type) VALUES (?, ?, ?)');
     const insertSchedule = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -148,7 +173,7 @@ function initializeDb() {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
-        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null));
+        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0));
         students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0));
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status));
@@ -157,24 +182,18 @@ function initializeDb() {
         
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
-        insertUser.run('turing@example.com', 'FAC001', 'faculty123', 'faculty', 0);
-        insertUser.run('lovelace@example.com', 'FAC002', 'faculty123', 'faculty', 0);
-        insertUser.run('hopper@example.com', 'FAC003', 'faculty123', 'faculty', 0);
-        insertUser.run('neumann@example.com', 'FAC004', 'faculty123', 'faculty', 0);
-        insertUser.run('knuth@example.com', 'FAC005', 'faculty123', 'faculty', 0);
-        insertUser.run('abhinav@example.com', 'FAC006', 'faculty123', 'faculty', 0);
+        insertUser.run('turing@example.com', 'FAC001', 'faculty123', 'faculty', 1);
+        insertUser.run('lovelace@example.com', 'FAC002', 'faculty123', 'faculty', 1);
+        insertUser.run('hopper@example.com', 'FAC003', 'faculty123', 'faculty', 1);
+        insertUser.run('neumann@example.com', 'FAC004', 'faculty123', 'faculty', 1);
+        insertUser.run('knuth@example.com', 'FAC005', 'faculty123', 'faculty', 1);
+        insertUser.run('abhinav@example.com', 'FAC006', 'faculty123', 'faculty', 1);
         
         insertUser.run('abc@example.com', 'STU001', '123', 'student', 1);
         insertUser.run('bob@example.com', 'STU002', 'student123', 'student', 1);
         insertUser.run('charlie@example.com', 'STU003', 'student123', 'student', 1);
     })();
     console.log('Database initialized and seeded successfully.');
-  } 
-
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
-
-  return db;
 }
 
 

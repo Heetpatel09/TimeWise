@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
-import type { Student, Notification, Subject, Class } from '@/lib/types';
+import type { Student, Notification, Subject, EnrichedSchedule } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,10 +17,34 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { addLeaveRequest } from '@/lib/services/leave';
-import { getSubjectsForStudent } from './actions';
+import { getSubjectsForStudent, getTimetableDataForStudent } from './actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
 
+function ScheduleCalendar({ schedule }: { schedule: EnrichedSchedule[] }) {
+    const scheduledDates = schedule.map(slot => {
+        // This is a bit of a hack since we don't have real dates
+        // We'll simulate the current week
+        const dayOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].indexOf(slot.day);
+        const today = new Date();
+        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday ...
+        const result = new Date();
+        result.setDate(today.getDate() - (currentDay - 1) + dayOfWeek);
+        return result;
+    });
+
+    return (
+        <Calendar
+            mode="multiple"
+            selected={scheduledDates}
+            className="rounded-md border"
+             classNames={{
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
+            }}
+        />
+    )
+}
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -34,17 +58,19 @@ export default function StudentDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCatalogOpen, setCatalogOpen] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     async function loadData() {
       if (user) {
         setIsLoading(true);
-        const [allStudents, userNotifications] = await Promise.all([
+        const [studentData, userNotifications, timetableData] = await Promise.all([
             getStudents(),
-            getNotificationsForUser(user.id)
+            getNotificationsForUser(user.id),
+            getTimetableDataForStudent(user.id)
         ]);
-        const currentStudent = allStudents.find(s => s.id === user.id);
+        const currentStudent = studentData.find(s => s.id === user.id);
         if (currentStudent) {
             setStudent(currentStudent);
             const studentSubjects = await getSubjectsForStudent(currentStudent.id);
@@ -52,6 +78,7 @@ export default function StudentDashboard() {
         }
         
         setNotifications(userNotifications);
+        setSchedule(timetableData.schedule);
         setIsLoading(false);
       }
     }
@@ -125,6 +152,18 @@ export default function StudentDashboard() {
                     </CardHeader>
                     <CardContent>
                         <TimetableView />
+                    </CardContent>
+                </Card>
+                <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-300">
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <CalendarDays className="w-5 h-5 mr-2" />
+                            Monthly Calendar
+                        </CardTitle>
+                        <CardDescription>Your class days at a glance.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex justify-center">
+                       <ScheduleCalendar schedule={schedule} />
                     </CardContent>
                 </Card>
             </div>

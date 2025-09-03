@@ -16,14 +16,42 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell } from 'lucide-react';
+import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, Bell, CalendarDays } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
 import { addLeaveRequest } from '@/lib/services/leave';
 import { getFaculty } from '@/lib/services/faculty';
-import type { Faculty as FacultyType, Notification } from '@/lib/types';
+import type { Faculty as FacultyType, Notification, EnrichedSchedule } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser } from '@/lib/services/notifications';
+import { getSchedule } from '@/lib/services/schedule';
+import { Calendar } from '@/components/ui/calendar';
+import { parse, getDay } from 'date-fns';
+
+function ScheduleCalendar({ schedule }: { schedule: EnrichedSchedule[] }) {
+    const scheduledDates = schedule.map(slot => {
+        // This is a bit of a hack since we don't have real dates
+        // We'll simulate the current week
+        const dayOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].indexOf(slot.day);
+        const today = new Date();
+        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday ...
+        const result = new Date();
+        result.setDate(today.getDate() - (currentDay - 1) + dayOfWeek);
+        return result;
+    });
+
+    return (
+        <Calendar
+            mode="multiple"
+            selected={scheduledDates}
+            className="rounded-md border"
+            classNames={{
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
+            }}
+        />
+    )
+}
+
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -35,6 +63,7 @@ export default function FacultyDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentFaculty, setCurrentFaculty] = useState<FacultyType | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -42,13 +71,17 @@ export default function FacultyDashboard() {
     async function loadData() {
         if (user) {
             setIsLoading(true);
-            const [allFaculty, userNotifications] = await Promise.all([
+            const [allFaculty, userNotifications, allSchedule] = await Promise.all([
                 getFaculty(),
-                getNotificationsForUser(user.id)
+                getNotificationsForUser(user.id),
+                getSchedule()
             ]);
             
             const fac = allFaculty.find(f => f.id === user.id);
             if (fac) setCurrentFaculty(fac);
+            
+            const facultySchedule = allSchedule.filter(s => s.facultyId === user.id) as EnrichedSchedule[];
+            setSchedule(facultySchedule);
 
             setNotifications(userNotifications);
             setIsLoading(false);
@@ -109,7 +142,7 @@ export default function FacultyDashboard() {
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         <div className="lg:col-span-2">
+         <div className="lg:col-span-2 space-y-6">
             <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
                 <CardHeader>
                 <CardTitle>Welcome, {user?.name || "Faculty Member"}!</CardTitle>
@@ -153,6 +186,18 @@ export default function FacultyDashboard() {
                             </CardFooter>
                         </Card>
                     </div>
+                </CardContent>
+            </Card>
+            <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
+                <CardHeader>
+                    <CardTitle className="flex items-center">
+                        <CalendarDays className="w-5 h-5 mr-2" />
+                        Monthly Calendar
+                    </CardTitle>
+                    <CardDescription>Your teaching days at a glance.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                   <ScheduleCalendar schedule={schedule} />
                 </CardContent>
             </Card>
          </div>
