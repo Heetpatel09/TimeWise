@@ -172,8 +172,7 @@ export default function Home() {
           <TimeWiseLogo />
         </div>
         <p className="mt-6 text-lg md:text-xl max-w-2xl text-primary/80 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            The intelligent, AI-powered solution for effortless academic scheduling.
-            Simplify complexity, resolve conflicts, and create perfect timetables in minutes.
+            Developed with scalability, security, and ease of use in mind, TimeWise represents a step forward in modern academic management, ensuring that students and faculty can focus on learning and teaching while the system takes care of the rest.
         </p>
 
         <div className="mt-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
