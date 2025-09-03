@@ -278,43 +278,6 @@ export default function FacultyDashboard() {
                     This is your central hub for managing your schedule and administrative tasks.
                 </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Card className="flex flex-col">
-                            <CardHeader>
-                            <CardTitle>Request Leave</CardTitle>
-                            <CardDescription>Submit a request for a leave of absence.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                            <p className="text-sm text-muted-foreground">
-                                Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
-                            </p>
-                            </CardContent>
-                            <CardFooter>
-                            <Button onClick={() => setLeaveDialogOpen(true)}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                Open Leave Form
-                            </Button>
-                            </CardFooter>
-                        </Card>
-                        <Card className="flex flex-col">
-                            <CardHeader>
-                            <CardTitle>Manage Schedule</CardTitle>
-                            <CardDescription>View your weekly schedule and request changes.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                            <p className="text-sm text-muted-foreground">
-                                Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
-                            </p>
-                            </CardContent>
-                            <CardFooter>
-                            <Button onClick={() => setScheduleModalOpen(true)}>
-                                View Schedule <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                            </CardFooter>
-                        </Card>
-                    </div>
-                </CardContent>
             </Card>
             <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
                 <CardHeader>
@@ -380,27 +343,38 @@ export default function FacultyDashboard() {
                     <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
                 </CardContent>
             </Card>
-            <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
+            <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-400">
                 <CardHeader>
-                        <CardTitle className="flex items-center">
-                        <Bell className="w-5 h-5 mr-2"/>
-                        Notifications
-                    </CardTitle>
-                    <CardDescription>Updates and announcements.</CardDescription>
+                <CardTitle>Request Leave</CardTitle>
+                <CardDescription>Submit a request for a leave of absence.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    {notifications.length > 0 ? (
-                        <ul className="space-y-3">
-                            {notifications.slice(0, 5).map(n => (
-                                <li key={n.id} className="text-sm text-muted-foreground border-l-2 pl-3 border-primary animate-in fade-in slide-in-from-top-2 duration-300">{n.message}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div className="text-center text-muted-foreground py-4">
-                            <p>No new notifications.</p>
-                        </div>
-                    )}
+                <CardContent className="flex-grow">
+                <p className="text-sm text-muted-foreground">
+                    Need to take time off? Fill out the leave request form and it will be sent to the administration for approval.
+                </p>
                 </CardContent>
+                <CardFooter>
+                <Button onClick={() => setLeaveDialogOpen(true)}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    Open Leave Form
+                </Button>
+                </CardFooter>
+            </Card>
+            <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
+                <CardHeader>
+                <CardTitle>Manage Schedule</CardTitle>
+                <CardDescription>View your weekly schedule and request changes.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                <p className="text-sm text-muted-foreground">
+                    Access your detailed weekly timetable. If you need to request a change for a specific class, you can do so from there.
+                </p>
+                </CardContent>
+                <CardFooter>
+                <Button onClick={() => setScheduleModalOpen(true)}>
+                    View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                </CardFooter>
             </Card>
          </div>
        </div>
