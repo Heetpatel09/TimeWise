@@ -6,19 +6,12 @@ import { getFaculty } from '@/lib/services/faculty';
 import type { Student, Faculty } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Crown, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { handleGenerateCrest } from './actions';
-import Image from 'next/image';
-import { useToast } from '@/hooks/use-toast';
+import { Loader2, Crown } from 'lucide-react';
 
-const ChampionCard = ({ user, role, achievement, onGenerate, crest, isGenerating }: {
+const ChampionCard = ({ user, role, achievement }: {
     user: Student | Faculty,
     role: 'student' | 'faculty',
     achievement: string,
-    onGenerate: () => void,
-    crest: string | null,
-    isGenerating: boolean
 }) => {
     return (
         <Card className="flex flex-col items-center text-center p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -34,24 +27,7 @@ const ChampionCard = ({ user, role, achievement, onGenerate, crest, isGenerating
                 </Avatar>
                 <p className="text-4xl font-bold text-primary">{user.streak}</p>
                 <p className="text-muted-foreground">Day Streak</p>
-
-                <div className="mt-6 h-40 w-40 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50">
-                    {isGenerating ? (
-                        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                    ) : crest && crest !== 'error' ? (
-                        <Image src={crest} alt={`${user.name}'s Crest`} width={150} height={150} className="object-contain animate-in fade-in zoom-in-50" />
-                    ) : (
-                         <p className="text-xs text-muted-foreground p-2">Click below to generate a unique crest!</p>
-                    )}
-                </div>
-
             </CardContent>
-            <CardFooter>
-                 <Button onClick={onGenerate} disabled={isGenerating}>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {isGenerating ? 'Generating...' : 'Generate Crest'}
-                 </Button>
-            </CardFooter>
         </Card>
     );
 };
@@ -61,11 +37,6 @@ export default function HallOfFamePage() {
     const [topStudent, setTopStudent] = useState<Student | null>(null);
     const [topFaculty, setTopFaculty] = useState<Faculty | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [studentCrest, setStudentCrest] = useState<string | null>(null);
-    const [facultyCrest, setFacultyCrest] = useState<string | null>(null);
-    const [isGeneratingStudentCrest, setIsGeneratingStudentCrest] = useState(false);
-    const [isGeneratingFacultyCrest, setIsGeneratingFacultyCrest] = useState(false);
-    const { toast } = useToast();
 
     useEffect(() => {
         async function loadData() {
@@ -80,58 +51,6 @@ export default function HallOfFamePage() {
         }
         loadData();
     }, []);
-
-    const handleGenerationResult = (result: { crestDataUri: string }, role: 'student' | 'faculty') => {
-        if (result.crestDataUri === 'error' || !result.crestDataUri) {
-            toast({
-                title: 'Crest Generation Failed',
-                description: 'The AI could not generate a crest at this time. Please try again later.',
-                variant: 'destructive',
-            });
-            if (role === 'student') setStudentCrest(null);
-            else setFacultyCrest(null);
-        } else {
-            if (role === 'student') setStudentCrest(result.crestDataUri);
-            else setFacultyCrest(result.crestDataUri);
-        }
-    }
-
-    const generateStudentCrest = async () => {
-        if (!topStudent) return;
-        setIsGeneratingStudentCrest(true);
-        setStudentCrest(null);
-        try {
-            const result = await handleGenerateCrest({
-                name: topStudent.name,
-                role: 'student',
-                achievement: 'Top Attendance Streak'
-            });
-            handleGenerationResult(result, 'student');
-        } catch (e) {
-            handleGenerationResult({crestDataUri: 'error'}, 'student');
-        } finally {
-            setIsGeneratingStudentCrest(false);
-        }
-    };
-
-    const generateFacultyCrest = async () => {
-        if (!topFaculty) return;
-        setIsGeneratingFacultyCrest(true);
-        setFacultyCrest(null);
-         try {
-            const result = await handleGenerateCrest({
-                name: topFaculty.name,
-                role: 'faculty',
-                achievement: 'Top Teaching Streak'
-            });
-            handleGenerationResult(result, 'faculty');
-        } catch (e) {
-            handleGenerationResult({crestDataUri: 'error'}, 'faculty');
-        } finally {
-            setIsGeneratingFacultyCrest(false);
-        }
-    };
-
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -152,9 +71,6 @@ export default function HallOfFamePage() {
                         user={topFaculty} 
                         role="faculty" 
                         achievement="Top Teaching Streak"
-                        onGenerate={generateFacultyCrest}
-                        crest={facultyCrest}
-                        isGenerating={isGeneratingFacultyCrest}
                     />
                 ) : <p>No faculty data available.</p>}
                 
@@ -163,9 +79,6 @@ export default function HallOfFamePage() {
                         user={topStudent} 
                         role="student" 
                         achievement="Top Attendance Streak"
-                        onGenerate={generateStudentCrest}
-                        crest={studentCrest}
-                        isGenerating={isGeneratingStudentCrest}
                     />
                 ) : <p>No student data available.</p>}
             </div>
