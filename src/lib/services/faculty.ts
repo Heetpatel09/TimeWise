@@ -72,7 +72,8 @@ export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
     
     revalidateAll();
     const updatedFaculty = { ...updatedItem, avatar: updatedItem.avatar || `https://avatar.vercel.sh/${updatedItem.email}.png`};
-    return updatedFaculty;
+    const finalFaculty = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as Faculty;
+    return Promise.resolve(finalFaculty);
 }
 
 export async function deleteFaculty(id: string) {

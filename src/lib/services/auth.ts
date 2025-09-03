@@ -19,15 +19,23 @@ export async function login(email: string, password: string): Promise<User> {
     if (credentialEntry && credentialEntry.password === password) {
         let details: any;
         if (credentialEntry.role === 'admin') {
-            details = {
-                id: credentialEntry.userId,
-                name: 'Admin',
-                email: credentialEntry.email,
-                // The admin user doesn't have a separate profile table, so we need to get avatar from somewhere.
-                // Let's assume there's a convention or a default. For now, we'll use a placeholder that can be updated in context.
-                // The actual avatar will be stored in localStorage via the AuthContext. This is a bit of a workaround for admin.
-                avatar: `https://avatar.vercel.sh/${credentialEntry.email}.png`,
-            };
+            // Admin details are a combination of credentials table and maybe a (hypothetical) admin profile table.
+            // For this app, the "admin" user is a singleton concept. We'll get their details from the db.
+             details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
+             if (!details) {
+                // This case happens if the admin user isn't in the faculty table (which is our placeholder for user profiles)
+                // This is a bit of a hack for this specific app structure.
+                 details = {
+                    id: credentialEntry.userId,
+                    name: 'Admin', // Default name
+                    email: credentialEntry.email,
+                    avatar: `https://avatar.vercel.sh/${credentialEntry.email}.png`
+                };
+                // Let's check if there's an entry in faculty table we can use as a profile
+                const adminProfile = db.prepare('SELECT * FROM faculty WHERE id = ?').get('admin-user');
+                if(adminProfile) details = adminProfile;
+
+             }
         } else if (credentialEntry.role === 'faculty') {
             details = db.prepare('SELECT * FROM faculty WHERE id = ?').get(credentialEntry.userId);
         } else {
@@ -52,9 +60,12 @@ export async function login(email: string, password: string): Promise<User> {
 }
 
 export async function updateAdmin(updatedDetails: { id: string; name: string, email: string, avatar: string }): Promise<User> {
-    // Admin details are not stored in a separate profile table, so we just return the user object
-    // to be stored in the client-side AuthContext. The password would be handled by addCredential.
-    // This is primarily for updating the user object in the auth context.
+    const db = getDb();
+    
+    // For this app, we're storing the admin's profile *in the faculty table* as a workaround.
+    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, avatar = ? WHERE id = ?');
+    stmt.run(updatedDetails.name, updatedDetails.email, updatedDetails.avatar, updatedDetails.id);
+
     const user: User = {
         id: updatedDetails.id,
         name: updatedDetails.name,
@@ -62,7 +73,6 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
         avatar: updatedDetails.avatar,
         role: 'admin',
     };
-    // No database write for admin details besides credentials.
     return Promise.resolve(user);
 }
   
@@ -83,6 +93,9 @@ export async function addCredential(credential: {userId: string, email: string, 
         throw new Error("Email is already in use by another account.");
     }
     else {
+        // This handles a user changing their email. We should remove the old one.
+        db.prepare('DELETE FROM user_credentials WHERE userId = ?').run(credential.userId);
+
         // If the user is changing their email or it's a new credential set for the same user
         const stmt = db.prepare('INSERT INTO user_credentials (userId, email, password, role) VALUES (?, ?, ?, ?)');
         stmt.run(credential.userId, credential.email, credential.password, credential.role);

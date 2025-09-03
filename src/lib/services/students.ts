@@ -71,8 +71,8 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.id);
     
     revalidateAll();
-    const updatedStudent = { ...updatedItem, avatar: updatedItem.avatar || `https://avatar.vercel.sh/${updatedItem.email}.png`};
-    return updatedStudent;
+    const finalStudent = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as Student;
+    return Promise.resolve(finalStudent);
 }
 
 export async function deleteStudent(id: string) {
