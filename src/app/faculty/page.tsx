@@ -95,7 +95,7 @@ function ScheduleCalendar({
                 </div>
               }
             }}
-            className="rounded-md border"
+            className="rounded-md border w-full"
             footer={
               <div className="text-sm text-muted-foreground p-2 flex flex-col gap-2">
                   <div className="flex items-center gap-2"><Circle className="w-3 h-3 text-primary fill-primary" /> Scheduled Class</div>
@@ -279,7 +279,7 @@ export default function FacultyDashboard() {
               </CardHeader>
           </Card>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                 <CardHeader>
                     <CardTitle className="flex items-center">
@@ -336,10 +336,10 @@ export default function FacultyDashboard() {
                 </CardTitle>
                 <CardDescription>Your teaching days and personal events at a glance. Click a day to add an event.</CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-center">
+            <CardContent className="flex">
                 <Popover>
                     <PopoverTrigger asChild>
-                      <div>
+                      <div className='w-full'>
                         <ScheduleCalendar 
                           schedule={schedule} 
                           leaveRequests={leaveRequests} 
