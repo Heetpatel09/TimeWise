@@ -81,12 +81,14 @@ export default function StudentProfilePage() {
       try {
         const updatedStudent = await updateStudent(student);
 
-        await addCredential({
-            userId: user.id,
-            email: updatedStudent.email,
-            password: newPassword || 'student123',
-            role: 'student',
-        });
+        if (newPassword) {
+            await addCredential({
+                userId: user.id,
+                email: updatedStudent.email,
+                password: newPassword,
+                role: 'student',
+            });
+        }
         
         const updatedUser = { 
             ...user, 

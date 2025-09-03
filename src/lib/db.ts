@@ -51,7 +51,7 @@ function initializeDb() {
       CREATE TABLE faculty (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
-          email TEXT NOT NULL UNIQUE,
+          email TEXT NOT NULL,
           department TEXT NOT NULL,
           streak INTEGER NOT NULL,
           avatar TEXT
@@ -59,7 +59,7 @@ function initializeDb() {
        CREATE TABLE students (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
-          email TEXT NOT NULL UNIQUE,
+          email TEXT NOT NULL,
           classId TEXT NOT NULL,
           streak INTEGER NOT NULL,
           avatar TEXT,

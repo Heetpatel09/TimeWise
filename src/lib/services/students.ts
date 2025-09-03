@@ -77,8 +77,13 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
 
 export async function deleteStudent(id: string) {
     const db = getDb();
+    
+    const credStmt = db.prepare('DELETE FROM user_credentials WHERE userId = ?');
+    credStmt.run(id);
+
     const stmt = db.prepare('DELETE FROM students WHERE id = ?');
     stmt.run(id);
+
     revalidateAll();
     return Promise.resolve(id);
 }

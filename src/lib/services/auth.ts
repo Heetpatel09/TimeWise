@@ -66,13 +66,16 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
   
 export async function addCredential(credential: {userId: string, email: string, password?: string, role: 'admin' | 'faculty' | 'student'}): Promise<void> {
     const db = getDb();
-    const existing: { count: number } | undefined = db.prepare('SELECT count(*) as count FROM user_credentials WHERE email = ?').get(credential.email) as any;
-    if (existing && existing.count > 0) {
-        // If email exists, update the password.
-        const stmt = db.prepare('UPDATE user_credentials SET password = ? WHERE email = ?');
-        stmt.run(credential.password, credential.email);
+    const existing: { email: string } | undefined = db.prepare('SELECT email FROM user_credentials WHERE userId = ? AND email = ?').get(credential.userId, credential.email) as any;
+    
+    if (existing) {
+        // If email exists for this user, just update the password if provided.
+        if (credential.password) {
+            const stmt = db.prepare('UPDATE user_credentials SET password = ? WHERE userId = ? AND email = ?');
+            stmt.run(credential.password, credential.userId, credential.email);
+        }
     } else {
-        // If email doesn't exist, insert new credential.
+        // If email doesn't exist for this user, insert a new credential.
         const stmt = db.prepare('INSERT INTO user_credentials (userId, email, password, role) VALUES (?, ?, ?, ?)');
         stmt.run(credential.userId, credential.email, credential.password, credential.role);
     }

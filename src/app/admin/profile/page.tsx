@@ -56,7 +56,6 @@ export default function AdminProfilePage() {
 
         setIsSaving(true);
         try {
-            // This is a simplified user object for admin, so we pass the state directly.
             const updatedDetails = { id: user.id, name, email, avatar };
             const updatedUser = await updateAdmin(updatedDetails);
             

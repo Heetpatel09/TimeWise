@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -138,7 +139,7 @@ export default function FacultyManager() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(fac.id)} className="text-destructive">
+                      <DropdownMenuItem onClick={() => handleDelete(fac.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </DropdownMenuItem>

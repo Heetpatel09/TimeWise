@@ -77,8 +77,17 @@ export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
 
 export async function deleteFaculty(id: string) {
     const db = getDb();
+    
+    // Also delete from user_credentials
+    const facultyToDelete = db.prepare('SELECT email FROM faculty WHERE id = ?').get(id) as { email: string } | undefined;
+    if (facultyToDelete) {
+        const credStmt = db.prepare('DELETE FROM user_credentials WHERE userId = ?');
+        credStmt.run(id);
+    }
+
     const stmt = db.prepare('DELETE FROM faculty WHERE id = ?');
     stmt.run(id);
+
     revalidateAll();
     return Promise.resolve(id);
 }

@@ -74,13 +74,14 @@ export default function FacultyProfilePage() {
         const updatedFaculty = await updateFaculty(facultyMember);
 
         // Add new credentials for the potentially new email.
-        // Also add new credentials for the old email if the password changed.
-        await addCredential({
-            userId: user.id,
-            email: updatedFaculty.email,
-            password: newPassword || 'faculty123', // Use new password, or default if not changed
-            role: 'faculty',
-        });
+        if (newPassword) {
+            await addCredential({
+                userId: user.id,
+                email: updatedFaculty.email,
+                password: newPassword,
+                role: 'faculty',
+            });
+        }
         
         const updatedUser = { 
             ...user, 
