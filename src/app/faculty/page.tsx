@@ -31,6 +31,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { holidays } from '@/lib/holidays';
 import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
 import { format, parseISO } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
 
 function getDatesInRange(startDate: Date, endDate: Date) {
   const dates = [];
@@ -127,6 +128,7 @@ export default function FacultyDashboard() {
   const [isEventDialogOpen, setEventDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventTitle, setEventTitle] = useState('');
+  const [eventReminder, setEventReminder] = useState(true);
   const [isPending, startTransition] = useTransition();
 
   const loadData = async () => {
@@ -227,11 +229,13 @@ export default function FacultyDashboard() {
       await addEvent({
         userId: user.id,
         date: format(selectedDate, 'yyyy-MM-dd'),
-        title: eventTitle
+        title: eventTitle,
+        reminder: eventReminder
       });
       toast({ title: 'Event Added', description: 'Your event has been saved.' });
       setEventDialogOpen(false);
       setEventTitle('');
+      setEventReminder(true);
       await loadData();
     } catch(error) {
        toast({ title: 'Error', description: 'Failed to add event.', variant: 'destructive' });
@@ -475,7 +479,10 @@ export default function FacultyDashboard() {
       </Dialog>
 
       <Dialog open={isEventDialogOpen} onOpenChange={(open) => {
-        if (!open) setEventTitle('');
+        if (!open) {
+            setEventTitle('');
+            setEventReminder(true);
+        }
         setEventDialogOpen(open);
       }}>
         <DialogContent>
@@ -485,17 +492,31 @@ export default function FacultyDashboard() {
             </DialogHeader>
              <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="event-title" className="text-right">
-                    Title
-                </Label>
-                <Input
-                    id="event-title"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
-                    className="col-span-3"
-                    placeholder="e.g. John's Birthday"
-                    disabled={isSubmitting}
-                />
+                  <Label htmlFor="event-title" className="text-right">
+                      Title
+                  </Label>
+                  <Input
+                      id="event-title"
+                      value={eventTitle}
+                      onChange={(e) => setEventTitle(e.target.value)}
+                      className="col-span-3"
+                      placeholder="e.g. John's Birthday"
+                      disabled={isSubmitting}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="reminder" className="text-right flex items-center gap-2">
+                        <Bell className="w-4 h-4" />
+                        Reminder
+                    </Label>
+                    <div className="col-span-3 flex items-center">
+                        <Switch
+                            id="reminder"
+                            checked={eventReminder}
+                            onCheckedChange={setEventReminder}
+                            disabled={isSubmitting}
+                        />
+                    </div>
                 </div>
             </div>
             <DialogFooter>

@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -11,15 +12,16 @@ import { format } from 'date-fns';
 export async function getEventsForUser(userId: string): Promise<Event[]> {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM events WHERE userId = ? ORDER BY date ASC');
-  return stmt.all(userId) as Event[];
+  const results = stmt.all(userId) as any[];
+  return results.map(r => ({...r, reminder: !!r.reminder}));
 }
 
 export async function addEvent(event: Omit<Event, 'id' | 'createdAt'>): Promise<Event> {
     const db = getDb();
     const id = `EVT${Date.now()}`;
     const createdAt = new Date().toISOString();
-    const stmt = db.prepare('INSERT INTO events (id, userId, date, title, createdAt) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(id, event.userId, event.date, event.title, createdAt);
+    const stmt = db.prepare('INSERT INTO events (id, userId, date, title, reminder, createdAt) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, event.userId, event.date, event.title, event.reminder ? 1: 0, createdAt);
     
     const newEvent: Event = { ...event, id, createdAt };
     revalidatePath('/student', 'layout');
@@ -40,7 +42,7 @@ export async function checkForEventReminders(userId: string) {
   const db = getDb();
   const today = format(new Date(), 'yyyy-MM-dd');
   
-  const todaysEvents = db.prepare('SELECT * FROM events WHERE userId = ? AND date = ?').all(userId, today) as Event[];
+  const todaysEvents = db.prepare('SELECT * FROM events WHERE userId = ? AND date = ? AND reminder = 1').all(userId, today) as Event[];
 
   for (const event of todaysEvents) {
     const notificationMessage = `Reminder: "${event.title}" is today!`;

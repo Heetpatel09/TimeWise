@@ -115,5 +115,6 @@ export interface Event {
   userId: string;
   date: string;
   title: string;
+  reminder: boolean;
   createdAt: string;
 }
