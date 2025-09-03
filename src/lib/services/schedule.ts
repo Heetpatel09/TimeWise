@@ -19,25 +19,26 @@ export async function getSchedule(): Promise<Schedule[]> {
 
 function checkForConflict(item: Omit<Schedule, 'id'>, existingId?: string) {
     const db = getDb();
-    
+    const idToExclude = existingId || '---'; // Use a value that won't exist if no ID is provided
+
     // Check for class conflict
-    let stmt = db.prepare('SELECT id FROM schedule WHERE classId = ? AND day = ? AND time = ? AND id != ?');
-    let conflict = stmt.get(item.classId, item.day, item.time, existingId || '');
-    if (conflict) {
+    let classConflictStmt = db.prepare('SELECT id FROM schedule WHERE classId = ? AND day = ? AND time = ? AND id != ?');
+    let classConflict = classConflictStmt.get(item.classId, item.day, item.time, idToExclude);
+    if (classConflict) {
         throw new Error('This class is already scheduled for another subject at this time.');
     }
 
     // Check for faculty conflict
-    stmt = db.prepare('SELECT id FROM schedule WHERE facultyId = ? AND day = ? AND time = ? AND id != ?');
-    conflict = stmt.get(item.facultyId, item.day, item.time, existingId || '');
-    if (conflict) {
+    let facultyConflictStmt = db.prepare('SELECT id FROM schedule WHERE facultyId = ? AND day = ? AND time = ? AND id != ?');
+    let facultyConflict = facultyConflictStmt.get(item.facultyId, item.day, item.time, idToExclude);
+    if (facultyConflict) {
         throw new Error('This faculty member is already scheduled for another class at this time.');
     }
 
     // Check for classroom conflict
-    stmt = db.prepare('SELECT id FROM schedule WHERE classroomId = ? AND day = ? AND time = ? AND id != ?');
-    conflict = stmt.get(item.classroomId, item.day, item.time, existingId || '');
-    if (conflict) {
+    let classroomConflictStmt = db.prepare('SELECT id FROM schedule WHERE classroomId = ? AND day = ? AND time = ? AND id != ?');
+    let classroomConflict = classroomConflictStmt.get(item.classroomId, item.day, item.time, idToExclude);
+    if (classroomConflict) {
         throw new Error('This classroom is already booked at this time.');
     }
 }
