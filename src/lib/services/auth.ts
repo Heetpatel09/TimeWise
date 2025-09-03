@@ -69,21 +69,23 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
 export async function addCredential(credential: {userId: string, email: string, password?: string, role: 'admin' | 'faculty' | 'student'}): Promise<void> {
     const db = getDb();
     
-    const existing: { userId: string } | undefined = db.prepare('SELECT userId FROM user_credentials WHERE email = ?').get(credential.email) as any;
+    const existing: { userId: string, password?: string } | undefined = db.prepare('SELECT userId, password FROM user_credentials WHERE email = ?').get(credential.email) as any;
 
-    if (existing && existing.userId === credential.userId) {
-        if (credential.password) {
-            const stmt = db.prepare('UPDATE user_credentials SET password = ? WHERE userId = ? AND email = ?');
-            stmt.run(credential.password, credential.userId, credential.email);
-        }
-    } else if (existing && existing.userId !== credential.userId) {
-        throw new Error("Email is already in use by another account.");
-    }
-    else {
-        // A previous credential for this user might exist with an old email.
+    const oldCredentialForUser: {email: string} | undefined = db.prepare('SELECT email FROM user_credentials WHERE userId = ?').get(credential.userId) as any;
+
+    // This handles email changes for existing users
+    if (oldCredentialForUser && oldCredentialForUser.email !== credential.email) {
         db.prepare('DELETE FROM user_credentials WHERE userId = ?').run(credential.userId);
-
-        const stmt = db.prepare('INSERT INTO user_credentials (userId, email, password, role) VALUES (?, ?, ?, ?)');
-        stmt.run(credential.userId, credential.email, credential.password || 'placeholder', credential.role);
     }
+
+    // This handles password updates or creating new credentials
+    const passwordToSet = credential.password || existing?.password;
+    if (!passwordToSet) {
+        // This case should ideally not be hit if we always provide a password for new users.
+        // It's a fallback.
+        throw new Error("Cannot create or update credential without a password.");
+    }
+    
+    const stmt = db.prepare('INSERT OR REPLACE INTO user_credentials (userId, email, password, role) VALUES (?, ?, ?, ?)');
+    stmt.run(credential.userId, credential.email, passwordToSet, credential.role);
 }

@@ -67,9 +67,21 @@ export async function addFaculty(item: Omit<Faculty, 'id' | 'streak'> & { streak
 
 export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
     const db = getDb();
+    const oldFaculty = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as Faculty | undefined;
+    if (!oldFaculty) {
+        throw new Error("Faculty member not found.");
+    }
     
     const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ? WHERE id = ?');
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.id);
+
+    if (oldFaculty.email !== updatedItem.email) {
+        await addCredential({
+            userId: updatedItem.id,
+            email: updatedItem.email,
+            role: 'faculty',
+        });
+    }
     
     revalidateAll();
     const finalFaculty = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as Faculty;

@@ -68,10 +68,23 @@ export async function addStudent(item: Omit<Student, 'id' | 'streak'> & { streak
 
 export async function updateStudent(updatedItem: Student): Promise<Student> {
     const db = getDb();
+    const oldStudent = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as Student | undefined;
+
+    if (!oldStudent) {
+        throw new Error("Student not found.");
+    }
     
     const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ? WHERE id = ?');
     stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.id);
     
+    if (oldStudent.email !== updatedItem.email) {
+         await addCredential({
+            userId: updatedItem.id,
+            email: updatedItem.email,
+            role: 'student',
+        });
+    }
+
     revalidateAll();
     const finalStudent = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as Student;
     return Promise.resolve(finalStudent);
