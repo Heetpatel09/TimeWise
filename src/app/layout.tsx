@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className="font-body antialiased" suppressHydrationWarning>
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://storage.googleapis.com/aif-studiogpt-sc-images/2024-08-16/user_gq61y5w5u9/img_124119_1.png"
+            src="https://storage.googleapis.com/project-spark-b9c29.appspot.com/static/com.google.spark_plugin/generated_images/E240316143527_0.png"
             alt="Abstract background"
             fill
             style={{ objectFit: 'cover' }}
