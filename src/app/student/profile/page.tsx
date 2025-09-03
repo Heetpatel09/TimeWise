@@ -62,7 +62,6 @@ export default function StudentProfilePage() {
         if (student) {
             setStudent({ ...student, avatar: reader.result as string });
         }
-        toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
       };
       reader.readAsDataURL(file);
     }
@@ -82,8 +81,6 @@ export default function StudentProfilePage() {
       try {
         const updatedStudent = await updateStudent(student);
         if (newPassword) {
-             // Always use the email from the auth context for password updates,
-            // as this is the key in the users table.
             await updatePassword(user.email, newPassword);
         }
         

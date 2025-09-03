@@ -56,7 +56,6 @@ export default function FacultyProfilePage() {
         if (facultyMember) {
             setFacultyMember({ ...facultyMember, avatar: reader.result as string });
         }
-        toast({ title: "Avatar Preview Changed", description: "This is a preview. Save to apply changes." });
       };
       reader.readAsDataURL(file);
     }
@@ -74,8 +73,6 @@ export default function FacultyProfilePage() {
       try {
         const updatedFaculty = await updateFaculty(facultyMember);
         if (newPassword) {
-            // Always use the email from the auth context for password updates,
-            // as this is the key in the users table.
             await updatePassword(user.email, newPassword);
         }
         
