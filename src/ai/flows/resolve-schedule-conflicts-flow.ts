@@ -88,7 +88,6 @@ const conflictResolutionPrompt = ai.definePrompt({
     name: 'conflictResolutionPrompt',
     input: { schema: ResolveConflictsInputSchema },
     output: { schema: ResolveConflictsOutputSchema },
-    model: 'gemini-1.5-flash',
     prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable.
 
 Here are the rules and context:
