@@ -50,6 +50,7 @@ import {
 import { resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { addNotification } from '@/lib/services/notifications';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -526,42 +527,44 @@ export default function ScheduleManager() {
               The AI has resolved the schedule conflicts. Review the changes and approve to apply them.
             </DialogDescription>
           </DialogHeader>
-          <div className="my-4 space-y-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle className='text-base'>Summary of Changes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm">{aiResolution?.summary}</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className='text-base'>Notifications to be Sent</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-60 overflow-y-auto">
-                    {aiResolution?.notifications.map((notif, index) => {
-                        const user = notif.userId ? getRelationInfo(notif.userId, 'faculty') : null;
-                        const targetClass = notif.classId ? getRelationInfo(notif.classId, 'class') : null;
-                        const studentRecipients = students.filter(s => s.classId === notif.classId);
+          <ScrollArea className="max-h-[60vh] p-1">
+            <div className="my-4 space-y-4 pr-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className='text-base'>Summary of Changes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm">{aiResolution?.summary}</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className='text-base'>Notifications to be Sent</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {aiResolution?.notifications.map((notif, index) => {
+                            const user = notif.userId ? getRelationInfo(notif.userId, 'faculty') : null;
+                            const targetClass = notif.classId ? getRelationInfo(notif.classId, 'class') : null;
+                            const studentRecipients = students.filter(s => s.classId === notif.classId);
 
-                        let recipientText = "Unknown";
-                        if (user) {
-                            recipientText = user.name;
-                        } else if (targetClass) {
-                             recipientText = `All students in ${targetClass.name} (${studentRecipients.length} students)`;
-                        }
+                            let recipientText = "Unknown";
+                            if (user) {
+                                recipientText = user.name;
+                            } else if (targetClass) {
+                                recipientText = `All students in ${targetClass.name} (${studentRecipients.length} students)`;
+                            }
 
-                        return (
-                        <div key={index} className="text-sm p-2 border rounded-md bg-muted/50">
-                            <p><strong>To:</strong> {recipientText}</p>
-                            <p><strong>Message:</strong> {notif.message}</p>
-                        </div>
-                    )})}
-                </CardContent>
-            </Card>
-          </div>
-          <DialogFooter>
+                            return (
+                            <div key={index} className="text-sm p-2 border rounded-md bg-muted/50">
+                                <p><strong>To:</strong> {recipientText}</p>
+                                <p><strong>Message:</strong> {notif.message}</p>
+                            </div>
+                        )})}
+                    </CardContent>
+                </Card>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="pt-4 border-t">
             <Button variant="outline" onClick={() => setAiResolution(null)} disabled={isResolvingWithAI}>Cancel</Button>
             <Button onClick={handleApproveAIChanges} disabled={isResolvingWithAI}>
                 {isResolvingWithAI && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
