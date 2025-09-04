@@ -76,10 +76,9 @@ Here are the rules and context:
     *   The weekdays in order are Monday, Tuesday, Wednesday, Thursday, Friday.
     *   Your primary goal is to produce a valid, conflict-free schedule.
     *   You MUST NOT add or remove any classes from the original schedule. Every class must be present in the final output.
-    *   To resolve a faculty double-booking, your primary strategy is to find a free time slot on the same day for that faculty member and move one of the conflicting classes there. If no free slot is available on the same day, you should look for a free slot on the next available day. This should not affect other faculty members.
-    *   You can change the 'day', 'time', 'classroomId', or 'facultyId' for a scheduled slot to resolve a conflict.
-    *   Prioritize changing the classroom first. If that doesn't work, try changing the time slot. Changing the faculty should be a last resort.
-    *   Use the provided 'timeSlots' to find an empty slot on the same day if you need to reschedule.
+    *   When you find a conflict, you must reschedule one of the conflicting classes to another available time slot. Prioritize finding a free slot on the same day. If no slot is available on the same day, find a free slot on another day. Do not change any classes that are not part of the conflict.
+    *   You can change the 'day', 'time', or 'classroomId' for a scheduled slot to resolve a conflict. Avoid changing the faculty if possible.
+    *   Use the provided 'timeSlots' to find an empty slot.
     *   Ensure that the classroom type matches the subject type (e.g., 'lab' subjects must be in 'lab' classrooms).
 
 3.  **Output Requirements**:
