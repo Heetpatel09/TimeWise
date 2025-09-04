@@ -139,13 +139,7 @@ const AdminDashboardHome = () => {
 const AdminDashboardContent = () => {
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab');
-    const { user } = useAuth();
-
-    const { data: classes } = useQuery({ queryKey: ['classes'], queryFn: getClasses });
-    const { data: subjects } = useQuery({ queryKey: ['subjects'], queryFn: getSubjects });
-    const { data: faculty } = useQuery({ queryKey: ['faculty'], queryFn: getFaculty });
-    const { data: classrooms } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
-
+    
     const getTitleForTab = (tab: string | null) => {
       if (!tab) return "Admin Dashboard";
       const card = managementCards.find(c => c.tab === tab);
@@ -201,6 +195,7 @@ const AdminDashboardContent = () => {
         </DashboardLayout>
     );
 }
+
 
 export default function AdminDashboard() {
   return (
