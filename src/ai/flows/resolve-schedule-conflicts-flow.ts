@@ -53,34 +53,26 @@ const ClassroomSchema = z.object({
   type: z.enum(["classroom", "lab"]),
 });
 
-const StudentSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  classId: z.string(),
-  streak: z.number(),
-  avatar: z.string().optional(),
-  profileCompleted: z.number(),
-});
-
 const ResolveConflictsInputSchema = z.object({
     schedule: z.array(ScheduleSchema),
     classes: z.array(ClassSchema),
     subjects: z.array(SubjectSchema),
     faculty: z.array(FacultySchema),
     classrooms: z.array(ClassroomSchema),
-    students: z.array(StudentSchema),
 });
 
 export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
 
+const NotificationSchema = z.object({
+    userId: z.string().describe("The ID of the user (faculty or student) to notify."),
+    classId: z.string().describe("The ID of the class affected by the change. This will be used to notify all students in that class.").optional(),
+    message: z.string().describe("The notification message detailing the change. This message will be sent to the specified user or all students in the class."),
+});
+
 const ResolveConflictsOutputSchema = z.object({
     summary: z.string().describe("A brief summary of the changes made to resolve the conflicts."),
     resolvedSchedule: z.array(ScheduleSchema).describe("The full, corrected timetable with no conflicts."),
-    notifications: z.array(z.object({
-        userId: z.string().describe("The ID of the user (student or faculty) to notify."),
-        message: z.string().describe("The notification message detailing the change."),
-    })).describe("A list of notifications to be sent to users affected by the changes."),
+    notifications: z.array(NotificationSchema).describe("A list of notifications to be generated for users affected by the changes. For student notifications, specify the classId."),
 });
 export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema>;
 
@@ -109,7 +101,10 @@ Here are the rules and context:
 3.  **Output Requirements**:
     *   **summary**: Provide a concise, human-readable summary of the changes you made. For example: "Moved CS101 for TE COMP to Room 102. Rescheduled PH201 for SE COMP to Tuesday at 2 PM."
     *   **resolvedSchedule**: Return the entire, final, conflict-free schedule as a JSON array.
-    *   **notifications**: For every single change you make, generate a clear notification for the affected faculty and for all students in the affected class.
+    *   **notifications**: For every single change you make, generate a clear notification.
+        *   For faculty, specify their individual 'userId'.
+        *   For students, specify the 'classId' of the class that was changed. Do NOT list individual student userIds.
+        *   The message should clearly explain the change (e.g., "Your CS101 class has been moved to Room 102.").
 
 Here is the data for the current schedule and available resources:
 -   **Full Schedule with Conflicts**: {{{json schedule}}}
@@ -117,7 +112,6 @@ Here is the data for the current schedule and available resources:
 -   **Available Subjects**: {{{json subjects}}}
 -   **Available Faculty**: {{{json faculty}}}
 -   **Available Classrooms**: {{{json classrooms}}}
--   **Students List (for notifications)**: {{{json students}}}
 
 Please analyze the schedule, resolve all conflicts according to the strategy, and provide the output in the required JSON format.
 `,

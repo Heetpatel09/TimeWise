@@ -230,7 +230,6 @@ export default function ScheduleManager() {
               subjects,
               faculty,
               classrooms,
-              students
           });
           
           setAiResolution(result);
@@ -249,7 +248,14 @@ export default function ScheduleManager() {
         await replaceSchedule(aiResolution.resolvedSchedule);
         
         for (const notification of aiResolution.notifications) {
-            await addNotification(notification);
+            if (notification.userId) {
+                await addNotification({ userId: notification.userId, message: notification.message });
+            } else if (notification.classId) {
+                const studentsToNotify = students.filter(s => s.classId === notification.classId);
+                for (const student of studentsToNotify) {
+                    await addNotification({ userId: student.id, message: notification.message });
+                }
+            }
         }
 
         toast({ title: "Conflicts Resolved!", description: "The new schedule has been applied and notifications have been sent." });
@@ -530,10 +536,11 @@ export default function ScheduleManager() {
                 </CardHeader>
                 <CardContent className="space-y-2 max-h-60 overflow-y-auto">
                     {aiResolution?.notifications.map((notif, index) => {
-                        const user = getRelationInfo(notif.userId, 'student') || getRelationInfo(notif.userId, 'faculty');
+                        const user = notif.userId ? getRelationInfo(notif.userId, 'faculty') : null;
+                        const targetClass = notif.classId ? getRelationInfo(notif.classId, 'class') : null;
                         return (
                         <div key={index} className="text-sm p-2 border rounded-md bg-muted/50">
-                            <p><strong>To:</strong> {user?.name || 'Unknown User'}</p>
+                            <p><strong>To:</strong> {user ? user.name : `All students in ${targetClass?.name}`}</p>
                             <p><strong>Message:</strong> {notif.message}</p>
                         </div>
                     )})}
