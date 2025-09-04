@@ -1,5 +1,5 @@
 
-'use server';
+'use client';
 
 /**
  * @fileoverview A flow to resolve conflicts in a university timetable.
@@ -77,6 +77,7 @@ Here are the rules and context:
     *   Your primary goal is to produce a valid, conflict-free schedule.
     *   You MUST NOT add or remove any classes from the original schedule. Every class must be present in the final output.
     *   When you find a conflict, you must reschedule one of the conflicting classes to another available time slot. Prioritize finding a free slot on the same day. If no slot is available on the same day, find a free slot on another day. Do not change any classes that are not part of the conflict.
+    *   To resolve a classroom conflict, change the 'classroomId' of one of the slots to an available, compatible classroom.
     *   You can change the 'day', 'time', or 'classroomId' for a scheduled slot to resolve a conflict. Avoid changing the faculty if possible.
     *   Use the provided 'timeSlots' to find an empty slot.
     *   Ensure that the classroom type matches the subject type (e.g., 'lab' subjects must be in 'lab' classrooms).
