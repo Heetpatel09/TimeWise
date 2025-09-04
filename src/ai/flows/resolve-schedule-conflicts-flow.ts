@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -23,9 +24,11 @@ const ClassSchema = z.object({
   id: z.string(),
   name: z.string(),
   semester: z.number(),
+  department: z.string(),
 });
 
 const SubjectSchema = z.object({
+  id: z.string(),
   name: z.string(),
   code: z.string(),
   isSpecial: z.boolean().describe("Whether the subject is a fixed special slot"),
@@ -37,6 +40,7 @@ const FacultySchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
+  department: z.string(),
   streak: z.number(),
   avatar: z.string().optional(),
   profileCompleted: z.number(),
@@ -53,9 +57,9 @@ const StudentSchema = z.object({
   name: z.string(),
   email: z.string(),
   classId: z.string(),
-  semester: z.number(),
   streak: z.number(),
   avatar: z.string().optional(),
+  profileCompleted: z.number(),
 });
 
 const ResolveConflictsInputSchema = z.object({
