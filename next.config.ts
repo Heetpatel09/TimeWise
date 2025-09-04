@@ -1,4 +1,6 @@
 
+import { config } from 'dotenv';
+config();
 
 import type {NextConfig} from 'next';
 
