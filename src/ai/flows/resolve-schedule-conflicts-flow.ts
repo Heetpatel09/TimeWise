@@ -55,7 +55,7 @@ const ClassroomSchema = z.object({
 const StudentSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z.string(),
+  email: z_string(),
   classId: z.string(),
   streak: z.number(),
   avatar: z.string().optional(),
@@ -86,7 +86,7 @@ export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema
 
 const conflictResolutionPrompt = ai.definePrompt({
     name: 'conflictResolutionPrompt',
-    model: 'gemini-1.5-flash',
+    model: 'gemini-pro',
     input: { schema: ResolveConflictsInputSchema },
     output: { schema: ResolveConflictsOutputSchema },
     prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable.
