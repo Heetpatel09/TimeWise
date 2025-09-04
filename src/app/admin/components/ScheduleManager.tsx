@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getSchedule, addSchedule, updateSchedule, deleteSchedule, replaceSchedule, getAvailableFacultyForSlot, getAvailableClassroomsForSlot } from '@/lib/services/schedule';
+import { getSchedule, addSchedule, updateSchedule, deleteSchedule, replaceSchedule } from '@/lib/services/schedule';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
@@ -99,14 +99,6 @@ export default function ScheduleManager() {
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
   const [aiResolution, setAiResolution] = useState<ResolveConflictsOutput | null>(null);
   
-  const [isConflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [conflictingSlot, setConflictingSlot] = useState<Schedule | null>(null);
-  const [conflictDetails, setConflictDetails] = useState<Conflict[]>([]);
-  const [availableFaculty, setAvailableFaculty] = useState<Faculty[]>([]);
-  const [availableClassrooms, setAvailableClassrooms] = useState<Classroom[]>([]);
-  const [resolutionChoice, setResolutionChoice] = useState<Partial<Schedule>>({});
-  const [isSubmittingResolution, setIsSubmittingResolution] = useState(false);
-
   const { toast } = useToast();
 
   async function loadAllData() {
@@ -270,38 +262,6 @@ export default function ScheduleManager() {
         setIsResolvingWithAI(false);
     }
   }
-  
-  const openConflictDialog = async (slot: Schedule, conflicts: Conflict[]) => {
-    setConflictingSlot(slot);
-    setConflictDetails(conflicts);
-    setResolutionChoice({id: slot.id});
-    
-    // Fetch available resources
-    const [availableFac, availableClassRms] = await Promise.all([
-      getAvailableFacultyForSlot(slot.day, slot.time),
-      getAvailableClassroomsForSlot(slot.day, slot.time, getRelationInfo(slot.subjectId, 'subject')?.type || 'classroom')
-    ]);
-    setAvailableFaculty(availableFac);
-    setAvailableClassrooms(availableClassRms);
-    setConflictDialogOpen(true);
-  }
-
-  const handleManualResolve = async () => {
-    if (!conflictingSlot || !resolutionChoice.id) return;
-    setIsSubmittingResolution(true);
-    try {
-      const updatedSlot = { ...conflictingSlot, ...resolutionChoice };
-      await updateSchedule(updatedSlot);
-      toast({ title: "Conflict Resolved", description: "The schedule has been updated." });
-      setConflictDialogOpen(false);
-      await loadAllData();
-    } catch (error: any) {
-       toast({ title: "Error", description: error.message || "Failed to resolve conflict.", variant: "destructive" });
-    } finally {
-      setIsSubmittingResolution(false);
-    }
-  }
-
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -446,9 +406,6 @@ export default function ScheduleManager() {
                                 )}
                             </TableCell>
                             <TableCell className="text-right">
-                              {isConflicting && !isSpecial && (
-                                  <Button variant="destructive" size="sm" onClick={() => openConflictDialog(slot, slotConflicts)}>Resolve</Button>
-                              )}
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" className="h-8 w-8 p-0" disabled={isSpecial}>
@@ -592,59 +549,6 @@ export default function ScheduleManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Dialog open={isConflictDialogOpen} onOpenChange={setConflictDialogOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Resolve Conflict</DialogTitle>
-                <DialogDescription>
-                    Manually resolve the conflict for this slot.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <p className="font-semibold">Original Slot</p>
-                <p className="text-sm text-muted-foreground">
-                  {conflictingSlot?.day}, {conflictingSlot?.time}, Class: {getRelationInfo(conflictingSlot?.classId || '', 'class')?.name}, Subject: {getRelationInfo(conflictingSlot?.subjectId || '', 'subject')?.name}
-                </p>
-              </div>
-              <div>
-                  <p className="font-semibold text-destructive">Detected Conflicts</p>
-                  <ul className="list-disc list-inside text-sm text-destructive">
-                      {conflictDetails.map((c, i) => <li key={i}>{c.message}</li>)}
-                  </ul>
-              </div>
-              <div className="space-y-2">
-                <Label>Change Faculty</Label>
-                 <Select onValueChange={(v) => setResolutionChoice({...resolutionChoice, facultyId: v})} defaultValue={conflictingSlot?.facultyId}>
-                  <SelectTrigger><SelectValue placeholder="Select new faculty" /></SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value={conflictingSlot?.facultyId || ''}>{getRelationInfo(conflictingSlot?.facultyId || '','faculty')?.name} (No change)</SelectItem>
-                      {availableFaculty.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-               <div className="space-y-2">
-                <Label>Change Classroom</Label>
-                 <Select onValueChange={(v) => setResolutionChoice({...resolutionChoice, classroomId: v})} defaultValue={conflictingSlot?.classroomId}>
-                  <SelectTrigger><SelectValue placeholder="Select new classroom" /></SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value={conflictingSlot?.classroomId || ''}>{getRelationInfo(conflictingSlot?.classroomId || '','classroom')?.name} (No change)</SelectItem>
-                      {availableClassrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setConflictDialogOpen(false)} disabled={isSubmittingResolution}>Cancel</Button>
-                <Button onClick={handleManualResolve} disabled={isSubmittingResolution}>
-                    {isSubmittingResolution && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Resolution
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </TooltipProvider>
   );
 }
-

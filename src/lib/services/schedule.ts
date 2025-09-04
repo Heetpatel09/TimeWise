@@ -4,7 +4,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Schedule, EnrichedSchedule, Faculty, Classroom } from '@/lib/types';
+import type { Schedule, EnrichedSchedule } from '@/lib/types';
 import { getClasses } from './classes';
 import { getSubjects } from './subjects';
 import { getClassrooms } from './classrooms';
@@ -14,6 +14,21 @@ function revalidateAll() {
     revalidatePath('/admin', 'layout');
     revalidatePath('/faculty', 'layout');
     revalidatePath('/student', 'layout');
+}
+
+function checkForConflict(item: Omit<Schedule, 'id'>, existingId?: string) {
+    const db = getDb();
+    const conflicts = db.prepare(`
+        SELECT id FROM schedule 
+        WHERE day = ? 
+        AND time = ? 
+        AND (facultyId = ? OR classroomId = ? OR classId = ?)
+        AND id != ?
+    `).all(item.day, item.time, item.facultyId, item.classroomId, item.classId, existingId || '') as { id: string }[];
+    
+    if (conflicts.length > 0) {
+        throw new Error('This time slot creates a conflict with an existing class for the same faculty, classroom, or class.');
+    }
 }
 
 export async function getSchedule(): Promise<Schedule[]> {
@@ -26,6 +41,9 @@ export async function getSchedule(): Promise<Schedule[]> {
 
 export async function addSchedule(item: Omit<Schedule, 'id'>) {
     const db = getDb();
+    
+    // Check for conflicts before adding
+    checkForConflict(item);
     
     const id = `SCH${Date.now()}`;
     const newItem: Schedule = { ...item, id };
@@ -43,6 +61,9 @@ export async function updateSchedule(updatedItem: Schedule) {
         throw new Error("Schedule slot not found.");
     }
     
+    // Check for conflicts before updating
+    checkForConflict(updatedItem, updatedItem.id);
+
     const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, classroomId = ?, day = ?, time = ? WHERE id = ?');
     stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time, updatedItem.id);
     
@@ -128,43 +149,3 @@ export async function getScheduleForFacultyInRange(facultyId: string, startDate:
         facultyName: facultyMap.get(s.facultyId) || 'N/A',
     }));
 }
-
-
-export async function getAvailableFacultyForSlot(day: string, time: string): Promise<Faculty[]> {
-    const db = getDb();
-
-    // Get IDs of all faculty who are busy at the specified time
-    const busyFacultyIds = db.prepare(`
-        SELECT facultyId FROM schedule
-        WHERE day = ? AND time = ?
-    `).all(day, time).map((row: any) => row.facultyId);
-    
-    // Get all faculty
-    const allFaculty = await getFaculty();
-
-    // Filter out the busy ones
-    if (busyFacultyIds.length > 0) {
-        const busyIdsSet = new Set(busyFacultyIds);
-        return allFaculty.filter(f => !busyIdsSet.has(f.id));
-    }
-
-    return allFaculty;
-}
-
-export async function getAvailableClassroomsForSlot(day: string, time: string, type: 'classroom' | 'lab'): Promise<Classroom[]> {
-    const db = getDb();
-
-    // Get IDs of all classrooms that are busy at the specified time
-    const busyClassroomIds = db.prepare(`
-        SELECT classroomId FROM schedule
-        WHERE day = ? AND time = ?
-    `).all(day, time).map((row: any) => row.classroomId);
-    
-    // Get all classrooms
-    const allClassrooms = await getClassrooms();
-
-    // Filter out the busy ones and by type
-    const busyIdsSet = new Set(busyClassroomIds);
-    return allClassrooms.filter(c => !busyIdsSet.has(c.id) && c.type === type);
-}
-
