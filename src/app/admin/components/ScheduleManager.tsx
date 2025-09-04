@@ -31,8 +31,6 @@ import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, Aler
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -51,6 +49,7 @@ import { resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/res
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { addNotification } from '@/lib/services/notifications';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { exportScheduleToPDF } from '../actions';
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -97,6 +96,7 @@ export default function ScheduleManager() {
   const [currentSlot, setCurrentSlot] = useState<Partial<Schedule> | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isResolvingWithAI, setIsResolvingWithAI] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
   const [aiResolution, setAiResolution] = useState<ResolveConflictsOutput | null>(null);
   
@@ -225,13 +225,10 @@ export default function ScheduleManager() {
       setIsResolvingWithAI(true);
       toast({ title: "AI is at work!", description: "Resolving schedule conflicts. This may take a moment..." });
       try {
-          const involvedClassIds = new Set(schedule.map(s => s.classId));
-          const involvedSubjectIds = new Set(schedule.map(s => s.subjectId));
-
           const result = await resolveScheduleConflicts({
               schedule,
-              classInfo: classes.filter(c => involvedClassIds.has(c.id)).map(c => ({ id: c.id, name: c.name })),
-              subjectInfo: subjects.filter(s => involvedSubjectIds.has(s.id)).map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type })),
+              classInfo: classes.map(c => ({ id: c.id, name: c.name })),
+              subjectInfo: subjects.map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type })),
               facultyInfo: faculty.map(f => ({ id: f.id, name: f.name })),
               classroomInfo: classrooms.map(cr => ({ id: cr.id, name: cr.name })),
               timeSlots: LECTURE_TIME_SLOTS,
@@ -274,26 +271,26 @@ export default function ScheduleManager() {
     }
   }
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Master Schedule", 14, 16);
-    
-    const tableData = schedule.map(slot => [
-        slot.day,
-        slot.time,
-        getRelationInfo(slot.classId, 'class')?.name,
-        getRelationInfo(slot.subjectId, 'subject')?.name,
-        getRelationInfo(slot.facultyId, 'faculty')?.name,
-        getRelationInfo(slot.classroomId, 'classroom')?.name,
-    ]);
+  const exportPDF = async () => {
+    setIsExporting(true);
+    try {
+        const {pdf, error} = await exportScheduleToPDF(schedule, classes, subjects, faculty, classrooms);
+        if (error) {
+            throw new Error(error);
+        }
 
-    (doc as any).autoTable({
-        head: [['Day', 'Time', 'Class', 'Subject', 'Faculty', 'Classroom']],
-        body: tableData,
-        startY: 20,
-    });
-
-    doc.save('master_schedule.pdf');
+        const blob = new Blob([new Uint8Array(atob(pdf).split('').map(char => char.charCodeAt(0)))], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'master_schedule.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (err: any) {
+        toast({ title: 'Export Failed', description: err.message, variant: 'destructive' });
+    } finally {
+        setIsExporting(false);
+    }
   }
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -323,8 +320,8 @@ export default function ScheduleManager() {
     <TooltipProvider>
       <div className="flex justify-between items-center mb-4">
         <div className='flex gap-2'>
-            <Button onClick={exportPDF} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
+            <Button onClick={exportPDF} variant="outline" disabled={isExporting}>
+                {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
                 Download PDF
             </Button>
              <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI}>
