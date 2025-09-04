@@ -1,5 +1,5 @@
 
-'use client';
+'use server';
 
 /**
  * @fileoverview A flow to resolve conflicts in a university timetable.
