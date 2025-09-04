@@ -19,13 +19,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getSchedule, addSchedule, updateSchedule, deleteSchedule, getAvailableFacultyForSlot, getAvailableClassroomsForSlot } from '@/lib/services/schedule';
+import { getSchedule, addSchedule, updateSchedule, deleteSchedule, replaceSchedule } from '@/lib/services/schedule';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +45,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { resolveScheduleConflicts } from '@/ai/flows/resolve-schedule-conflicts-flow';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -89,15 +91,9 @@ export default function ScheduleManager() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [currentSlot, setCurrentSlot] = useState<Partial<Schedule> | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isResolvingWithAI, setIsResolvingWithAI] = useState(false);
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
   const { toast } = useToast();
-
-  const [isResolveDialogOpen, setResolveDialogOpen] = useState(false);
-  const [resolvingSlot, setResolvingSlot] = useState<Schedule | null>(null);
-  const [availableFaculty, setAvailableFaculty] = useState<Faculty[]>([]);
-  const [availableClassrooms, setAvailableClassrooms] = useState<Classroom[]>([]);
-  const [resolution, setResolution] = useState<{facultyId?: string, classroomId?: string}>({});
-  const [isResolving, setIsResolving] = useState(false);
 
   async function loadAllData() {
     setIsDataLoading(true);
@@ -203,46 +199,29 @@ export default function ScheduleManager() {
     setCurrentSlot({});
     setFormOpen(true);
   };
+  
+  const handleResolveWithAI = async () => {
+      setIsResolvingWithAI(true);
+      toast({ title: "AI is at work!", description: "Resolving schedule conflicts. This may take a moment..." });
+      try {
+          const result = await resolveScheduleConflicts({
+              schedule,
+              classes,
+              subjects,
+              faculty,
+              classrooms
+          });
 
-  const openResolveDialog = async (slot: Schedule) => {
-    setResolvingSlot(slot);
-    const slotConflicts = conflicts[slot.id] || [];
+          await replaceSchedule(result.resolvedSchedule);
+          await loadAllData();
 
-    if (slotConflicts.some(c => c.type === 'faculty')) {
-        const available = await getAvailableFacultyForSlot(slot.day, slot.time);
-        setAvailableFaculty(available);
-    }
-    if (slotConflicts.some(c => c.type === 'classroom')) {
-        const subjectType = getRelationInfo(slot.subjectId, 'subject')?.type || 'theory';
-        const available = await getAvailableClassroomsForSlot(slot.day, slot.time, subjectType);
-        setAvailableClassrooms(available);
-    }
-    
-    setResolveDialogOpen(true);
-  }
+          toast({ title: "Conflicts Resolved!", description: "The AI has generated a new, conflict-free schedule." });
 
-  const handleResolveConflict = async () => {
-    if (!resolvingSlot) return;
-    
-    const updatedSlot = { ...resolvingSlot, ...resolution };
-    if (updatedSlot.facultyId === resolvingSlot.facultyId && updatedSlot.classroomId === resolvingSlot.classroomId) {
-        toast({ title: "No changes", description: "Please select a new faculty or classroom to resolve the conflict.", variant: "destructive" });
-        return;
-    }
-
-    setIsResolving(true);
-    try {
-        await updateSchedule(updatedSlot);
-        toast({ title: "Conflict Resolved", description: "The schedule slot has been updated." });
-        setResolveDialogOpen(false);
-        setResolvingSlot(null);
-        setResolution({});
-        await loadAllData();
-    } catch(error: any) {
-        toast({ title: 'Error', description: error.message || 'Failed to resolve conflict.', variant: 'destructive' });
-    } finally {
-        setIsResolving(false);
-    }
+      } catch (error: any) {
+          toast({ title: 'AI Resolution Failed', description: error.message || "The AI could not resolve the conflicts. Please try resolving them manually.", variant: 'destructive' });
+      } finally {
+          setIsResolvingWithAI(false);
+      }
   }
 
 
@@ -285,6 +264,8 @@ export default function ScheduleManager() {
       return c.type === selectedSubjectType;
   });
 
+  const hasConflicts = Object.values(conflicts).some(c => c.length > 0);
+
   if (isDataLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -297,12 +278,25 @@ export default function ScheduleManager() {
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
             </Button>
+             <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI}>
+                {isResolvingWithAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                Resolve with AI
+            </Button>
         </div>
         <Button onClick={openNewDialog}>
           <PlusCircle className="h-4 w-4 mr-2" />
           Add Slot
         </Button>
       </div>
+      {hasConflicts && (
+        <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Conflicts Detected!</AlertTitle>
+            <AlertDescription>
+                There are conflicting slots in the schedule. Hover over the <AlertTriangle className="h-4 w-4 inline-block mx-1" /> icon on a slot for details. You can resolve them manually or use the "Resolve with AI" button.
+            </AlertDescription>
+        </Alert>
+      )}
 
       <div className="space-y-6">
         {scheduleByDay.map(({ day, slots }) => (
@@ -374,11 +368,6 @@ export default function ScheduleManager() {
                                 </div>
                             </TableCell>
                             <TableCell className="text-right">
-                              {isConflicting && (
-                                <Button variant="outline" size="sm" className="mr-2" onClick={() => openResolveDialog(slot)}>
-                                  <ShieldCheck className="h-4 w-4 mr-2" /> Resolve
-                                </Button>
-                              )}
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" className="h-8 w-8 p-0" disabled={isSpecial}>
@@ -478,70 +467,6 @@ export default function ScheduleManager() {
             <Button onClick={handleSave}>Save</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-      
-      <Dialog open={isResolveDialogOpen} onOpenChange={setResolveDialogOpen}>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>Resolve Schedule Conflict</DialogTitle>
-                  <DialogDescription>
-                      Suggestions to resolve conflicts for {resolvingSlot?.day}, {resolvingSlot?.time}.
-                  </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                  {(conflicts[resolvingSlot?.id || ''] || []).map(c => (
-                      <div key={c.type}>
-                          <p className="font-semibold text-destructive">{c.message}</p>
-                          {c.type === 'faculty' && (
-                              <div className="grid grid-cols-4 items-center gap-4 mt-2">
-                                  <Label className="text-right">New Faculty</Label>
-                                  <Select 
-                                    onValueChange={(v) => setResolution(prev => ({...prev, facultyId: v}))}
-                                  >
-                                      <SelectTrigger className="col-span-3"><SelectValue placeholder="Select available faculty" /></SelectTrigger>
-                                      <SelectContent>
-                                        {availableFaculty.length > 0 ? (
-                                            availableFaculty.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)
-                                        ) : (
-                                            <div className="p-2 text-sm text-muted-foreground">No other faculty available.</div>
-                                        )}
-                                      </SelectContent>
-                                  </Select>
-                              </div>
-                          )}
-                          {c.type === 'classroom' && (
-                              <div className="grid grid-cols-4 items-center gap-4 mt-2">
-                                  <Label className="text-right">New Classroom</Label>
-                                   <Select 
-                                    onValueChange={(v) => setResolution(prev => ({...prev, classroomId: v}))}
-                                  >
-                                      <SelectTrigger className="col-span-3"><SelectValue placeholder="Select available classroom" /></SelectTrigger>
-                                      <SelectContent>
-                                         {availableClassrooms.length > 0 ? (
-                                            availableClassrooms.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)
-                                        ) : (
-                                            <div className="p-2 text-sm text-muted-foreground">No other classrooms available.</div>
-                                        )}
-                                      </SelectContent>
-                                  </Select>
-                              </div>
-                          )}
-                          {c.type === 'class' && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                                This class has multiple activities scheduled. Please edit one of the conflicting slots to resolve this.
-                            </p>
-                          )}
-                      </div>
-                  ))}
-              </div>
-              <DialogFooter>
-                  <Button variant="outline" onClick={() => setResolveDialogOpen(false)} disabled={isResolving}>Cancel</Button>
-                  <Button onClick={handleResolveConflict} disabled={isResolving}>
-                    {isResolving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Resolution
-                  </Button>
-              </DialogFooter>
-          </DialogContent>
       </Dialog>
     </TooltipProvider>
   );

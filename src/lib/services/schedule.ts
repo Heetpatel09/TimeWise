@@ -138,7 +138,7 @@ export async function replaceSchedule(schedule: Omit<Schedule, 'id'>[]) {
         const insertStmt = dbInstance.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
 
         for (const item of schedule) {
-            const id = `SCH${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
+            const id = item.id || `SCH${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
             insertStmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time);
         }
     });
