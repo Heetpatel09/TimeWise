@@ -55,7 +55,7 @@ const ClassroomSchema = z.object({
 const StudentSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z_string(),
+  email: z.string(),
   classId: z.string(),
   streak: z.number(),
   avatar: z.string().optional(),
