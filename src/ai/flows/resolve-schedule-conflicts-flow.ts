@@ -12,7 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { Schedule, Class, Subject, Faculty, Classroom, Student } from '@/lib/types';
-import { gemini15Flash } from '@genkit-ai/googleai';
+import { gemini15Flash } from '@genkit-ai/vertexai';
 
 // Define Zod schemas for the types from lib/types
 const ScheduleSchema = z.object({
