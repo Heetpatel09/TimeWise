@@ -310,7 +310,7 @@ export default function ScheduleManager() {
             </Button>
              <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI}>
                 {isResolvingWithAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                Resolve with AI
+                Resolve Conflicts
             </Button>
         </div>
         <Button onClick={openNewDialog}>
@@ -323,7 +323,7 @@ export default function ScheduleManager() {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Conflicts Detected!</AlertTitle>
             <AlertDescription>
-                There are conflicting slots in the schedule. Hover over the <AlertTriangle className="h-4 w-4 inline-block mx-1" /> icon on a slot for details. You can resolve them manually or use the "Resolve with AI" button.
+                There are conflicting slots in the schedule. Hover over the <AlertTriangle className="h-4 w-4 inline-block mx-1" /> icon on a slot for details. You can resolve them manually or use the "Resolve Conflicts" button.
             </AlertDescription>
         </Alert>
       )}
