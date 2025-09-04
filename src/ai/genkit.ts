@@ -1,8 +1,8 @@
 
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {vertexAI} from '@genkit-ai/vertexai';
 
 export const ai = genkit({
-  plugins: [googleAI({apiKey: process.env.GEMINI_API_KEY})],
-  model: 'googleai/gemini-2.5-flash',
+  plugins: [vertexAI({apiKey: process.env.GEMINI_API_KEY})],
+  model: 'vertexai/gemini-2.5-flash',
 });
