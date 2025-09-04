@@ -147,7 +147,7 @@ export default function AdminsManager() {
                   <div className="flex items-center gap-3">
                     <Avatar>
                         <AvatarImage src={admin.avatar} alt={admin.name} />
-                        <AvatarFallback>{admin.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        <AvatarFallback>{admin.name ? admin.name.split(' ').map(n => n[0]).join('') : 'A'}</AvatarFallback>
                     </Avatar>
                     <div>
                         <div className="font-bold">{admin.name}</div>
@@ -318,5 +318,7 @@ export default function AdminsManager() {
     </div>
   );
 }
+
+    
 
     
