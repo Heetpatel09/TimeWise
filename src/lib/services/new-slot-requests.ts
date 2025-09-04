@@ -45,32 +45,24 @@ export async function updateNewSlotRequestStatus(id: string, status: 'approved' 
     }
 
     if (status === 'approved') {
-        try {
-            await addSchedule({
-                classId: request.classId,
-                subjectId: request.subjectId,
-                facultyId: request.facultyId,
-                classroomId: request.classroomId,
-                day: request.day as any,
-                time: request.time
-            });
-        } catch (error: any) {
-            await addNotification({
-                userId: request.facultyId,
-                message: `Your new slot request for ${request.day} at ${request.time} was rejected due to a scheduling conflict: ${error.message}.`
-            });
-            const rejectStmt = db.prepare("UPDATE new_slot_requests SET status = 'rejected' WHERE id = ?");
-            rejectStmt.run(id);
-            revalidatePath('/admin', 'layout');
-            revalidatePath('/faculty', 'layout');
-            throw error; // Propagate error to the calling component
-        }
+        // When approving, we simply add the slot. Conflicts will be highlighted on the schedule.
+        await addSchedule({
+            classId: request.classId,
+            subjectId: request.subjectId,
+            facultyId: request.facultyId,
+            classroomId: request.classroomId,
+            day: request.day as any,
+            time: request.time
+        });
     }
     
     const stmt = db.prepare('UPDATE new_slot_requests SET status = ? WHERE id = ?');
     stmt.run(status, id);
 
     let message = `Your new slot request for ${request.day} at ${request.time} has been ${status}.`;
+    if (status === 'approved') {
+        message += " The slot has been added to the main schedule.";
+    }
     await addNotification({
         userId: request.facultyId,
         message: message,

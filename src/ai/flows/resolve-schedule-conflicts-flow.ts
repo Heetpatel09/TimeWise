@@ -66,9 +66,16 @@ const ResolveConflictsInputSchema = z.object({
 export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
 
 
-// Define the output schema for the flow - a resolved schedule
+const NotificationSchema = z.object({
+    userId: z.string().describe("The ID of the user (student or faculty) to receive the notification."),
+    message: z.string().describe("The personalized notification message explaining the change."),
+});
+
+// Define the output schema for the flow
 const ResolveConflictsOutputSchema = z.object({
   resolvedSchedule: z.array(ScheduleSchema).describe("The new, conflict-free schedule. It must contain the exact same number of schedule slots as the input schedule."),
+  summary: z.string().describe("A brief, human-readable summary of the changes made to resolve the conflicts."),
+  notifications: z.array(NotificationSchema).describe("A list of notifications to be sent to users affected by the changes."),
 });
 export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema>;
 
@@ -82,7 +89,7 @@ const resolvePrompt = ai.definePrompt({
     name: 'resolveScheduleConflictsPrompt',
     input: { schema: ResolveConflictsInputSchema },
     output: { schema: ResolveConflictsOutputSchema },
-    prompt: `You are an expert university timetable scheduler. Your task is to resolve all conflicts in a given schedule.
+    prompt: `You are an expert university timetable scheduler and a helpful assistant. Your task is to resolve all conflicts in a given schedule and prepare the necessary communications for the changes.
 
 You will be provided with the current schedule, which contains one or more conflicts, and lists of all available classes, subjects, faculty, and classrooms.
 
@@ -91,7 +98,7 @@ A conflict occurs if at the same time and day:
 2. A classroom is booked for more than one class.
 3. A class is scheduled for more than one subject.
 
-Your goal is to produce a new, conflict-free schedule. 
+Your goal is to produce a new, conflict-free schedule and the corresponding notifications.
 
 Here are the rules you must follow:
 - The resolved schedule MUST contain the exact same number of total lecture slots as the original schedule. Do not add or remove any lectures.
@@ -102,7 +109,11 @@ Here are the rules you must follow:
 - Do not modify any slots that are marked as 'isSpecial' in the subjects list. These are fixed and cannot be changed.
 - Prioritize resolving conflicts by changing faculty or classroom first. Only change the time or day of a lecture if necessary.
 
-Analyze the provided schedule and resources, and return a complete, updated, and conflict-free schedule in the 'resolvedSchedule' field.
+After resolving the schedule, you must:
+1.  **Generate a summary:** Write a short, clear summary of the changes you made. For example: "Resolved 2 conflicts by moving Dr. Turing's class to Room 102 and rescheduling Dr. Hopper's lab to Friday at 2 PM."
+2.  **Generate notifications:** For EVERY change you make to a schedule slot, you must create a notification for the faculty member assigned to that slot. The message should be friendly and clearly state the change. For example: "Hi Dr. Turing, your CS101 class on Monday at 9 AM has been moved to Room 102."
+
+Analyze the provided schedule and resources, and return the complete, conflict-free schedule, the summary, and the list of notifications.
 
 Here is the data:
 Current Schedule:
@@ -130,8 +141,8 @@ const resolveScheduleConflictsFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await resolvePrompt(input);
-    if (!output || !output.resolvedSchedule) {
-      throw new Error("AI failed to generate a resolved schedule.");
+    if (!output || !output.resolvedSchedule || !output.summary || !output.notifications) {
+      throw new Error("AI failed to generate a complete resolution. Please try again.");
     }
     return output;
   }

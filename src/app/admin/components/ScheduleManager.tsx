@@ -24,7 +24,7 @@ import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
-import type { Schedule, Class, Subject, Faculty, Classroom } from '@/lib/types';
+import type { Schedule, Class, Subject, Faculty, Classroom, Notification } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -45,8 +45,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { resolveScheduleConflicts } from '@/ai/flows/resolve-schedule-conflicts-flow';
+import { resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { addNotification } from '@/lib/services/notifications';
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -93,6 +94,7 @@ export default function ScheduleManager() {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isResolvingWithAI, setIsResolvingWithAI] = useState(false);
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
+  const [aiResolution, setAiResolution] = useState<ResolveConflictsOutput | null>(null);
   const { toast } = useToast();
 
   async function loadAllData() {
@@ -119,10 +121,21 @@ export default function ScheduleManager() {
   useEffect(() => {
       const findConflicts = () => {
           const newConflicts: Record<string, Conflict[]> = {};
+          const timeDayMap = new Map<string, Schedule[]>();
+          
+          schedule.forEach(slot => {
+            const key = `${slot.day}-${slot.time}`;
+            if (!timeDayMap.has(key)) {
+                timeDayMap.set(key, []);
+            }
+            timeDayMap.get(key)!.push(slot);
+          });
+
           for (const slot of schedule) {
               if (!newConflicts[slot.id]) newConflicts[slot.id] = [];
               
-              const conflictingSlots = schedule.filter(s => s.id !== slot.id && s.day === slot.day && s.time === slot.time);
+              const key = `${slot.day}-${slot.time}`;
+              const conflictingSlots = timeDayMap.get(key)?.filter(s => s.id !== slot.id) || [];
               
               for (const otherSlot of conflictingSlots) {
                   // Faculty conflict
@@ -211,11 +224,8 @@ export default function ScheduleManager() {
               faculty,
               classrooms
           });
-
-          await replaceSchedule(result.resolvedSchedule);
-          await loadAllData();
-
-          toast({ title: "Conflicts Resolved!", description: "The AI has generated a new, conflict-free schedule." });
+          
+          setAiResolution(result);
 
       } catch (error: any) {
           toast({ title: 'AI Resolution Failed', description: error.message || "The AI could not resolve the conflicts. Please try resolving them manually.", variant: 'destructive' });
@@ -224,6 +234,26 @@ export default function ScheduleManager() {
       }
   }
 
+  const handleApproveAIChanges = async () => {
+    if (!aiResolution) return;
+    setIsResolvingWithAI(true);
+    try {
+        await replaceSchedule(aiResolution.resolvedSchedule);
+        
+        for (const notification of aiResolution.notifications) {
+            await addNotification(notification);
+        }
+
+        toast({ title: "Conflicts Resolved!", description: "The new schedule has been applied and notifications have been sent." });
+        setAiResolution(null);
+        await loadAllData();
+
+    } catch (error: any) {
+         toast({ title: 'Failed to Apply Changes', description: error.message || "Could not save the new schedule.", variant: 'destructive' });
+    } finally {
+        setIsResolvingWithAI(false);
+    }
+  }
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -465,6 +495,47 @@ export default function ScheduleManager() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
             <Button onClick={handleSave}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={!!aiResolution} onOpenChange={() => setAiResolution(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Review AI-Generated Schedule</DialogTitle>
+            <DialogDescription>
+              The AI has resolved the schedule conflicts. Review the changes and approve to apply them.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="my-4 space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle className='text-base'>Summary of Changes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm">{aiResolution?.summary}</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className='text-base'>Notifications to be Sent</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                    {aiResolution?.notifications.map((notif, index) => (
+                        <div key={index} className="text-sm p-2 border rounded-md bg-muted/50">
+                            <p><strong>To:</strong> {faculty.find(f => f.id === notif.userId)?.name || 'Unknown User'}</p>
+                            <p><strong>Message:</strong> {notif.message}</p>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAiResolution(null)} disabled={isResolvingWithAI}>Cancel</Button>
+            <Button onClick={handleApproveAIChanges} disabled={isResolvingWithAI}>
+                {isResolvingWithAI && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Approve &amp; Notify
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
