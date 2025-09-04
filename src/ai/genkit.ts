@@ -9,5 +9,4 @@ export const ai = genkit({
       location: 'us-central1',
     }),
   ],
-  model: 'gemini-1.5-flash-preview-0514',
 });
