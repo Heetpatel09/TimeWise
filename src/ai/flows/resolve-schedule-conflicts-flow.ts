@@ -8,6 +8,7 @@
 
 import { z } from "genkit";
 import { ai } from "@/ai/genkit";
+import { googleAI } from '@genkit-ai/googleai';
 
 // -------------------- SCHEMAS --------------------
 const ScheduleSchema = z.object({
@@ -86,7 +87,7 @@ export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema
 
 const conflictResolutionPrompt = ai.definePrompt({
     name: 'conflictResolutionPrompt',
-    model: 'gemini-1.5-flash-latest',
+    model: googleAI.model('gemini-1.5-flash'),
     input: { schema: ResolveConflictsInputSchema },
     output: { schema: ResolveConflictsOutputSchema },
     prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable.
