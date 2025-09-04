@@ -182,25 +182,25 @@ const AdminDashboardContent = () => {
     }
 
     return (
-        <DashboardLayout pageTitle={pageTitle} role="admin">
-            {tab && (
-              <Button asChild variant="outline" size="sm" className="mb-4">
-                <Link href="/admin">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Dashboard
-                </Link>
-              </Button>
-            )}
-            {renderContent()}
-        </DashboardLayout>
+        <React.Suspense fallback={<div>Loading...</div>}>
+            <DashboardLayout pageTitle={pageTitle} role="admin">
+                {tab && (
+                <Button asChild variant="outline" size="sm" className="mb-4">
+                    <Link href="/admin">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                    </Link>
+                </Button>
+                )}
+                {renderContent()}
+            </DashboardLayout>
+        </React.Suspense>
     );
 }
 
 
 export default function AdminDashboard() {
   return (
-    <React.Suspense fallback={<div>Loading...</div>}>
       <AdminDashboardContent />
-    </React.Suspense>
   )
 }
