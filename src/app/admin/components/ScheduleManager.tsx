@@ -24,7 +24,8 @@ import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
-import type { Schedule, Class, Subject, Faculty, Classroom, Notification } from '@/lib/types';
+import { getStudents } from '@/lib/services/students';
+import type { Schedule, Class, Subject, Faculty, Classroom, Notification, Student } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -89,6 +90,7 @@ export default function ScheduleManager() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [isFormOpen, setFormOpen] = useState(false);
   const [currentSlot, setCurrentSlot] = useState<Partial<Schedule> | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -99,18 +101,20 @@ export default function ScheduleManager() {
 
   async function loadAllData() {
     setIsDataLoading(true);
-    const [scheduleData, classData, subjectData, facultyData, classroomData] = await Promise.all([
+    const [scheduleData, classData, subjectData, facultyData, classroomData, studentData] = await Promise.all([
         getSchedule(),
         getClasses(),
         getSubjects(),
         getFaculty(),
         getClassrooms(),
+        getStudents(),
     ]);
     setSchedule(scheduleData);
     setClasses(classData);
     setSubjects(subjectData);
     setFaculty(facultyData);
     setClassrooms(classroomData);
+    setStudents(studentData);
     setIsDataLoading(false);
   }
 
@@ -159,12 +163,13 @@ export default function ScheduleManager() {
       }
   }, [schedule, classes, faculty, classrooms]);
 
-  const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom') => {
+  const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom' | 'student') => {
     switch (type) {
       case 'class': return classes.find(c => c.id === id);
       case 'subject': return subjects.find(s => s.id === id);
       case 'faculty': return faculty.find(f => f.id === id);
       case 'classroom': return classrooms.find(cr => cr.id === id);
+      case 'student': return students.find(st => st.id === id);
       default: return undefined;
     }
   };
@@ -222,7 +227,8 @@ export default function ScheduleManager() {
               classes,
               subjects,
               faculty,
-              classrooms
+              classrooms,
+              students
           });
           
           setAiResolution(result);
@@ -521,12 +527,14 @@ export default function ScheduleManager() {
                     <CardTitle className='text-base'>Notifications to be Sent</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 max-h-60 overflow-y-auto">
-                    {aiResolution?.notifications.map((notif, index) => (
+                    {aiResolution?.notifications.map((notif, index) => {
+                        const user = getRelationInfo(notif.userId, 'student') || getRelationInfo(notif.userId, 'faculty');
+                        return (
                         <div key={index} className="text-sm p-2 border rounded-md bg-muted/50">
-                            <p><strong>To:</strong> {faculty.find(f => f.id === notif.userId)?.name || 'Unknown User'}</p>
+                            <p><strong>To:</strong> {user?.name || 'Unknown User'}</p>
                             <p><strong>Message:</strong> {notif.message}</p>
                         </div>
-                    ))}
+                    )})}
                 </CardContent>
             </Card>
           </div>

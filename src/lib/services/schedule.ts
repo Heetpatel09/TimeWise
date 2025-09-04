@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -68,12 +67,13 @@ export async function replaceSchedule(schedule: Schedule[]) {
     const dbInstance = getDb();
     
     const transaction = dbInstance.transaction(() => {
-        // Clear the existing schedule and related requests
+        // Clear the existing schedule
         dbInstance.prepare('DELETE FROM schedule').run();
 
         const insertStmt = dbInstance.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
 
         for (const item of schedule) {
+            // Use existing ID or generate a new one if it's missing
             const id = item.id || `SCH${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
             insertStmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time);
         }
