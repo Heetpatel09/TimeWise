@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { Schedule, Class, Subject, Faculty, Classroom, Student } from '@/lib/types';
+import { gemini15Flash } from '@genkit-ai/googleai';
 
 // Define Zod schemas for the types from lib/types
 const ScheduleSchema = z.object({
@@ -158,7 +159,7 @@ const resolveScheduleConflictsFlow = ai.defineFlow(
     outputSchema: ResolveConflictsOutputSchema,
   },
   async (input) => {
-    const { output } = await resolvePrompt(input);
+    const { output } = await resolvePrompt(input, { model: gemini15Flash });
     if (!output || !output.resolvedSchedule || !output.summary || !output.notifications) {
       throw new Error("AI failed to generate a complete resolution. Please try again.");
     }
