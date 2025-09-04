@@ -34,7 +34,7 @@ const SubjectSchema = z.object({
   id: z.string(),
   name: z.string(),
   code: z.string(),
-  isSpecial: z.boolean().optional(),
+  isSpecial: z.boolean().describe("Whether the subject is a special, fixed slot that cannot be rescheduled."),
   type: z.enum(['theory', 'lab']),
   semester: z.number(),
 });
