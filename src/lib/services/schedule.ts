@@ -1,9 +1,10 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Schedule, EnrichedSchedule, Faculty } from '@/lib/types';
+import type { Schedule, EnrichedSchedule, Faculty, Classroom } from '@/lib/types';
 import { getClasses } from './classes';
 import { getSubjects } from './subjects';
 import { getClassrooms } from './classrooms';
@@ -150,7 +151,7 @@ export async function getAvailableFacultyForSlot(day: string, time: string): Pro
     return allFaculty;
 }
 
-export async function getAvailableClassroomsForSlot(day: string, time: string, type: 'classroom' | 'lab'): Promise<Faculty[]> {
+export async function getAvailableClassroomsForSlot(day: string, time: string, type: 'classroom' | 'lab'): Promise<Classroom[]> {
     const db = getDb();
 
     // Get IDs of all classrooms that are busy at the specified time
@@ -166,3 +167,4 @@ export async function getAvailableClassroomsForSlot(day: string, time: string, t
     const busyIdsSet = new Set(busyClassroomIds);
     return allClassrooms.filter(c => !busyIdsSet.has(c.id) && c.type === type);
 }
+
