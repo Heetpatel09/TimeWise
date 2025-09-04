@@ -45,7 +45,7 @@ const ResolveConflictsInputSchema = z.object({
 export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
 
 const NotificationSchema = z.object({
-    userId: z.string().describe("The ID of the user (faculty or student) to notify."),
+    userId: z.string().describe("The ID of the user (faculty or student) to notify.").optional(),
     classId: z.string().describe("The ID of the class affected by the change. This will be used to notify all students in that class.").optional(),
     message: z.string().describe("The notification message detailing the change. This message will be sent to the specified user or all students in the class."),
 });

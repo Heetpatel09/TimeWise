@@ -543,9 +543,18 @@ export default function ScheduleManager() {
                     {aiResolution?.notifications.map((notif, index) => {
                         const user = notif.userId ? getRelationInfo(notif.userId, 'faculty') : null;
                         const targetClass = notif.classId ? getRelationInfo(notif.classId, 'class') : null;
+                        const studentRecipients = students.filter(s => s.classId === notif.classId);
+
+                        let recipientText = "Unknown";
+                        if (user) {
+                            recipientText = user.name;
+                        } else if (targetClass) {
+                             recipientText = `All students in ${targetClass.name} (${studentRecipients.length} students)`;
+                        }
+
                         return (
                         <div key={index} className="text-sm p-2 border rounded-md bg-muted/50">
-                            <p><strong>To:</strong> {user ? user.name : `All students in ${targetClass?.name}`}</p>
+                            <p><strong>To:</strong> {recipientText}</p>
                             <p><strong>Message:</strong> {notif.message}</p>
                         </div>
                     )})}
