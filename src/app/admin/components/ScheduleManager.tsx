@@ -224,12 +224,17 @@ export default function ScheduleManager() {
       setIsResolvingWithAI(true);
       toast({ title: "AI is at work!", description: "Resolving schedule conflicts. This may take a moment..." });
       try {
+          const involvedClassIds = new Set(schedule.map(s => s.classId));
+          const involvedSubjectIds = new Set(schedule.map(s => s.subjectId));
+          const involvedFacultyIds = new Set(schedule.map(s => s.facultyId));
+          const involvedClassroomIds = new Set(schedule.map(s => s.classroomId));
+
           const result = await resolveScheduleConflicts({
               schedule,
-              classes,
-              subjects,
-              faculty,
-              classrooms,
+              classInfo: classes.filter(c => involvedClassIds.has(c.id)).map(c => ({ id: c.id, name: c.name })),
+              subjectInfo: subjects.filter(s => involvedSubjectIds.has(s.id)).map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type })),
+              facultyInfo: faculty.filter(f => involvedFacultyIds.has(f.id)).map(f => ({ id: f.id, name: f.name })),
+              classroomInfo: classrooms.filter(cr => involvedClassroomIds.has(cr.id)).map(cr => ({ id: cr.id, name: cr.name })),
           });
           
           setAiResolution(result);

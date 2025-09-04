@@ -21,44 +21,25 @@ const ScheduleSchema = z.object({
   time: z.string(),
 });
 
-const ClassSchema = z.object({
+const EntityInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
-  semester: z.number(),
-  department: z.string(),
 });
 
-const SubjectSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  code: z.string(),
-  isSpecial: z.boolean().describe("Whether the subject is a fixed special slot"),
-  type: z.enum(["theory", "lab"]),
-  semester: z.number(),
+const SubjectInfoSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    isSpecial: z.boolean(),
+    type: z.enum(["theory", "lab"]),
 });
 
-const FacultySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  department: z.string(),
-  streak: z.number(),
-  avatar: z.string().optional(),
-  profileCompleted: z.number(),
-});
-
-const ClassroomSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(["classroom", "lab"]),
-});
 
 const ResolveConflictsInputSchema = z.object({
     schedule: z.array(ScheduleSchema),
-    classes: z.array(ClassSchema),
-    subjects: z.array(SubjectSchema),
-    faculty: z.array(FacultySchema),
-    classrooms: z.array(ClassroomSchema),
+    classInfo: z.array(EntityInfoSchema),
+    subjectInfo: z.array(SubjectInfoSchema),
+    facultyInfo: z.array(EntityInfoSchema),
+    classroomInfo: z.array(EntityInfoSchema),
 });
 
 export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
@@ -95,7 +76,7 @@ Here are the rules and context:
     *   You MUST NOT add or remove any classes from the original schedule. Every class must be present in the final output.
     *   You can change the 'day', 'time', 'classroomId', or 'facultyId' for a scheduled slot to resolve a conflict.
     *   Prioritize changing the classroom first. If that doesn't work, try changing the time slot. Changing the faculty should be a last resort.
-    *   You have access to all available entities (classes, subjects, faculty, classrooms). Use this information to make valid assignments.
+    *   You have access to all available entities. Use this information to make valid assignments.
     *   Ensure that the classroom type matches the subject type (e.g., 'lab' subjects must be in 'lab' classrooms).
 
 3.  **Output Requirements**:
@@ -108,10 +89,10 @@ Here are the rules and context:
 
 Here is the data for the current schedule and available resources:
 -   **Full Schedule with Conflicts**: {{{json schedule}}}
--   **Available Classes**: {{{json classes}}}
--   **Available Subjects**: {{{json subjects}}}
--   **Available Faculty**: {{{json faculty}}}
--   **Available Classrooms**: {{{json classrooms}}}
+-   **Involved Classes**: {{{json classInfo}}}
+-   **Involved Subjects**: {{{json subjectInfo}}}
+-   **Involved Faculty**: {{{json facultyInfo}}}
+-   **Involved Classrooms**: {{{json classroomInfo}}}
 
 Please analyze the schedule, resolve all conflicts according to the strategy, and provide the output in the required JSON format.
 `,
