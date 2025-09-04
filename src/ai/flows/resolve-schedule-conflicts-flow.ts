@@ -64,18 +64,19 @@ const conflictResolutionPrompt = ai.definePrompt({
     model: googleAI.model('gemini-1.5-flash'),
     input: { schema: ResolveConflictsInputSchema },
     output: { schema: ResolveConflictsOutputSchema },
-    prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable.
+    prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable. You must do this in a single attempt, ensuring the final schedule is completely conflict-free.
 
 Here are the rules and context:
 1.  **Conflicts to Resolve**:
-    *   A faculty member is assigned to two or more classes at the same time.
-    *   A classroom is booked for two or more classes at the same time.
-    *   A class (student group) is scheduled for two or more activities at the same time.
+    *   **Faculty Conflict**: A faculty member is assigned to two or more classes at the same time.
+    *   **Classroom Conflict**: A classroom is booked for two or more classes at the same time.
+    *   **Class Conflict**: A class (student group) is scheduled for two or more activities at the same time.
 
 2.  **Resolution Strategy**:
     *   The weekdays in order are Monday, Tuesday, Wednesday, Thursday, Friday.
     *   Your primary goal is to produce a valid, conflict-free schedule.
     *   You MUST NOT add or remove any classes from the original schedule. Every class must be present in the final output.
+    *   **Iterative Resolution**: You must identify all conflicts first. Then, resolve them one by one. After each change, you must re-evaluate the entire schedule to ensure no new conflicts have been created. Repeat this process until no conflicts of any type remain.
     *   When you find a conflict, you must reschedule one of the conflicting classes to another available time slot. Prioritize finding a free slot on the same day. If no slot is available on the same day, find a free slot on another day. Do not change any classes that are not part of the conflict.
     *   To resolve a classroom conflict, you can change the 'classroomId' of one of the slots to an available, compatible classroom.
     *   You can change the 'day', 'time', or 'classroomId' for a scheduled slot to resolve a conflict. Avoid changing the faculty if possible.
