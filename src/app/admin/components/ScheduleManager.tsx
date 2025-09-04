@@ -234,6 +234,7 @@ export default function ScheduleManager() {
               subjectInfo: subjects.filter(s => involvedSubjectIds.has(s.id)).map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type })),
               facultyInfo: faculty.map(f => ({ id: f.id, name: f.name })),
               classroomInfo: classrooms.map(cr => ({ id: cr.id, name: cr.name })),
+              timeSlots: LECTURE_TIME_SLOTS,
           });
           
           setAiResolution(result);

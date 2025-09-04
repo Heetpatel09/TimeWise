@@ -40,6 +40,7 @@ const ResolveConflictsInputSchema = z.object({
     subjectInfo: z.array(SubjectInfoSchema),
     facultyInfo: z.array(EntityInfoSchema),
     classroomInfo: z.array(EntityInfoSchema),
+    timeSlots: z.array(z.string()),
 });
 
 export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
@@ -76,6 +77,7 @@ Here are the rules and context:
     *   You MUST NOT add or remove any classes from the original schedule. Every class must be present in the final output.
     *   You can change the 'day', 'time', 'classroomId', or 'facultyId' for a scheduled slot to resolve a conflict.
     *   Prioritize changing the classroom first. If that doesn't work, try changing the time slot. Changing the faculty should be a last resort.
+    *   Use the provided 'timeSlots' to find an empty slot on the same day if you need to reschedule.
     *   You have access to all available entities. Use this information to make valid assignments.
     *   Ensure that the classroom type matches the subject type (e.g., 'lab' subjects must be in 'lab' classrooms).
 
@@ -89,6 +91,7 @@ Here are the rules and context:
 
 Here is the data for the current schedule and available resources:
 -   **Full Schedule with Conflicts**: {{{json schedule}}}
+-   **Available Time Slots per Day**: {{{json timeSlots}}}
 -   **Involved Classes**: {{{json classInfo}}}
 -   **Involved Subjects**: {{{json subjectInfo}}}
 -   **Involved Faculty**: {{{json facultyInfo}}}
