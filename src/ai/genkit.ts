@@ -1,12 +1,11 @@
 
 import {genkit} from 'genkit';
-import {vertexAI} from '@genkit-ai/vertexai';
+import {googleAI} from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [
-    vertexAI({
+    googleAI({
       apiKey: process.env.GEMINI_API_KEY,
-      location: 'us-central1',
     }),
   ],
 });
