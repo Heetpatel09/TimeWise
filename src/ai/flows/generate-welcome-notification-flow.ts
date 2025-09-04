@@ -1,7 +1,5 @@
 
 'use server';
-import { config } from 'dotenv';
-config();
 
 /**
  * @fileOverview Implements a flow to generate a personalized welcome notification.

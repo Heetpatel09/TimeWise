@@ -1,7 +1,5 @@
 
 'use server';
-import { config } from 'dotenv';
-config();
 
 /**
  * @fileOverview A flow to resolve conflicts in a university timetable.
