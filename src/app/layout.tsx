@@ -27,7 +27,7 @@ export default function RootLayout({
             src="https://picsum.photos/1920/1080"
             alt="Abstract background"
             fill
-            style={{ objectFit: 'cover' }}
+            style={{ objectFit: 'cover', opacity: 0.5 }}
             priority
             data-ai-hint="abstract gradient"
           />
