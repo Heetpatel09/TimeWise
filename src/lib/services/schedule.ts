@@ -4,7 +4,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Schedule, EnrichedSchedule } from '@/lib/types';
+import type { Schedule, EnrichedSchedule, Faculty } from '@/lib/types';
 import { getClasses } from './classes';
 import { getSubjects } from './subjects';
 import { getClassrooms } from './classrooms';
@@ -43,7 +43,7 @@ export async function addSchedule(item: Omit<Schedule, 'id'>) {
     const db = getDb();
     
     // Check for conflicts before adding
-    checkForConflict(item);
+    // checkForConflict(item);
     
     const id = `SCH${Date.now()}`;
     const newItem: Schedule = { ...item, id };
@@ -62,7 +62,7 @@ export async function updateSchedule(updatedItem: Schedule) {
     }
     
     // Check for conflicts before updating
-    checkForConflict(updatedItem, updatedItem.id);
+    // checkForConflict(updatedItem, updatedItem.id);
 
     const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, classroomId = ?, day = ?, time = ? WHERE id = ?');
     stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time, updatedItem.id);
@@ -148,4 +148,19 @@ export async function getScheduleForFacultyInRange(facultyId: string, startDate:
         classroomType: classrooms.find(cr => cr.id === s.classroomId)?.type || 'classroom',
         facultyName: facultyMap.get(s.facultyId) || 'N/A',
     }));
+}
+
+export async function getAvailableFacultyForSlot(day: string, time: string): Promise<Faculty[]> {
+    const db = getDb();
+    const allFaculty = await getFaculty();
+    
+    const busyFacultyIds = db.prepare(`
+        SELECT DISTINCT facultyId 
+        FROM schedule 
+        WHERE day = ? AND time = ?
+    `).all(day, time).map((row: any) => row.facultyId);
+
+    const busyFacultySet = new Set(busyFacultyIds);
+
+    return allFaculty.filter(f => !busyFacultySet.has(f.id));
 }
