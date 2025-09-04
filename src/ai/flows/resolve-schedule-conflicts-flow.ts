@@ -98,7 +98,7 @@ Here is the data for the current schedule and available resources:
 -   **Involved Faculty**: {{{json facultyInfo}}}
 -   **Involved Classrooms**: {{{json classroomInfo}}}
 
-Please analyze the schedule, resolve all conflicts according to the strategy, and provide the output in the required JSON format.
+Please analyze the schedule, resolve all conflicts until none remain, and provide the output in the required JSON format. The final 'resolvedSchedule' you return MUST be completely free of any conflicts.
 `,
 });
 
