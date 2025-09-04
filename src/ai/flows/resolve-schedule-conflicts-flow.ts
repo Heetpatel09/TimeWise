@@ -75,7 +75,7 @@ Here are the rules and context:
 2.  **Resolution Strategy**:
     *   Your primary goal is to produce a valid, conflict-free schedule.
     *   You MUST NOT add or remove any classes from the original schedule. Every class must be present in the final output.
-    *   To resolve a faculty double-booking, your primary strategy is to find a free time slot on the same day for that faculty member and move one of the conflicting classes there. This should not affect other faculty members.
+    *   To resolve a faculty double-booking, your primary strategy is to find a free time slot on the same day for that faculty member and move one of the conflicting classes there. If no free slot is available on the same day, you should look for a free slot on the next available day. This should not affect other faculty members.
     *   You can change the 'day', 'time', 'classroomId', or 'facultyId' for a scheduled slot to resolve a conflict.
     *   Prioritize changing the classroom first. If that doesn't work, try changing the time slot. Changing the faculty should be a last resort.
     *   Use the provided 'timeSlots' to find an empty slot on the same day if you need to reschedule.
@@ -122,3 +122,4 @@ const resolveScheduleConflictsFlow = ai.defineFlow(
 export async function resolveScheduleConflicts(input: ResolveConflictsInput): Promise<ResolveConflictsOutput> {
   return await resolveScheduleConflictsFlow(input);
 }
+
