@@ -76,9 +76,9 @@ Analyze the entire schedule and identify all instances of the following three co
 2.  **Classroom Conflict (Same Time Slot, Same Classroom)**: Two different classes are assigned to the same classroom at the same time.
 3.  **Faculty Conflict (Faculty Double Booking)**: A single faculty member is assigned to two or more different classes at the same time.
 
-### Step 2: Resolve Conflicts Iteratively
+### Step 2: Resolve Conflicts Iteratively and Verify
 
-Resolve the identified conflicts one by one using the following strategies. After each resolution, you must re-evaluate the entire schedule to ensure your fix has not created a new conflict. Repeat this process until no conflicts of any type remain.
+Resolve the identified conflicts one by one using the following strategies. After each resolution, you **must re-evaluate the entire schedule** to ensure your fix has not created a new conflict. Repeat this process until no conflicts of any type remain.
 
 *   **For a Class Conflict**:
     *   Keep one of the scheduled subjects in the original time slot.
@@ -98,9 +98,11 @@ Resolve the identified conflicts one by one using the following strategies. Afte
     *   This change must not affect any other faculty or classes.
     *   Generate notifications for the students of the shifted class (using \`classId\`) and the double-booked faculty member.
 
-### Step 3: Final Output Requirements
+### Step 3: Final Verification and Output
 
-After ensuring all conflicts are resolved, provide the final output in the required format:
+Before providing the final output, perform one last, thorough check of the entire proposed \`resolvedSchedule\`. Confirm that absolutely no conflicts of any type remain. The final schedule must be perfect.
+
+Once verified, provide the output in the required format:
 
 *   **summary**: Provide a concise, human-readable summary of all the changes you made. (e.g., "Resolved faculty conflict for Dr. Turing by moving CS101 to 10 AM. Fixed classroom conflict for Room 101 by reassigning SE COMP to Room 102.")
 *   **resolvedSchedule**: Return the entire, final, conflict-free schedule. This schedule must be perfect.
@@ -114,7 +116,7 @@ Here is the data for the current schedule and available resources:
 -   **Involved Faculty**: {{{json facultyInfo}}}
 -   **Involved Classrooms**: {{{json classroomInfo}}}
 
-Please begin your work. Analyze, resolve iteratively, and return the perfect, conflict-free schedule.
+Please begin your work. Analyze, resolve iteratively, verify, and return the perfect, conflict-free schedule.
 `,
 });
 
