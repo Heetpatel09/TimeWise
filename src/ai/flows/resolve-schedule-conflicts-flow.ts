@@ -61,7 +61,6 @@ export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema
 
 const conflictResolutionPrompt = ai.definePrompt({
     name: 'conflictResolutionPrompt',
-    model: googleAI.model('gemini-1.5-pro'),
     input: { schema: ResolveConflictsInputSchema },
     output: { schema: ResolveConflictsOutputSchema },
     prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable. You must do this in a single attempt, ensuring the final schedule is completely conflict-free.
@@ -126,6 +125,7 @@ const resolveScheduleConflictsFlow = ai.defineFlow(
     name: 'resolveScheduleConflictsFlow',
     inputSchema: ResolveConflictsInputSchema,
     outputSchema: ResolveConflictsOutputSchema,
+    model: googleAI.model('gemini-1.5-pro'),
   },
   async (input) => {
     const { output } = await conflictResolutionPrompt(input);
