@@ -66,30 +66,45 @@ const conflictResolutionPrompt = ai.definePrompt({
     output: { schema: ResolveConflictsOutputSchema },
     prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable. You must do this in a single attempt, ensuring the final schedule is completely conflict-free.
 
-Here are the rules and context:
-1.  **Conflicts to Resolve**:
-    *   **Faculty Conflict**: A faculty member is assigned to two or more classes at the same time.
-    *   **Classroom Conflict**: A classroom is booked for two or more classes at the same time.
-    *   **Class Conflict**: A class (student group) is scheduled for two or more activities at the same time.
+Here is your conflict resolution playbook. Follow it precisely.
 
-2.  **Resolution Strategy**:
-    *   The weekdays in order are Monday, Tuesday, Wednesday, Thursday, Friday.
-    *   Your primary goal is to produce a valid, conflict-free schedule.
-    *   You MUST NOT add or remove any classes from the original schedule. Every class must be present in the final output.
-    *   **Iterative Resolution**: You must identify all conflicts first. Then, resolve them one by one. After each change, you must re-evaluate the entire schedule to ensure no new conflicts have been created. Repeat this process until no conflicts of any type remain.
-    *   When you find a conflict, you must reschedule one of the conflicting classes to another available time slot. Prioritize finding a free slot on the same day. If no slot is available on the same day, find a free slot on another day. Do not change any classes that are not part of the conflict.
-    *   To resolve a classroom conflict, you can change the 'classroomId' of one of the slots to an available, compatible classroom.
-    *   You can change the 'day', 'time', or 'classroomId' for a scheduled slot to resolve a conflict. Avoid changing the faculty if possible.
-    *   Use the provided 'timeSlots' to find an empty slot.
-    *   Ensure that the classroom type matches the subject type (e.g., 'lab' subjects must be in 'lab' classrooms).
+### Step 1: Identify All Conflicts
 
-3.  **Output Requirements**:
-    *   **summary**: Provide a concise, human-readable summary of the changes you made. For example: "Moved CS101 for TE COMP to Room 102. Rescheduled PH201 for SE COMP to Tuesday at 2 PM."
-    *   **resolvedSchedule**: Return the entire, final, conflict-free schedule as a JSON array.
-    *   **notifications**: For every single change you make, generate a clear notification.
-        *   For faculty, specify their individual 'userId'.
-        *   For students, specify the 'classId' of the class that was changed. Do NOT list individual student userIds.
-        *   The message should clearly explain the change (e.g., "Your CS101 class has been moved to Room 102.").
+Analyze the entire schedule and identify all instances of the following three conflict types:
+
+1.  **Class Conflict (Same Time Slot, Different Subjects)**: A single class (e.g., TE COMP) is scheduled for two or more different subjects at the same time on the same day.
+2.  **Classroom Conflict (Same Time Slot, Same Classroom)**: Two different classes are assigned to the same classroom at the same time.
+3.  **Faculty Conflict (Faculty Double Booking)**: A single faculty member is assigned to two or more different classes at the same time.
+
+### Step 2: Resolve Conflicts Iteratively
+
+Resolve the identified conflicts one by one using the following strategies. After each resolution, you must re-evaluate the entire schedule to ensure your fix has not created a new conflict. Repeat this process until no conflicts of any type remain.
+
+*   **For a Class Conflict**:
+    *   Keep one of the scheduled subjects in the original time slot.
+    *   Move the second subject to another available (free) time slot **on the same day**.
+    *   This change must not affect any other faculty or classes.
+    *   Generate a notification for the students (using \`classId\`) and the faculty member for the moved subject.
+
+*   **For a Classroom Conflict**:
+    *   Keep one class in the original classroom.
+    *   Re-assign the second class to another available classroom.
+    *   The new classroom's type (e.g., 'lab', 'classroom') must be compatible with the subject's type ('lab', 'theory').
+    *   Generate notifications for the students (using \`classId\`) and faculty of the re-assigned class.
+
+*   **For a Faculty Conflict**:
+    *   Keep one of the faculty's classes in its original slot.
+    *   Shift the other class to a free time slot, prioritizing the same day first. If no slots are available on the same day, find a free slot on another day.
+    *   This change must not affect any other faculty or classes.
+    *   Generate notifications for the students of the shifted class (using \`classId\`) and the double-booked faculty member.
+
+### Step 3: Final Output Requirements
+
+After ensuring all conflicts are resolved, provide the final output in the required format:
+
+*   **summary**: Provide a concise, human-readable summary of all the changes you made. (e.g., "Resolved faculty conflict for Dr. Turing by moving CS101 to 10 AM. Fixed classroom conflict for Room 101 by reassigning SE COMP to Room 102.")
+*   **resolvedSchedule**: Return the entire, final, conflict-free schedule. This schedule must be perfect.
+*   **notifications**: For every single change you make, generate a clear notification. For student notifications, specify the \`classId\`. For faculty, specify their individual \`userId\`.
 
 Here is the data for the current schedule and available resources:
 -   **Full Schedule with Conflicts**: {{{json schedule}}}
@@ -99,7 +114,7 @@ Here is the data for the current schedule and available resources:
 -   **Involved Faculty**: {{{json facultyInfo}}}
 -   **Involved Classrooms**: {{{json classroomInfo}}}
 
-Please analyze the schedule, resolve all conflicts until none remain, and provide the output in the required JSON format. The final 'resolvedSchedule' you return MUST be completely free of any conflicts.
+Please begin your work. Analyze, resolve iteratively, and return the perfect, conflict-free schedule.
 `,
 });
 
