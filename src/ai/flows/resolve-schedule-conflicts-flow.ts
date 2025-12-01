@@ -8,7 +8,7 @@
 
 import { z } from "genkit";
 import { ai } from "@/ai/genkit";
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 
 // -------------------- SCHEMAS --------------------
 const ScheduleSchema = z.object({
@@ -63,7 +63,7 @@ const conflictResolutionPrompt = ai.definePrompt({
     name: 'conflictResolutionPrompt',
     input: { schema: ResolveConflictsInputSchema },
     output: { schema: ResolveConflictsOutputSchema },
-    model: googleAI.model('gemini-1.5-pro'),
+    model: googleAI.model('gemini-1.5-pro-latest'),
     prompt: `You are an expert university schedule administrator. Your task is to resolve all conflicts in a given weekly timetable. You must do this in a single attempt, ensuring the final schedule is completely conflict-free.
 
 Here is your conflict resolution playbook. Follow it precisely.
