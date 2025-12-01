@@ -8,7 +8,7 @@
 
 import { z } from "genkit";
 import { ai } from "@/ai/genkit";
-import { googleAI } from '@genkit-ai/google-genai';
+import { googleAI } from '@genkit-ai/googleai';
 
 // -------------------- SCHEMAS --------------------
 const ScheduleSchema = z.object({
