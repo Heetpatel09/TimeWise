@@ -56,7 +56,7 @@ const ResolveConflictsOutputSchema = z.object({
     resolvedSchedule: z.array(ScheduleSchema).describe("The full, corrected timetable with no conflicts."),
     notifications: z.array(NotificationSchema).describe("A list of notifications to be generated for users affected by the changes. For student notifications, specify the classId."),
 });
-export type ResolveConflictsOutput = z-infer<typeof ResolveConflictsOutputSchema>;
+export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema>;
 
 
 const conflictResolutionPrompt = ai.definePrompt({
