@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -23,6 +23,7 @@ import AdminsManager from './components/AdminsManager';
 import FeesManager from './components/FeesManager';
 import HostelsManager from './components/HostelsManager';
 import ExamsManager from './components/ExamsManager';
+import AttendanceManager from './components/AttendanceManager';
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
@@ -42,6 +43,7 @@ const managementCards = [
   { tab: "students", title: "Students", icon: Users, description: "Administer student records." },
   { tab: "schedule", title: "Schedule", icon: Calendar, description: "Create and view timetables." },
   { tab: "exams", title: "Exams", icon: FileText, description: "Manage exam timetables." },
+  { tab: "attendance", title: "Attendance", icon: CheckSquare, description: "Review and lock attendance." },
   { tab: "fees", title: "Fees", icon: DollarSign, description: "Handle student fee payments." },
   { tab: "hostels", title: "Hostels", icon: Home, description: "Manage hostel room assignments." },
   { tab: "leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
@@ -172,6 +174,7 @@ const AdminDashboardContent = () => {
             case 'fees': content = <FeesManager />; break;
             case 'hostels': content = <HostelsManager />; break;
             case 'exams': content = <ExamsManager />; break;
+            case 'attendance': content = <AttendanceManager />; break;
             default: return <AdminDashboardHome />;
         }
 

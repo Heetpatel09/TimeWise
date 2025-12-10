@@ -158,6 +158,25 @@ export interface Exam {
     time: string;
 }
 
+export interface Attendance {
+    id: string;
+    scheduleId: string;
+    studentId: string;
+    date: string; // YYYY-MM-DD
+    status: 'present' | 'absent' | 'disputed';
+    isLocked: boolean;
+    timestamp: string;
+}
+
+export interface EnrichedAttendance extends Attendance {
+    studentName: string;
+    className: string;
+    subjectName: string;
+    facultyName: string;
+    day: string;
+    time: string;
+}
+
 export interface EnrichedFee extends Fee {
     studentName: string;
     className: string;

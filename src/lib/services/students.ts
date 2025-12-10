@@ -14,6 +14,7 @@ import { randomBytes } from 'crypto';
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
     revalidatePath('/student', 'layout');
+    revalidatePath('/faculty', 'layout');
 }
 
 export async function getStudents(): Promise<Student[]> {
@@ -22,6 +23,13 @@ export async function getStudents(): Promise<Student[]> {
   const results = stmt.all() as any[];
   // Ensure plain objects are returned
   return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
+}
+
+export async function getStudentsByClass(classId: string): Promise<Student[]> {
+    const db = getDb();
+    const stmt = db.prepare('SELECT * FROM students WHERE classId = ?');
+    const results = stmt.all(classId) as any[];
+    return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
 }
 
 export async function addStudent(
@@ -108,5 +116,3 @@ export async function deleteStudent(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    

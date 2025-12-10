@@ -25,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 14; // Increment this to force re-initialization
+const schemaVersion = 15; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -214,6 +214,17 @@ function createSchemaAndSeed() {
       FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
       FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
       FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS attendance (
+        id TEXT PRIMARY KEY,
+        scheduleId TEXT NOT NULL,
+        studentId TEXT NOT NULL,
+        date TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('present', 'absent', 'disputed')),
+        isLocked BOOLEAN NOT NULL DEFAULT 0,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (scheduleId) REFERENCES schedule(id) ON DELETE CASCADE,
+        FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
     );
   `);
   
