@@ -27,7 +27,7 @@ const ClassroomInfoSchema = z.object({
   name: z.string(),
 });
 
-export const GenerateExamScheduleInputSchema = z.object({
+const GenerateExamScheduleInputSchema = z.object({
   subjects: z.array(SubjectInfoSchema),
   classes: z.array(ClassInfoSchema),
   classrooms: z.array(ClassroomInfoSchema),
@@ -35,7 +35,7 @@ export const GenerateExamScheduleInputSchema = z.object({
   endDate: z.string().describe('The end date for the exam period in YYYY-MM-DD format.'),
   timeSlots: z.array(z.string()).describe('Array of available time slots, e.g., ["10:00 AM - 01:00 PM", "02:00 PM - 05:00 PM"]'),
 });
-export type GenerateExamScheduleInput = z.infer<typeof GenerateExamScheduleInputSchema>;
+type GenerateExamScheduleInput = z.infer<typeof GenerateExamScheduleInputSchema>;
 
 // Output Schemas
 const GeneratedExamSchema = z.object({
@@ -46,7 +46,7 @@ const GeneratedExamSchema = z.object({
   time: z.string(),
 });
 
-export const GenerateExamScheduleOutputSchema = z.object({
+const GenerateExamScheduleOutputSchema = z.object({
   summary: z.string().describe('A brief summary of the generated exam schedule.'),
   generatedSchedule: z.array(GeneratedExamSchema).describe('The full, conflict-free exam schedule.'),
 });

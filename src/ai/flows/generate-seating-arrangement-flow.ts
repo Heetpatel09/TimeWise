@@ -24,11 +24,11 @@ const EnrichedExamInfoSchema = z.object({
   time: z.string(),
 });
 
-export const GenerateSeatingArrangementInputSchema = z.object({
+const GenerateSeatingArrangementInputSchema = z.object({
   exam: EnrichedExamInfoSchema,
   students: z.array(StudentInfoSchema),
 });
-export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
+type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 
 // Output Schemas
 const SeatingAssignmentSchema = z.object({
@@ -37,7 +37,7 @@ const SeatingAssignmentSchema = z.object({
   studentName: z.string(),
 });
 
-export const GenerateSeatingArrangementOutputSchema = z.object({
+const GenerateSeatingArrangementOutputSchema = z.object({
   seatingArrangement: z.array(SeatingAssignmentSchema).describe('An array of seating assignments for each student.'),
 });
 export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
