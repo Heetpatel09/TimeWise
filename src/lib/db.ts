@@ -255,19 +255,13 @@ function createSchemaAndSeed() {
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar);
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
-        insertUser.run('turing@example.com', 'FAC001', 'faculty123', 'faculty', 1);
-        insertUser.run('lovelace@example.com', 'FAC002', 'faculty123', 'faculty', 1);
-        insertUser.run('hopper@example.com', 'FAC003', 'faculty123', 'faculty', 1);
-        insertUser.run('neumann@example.com', 'FAC004', 'faculty123', 'faculty', 1);
-        insertUser.run('knuth@example.com', 'FAC005', 'faculty123', 'faculty', 1);
-        insertUser.run('abhinav@example.com', 'FAC006', 'faculty123', 'faculty', 1);
-        
-        insertUser.run('abc@example.com', 'STU001', '123', 'student', 1);
-        insertUser.run('bob@example.com', 'STU002', 'student123', 'student', 1);
-        insertUser.run('charlie@example.com', 'STU003', 'student123', 'student', 1);
-        insertUser.run('stu004@example.com', 'STU004', 'student123', 'student', 1);
-        insertUser.run('stu005@example.com', 'STU005', 'student123', 'student', 1);
-        insertUser.run('stu006@example.com', 'STU006', 'student123', 'student', 1);
+        faculty.forEach(f => {
+            insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
+        });
+
+        students.forEach(s => {
+            insertUser.run(s.email, s.id, 'student123', 'student', 1);
+        });
     })();
     console.log('Database initialized and seeded successfully.');
 }
