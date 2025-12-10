@@ -6,10 +6,10 @@ import { useEffect, useState, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, AlertCircle, Check, HelpCircle } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
-import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
+import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event, EnrichedAttendance } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,6 +26,10 @@ import { Badge } from '@/components/ui/badge';
 import { holidays } from '@/lib/holidays';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getStudentAttendance, disputeAttendance } from '@/lib/services/attendance';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function getDatesInRange(startDate: Date, endDate: Date) {
   const dates = [];
@@ -155,6 +159,97 @@ function ScheduleCalendar({
     </Card>
   )
 }
+
+function AttendanceTracker() {
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    const { data: attendanceRecords, isLoading } = useQuery({
+        queryKey: ['studentAttendance', user?.id],
+        queryFn: () => getStudentAttendance(user!.id),
+        enabled: !!user,
+    });
+    
+    const disputeMutation = useMutation({
+        mutationFn: (attendanceId: string) => disputeAttendance(attendanceId, user!.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['studentAttendance', user?.id] });
+            toast({ title: 'Concern Raised', description: 'Your attendance concern has been sent to your faculty for review.' });
+        },
+        onError: (error: any) => {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const getStatusVariant = (status: EnrichedAttendance['status']) => {
+        switch (status) {
+            case 'present': return 'default';
+            case 'absent': return 'destructive';
+            case 'disputed': return 'secondary';
+        }
+    };
+
+    if (isLoading) return <div className="flex items-center justify-center p-4"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+        return <p className="text-sm text-muted-foreground text-center p-4">No recent attendance records found.</p>
+    }
+
+    return (
+        <ScrollArea className="h-72">
+            <div className="space-y-3 pr-4">
+                {attendanceRecords.map(record => (
+                    <div key={record.id} className="flex items-center justify-between p-2 rounded-md border">
+                        <div>
+                            <p className="font-semibold text-sm">{record.subjectName}</p>
+                            <p className="text-xs text-muted-foreground">{format(parseISO(record.date), 'PPP')}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <Badge variant={getStatusVariant(record.status)}>{record.status}</Badge>
+                             {record.status === 'absent' && !record.isLocked && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={disputeMutation.isPending}>
+                                            <HelpCircle className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Raise a Concern?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                If you believe you were marked absent by mistake, you can raise a concern. This will notify your faculty member to review this record.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => disputeMutation.mutate(record.id)}>
+                                                Confirm & Raise Concern
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
+                             {record.isLocked && (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Check className="h-4 w-4 text-green-500"/>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Attendance for this day is locked.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </ScrollArea>
+    )
+}
+
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -392,6 +487,15 @@ export default function StudentDashboard() {
                     </Card>
                 </div>
                  <div className="lg:col-span-1 space-y-6">
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
+                        <CardHeader>
+                            <CardTitle>My Attendance</CardTitle>
+                            <CardDescription>View your recent attendance and raise concerns.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AttendanceTracker />
+                        </CardContent>
+                    </Card>
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300 flex flex-col">
                         <CardHeader>
                             <CardTitle>My Timetable</CardTitle>
@@ -628,4 +732,3 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
-
