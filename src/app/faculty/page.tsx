@@ -113,10 +113,9 @@ function ScheduleCalendar({
     const isHoliday = holidayDates.has(dayStr);
     
     return (
-        <Popover>
+        <Popover key={day.toString()}>
           <PopoverTrigger asChild>
             <div
-                key={day.toString()}
                 className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
                 !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
                 } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
@@ -602,3 +601,4 @@ export default function FacultyDashboard() {
 }
 
     
+
