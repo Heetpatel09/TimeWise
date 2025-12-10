@@ -43,17 +43,26 @@ export async function getStudentAttendance(studentId: string): Promise<EnrichedA
 
 export async function upsertAttendance(records: Omit<Attendance, 'id' | 'timestamp' | 'isLocked'>[]): Promise<void> {
     const db = getDb();
+    const updateStmt = db.prepare(`
+        UPDATE attendance 
+        SET status = ?, timestamp = ? 
+        WHERE scheduleId = ? AND studentId = ? AND date = ? AND isLocked = 0
+    `);
     const insertStmt = db.prepare(`
         INSERT INTO attendance (id, scheduleId, studentId, date, status, isLocked, timestamp) 
         VALUES (?, ?, ?, ?, ?, 0, ?)
-        ON CONFLICT(scheduleId, studentId, date) DO UPDATE SET status=excluded.status, timestamp=excluded.timestamp WHERE isLocked = 0
     `);
 
     const transaction = db.transaction(() => {
         for (const record of records) {
-            const id = `ATT${Date.now()}${Math.random()}`;
             const timestamp = new Date().toISOString();
-            insertStmt.run(id, record.scheduleId, record.studentId, record.date, record.status, timestamp);
+            const result = updateStmt.run(record.status, timestamp, record.scheduleId, record.studentId, record.date);
+
+            if (result.changes === 0) {
+                // No record was updated, so insert a new one
+                const id = `ATT${Date.now()}${Math.random()}`;
+                insertStmt.run(id, record.scheduleId, record.studentId, record.date, record.status, timestamp);
+            }
         }
     });
 
