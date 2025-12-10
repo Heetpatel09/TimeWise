@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { getSchedule, addSchedule } from '@/lib/services/schedule';
 import type { Schedule, Class, Subject, Classroom, EnrichedSchedule, NewSlotRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Send, Loader2, Star, Library, Coffee, PlusSquare } from 'lucide-react';
+import { Download, Send, Loader2, Star, Library, Coffee, PlusSquare, CheckSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -21,6 +21,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { addSlotRequest } from '@/lib/services/new-slot-requests';
+import AttendanceDialog from './AttendanceDialog';
+import { isToday, parse } from 'date-fns';
 
 
 const ALL_TIME_SLOTS = [
@@ -63,9 +65,11 @@ export default function ScheduleView() {
   
   const [isChangeDialogOpen, setChangeDialogOpen] = useState(false);
   const [isNewSlotDialogOpen, setNewSlotDialogOpen] = useState(false);
+  const [isAttendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   
   const [selectedSlot, setSelectedSlot] = useState<EnrichedSchedule | null>(null);
   const [selectedLibrarySlot, setSelectedLibrarySlot] = useState<{day:string, time:string} | null>(null);
+  const [selectedSlotForAttendance, setSelectedSlotForAttendance] = useState<EnrichedSchedule | null>(null);
 
   const [newSlotRequest, setNewSlotRequest] = useState<Partial<Omit<NewSlotRequest, 'id' | 'status' | 'facultyId'>>>({});
   
@@ -129,6 +133,11 @@ export default function ScheduleView() {
   const openNewSlotDialog = (day: string, time: string) => {
     setSelectedLibrarySlot({day, time});
     setNewSlotDialogOpen(true);
+  }
+
+  const handleTakeAttendance = (slot: EnrichedSchedule) => {
+    setSelectedSlotForAttendance(slot);
+    setAttendanceDialogOpen(true);
   }
   
   const handleSubmitRequest = async () => {
@@ -241,6 +250,9 @@ export default function ScheduleView() {
   const selectedSubjectType = subjects.find(s => s.id === newSlotRequest?.subjectId)?.type;
   const filteredClassroomsForNewSlot = classrooms.filter(c => !selectedSubjectType || c.type === selectedSubjectType);
 
+  const dayNameToIndex: { [key: string]: number } = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
+  const isCurrentDay = (day: string) => dayNameToIndex[day] === new Date().getDay();
+
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -278,7 +290,7 @@ export default function ScheduleView() {
                         {slots.map((slot: any) => (
                           <TableRow 
                             key={slot.id} 
-                            className={slot.subjectIsSpecial ? `bg-[#4A0080] text-white hover:bg-[#4A0080]/90` : ''}>
+                            className={slot.subjectIsSpecial ? `bg-purple-100 dark:bg-purple-900/50` : ''}>
                             <TableCell>{slot.time}</TableCell>
                             {slot.isLibrary ? (
                                <>
@@ -316,13 +328,18 @@ export default function ScheduleView() {
                                     {(slot as EnrichedSchedule).classroomName}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right space-x-2">
+                                    {isCurrentDay(day) && (
+                                        <Button variant="outline" size="sm" onClick={() => handleTakeAttendance(slot)}>
+                                            <CheckSquare className="h-4 w-4 mr-2" />
+                                            Attendance
+                                        </Button>
+                                    )}
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
                                         onClick={() => openChangeDialog(slot)} 
                                         disabled={(slot as EnrichedSchedule).subjectIsSpecial}
-                                        className={(slot as EnrichedSchedule).subjectIsSpecial ? 'text-gray-800' : ''}
                                         >
                                         Request Change
                                     </Button>
@@ -435,6 +452,14 @@ export default function ScheduleView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+       {isAttendanceDialogOpen && (
+        <AttendanceDialog
+          slot={selectedSlotForAttendance}
+          date={new Date()}
+          isOpen={isAttendanceDialogOpen}
+          onOpenChange={setAttendanceDialogOpen}
+        />
+      )}
     </div>
   );
 }

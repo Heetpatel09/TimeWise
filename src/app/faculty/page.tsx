@@ -5,35 +5,30 @@
 import { useEffect, useState, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Send, ArrowRight, Flame, Loader2, CalendarDays, Circle, Dot, Trash2, Plus, Bell, ChevronLeft, ChevronRight, Sparkles, CheckSquare } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import ScheduleView from "./components/ScheduleView";
-import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
-import { getFaculty } from '@/lib/services/faculty';
-import type { Faculty as FacultyType, Notification, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
-import { useAuth } from '@/context/AuthContext';
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, CheckSquare } from "lucide-react";
+import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
-import { getSchedule } from '@/lib/services/schedule';
-import { holidays } from '@/lib/holidays';
+import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
+import { getSubjectsForStudent, getTimetableDataForStudent } from '../student/actions';
 import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday, getDay } from 'date-fns';
-import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
-import AttendanceDialog from './components/AttendanceDialog';
+import { holidays } from '@/lib/holidays';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
+import { getFaculty } from '@/lib/services/faculty';
+import { getSchedule } from '@/lib/services/schedule';
+import type { Faculty as FacultyType } from '@/lib/types';
 
 
 function getDatesInRange(startDate: Date, endDate: Date) {
@@ -190,10 +185,6 @@ export default function FacultyDashboard() {
   const [reminderTime, setReminderTime] = useState('09:00');
   const [isPending, startTransition] = useTransition();
 
-  const [isDayScheduleOpen, setDayScheduleOpen] = useState(false);
-  const [selectedSlotForAttendance, setSelectedSlotForAttendance] = useState<EnrichedSchedule | null>(null);
-  const [isAttendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
-
   const loadData = async () => {
         if (user) {
             setIsLoading(true);
@@ -276,7 +267,7 @@ export default function FacultyDashboard() {
   
    const handleDayClick = (date: Date) => {
     setSelectedDate(date);
-    setDayScheduleOpen(true);
+    setEventDialogOpen(true);
   };
   
   const handleAddEvent = async () => {
@@ -317,15 +308,6 @@ export default function FacultyDashboard() {
     });
   }
 
-  const handleTakeAttendance = (slot: EnrichedSchedule) => {
-    setSelectedSlotForAttendance(slot);
-    setAttendanceDialogOpen(true);
-  }
-
-  const selectedDateEvents = selectedDate ? events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')) : [];
-  const selectedDateSchedule = selectedDate ? schedule.filter(s => s.day === format(selectedDate, 'EEEE')) : [];
-
-
   if (isLoading) {
     return <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
       <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>
@@ -353,7 +335,7 @@ export default function FacultyDashboard() {
                                 <CalendarDays className="w-5 h-5 mr-2" />
                                 Monthly Calendar
                             </CardTitle>
-                            <CardDescription>Your class days and personal events. Click a day to see details.</CardDescription>
+                            <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow">
                             <ScheduleCalendar 
@@ -415,62 +397,6 @@ export default function FacultyDashboard() {
                 </div>
             </div>
        </div>
-
-      <Dialog open={isDayScheduleOpen} onOpenChange={setDayScheduleOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Schedule for {selectedDate ? format(selectedDate, 'PPP') : ''}</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto space-y-4 p-1">
-            {selectedDateSchedule.length > 0 && (
-              <Card>
-                <CardHeader><CardTitle className="text-base">Classes</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  {selectedDateSchedule.map(slot => (
-                    <div key={slot.id} className="flex justify-between items-center p-2 rounded-md border">
-                      <div>
-                        <p className="font-semibold">{slot.time} - {slot.subjectName}</p>
-                        <p className="text-sm text-muted-foreground">{slot.className} in {slot.classroomName}</p>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={() => handleTakeAttendance(slot)}>
-                        <CheckSquare className="mr-2 h-4 w-4" />
-                        Take Attendance
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-base">Personal Events</CardTitle>
-                    <Button size="sm" variant="outline" onClick={() => { setDayScheduleOpen(false); setEventDialogOpen(true); }}>
-                        <Plus className="h-4 w-4 mr-2" /> Add Event
-                    </Button>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                    {selectedDateEvents.length > 0 ? selectedDateEvents.map(event => (
-                        <div key={event.id} className="flex justify-between items-center p-2 rounded-md border">
-                        <p className="font-semibold">{event.title}</p>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                        </div>
-                    )) : <p className="text-sm text-muted-foreground text-center py-4">No personal events.</p>}
-                </CardContent>
-              </Card>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {isAttendanceDialogOpen && selectedDate && (
-        <AttendanceDialog
-          slot={selectedSlotForAttendance}
-          date={selectedDate}
-          isOpen={isAttendanceDialogOpen}
-          onOpenChange={setAttendanceDialogOpen}
-        />
-      )}
 
       <Dialog open={isScheduleModalOpen} onOpenChange={setScheduleModalOpen}>
         <DialogContent className="max-w-4xl">
