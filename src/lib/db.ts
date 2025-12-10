@@ -25,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 12; // Increment this to force re-initialization
+const schemaVersion = 13; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -173,7 +173,7 @@ function createSchemaAndSeed() {
       password TEXT,
       requiresPasswordChange BOOLEAN NOT NULL DEFAULT 0
     );
-    CREATE TABLE events (
+    CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
         date TEXT NOT NULL,
@@ -181,6 +181,37 @@ function createSchemaAndSeed() {
         reminder BOOLEAN NOT NULL DEFAULT 1,
         reminderTime TEXT,
         createdAt TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS fees (
+      id TEXT PRIMARY KEY,
+      studentId TEXT NOT NULL,
+      amount REAL NOT NULL,
+      dueDate TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('paid', 'unpaid')),
+      FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS hostels (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      blocks TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS rooms (
+      id TEXT PRIMARY KEY,
+      hostelId TEXT NOT NULL,
+      roomNumber TEXT NOT NULL,
+      block TEXT,
+      studentId TEXT,
+      FOREIGN KEY (hostelId) REFERENCES hostels(id) ON DELETE CASCADE,
+      FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS exams (
+      id TEXT PRIMARY KEY,
+      subjectId TEXT NOT NULL,
+      classId TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time TEXT NOT NULL,
+      FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
+      FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
     );
   `);
   

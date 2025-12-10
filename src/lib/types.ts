@@ -126,3 +126,48 @@ export interface Event {
   reminderTime?: string;
   createdAt: string;
 }
+
+export interface Fee {
+    id: string;
+    studentId: string;
+    amount: number;
+    dueDate: string;
+    status: 'paid' | 'unpaid';
+}
+
+export interface Hostel {
+    id: string;
+    name: string;
+    blocks: string; // "A,B,C"
+}
+
+export interface Room {
+    id: string;
+    hostelId: string;
+    roomNumber: string;
+    block: string | null;
+    studentId: string | null;
+}
+
+export interface Exam {
+    id: string;
+    subjectId: string;
+    classId: string;
+    date: string;
+    time: string;
+}
+
+export interface EnrichedFee extends Fee {
+    studentName: string;
+    className: string;
+}
+
+export interface EnrichedRoom extends Room {
+    studentName: string | null;
+    hostelName: string;
+}
+
+export interface EnrichedExam extends Exam {
+    subjectName: string;
+    className: string;
+}
