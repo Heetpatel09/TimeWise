@@ -25,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 13; // Increment this to force re-initialization
+const schemaVersion = 14; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -208,10 +208,12 @@ function createSchemaAndSeed() {
       id TEXT PRIMARY KEY,
       subjectId TEXT NOT NULL,
       classId TEXT NOT NULL,
+      classroomId TEXT,
       date TEXT NOT NULL,
       time TEXT NOT NULL,
       FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
-      FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
+      FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
+      FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE SET NULL
     );
   `);
   

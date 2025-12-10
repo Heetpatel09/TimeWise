@@ -7,33 +7,56 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getExams, addExam, updateExam, deleteExam } from '@/lib/services/exams';
+import { getExams, addExam, updateExam, deleteExam, replaceExams } from '@/lib/services/exams';
 import { getSubjects } from '@/lib/services/subjects';
 import { getClasses } from '@/lib/services/classes';
-import type { EnrichedExam, Exam, Subject, Class } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
+import { getStudents } from '@/lib/services/students';
+import { getClassrooms } from '@/lib/services/classrooms';
+import type { EnrichedExam, Exam, Subject, Class, Classroom, Student } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Sparkles, Download } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, parseISO } from 'date-fns';
+import { generateExamSchedule, GenerateExamScheduleOutput } from '@/ai/flows/generate-exam-schedule-flow';
+import { generateSeatingArrangement, GenerateSeatingArrangementOutput } from '@/ai/flows/generate-seating-arrangement-flow';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+
+const EXAM_TIME_SLOTS = ['10:00 AM - 01:00 PM', '02:00 PM - 05:00 PM'];
 
 export default function ExamsManager() {
   const [exams, setExams] = useState<EnrichedExam[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentExam, setCurrentExam] = useState<Partial<Exam>>({});
   const { toast } = useToast();
 
+  const [isAiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiGeneratedSchedule, setAiGeneratedSchedule] = useState<GenerateExamScheduleOutput | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSeatingPlanOpen, setSeatingPlanOpen] = useState(false);
+  const [seatingPlan, setSeatingPlan] = useState<GenerateSeatingArrangementOutput | null>(null);
+  const [selectedExamForSeating, setSelectedExamForSeating] = useState<EnrichedExam | null>(null);
+  const [isGeneratingSeating, setIsGeneratingSeating] = useState(false);
+
   async function loadData() {
     setIsLoading(true);
     try {
-      const [examData, subjectData, classData] = await Promise.all([getExams(), getSubjects(), getClasses()]);
+      const [examData, subjectData, classData, classroomData, studentData] = await Promise.all([getExams(), getSubjects(), getClasses(), getClassrooms(), getStudents()]);
       setExams(examData);
       setSubjects(subjectData);
       setClasses(classData);
+      setClassrooms(classroomData);
+      setStudents(studentData);
     } catch (error) {
       toast({ title: "Error", description: "Failed to load data.", variant: "destructive" });
     } finally {
@@ -91,6 +114,79 @@ export default function ExamsManager() {
     setCurrentExam({});
     setDialogOpen(true);
   };
+  
+  const handleGenerateSchedule = async () => {
+    setIsGenerating(true);
+    toast({ title: "AI is thinking...", description: "Generating an optimized exam schedule." });
+    try {
+        const result = await generateExamSchedule({
+            subjects: subjects.map(s => ({ id: s.id, name: s.name, semester: s.semester })),
+            classes: classes.map(c => ({ id: c.id, name: c.name, semester: c.semester })),
+            classrooms: classrooms.filter(cr => cr.type === 'classroom').map(cr => ({ id: cr.id, name: cr.name })),
+            startDate: format(new Date(), 'yyyy-MM-dd'),
+            endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+            timeSlots: EXAM_TIME_SLOTS
+        });
+        setAiGeneratedSchedule(result);
+    } catch (error: any) {
+        toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
+  const handleApplyAiSchedule = async () => {
+      if (!aiGeneratedSchedule) return;
+      setIsSubmitting(true);
+      try {
+        await replaceExams(aiGeneratedSchedule.generatedSchedule);
+        await loadData();
+        toast({ title: "Schedule Applied!", description: "The AI-generated exam schedule is now active." });
+        setAiDialogOpen(false);
+        setAiGeneratedSchedule(null);
+      } catch (error: any) {
+        toast({ title: "Error", description: "Failed to apply AI schedule.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
+      }
+  };
+
+  const handleGenerateSeating = async (exam: EnrichedExam) => {
+    setSelectedExamForSeating(exam);
+    setIsGeneratingSeating(true);
+    try {
+      const examStudents = students.filter(s => s.classId === exam.classId);
+      const result = await generateSeatingArrangement({
+        exam: exam,
+        students: examStudents.map(s => ({ id: s.id, name: s.name }))
+      });
+      setSeatingPlan(result);
+      setSeatingPlanOpen(true);
+    } catch (error: any) {
+       toast({ title: "AI Failed", description: "Could not generate seating plan.", variant: "destructive" });
+    } finally {
+        setIsGeneratingSeating(false);
+    }
+  }
+
+  const downloadSeatingPlan = () => {
+    if (!seatingPlan || !selectedExamForSeating) return;
+    const doc = new jsPDF();
+    doc.text(`Seating Plan: ${selectedExamForSeating.subjectName} - ${selectedExamForSeating.className}`, 14, 16);
+    doc.text(`Classroom: ${selectedExamForSeating.classroomName}`, 14, 22);
+    doc.text(`Date: ${format(parseISO(selectedExamForSeating.date), 'PPP')} at ${selectedExamForSeating.time}`, 14, 28);
+    
+    const tableData = seatingPlan.seatingArrangement
+        .sort((a,b) => a.seatNumber - b.seatNumber)
+        .map(s => [s.seatNumber, s.studentName, s.studentId]);
+
+    (doc as any).autoTable({
+        head: [['Seat No.', 'Student Name', 'Student ID']],
+        body: tableData,
+        startY: 35,
+    });
+    doc.save(`seating_plan_${selectedExamForSeating.subjectName}.pdf`);
+  }
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -98,7 +194,11 @@ export default function ExamsManager() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
+        <Button variant="outline" onClick={() => { setAiGeneratedSchedule(null); setAiDialogOpen(true); }}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            Generate with AI
+        </Button>
         <Button onClick={openNewDialog}>
           <PlusCircle className="h-4 w-4 mr-2" />
           Schedule Exam
@@ -110,6 +210,7 @@ export default function ExamsManager() {
             <TableRow>
               <TableHead>Subject</TableHead>
               <TableHead>Class</TableHead>
+              <TableHead>Classroom</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Time</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -120,6 +221,7 @@ export default function ExamsManager() {
               <TableRow key={exam.id}>
                 <TableCell className="font-medium">{exam.subjectName}</TableCell>
                 <TableCell>{exam.className}</TableCell>
+                <TableCell>{exam.classroomName || 'N/A'}</TableCell>
                 <TableCell>{format(parseISO(exam.date), 'PPP')}</TableCell>
                 <TableCell>{exam.time}</TableCell>
                 <TableCell className="text-right">
@@ -129,9 +231,13 @@ export default function ExamsManager() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEdit(exam)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGenerateSeating(exam)} disabled={isGeneratingSeating || !exam.classroomId}>
+                        {isGeneratingSeating && selectedExamForSeating?.id === exam.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                        Seating Plan
+                      </DropdownMenuItem>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the exam schedule.</AlertDialogDescription></AlertDialogHeader>
@@ -147,6 +253,7 @@ export default function ExamsManager() {
         </Table>
       </div>
 
+      {/* Manual Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -168,12 +275,22 @@ export default function ExamsManager() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Classroom</Label>
+              <Select value={currentExam.classroomId} onValueChange={(v) => setCurrentExam({ ...currentExam, classroomId: v })} disabled={isSubmitting}>
+                <SelectTrigger><SelectValue placeholder="Select a classroom" /></SelectTrigger>
+                <SelectContent>{classrooms.filter(cr => cr.type === 'classroom').map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
               <Input id="date" type="date" value={currentExam.date ?? ''} onChange={(e) => setCurrentExam({ ...currentExam, date: e.target.value })} disabled={isSubmitting} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="time">Time</Label>
-              <Input id="time" type="time" value={currentExam.time ?? ''} onChange={(e) => setCurrentExam({ ...currentExam, time: e.target.value })} disabled={isSubmitting} />
+               <Select value={currentExam.time} onValueChange={(v) => setCurrentExam({ ...currentExam, time: v })} disabled={isSubmitting}>
+                <SelectTrigger><SelectValue placeholder="Select a time slot" /></SelectTrigger>
+                <SelectContent>{EXAM_TIME_SLOTS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -185,6 +302,114 @@ export default function ExamsManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* AI Generation Dialog */}
+      <Dialog open={isAiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Generate Exam Schedule with AI</DialogTitle>
+                <DialogDescription>
+                    Let AI create an optimized, conflict-free exam schedule for you.
+                </DialogDescription>
+            </DialogHeader>
+            
+            {isGenerating ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    <p className="text-muted-foreground">AI is generating the schedule, please wait...</p>
+                </div>
+            ) : aiGeneratedSchedule ? (
+                <div className="space-y-4">
+                    <Card>
+                        <CardHeader><CardTitle className="text-lg">AI Summary</CardTitle></CardHeader>
+                        <CardContent><p className="text-sm text-muted-foreground">{aiGeneratedSchedule.summary}</p></CardContent>
+                    </Card>
+                    <ScrollArea className="h-72 border rounded-md p-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Time</TableHead>
+                                    <TableHead>Subject</TableHead>
+                                    <TableHead>Class</TableHead>
+                                    <TableHead>Classroom</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {aiGeneratedSchedule.generatedSchedule.map((exam, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell>{format(parseISO(exam.date), 'PPP')}</TableCell>
+                                        <TableCell>{exam.time}</TableCell>
+                                        <TableCell>{subjects.find(s=>s.id === exam.subjectId)?.name}</TableCell>
+                                        <TableCell>{classes.find(c=>c.id === exam.classId)?.name}</TableCell>
+                                        <TableCell>{classrooms.find(c=>c.id === exam.classroomId)?.name}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </div>
+            ) : (
+                <div className="py-8 text-center">
+                    <p className="text-muted-foreground mb-4">Click below to start the AI generation process.</p>
+                </div>
+            )}
+            
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setAiDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                {aiGeneratedSchedule ? (
+                    <Button onClick={handleApplyAiSchedule} disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Apply Schedule
+                    </Button>
+                ) : (
+                    <Button onClick={handleGenerateSchedule} disabled={isGenerating}>
+                        {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Generate
+                    </Button>
+                )}
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Seating Plan Dialog */}
+       <Dialog open={isSeatingPlanOpen} onOpenChange={setSeatingPlanOpen}>
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>AI-Generated Seating Plan</DialogTitle>
+                <DialogDescription>
+                    Seating arrangement for {selectedExamForSeating?.subjectName} - {selectedExamForSeating?.className}
+                </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-96 border rounded-md">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Seat No.</TableHead>
+                            <TableHead>Student Name</TableHead>
+                            <TableHead>Student ID</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {seatingPlan?.seatingArrangement.sort((a,b) => a.seatNumber - b.seatNumber).map(seat => (
+                            <TableRow key={seat.studentId}>
+                                <TableCell className="font-bold">{seat.seatNumber}</TableCell>
+                                <TableCell>{seat.studentName}</TableCell>
+                                <TableCell>{seat.studentId}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+            </ScrollArea>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setSeatingPlanOpen(false)}>Close</Button>
+                <Button onClick={downloadSeatingPlan}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download as PDF
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+       </Dialog>
     </div>
   );
 }

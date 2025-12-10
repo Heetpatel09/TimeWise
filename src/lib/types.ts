@@ -153,6 +153,7 @@ export interface Exam {
     id: string;
     subjectId: string;
     classId: string;
+    classroomId?: string;
     date: string;
     time: string;
 }
@@ -170,4 +171,5 @@ export interface EnrichedRoom extends Room {
 export interface EnrichedExam extends Exam {
     subjectName: string;
     className: string;
+    classroomName?: string;
 }
