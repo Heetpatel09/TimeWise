@@ -25,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 19; // Increment this to force re-initialization
+const schemaVersion = 21; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -109,6 +109,8 @@ function createSchemaAndSeed() {
         streak INTEGER NOT NULL,
         avatar TEXT,
         profileCompleted INTEGER NOT NULL DEFAULT 0,
+        sgpa REAL NOT NULL DEFAULT 0,
+        cgpa REAL NOT NULL DEFAULT 0,
         FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS schedule (
@@ -228,6 +230,18 @@ function createSchemaAndSeed() {
         FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
         UNIQUE (scheduleId, studentId, date)
     );
+    CREATE TABLE IF NOT EXISTS results (
+        id TEXT PRIMARY KEY,
+        studentId TEXT NOT NULL,
+        subjectId TEXT NOT NULL,
+        semester INTEGER NOT NULL,
+        marks INTEGER NOT NULL,
+        totalMarks INTEGER NOT NULL DEFAULT 100,
+        grade TEXT,
+        FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
+        FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
+        UNIQUE(studentId, subjectId, semester)
+    );
   `);
   
   // Seed the database
@@ -247,7 +261,9 @@ function createSchemaAndSeed() {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
-        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0));
+        faculty.forEach(f => {
+            insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0);
+        });
         students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0));
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status));
@@ -260,7 +276,7 @@ function createSchemaAndSeed() {
         faculty.forEach(f => {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
-
+        
         students.forEach(s => {
             insertUser.run(s.email, s.id, 'student123', 'student', 1);
         });
@@ -278,3 +294,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    

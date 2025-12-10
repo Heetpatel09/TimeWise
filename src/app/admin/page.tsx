@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -24,6 +24,7 @@ import FeesManager from './components/FeesManager';
 import HostelsManager from './components/HostelsManager';
 import ExamsManager from './components/ExamsManager';
 import AttendanceManager from './components/AttendanceManager';
+import ResultsManager from './components/ResultsManager';
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
@@ -46,173 +47,131 @@ const managementCards = [
   { tab: "attendance", title: "Attendance", icon: CheckSquare, description: "Review and lock attendance." },
   { tab: "fees", title: "Fees", icon: DollarSign, description: "Handle student fee payments." },
   { tab: "hostels", title: "Hostels", icon: Home, description: "Manage hostel room assignments." },
+  { tab: "results", title: "Results", icon: BarChart3, description: "Upload and manage results." },
   { tab: "leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
-  { tab: "hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate champions." },
-  { tab: "leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or deny leaves." },
-  { tab: "schedule-requests", title: "Schedule Requests", icon: PencilRuler, description: "Handle change requests." },
-  { tab: "new-slot-requests", title: "New Slot Requests", icon: PlusSquare, description: "Handle new slot requests." },
-];
+  { tab..." />
+  <change>
+    <file>src/lib/services/students.ts</file>
+    <content><![CDATA[
 
-const AdminDashboardHome = () => {
-    const { user } = useAuth();
-    const { data: students, isLoading: studentsLoading } = useQuery({ 
-      queryKey: ['students'], 
-      queryFn: getStudents 
-    });
-    const { data: faculty, isLoading: facultyLoading } = useQuery({ 
-      queryKey: ['faculty'], 
-      queryFn: getFaculty 
-    });
-    const { data: schedule, isLoading: scheduleLoading } = useQuery({ 
-      queryKey: ['schedule'], 
-      queryFn: getSchedule 
-    });
+'use server';
 
-    const totalStudents = students?.length || 0;
-    const totalFaculty = faculty?.length || 0;
-    const totalScheduled = schedule?.length || 0;
+import { revalidatePath } from 'next/cache';
+import { db as getDb } from '@/lib/db';
+import type { Student } from '@/lib/types';
+import { addCredential } from './auth';
+import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
+import { addNotification } from './notifications';
+import { getClasses } from './classes';
+import { randomBytes } from 'crypto';
 
-    return (
-        <div className="space-y-8">
-            <Card className="animate-in fade-in-0 duration-500">
-            <CardHeader>
-                <CardTitle>Welcome, {user?.name || 'Admin'}!</CardTitle>
-                <CardDescription>From this dashboard, you can manage all aspects of the university schedule.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{studentsLoading ? '...' : totalStudents}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Faculty</CardTitle>
-                            <UserCheck className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{facultyLoading ? '...' : totalFaculty}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-500">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Classes Scheduled</CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{scheduleLoading ? '...' : totalScheduled}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </CardContent>
-            </Card>
-            
-            <Card className="animate-in fade-in-0 duration-500 delay-200">
-            <CardHeader>
-                <CardTitle>Management Sections</CardTitle>
-                <CardDescription>Click a card to navigate to the respective management page.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {managementCards.map((card, index) => {
-                    const Icon = card.icon;
-                    return (
-                    <Link href={`/admin?tab=${card.tab}`} key={card.title}>
-                        <Card className="hover:bg-accent hover:shadow-lg transition-all duration-300 group h-full flex flex-col animate-in fade-in-0 zoom-in-95" style={{ animationDelay: `${300 + index * 50}ms`}}>
-                        <CardHeader className="flex-grow">
-                            <div className="mb-4 bg-card text-primary w-12 h-12 rounded-lg flex items-center justify-center border">
-                            <Icon className="w-6 h-6" />
-                            </div>
-                            <CardTitle className="text-lg">{card.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-muted-foreground">{card.description}</p>
-                        </CardContent>
-                        </Card>
-                    </Link>
-                    );
-                })}
-                </div>
-            </CardContent>
-            </Card>
-        </div>
-    )
-};
+function revalidateAll() {
+    revalidatePath('/admin', 'layout');
+    revalidatePath('/student', 'layout');
+    revalidatePath('/faculty', 'layout');
+}
 
-const AdminDashboardContent = () => {
-    const searchParams = useSearchParams();
-    const tab = searchParams.get('tab');
-    
-    const getTitleForTab = (tab: string | null) => {
-      if (!tab) return "Admin Dashboard";
-      const card = managementCards.find(c => c.tab === tab);
-      return card ? card.title : "Admin Dashboard";
+export async function getStudents(): Promise<Student[]> {
+  const db = getDb();
+  const stmt = db.prepare('SELECT * FROM students');
+  const results = stmt.all() as any[];
+  // Ensure plain objects are returned
+  return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
+}
+
+export async function getStudentsByClass(classId: string): Promise<Student[]> {
+    const db = getDb();
+    const stmt = db.prepare('SELECT * FROM students WHERE classId = ?');
+    const results = stmt.all(classId) as any[];
+    return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
+}
+
+export async function addStudent(
+    item: Omit<Student, 'id' | 'streak' | 'profileCompleted' | 'sgpa' | 'cgpa'> & { streak?: number, profileCompleted?: number, sgpa?: number, cgpa?: number },
+    password?: string
+) {
+    const db = getDb();
+    const id = `STU${Date.now()}`;
+    const newItem: Student = {
+        ...item,
+        id,
+        streak: item.streak || 0,
+        avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
+        profileCompleted: item.profileCompleted || 0,
+        sgpa: item.sgpa || 0,
+        cgpa: item.cgpa || 0,
     };
-    
-    const pageTitle = getTitleForTab(tab);
-    
-    const renderContent = () => {
-        let content;
-        switch (tab) {
-            case 'subjects': content = <SubjectsManager />; break;
-            case 'classes': content = <ClassesManager />; break;
-            case 'classrooms': content = <ClassroomsManager />; break;
-            case 'admins': content = <AdminsManager />; break;
-            case 'faculty': content = <FacultyManager />; break;
-            case 'students': content = <StudentsManager />; break;
-            case 'schedule': content = <ScheduleManager />; break;
-            case 'leaderboards': content = <LeaderboardManager />; break;
-            case 'hall-of-fame': content = <HallOfFamePage />; break;
-            case 'leave-requests': content = <LeaveRequestsPage />; break;
-            case 'schedule-requests': content = <ScheduleRequestsPage />; break;
-            case 'new-slot-requests': content = <NewSlotRequestsPage />; break;
-            case 'fees': content = <FeesManager />; break;
-            case 'hostels': content = <HostelsManager />; break;
-            case 'exams': content = <ExamsManager />; break;
-            case 'attendance': content = <AttendanceManager />; break;
-            default: return <AdminDashboardHome />;
-        }
 
-        const cardInfo = managementCards.find(c => c.tab === tab);
+    const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa);
 
-        return (
-            <Card className="animate-in fade-in-0 duration-500">
-                <CardHeader>
-                    <CardTitle>{cardInfo?.title}</CardTitle>
-                    <CardDescription>{cardInfo?.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {content}
-                </CardContent>
-            </Card>
-        )
+    // When adding a student via the admin UI, an initial password is required.
+    const initialPassword = password || randomBytes(8).toString('hex');
+    await addCredential({
+      userId: newItem.id,
+      email: newItem.email,
+      password: initialPassword,
+      role: 'student',
+      requiresPasswordChange: true
+    });
+    
+    // Generate welcome notification
+    try {
+        const classes = await getClasses();
+        const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
+        const notificationResult = await generateWelcomeNotification({
+            name: newItem.name,
+            role: 'student',
+            context: className
+        });
+        await addNotification({
+            userId: newItem.id,
+            message: notificationResult.message,
+            category: 'general'
+        });
+    } catch (e: any) {
+        console.error("Failed to generate welcome notification for student:", e.message);
     }
 
-    return (
-        <React.Suspense fallback={<div>Loading...</div>}>
-            <DashboardLayout pageTitle={pageTitle} role="admin">
-                {tab && (
-                <Button asChild variant="outline" size="sm" className="mb-4">
-                    <Link href="/admin">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Dashboard
-                    </Link>
-                </Button>
-                )}
-                {renderContent()}
-            </DashboardLayout>
-        </React.Suspense>
-    );
+    revalidateAll();
+    return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
 }
 
+export async function updateStudent(updatedItem: Student): Promise<Student> {
+    const db = getDb();
+    const oldStudent = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as Student | undefined;
 
-export default function AdminDashboard() {
-  return (
-      <AdminDashboardContent />
-  )
+    if (!oldStudent) {
+        throw new Error("Student not found.");
+    }
+    
+    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.id);
+    
+    if (oldStudent.email !== updatedItem.email) {
+         await addCredential({
+            userId: updatedItem.id,
+            email: updatedItem.email,
+            role: 'student',
+        });
+    }
+
+    revalidateAll();
+    const finalStudent = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as Student;
+    return Promise.resolve(finalStudent);
 }
+
+export async function deleteStudent(id: string) {
+    const db = getDb();
+    
+    const credStmt = db.prepare('DELETE FROM user_credentials WHERE userId = ?');
+    credStmt.run(id);
+
+    const stmt = db.prepare('DELETE FROM students WHERE id = ?');
+    stmt.run(id);
+
+    revalidateAll();
+    return Promise.resolve(id);
+}
+
+    

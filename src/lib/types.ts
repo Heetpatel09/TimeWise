@@ -25,6 +25,8 @@ export interface Student {
   avatar?: string;
   className?: string; // Optional: can be added when joining with classes table
   profileCompleted: number;
+  sgpa: number;
+  cgpa: number;
 }
 
 export interface Faculty {
@@ -193,3 +195,21 @@ export interface EnrichedExam extends Exam {
     className: string;
     classroomName?: string;
 }
+
+export interface Result {
+    id: string;
+    studentId: string;
+    subjectId: string;
+    semester: number;
+    marks: number;
+    totalMarks: number;
+    grade: string;
+}
+
+export interface EnrichedResult extends Result {
+    studentName: string;
+    subjectName: string;
+    subjectCode: string;
+}
+
+    

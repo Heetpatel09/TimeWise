@@ -6,10 +6,10 @@ import { useEffect, useState, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, AlertCircle, Check, HelpCircle } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, AlertCircle, Check, HelpCircle, BarChart3 } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
-import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event, EnrichedAttendance } from '@/lib/types';
+import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event, EnrichedAttendance, EnrichedResult } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
 import { getSubjectsForStudent, getTimetableDataForStudent } from './actions';
 import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
+import { getResultsForStudent } from '@/lib/services/results';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { holidays } from '@/lib/holidays';
@@ -30,6 +31,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStudentAttendance, disputeAttendance } from '@/lib/services/attendance';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 function getDatesInRange(startDate: Date, endDate: Date) {
   const dates = [];
@@ -250,6 +252,88 @@ function AttendanceTracker() {
     )
 }
 
+function ResultsView({ student, results }: { student: Student | null, results: EnrichedResult[] }) {
+    const [isDialogOpen, setDialogOpen] = useState(false);
+    
+    const resultsBySemester = useMemo(() => {
+        const grouped: Record<number, EnrichedResult[]> = {};
+        results.forEach(r => {
+            if (!grouped[r.semester]) {
+                grouped[r.semester] = [];
+            }
+            grouped[r.semester].push(r);
+        });
+        return grouped;
+    }, [results]);
+
+    const semesters = Object.keys(resultsBySemester).map(Number).sort((a,b) => a-b);
+    
+    return (
+        <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
+            <CardHeader>
+                <CardTitle className="flex items-center"><BarChart3 className="mr-2 h-5 w-5" />My Results</CardTitle>
+                <CardDescription>Your SGPA and CGPA.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow grid grid-cols-2 gap-4 text-center">
+                <div>
+                    <p className="text-3xl font-bold">{student?.sgpa.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">Current SGPA</p>
+                </div>
+                 <div>
+                    <p className="text-3xl font-bold">{student?.cgpa.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">Overall CGPA</p>
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={() => setDialogOpen(true)} className='w-full'>
+                    View Detailed Results
+                </Button>
+            </CardFooter>
+
+             <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Detailed Results</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[70vh]">
+                        <div className="space-y-6 pr-4">
+                            {semesters.map(semester => (
+                                <Card key={semester}>
+                                    <CardHeader>
+                                        <CardTitle>Semester {semester}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Subject</TableHead>
+                                                    <TableHead>Marks</TableHead>
+                                                    <TableHead>Grade</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {resultsBySemester[semester].map(res => (
+                                                    <TableRow key={res.id}>
+                                                        <TableCell>{res.subjectName}</TableCell>
+                                                        <TableCell>{res.marks}/{res.totalMarks}</TableCell>
+                                                        <TableCell>{res.grade}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </Card>
+    );
+}
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -271,6 +355,7 @@ export default function StudentDashboard() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [results, setResults] = useState<EnrichedResult[]>([]);
   
   const [events, setEvents] = useState<Event[]>([]);
   const [isEventDialogOpen, setEventDialogOpen] = useState(false);
@@ -289,13 +374,15 @@ export default function StudentDashboard() {
             userNotifications, 
             timetableData, 
             allLeaveRequests,
-            userEvents
+            userEvents,
+            studentResults
         ] = await Promise.all([
             getStudents(),
             getNotificationsForUser(user.id),
             getTimetableDataForStudent(user.id),
             getLeaveRequests(),
-            getEventsForUser(user.id)
+            getEventsForUser(user.id),
+            getResultsForStudent(user.id)
         ]);
 
         const currentStudent = studentData.find(s => s.id === user.id);
@@ -309,6 +396,7 @@ export default function StudentDashboard() {
         setSchedule(timetableData.schedule);
         setLeaveRequests(allLeaveRequests.filter(lr => lr.requesterId === user.id));
         setEvents(userEvents);
+        setResults(studentResults);
         setIsLoading(false);
       }
     }
@@ -325,7 +413,7 @@ export default function StudentDashboard() {
   const handleLeaveRequestSubmit = async () => {
     if (!leaveStartDate || !leaveEndDate || !leaveReason) {
       toast({
-        title: 'Misng Information',
+        title: 'Missing Information',
         description: 'Please fill out all fields.',
         variant: 'destructive',
       });
@@ -487,6 +575,7 @@ export default function StudentDashboard() {
                     </Card>
                 </div>
                  <div className="lg:col-span-1 space-y-6">
+                    <ResultsView student={student} results={results} />
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
                         <CardHeader>
                             <CardTitle>My Attendance</CardTitle>
@@ -732,3 +821,5 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
+
+    
