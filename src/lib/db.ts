@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import Database from 'better-sqlite3';
@@ -25,7 +24,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 21; // Increment this to force re-initialization
+const schemaVersion = 22; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -274,11 +273,17 @@ function createSchemaAndSeed() {
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
         faculty.forEach(f => {
-            insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
+            const existingCredential = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(f.email);
+            if (!existingCredential) {
+              insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
+            }
         });
         
         students.forEach(s => {
-            insertUser.run(s.email, s.id, 'student123', 'student', 1);
+            const existingCredential = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(s.email);
+            if (!existingCredential) {
+              insertUser.run(s.email, s.id, 'student123', 'student', 1);
+            }
         });
     })();
     console.log('Database initialized and seeded successfully.');
