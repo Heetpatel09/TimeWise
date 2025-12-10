@@ -299,5 +299,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    
