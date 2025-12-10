@@ -1,5 +1,4 @@
 
-
 'use client';
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -49,129 +48,109 @@ const managementCards = [
   { tab: "hostels", title: "Hostels", icon: Home, description: "Manage hostel room assignments." },
   { tab: "results", title: "Results", icon: BarChart3, description: "Upload and manage results." },
   { tab: "leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
-  { tab..." />
-  <change>
-    <file>src/lib/services/students.ts</file>
-    <content><![CDATA[
+  { tab: "hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate top achievers." },
+  { tab: "leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or reject leave." },
+  { tab: "schedule-requests", title: "Schedule Changes", icon: PencilRuler, description: "Review schedule change requests." },
+  { tab: "new-slot-requests", title: "New Slot Requests", icon: PlusSquare, description: "Review new slot requests from faculty." },
+];
 
-'use server';
-
-import { revalidatePath } from 'next/cache';
-import { db as getDb } from '@/lib/db';
-import type { Student } from '@/lib/types';
-import { addCredential } from './auth';
-import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
-import { addNotification } from './notifications';
-import { getClasses } from './classes';
-import { randomBytes } from 'crypto';
-
-function revalidateAll() {
-    revalidatePath('/admin', 'layout');
-    revalidatePath('/student', 'layout');
-    revalidatePath('/faculty', 'layout');
-}
-
-export async function getStudents(): Promise<Student[]> {
-  const db = getDb();
-  const stmt = db.prepare('SELECT * FROM students');
-  const results = stmt.all() as any[];
-  // Ensure plain objects are returned
-  return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
-}
-
-export async function getStudentsByClass(classId: string): Promise<Student[]> {
-    const db = getDb();
-    const stmt = db.prepare('SELECT * FROM students WHERE classId = ?');
-    const results = stmt.all(classId) as any[];
-    return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
-}
-
-export async function addStudent(
-    item: Omit<Student, 'id' | 'streak' | 'profileCompleted' | 'sgpa' | 'cgpa'> & { streak?: number, profileCompleted?: number, sgpa?: number, cgpa?: number },
-    password?: string
-) {
-    const db = getDb();
-    const id = `STU${Date.now()}`;
-    const newItem: Student = {
-        ...item,
-        id,
-        streak: item.streak || 0,
-        avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
-        profileCompleted: item.profileCompleted || 0,
-        sgpa: item.sgpa || 0,
-        cgpa: item.cgpa || 0,
-    };
-
-    const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa);
-
-    // When adding a student via the admin UI, an initial password is required.
-    const initialPassword = password || randomBytes(8).toString('hex');
-    await addCredential({
-      userId: newItem.id,
-      email: newItem.email,
-      password: initialPassword,
-      role: 'student',
-      requiresPasswordChange: true
-    });
-    
-    // Generate welcome notification
-    try {
-        const classes = await getClasses();
-        const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
-        const notificationResult = await generateWelcomeNotification({
-            name: newItem.name,
-            role: 'student',
-            context: className
-        });
-        await addNotification({
-            userId: newItem.id,
-            message: notificationResult.message,
-            category: 'general'
-        });
-    } catch (e: any) {
-        console.error("Failed to generate welcome notification for student:", e.message);
+const renderContent = (tab: string) => {
+    switch (tab) {
+        case 'subjects': return <SubjectsManager />;
+        case 'classes': return <ClassesManager />;
+        case 'classrooms': return <ClassroomsManager />;
+        case 'faculty': return <FacultyManager />;
+        case 'students': return <StudentsManager />;
+        case 'schedule': return <ScheduleManager />;
+        case 'leaderboards': return <LeaderboardManager />;
+        case 'hall-of-fame': return <HallOfFamePage />;
+        case 'leave-requests': return <LeaveRequestsPage />;
+        case 'schedule-requests': return <ScheduleRequestsPage />;
+        case 'new-slot-requests': return <NewSlotRequestsPage />;
+        case 'admins': return <AdminsManager />;
+        case 'fees': return <FeesManager />;
+        case 'hostels': return <HostelsManager />;
+        case 'exams': return <ExamsManager />;
+        case 'attendance': return <AttendanceManager />;
+        case 'results': return <ResultsManager />;
+        default: return <AdminDashboard />;
     }
-
-    revalidateAll();
-    return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
 }
 
-export async function updateStudent(updatedItem: Student): Promise<Student> {
-    const db = getDb();
-    const oldStudent = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as Student | undefined;
-
-    if (!oldStudent) {
-        throw new Error("Student not found.");
-    }
-    
-    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.id);
-    
-    if (oldStudent.email !== updatedItem.email) {
-         await addCredential({
-            userId: updatedItem.id,
-            email: updatedItem.email,
-            role: 'student',
-        });
-    }
-
-    revalidateAll();
-    const finalStudent = db.prepare('SELECT * FROM students WHERE id = ?').get(updatedItem.id) as Student;
-    return Promise.resolve(finalStudent);
+function StatCard({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) {
+    const Icon = icon;
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : <div className="text-2xl font-bold">{value}</div>}
+            </CardContent>
+        </Card>
+    )
 }
 
-export async function deleteStudent(id: string) {
-    const db = getDb();
+function AdminDashboard() {
+    const { data: students, isLoading: studentsLoading } = useQuery({ queryKey: ['students'], queryFn: getStudents });
+    const { data: faculty, isLoading: facultyLoading } = useQuery({ queryKey: ['faculty'], queryFn: getFaculty });
+    const { data: schedule, isLoading: scheduleLoading } = useQuery({ queryKey: ['schedule'], queryFn: getSchedule });
+    const { data: classes, isLoading: classesLoading } = useQuery({ queryKey: ['classes'], queryFn: getClasses });
+    const { data: subjects, isLoading: subjectsLoading } = useQuery({ queryKey: ['subjects'], queryFn: getSubjects });
+    const { data: classrooms, isLoading: classroomsLoading } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
     
-    const credStmt = db.prepare('DELETE FROM user_credentials WHERE userId = ?');
-    credStmt.run(id);
-
-    const stmt = db.prepare('DELETE FROM students WHERE id = ?');
-    stmt.run(id);
-
-    revalidateAll();
-    return Promise.resolve(id);
+    return (
+        <div className='space-y-6'>
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <StatCard title="Total Students" value={students?.length ?? 0} icon={Users} isLoading={studentsLoading} />
+                <StatCard title="Total Faculty" value={faculty?.length ?? 0} icon={UserCheck} isLoading={facultyLoading} />
+                <StatCard title="Total Classes" value={classes?.length ?? 0} icon={School} isLoading={classesLoading} />
+                <StatCard title="Total Subjects" value={subjects?.length ?? 0} icon={Book} isLoading={subjectsLoading} />
+                <StatCard title="Total Classrooms" value={classrooms?.length ?? 0} icon={Warehouse} isLoading={classroomsLoading} />
+                <StatCard title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
+             </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Management Sections</CardTitle>
+                    <CardDescription>Select a category to manage.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {managementCards.map((card) => (
+                    <Link key={card.tab} href={`?tab=${card.tab}`} passHref>
+                        <div className="p-4 border rounded-lg hover:shadow-lg hover:bg-accent transition-all cursor-pointer">
+                            <card.icon className="h-6 w-6 mb-2 text-primary" />
+                            <h3 className="font-semibold">{card.title}</h3>
+                            <p className="text-sm text-muted-foreground">{card.description}</p>
+                        </div>
+                    </Link>
+                ))}
+                </CardContent>
+             </Card>
+        </div>
+    )
 }
 
+export default function AdminPage() {
+    const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const tab = searchParams.get('tab');
+
+    if (!user) return null;
+
+    const pageTitle = managementCards.find(c => c.tab === tab)?.title || 'Dashboard';
     
+    return (
+        <DashboardLayout pageTitle={tab ? `Admin / ${pageTitle}` : 'Admin Dashboard'} role="admin">
+            {tab && (
+                 <Button asChild variant="outline" size="sm" className="mb-4">
+                    <Link href="/admin">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Dashboard
+                    </Link>
+                </Button>
+            )}
+            {renderContent(tab || 'dashboard')}
+        </DashboardLayout>
+    );
+}
