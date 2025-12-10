@@ -276,11 +276,11 @@ function ResultsView({ student, results }: { student: Student | null, results: E
             </CardHeader>
             <CardContent className="flex-grow grid grid-cols-2 gap-4 text-center">
                 <div>
-                    <p className="text-3xl font-bold">{student?.sgpa.toFixed(2)}</p>
+                    <p className="text-3xl font-bold">{(student?.sgpa || 0).toFixed(2)}</p>
                     <p className="text-sm text-muted-foreground">Current SGPA</p>
                 </div>
                  <div>
-                    <p className="text-3xl font-bold">{student?.cgpa.toFixed(2)}</p>
+                    <p className="text-3xl font-bold">{(student?.cgpa || 0).toFixed(2)}</p>
                     <p className="text-sm text-muted-foreground">Overall CGPA</p>
                 </div>
             </CardContent>
@@ -821,5 +821,3 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
-
-    
