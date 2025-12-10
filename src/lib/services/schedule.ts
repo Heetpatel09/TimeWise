@@ -4,11 +4,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Schedule, EnrichedSchedule, Faculty } from '@/lib/types';
+import type { Schedule, EnrichedSchedule, Faculty, Notification } from '@/lib/types';
 import { getClasses } from './classes';
 import { getSubjects } from './subjects';
 import { getClassrooms } from './classrooms';
 import { getFaculty } from './faculty';
+import { addNotification } from './notifications';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
@@ -163,4 +164,23 @@ export async function getAvailableFacultyForSlot(day: string, time: string): Pro
     const busyFacultySet = new Set(busyFacultyIds);
 
     return allFaculty.filter(f => !busyFacultySet.has(f.id));
+}
+
+
+export async function approveAndReassign(notifications: Omit<Notification, 'id' | 'isRead' | 'createdAt'>[]) {
+    const db = getDb();
+
+    const transaction = db.transaction(() => {
+        for (const notif of notifications) {
+             const id = `NOT${Date.now()}${Math.random()}`;
+            const isRead = false;
+            const createdAt = new Date().toISOString();
+            const category = notif.category || 'general';
+            const stmt = db.prepare('INSERT INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
+            stmt.run(id, notif.userId, notif.message, isRead ? 1 : 0, createdAt, category);
+        }
+    });
+
+    transaction();
+    revalidateAll();
 }

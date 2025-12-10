@@ -23,7 +23,8 @@ export async function addLeaveRequest(request: Omit<LeaveRequest, 'id' | 'status
     // Notify the admin
     await addNotification({
       userId: adminUser.id,
-      message: `${request.requesterName} (${request.requesterRole}) has submitted a new leave request.`
+      message: `${request.requesterName} (${request.requesterRole}) has submitted a new leave request.`,
+      category: 'requests'
     });
 
     const newRequest: LeaveRequest = { ...request, id, status };
@@ -42,7 +43,8 @@ export async function updateLeaveRequestStatus(id: string, status: 'approved' | 
     if (request) {
         await addNotification({
             userId: request.requesterId,
-            message: `Your leave request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been ${status}.`
+            message: `Your leave request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been ${status}.`,
+            category: 'requests'
         });
     }
 

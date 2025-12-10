@@ -25,7 +25,8 @@ export async function addScheduleChangeRequest(request: Omit<ScheduleChangeReque
     if (faculty) {
       await addNotification({
         userId: adminUser.id,
-        message: `${faculty.name} has requested a schedule change.`
+        message: `${faculty.name} has requested a schedule change.`,
+        category: 'requests'
       });
     }
 
@@ -50,6 +51,7 @@ export async function updateScheduleChangeRequestStatus(id: string, status: 'res
         await addNotification({
             userId: request.facultyId,
             message: message,
+            category: 'requests'
         });
     }
 

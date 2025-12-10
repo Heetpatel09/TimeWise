@@ -26,7 +26,8 @@ export async function addSlotRequest(request: Omit<NewSlotRequest, 'id' | 'statu
     if (faculty) {
       await addNotification({
         userId: adminUser.id,
-        message: `${faculty.name} has requested a new class slot.`
+        message: `${faculty.name} has requested a new class slot.`,
+        category: 'requests'
       });
     }
 
@@ -66,6 +67,7 @@ export async function updateNewSlotRequestStatus(id: string, status: 'approved' 
     await addNotification({
         userId: request.facultyId,
         message: message,
+        category: 'requests'
     });
 
     revalidatePath('/admin', 'layout');

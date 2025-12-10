@@ -59,7 +59,8 @@ export async function addFaculty(
         });
         await addNotification({
             userId: newItem.id,
-            message: notificationResult.message
+            message: notificationResult.message,
+            category: 'general',
         });
     } catch (e: any) {
         console.error("Failed to generate welcome notification for faculty:", e.message);
@@ -112,5 +113,3 @@ export async function deleteFaculty(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    

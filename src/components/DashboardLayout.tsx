@@ -33,6 +33,7 @@ import { Badge } from './ui/badge';
 import type { Notification } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser, markNotificationAsRead } from '@/lib/services/notifications';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 
 type Role = 'admin' | 'faculty' | 'student';
@@ -52,6 +53,7 @@ function NotificationsBell() {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [hasUnread, setHasUnread] = useState(false);
+    const [filter, setFilter] = useState('all');
 
     useEffect(() => {
         if (user) {
@@ -62,8 +64,6 @@ function NotificationsBell() {
         }
     }, [user]);
 
-    const unreadCount = notifications.filter(n => !n.isRead).length;
-
     const handleMarkAsRead = async (id: string) => {
         await markNotificationAsRead(id);
         if (user) {
@@ -73,6 +73,12 @@ function NotificationsBell() {
         }
     }
     
+    const filteredNotifications = filter === 'all'
+        ? notifications
+        : notifications.filter(n => n.category === filter);
+
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
     return (
         <Popover onOpenChange={(isOpen) => {
           if (isOpen && user) getNotificationsForUser(user.id).then(setNotifications);
@@ -88,7 +94,7 @@ function NotificationsBell() {
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80">
+            <PopoverContent className="w-96">
                 <div className="grid gap-4">
                     <div className="space-y-2">
                         <h4 className="font-medium leading-none">Notifications</h4>
@@ -96,20 +102,32 @@ function NotificationsBell() {
                             {unreadCount > 0 ? `You have ${unreadCount} unread messages.` : 'No new messages.'}
                         </p>
                     </div>
+                     <Select value={filter} onValueChange={setFilter}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Filter by category..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All</SelectItem>
+                            <SelectItem value="requests">Requests</SelectItem>
+                            <SelectItem value="exam_schedule">Exam Schedules</SelectItem>
+                            <SelectItem value="general">General</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <div className="grid gap-2">
-                        {notifications.length > 0 ? notifications.map(n => (
+                        {filteredNotifications.length > 0 ? filteredNotifications.map(n => (
                              <div
                                 key={n.id}
                                 className="grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0 animate-in fade-in-0"
                             >
-                                <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
-                                <div className="grid gap-1">
+                                {!n.isRead && <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />}
+                                <div className="grid gap-1 col-start-2">
                                     <p className="text-sm font-medium">{n.message}</p>
                                     <p className="text-sm text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</p>
+                                    {!n.isRead && <Button size="sm" variant="link" className="p-0 h-auto justify-start" onClick={() => handleMarkAsRead(n.id)}>Mark as read</Button>}
                                 </div>
                             </div>
                         )) : (
-                            <p className='text-sm text-muted-foreground'>You're all caught up.</p>
+                            <p className='text-sm text-muted-foreground text-center py-4'>No notifications in this category.</p>
                         )}
                     </div>
                 </div>

@@ -113,6 +113,7 @@ export interface Notification {
   id: string;
   userId: string; // admin, FAC001, STU001, etc.
   message: string;
+  category: 'requests' | 'exam_schedule' | 'general' | 'feedback_forms';
   isRead: boolean;
   createdAt: string;
 }

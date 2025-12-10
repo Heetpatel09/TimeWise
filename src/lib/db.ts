@@ -25,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 16; // Increment this to force re-initialization
+const schemaVersion = 18; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -163,6 +163,7 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
         message TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
         isRead BOOLEAN NOT NULL DEFAULT 0,
         createdAt TEXT NOT NULL
     );
@@ -219,7 +220,7 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         scheduleId TEXT NOT NULL,
         studentId TEXT NOT NULL,
-        date TEXT NOT NULL,
+        date TEXT NOT NULL, -- YYYY-MM-DD
         status TEXT NOT NULL CHECK(status IN ('present', 'absent', 'disputed')),
         isLocked BOOLEAN NOT NULL DEFAULT 0,
         timestamp TEXT NOT NULL,
@@ -238,7 +239,7 @@ function createSchemaAndSeed() {
     const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?)');
+    const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
     const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar) VALUES (?, ?, ?, ?)');
 
@@ -251,7 +252,7 @@ function createSchemaAndSeed() {
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status));
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
-        notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt));
+        notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt, n.category || 'general'));
         
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar);
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);

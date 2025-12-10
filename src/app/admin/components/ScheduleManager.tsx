@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getSchedule, addSchedule, updateSchedule, deleteSchedule, replaceSchedule } from '@/lib/services/schedule';
+import { getSchedule, addSchedule, updateSchedule, deleteSchedule, replaceSchedule, approveAndReassign } from '@/lib/services/schedule';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
@@ -47,7 +47,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { addNotification } from '@/lib/services/notifications';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
 
@@ -249,16 +248,7 @@ export default function ScheduleManager() {
     try {
         await replaceSchedule(aiResolution.resolvedSchedule);
         
-        for (const notification of aiResolution.notifications) {
-            if (notification.userId) {
-                await addNotification({ userId: notification.userId, message: notification.message });
-            } else if (notification.classId) {
-                const studentsToNotify = students.filter(s => s.classId === notification.classId);
-                for (const student of studentsToNotify) {
-                    await addNotification({ userId: student.id, message: notification.message });
-                }
-            }
-        }
+        await approveAndReassign(aiResolution.notifications);
 
         toast({ title: "Conflicts Resolved!", description: "The new schedule has been applied and notifications have been sent." });
         setAiResolution(null);
