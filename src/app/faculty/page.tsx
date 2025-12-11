@@ -6,10 +6,10 @@ import { useEffect, useState, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import ScheduleView from "./components/ScheduleView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, CheckSquare } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, CheckSquare, GraduationCap } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
-import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
+import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event, SyllabusModule } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,10 +26,12 @@ import { Badge } from '@/components/ui/badge';
 import { holidays } from '@/lib/holidays';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
-import { getFaculty } from '@/lib/services/faculty';
+import { getFaculty, updateFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
 import type { Faculty as FacultyType } from '@/lib/types';
 import AttendanceDialog from './components/AttendanceDialog';
+import { getSubjects, updateSubject } from '@/lib/services/subjects';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 function getDatesInRange(startDate: Date, endDate: Date) {
@@ -229,6 +231,23 @@ export default function FacultyDashboard() {
   const [isAttendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedSlotForAttendance, setSelectedSlotForAttendance] = useState<EnrichedSchedule | null>(null);
   const [selectedDateForAttendance, setSelectedDateForAttendance] = useState<Date>(new Date());
+  
+  const [isSyllabusDialogOpen, setSyllabusDialogOpen] = useState(false);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [syllabusContent, setSyllabusContent] = useState('');
+  
+  const parseSyllabus = (syllabusString?: string): SyllabusModule[] => {
+    if (!syllabusString) return [];
+    try {
+      const parsed = JSON.parse(syllabusString);
+      return parsed.modules || [];
+    } catch (error) {
+      console.error("Failed to parse syllabus:", error);
+      return [];
+    }
+  };
+
 
   const loadData = async () => {
         if (user) {
@@ -237,12 +256,14 @@ export default function FacultyDashboard() {
               allFaculty, 
               allSchedule, 
               allLeaveRequests,
-              userEvents
+              userEvents,
+              allSubjects
             ] = await Promise.all([
                 getFaculty(),
                 getSchedule(),
                 getLeaveRequests(),
-                getEventsForUser(user.id)
+                getEventsForUser(user.id),
+                getSubjects()
             ]);
             
             const fac = allFaculty.find(f => f.id === user.id);
@@ -252,6 +273,10 @@ export default function FacultyDashboard() {
             setSchedule(facultySchedule);
             setLeaveRequests(allLeaveRequests.filter(lr => lr.requesterId === user.id));
             setEvents(userEvents);
+
+            const taughtSubjectIds = new Set(facultySchedule.map(s => s.subjectId));
+            setSubjects(allSubjects.filter(s => taughtSubjectIds.has(s.id)));
+
             setIsLoading(false);
         }
     }
@@ -359,6 +384,31 @@ export default function FacultyDashboard() {
     });
   }
 
+  const handleEditSyllabus = (subject: Subject) => {
+    setSelectedSubject(subject);
+    setSyllabusContent(subject.syllabus || '');
+    setSyllabusDialogOpen(true);
+  };
+  
+  const handleSaveSyllabus = async () => {
+    if (!selectedSubject) return;
+    setIsSubmitting(true);
+    try {
+        await updateSubject({
+            ...selectedSubject,
+            syllabus: syllabusContent,
+        });
+        toast({ title: 'Syllabus Updated', description: `Syllabus for ${selectedSubject.name} has been saved.`});
+        setSyllabusDialogOpen(false);
+        setSelectedSubject(null);
+        await loadData();
+    } catch(error: any) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+        setIsSubmitting(false);
+    }
+  }
+
   if (isLoading) {
     return <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
       <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>
@@ -443,6 +493,23 @@ export default function FacultyDashboard() {
                         <CardFooter>
                             <Button onClick={() => setScheduleModalOpen(true)}>
                                 View Schedule <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
+                         <CardHeader>
+                            <CardTitle className='flex items-center'><GraduationCap className="mr-2 h-5 w-5" />My Subjects & Syllabus</CardTitle>
+                            <CardDescription>View and edit syllabus for your subjects.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                Browse the subjects you teach and manage their syllabus content.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => setSyllabusDialogOpen(true)}>
+                                <BookOpen className="mr-2 h-4 w-4" />
+                                Manage Syllabus
                             </Button>
                         </CardFooter>
                     </Card>
@@ -587,6 +654,89 @@ export default function FacultyDashboard() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <Dialog open={isSyllabusDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) setSelectedSubject(null);
+        setSyllabusDialogOpen(isOpen);
+      }}>
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>My Subjects</DialogTitle>
+                <DialogDescription>
+                    {selectedSubject ? `Editing syllabus for ${selectedSubject.name}` : 'Select a subject to view or edit its syllabus.'}
+                </DialogDescription>
+            </DialogHeader>
+            {selectedSubject ? (
+                <div className="grid gap-4 py-4">
+                    <Label htmlFor="syllabus">Syllabus (JSON format)</Label>
+                    <Textarea 
+                        id="syllabus"
+                        value={syllabusContent}
+                        onChange={(e) => setSyllabusContent(e.target.value)}
+                        className="h-64"
+                        placeholder='e.g., {"modules":[{"name":"Module 1","topics":["Topic A"],"weightage":"50%"}]}'
+                        disabled={isSubmitting}
+                    />
+                </div>
+            ) : (
+                <ScrollArea className="h-96">
+                    <Accordion type="single" collapsible className="w-full">
+                         {subjects.map(subject => {
+                            const syllabusModules = parseSyllabus(subject.syllabus);
+                            return (
+                                <AccordionItem value={subject.id} key={subject.id}>
+                                    <AccordionTrigger>
+                                        <div className="flex justify-between items-center w-full pr-4">
+                                            <div className="flex flex-col text-left">
+                                                <h3 className="font-semibold">{subject.name}</h3>
+                                                <p className="text-sm text-muted-foreground">{subject.code}</p>
+                                            </div>
+                                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleEditSyllabus(subject); }}>
+                                                Edit Syllabus
+                                            </Button>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        {syllabusModules.length > 0 ? (
+                                            <div className="space-y-4 pl-2">
+                                                {syllabusModules.map((mod, index) => (
+                                                    <div key={index} className="border-l-2 pl-4">
+                                                        <div className="flex justify-between items-center">
+                                                            <h4 className="font-medium text-base">{mod.name}</h4>
+                                                            <Badge variant="secondary">{mod.weightage}</Badge>
+                                                        </div>
+                                                        <ul className="list-disc list-inside mt-2 space-y-1 text-muted-foreground">
+                                                            {mod.topics.map((topic, i) => <li key={i}>{topic}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-muted-foreground text-sm pl-4">Syllabus not available. Click "Edit Syllabus" to add it.</p>
+                                        )}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            )
+                        })}
+                    </Accordion>
+                </ScrollArea>
+            )}
+            <DialogFooter>
+                {selectedSubject ? (
+                    <>
+                        <Button variant="outline" onClick={() => setSelectedSubject(null)} disabled={isSubmitting}>Back</Button>
+                        <Button onClick={handleSaveSyllabus} disabled={isSubmitting}>
+                          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Save Syllabus
+                        </Button>
+                    </>
+                ) : (
+                    <Button variant="outline" onClick={() => setSyllabusDialogOpen(false)}>Close</Button>
+                )}
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {isAttendanceDialogOpen && selectedSlotForAttendance && (
         <AttendanceDialog
@@ -599,9 +749,3 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   );
 }
-
-    
-
-
-
-    

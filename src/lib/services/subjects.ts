@@ -7,6 +7,8 @@ import type { Subject } from '@/lib/types';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
+    revalidatePath('/faculty', 'layout');
+    revalidatePath('/student', 'layout');
 }
 
 export async function getSubjects(): Promise<Subject[]> {
