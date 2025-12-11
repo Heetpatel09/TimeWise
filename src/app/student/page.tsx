@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useTransition, useMemo } from 'react';
@@ -389,8 +388,8 @@ function ResultsView({ student, results }: { student: (Student & { className: st
                                                     <TableRow key={res.id}>
                                                         <TableCell>{res.subjectName}</TableCell>
                                                         <TableCell className="capitalize">{res.examType}</TableCell>
-                                                        <TableCell>{res.examType === 'internal' ? `${res.marks}/${res.totalMarks}` : '-'}</TableCell>
-                                                        <TableCell>{res.grade}</TableCell>
+                                                        <TableCell>{res.examType === 'internal' ? `${res.marks ?? '-'}/${res.totalMarks ?? '-'}` : '-'}</TableCell>
+                                                        <TableCell>{res.grade ?? '-'}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -887,3 +886,5 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
+
+    
