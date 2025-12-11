@@ -24,7 +24,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 25; // Increment this to force re-initialization
+const schemaVersion = 24; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -65,7 +65,6 @@ function initializeDb() {
 function createSchemaAndSeed() {
    // Use "IF NOT EXISTS" for every table to make initialization idempotent
   db.exec(`
-    DROP TABLE IF EXISTS events;
     CREATE TABLE IF NOT EXISTS subjects (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
