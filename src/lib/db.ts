@@ -17,6 +17,7 @@ import {
 import type { Faculty, Student } from './types';
 import fs from 'fs';
 import path from 'path';
+import { randomBytes } from 'crypto';
 
 // This will be our singleton database instance
 let db: Database.Database;
@@ -24,7 +25,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 34; // Increment this to force re-initialization
+const schemaVersion = 33; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -321,5 +322,4 @@ export { getDb as db };
 
     
 
-    
 

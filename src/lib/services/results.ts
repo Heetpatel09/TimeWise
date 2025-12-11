@@ -117,7 +117,8 @@ async function calculateAndSaveGpa(studentId: string) {
         const subjectGradeMap = new Map<string, number>();
 
         semesterResults.forEach(r => {
-            const gradePoint = getGradePoint(r.grade);
+            const grade = r.grade || getGrade(r.marks, r.totalMarks);
+            const gradePoint = getGradePoint(grade);
             if (!subjectGradeMap.has(r.subjectId) || gradePoint > (subjectGradeMap.get(r.subjectId) ?? 0)) {
                 subjectGradeMap.set(r.subjectId, gradePoint);
             }
