@@ -57,7 +57,7 @@ export const classes: Class[] = [
 ];
 
 export const students: Student[] = [
-  { id: 'STU001', name: 'Alice Johnson', email: 'abc@example.com', classId: 'CLS004', streak: 12, profileCompleted: 0, sgpa: 8.5, cgpa: 8.2 },
+  { id: 'STU001', name: 'Alice Johnson', email: 'alice@example.com', classId: 'CLS004', streak: 12, profileCompleted: 0, sgpa: 8.5, cgpa: 8.2 },
   { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003', streak: 5, profileCompleted: 0, sgpa: 7.9, cgpa: 7.5 },
   { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004', streak: 23, profileCompleted: 0, sgpa: 9.1, cgpa: 8.8 },
 ];
