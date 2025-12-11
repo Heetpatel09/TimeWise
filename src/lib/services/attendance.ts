@@ -62,7 +62,7 @@ export async function upsertAttendance(records: Omit<Attendance, 'id' | 'timesta
             if (result.changes === 0) {
                 const existing = db.prepare('SELECT id, isLocked FROM attendance WHERE scheduleId = ? AND studentId = ? AND date = ?').get(record.scheduleId, record.studentId, record.date) as { id: string, isLocked: number} | undefined;
                 if (!existing) {
-                    const id = `ATT${Date.now()}${Math.random()}`;
+                    const id = `ATT${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
                     insertStmt.run(id, record.scheduleId, record.studentId, record.date, record.status, timestamp);
                 }
             }
