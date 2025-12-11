@@ -12,6 +12,7 @@ import type { Student, Attendance, EnrichedSchedule } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface AttendanceDialogProps {
   slot: EnrichedSchedule | null;
@@ -83,6 +84,17 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     setAttendance(prev => ({...prev, [studentId]: status}));
   }
 
+  const handleSelectAll = (checked: boolean) => {
+    if (students) {
+        const newAttendance = students.reduce((acc, student) => {
+            acc[student.id] = checked ? 'present' : 'absent';
+            return acc;
+        }, {} as Record<string, 'present' | 'absent'>);
+        setAttendance(newAttendance);
+    }
+  }
+
+  const allPresent = students ? Object.values(attendance).every(s => s === 'present') : false;
   const isLoading = studentsLoading || attendanceLoading;
 
   return (
@@ -103,6 +115,13 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
             <Table>
               <TableHeader>
                 <TableRow>
+                    <TableHead className="w-12">
+                        <Checkbox 
+                            checked={allPresent}
+                            onCheckedChange={handleSelectAll}
+                            aria-label="Select all students"
+                        />
+                    </TableHead>
                   <TableHead>Student Name</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                 </TableRow>
@@ -110,6 +129,12 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
               <TableBody>
                 {students?.map(student => (
                   <TableRow key={student.id}>
+                    <TableCell>
+                        <Checkbox 
+                            checked={attendance[student.id] === 'present'}
+                            onCheckedChange={(checked) => handleStatusChange(student.id, checked ? 'present' : 'absent')}
+                        />
+                    </TableCell>
                     <TableCell>{student.name}</TableCell>
                     <TableCell className="text-right">
                        <RadioGroup 
@@ -144,3 +169,5 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     </Dialog>
   );
 }
+
+    

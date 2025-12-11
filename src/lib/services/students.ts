@@ -118,3 +118,5 @@ export async function deleteStudent(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+    

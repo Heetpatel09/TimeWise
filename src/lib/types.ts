@@ -218,4 +218,5 @@ export interface SyllabusModule {
     topics: string[];
     weightage: string;
 }
+
     
