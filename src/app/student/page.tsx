@@ -32,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Progress } from '@/components/ui/progress';
 
 function getDatesInRange(startDate: Date, endDate: Date) {
   const dates = [];
@@ -199,92 +200,55 @@ function ScheduleCalendar({
   )
 }
 
-function AttendanceTracker() {
-    const { user } = useAuth();
-    const queryClient = useQueryClient();
-    const { toast } = useToast();
-
-    const { data: attendanceRecords, isLoading } = useQuery({
-        queryKey: ['studentAttendance', user?.id],
-        queryFn: () => getStudentAttendance(user!.id),
-        enabled: !!user,
-    });
+function AttendanceReport({ subjects, attendanceRecords }: { subjects: Subject[], attendanceRecords: EnrichedAttendance[] }) {
     
-    const disputeMutation = useMutation({
-        mutationFn: (attendanceId: string) => disputeAttendance(attendanceId, user!.id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['studentAttendance', user?.id] });
-            toast({ title: 'Concern Raised', description: 'Your attendance concern has been sent to your faculty for review.' });
-        },
-        onError: (error: any) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        }
-    });
+    const stats = useMemo(() => {
+        return subjects.map(subject => {
+            const subjectRecords = attendanceRecords.filter(r => r.subjectName === subject.name);
+            const presentCount = subjectRecords.filter(r => r.status === 'present').length;
+            const absentCount = subjectRecords.filter(r => r.status === 'absent' || r.status === 'disputed').length;
+            const totalLectures = presentCount + absentCount;
+            const percentage = totalLectures > 0 ? (presentCount / totalLectures) * 100 : 100;
+            
+            return {
+                subjectName: subject.name,
+                presentCount,
+                absentCount,
+                totalLectures,
+                percentage,
+            };
+        });
+    }, [subjects, attendanceRecords]);
 
-    const getStatusVariant = (status: EnrichedAttendance['status']) => {
-        switch (status) {
-            case 'present': return 'default';
-            case 'absent': return 'destructive';
-            case 'disputed': return 'secondary';
-        }
-    };
-
-    if (isLoading) return <div className="flex items-center justify-center p-4"><Loader2 className="h-5 w-5 animate-spin" /></div>;
-
-    if (!attendanceRecords || attendanceRecords.length === 0) {
-        return <p className="text-sm text-muted-foreground text-center p-4">No recent attendance records found.</p>
+    if (attendanceRecords.length === 0) {
+        return <p className="text-sm text-muted-foreground text-center p-4">No attendance records found to generate a report.</p>
     }
 
     return (
         <ScrollArea className="h-72">
-            <div className="space-y-3 pr-4">
-                {attendanceRecords.map(record => (
-                    <div key={record.id} className="flex items-center justify-between p-2 rounded-md border">
-                        <div>
-                            <p className="font-semibold text-sm">{record.subjectName}</p>
-                            <p className="text-xs text-muted-foreground">{format(parseISO(record.date), 'PPP')}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <Badge variant={getStatusVariant(record.status)}>{record.status}</Badge>
-                             {record.status === 'absent' && !record.isLocked && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={disputeMutation.isPending}>
-                                            <HelpCircle className="h-4 w-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Raise a Concern?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                If you believe you were marked absent by mistake, you can raise a concern. This will notify your faculty member to review this record.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => disputeMutation.mutate(record.id)}>
-                                                Confirm & Raise Concern
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
-                             {record.isLocked && (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Check className="h-4 w-4 text-green-500"/>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Attendance for this day is locked.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Subject</TableHead>
+                        <TableHead className="text-center">Present</TableHead>
+                        <TableHead className="text-center">Absent</TableHead>
+                        <TableHead className="text-center">Total</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {stats.map(stat => (
+                        <TableRow key={stat.subjectName}>
+                            <TableCell>
+                                <div>{stat.subjectName}</div>
+                                <Progress value={stat.percentage} className="h-2 mt-1" />
+                            </TableCell>
+                            <TableCell className="text-center font-medium text-green-600">{stat.presentCount}</TableCell>
+                            <TableCell className="text-center font-medium text-red-600">{stat.absentCount}</TableCell>
+                            <TableCell className="text-center font-bold">{stat.totalLectures}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </ScrollArea>
     )
 }
@@ -439,6 +403,13 @@ export default function StudentDashboard() {
   const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
   
   const [isPending, startTransition] = useTransition();
+
+  const { data: attendanceRecords, isLoading: attendanceLoading } = useQuery<EnrichedAttendance[]>({
+      queryKey: ['studentAttendance', user?.id],
+      queryFn: () => getStudentAttendance(user!.id),
+      enabled: !!user,
+  });
+
 
   const loadData = async () => {
       if (user) {
@@ -637,11 +608,11 @@ export default function StudentDashboard() {
                     <ResultsView student={student} results={results} />
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
                         <CardHeader>
-                            <CardTitle>My Attendance</CardTitle>
-                            <CardDescription>View your recent attendance and raise concerns.</CardDescription>
+                            <CardTitle>My Attendance Report</CardTitle>
+                            <CardDescription>Your attendance summary for each subject.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AttendanceTracker />
+                           <AttendanceReport subjects={subjects} attendanceRecords={attendanceRecords || []}/>
                         </CardContent>
                     </Card>
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300 flex flex-col">
@@ -886,5 +857,7 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
+
+    
 
     
