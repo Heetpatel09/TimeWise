@@ -353,7 +353,7 @@ function ResultsView({ student, results }: { student: (Student & { className: st
                     </DialogHeader>
                     <ScrollArea className="max-h-[70vh]">
                         <div className="space-y-6 pr-4">
-                            {semesters.map(semester => (
+                            {semesters.length > 0 ? semesters.map(semester => (
                                 <Card key={semester}>
                                     <CardHeader className='flex-row items-center justify-between'>
                                         <CardTitle>Semester {semester}</CardTitle>
@@ -388,7 +388,7 @@ function ResultsView({ student, results }: { student: (Student & { className: st
                                         </Table>
                                     </CardContent>
                                 </Card>
-                            ))}
+                            )) : <p className="text-center text-muted-foreground py-8">No results uploaded yet.</p>}
                         </div>
                     </ScrollArea>
                     <DialogFooter>

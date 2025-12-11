@@ -11,17 +11,19 @@ import { getResults, addOrUpdateResults, deleteResult } from '@/lib/services/res
 import { getStudents } from '@/lib/services/students';
 import { getSubjects } from '@/lib/services/subjects';
 import type { EnrichedResult, Student, Subject, Result } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Upload } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Upload, Download } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { exportResultsToPDF } from '@/app/student/actions';
 
 export default function ResultsManager() {
   const [results, setResults] = useState<EnrichedResult[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -112,9 +114,56 @@ export default function ResultsManager() {
     setCurrentResults(initialResults);
   }
 
+  const handleDownload = async (studentId: string, semester: number) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    const downloadId = `${studentId}-${semester}`;
+    setIsDownloading(downloadId);
+
+    try {
+        const semesterResults = results.filter(r => r.studentId === studentId && r.semester === semester);
+        const studentWithClass = {
+            ...student,
+            className: students.find(s => s.id === studentId)?.className || 'N/A',
+        }
+        
+        const { pdf, error } = await exportResultsToPDF(studentWithClass, semesterResults, semester);
+        if (error) throw new Error(error);
+
+        const blob = new Blob([new Uint8Array(atob(pdf!).split('').map(char => char.charCodeAt(0)))], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `result_sem${semester}_${student.name}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (err: any) {
+        toast({ title: 'Download Failed', description: err.message, variant: 'destructive' });
+    } finally {
+        setIsDownloading(null);
+    }
+}
+
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
+
+  const resultsByStudentAndSemester = results.reduce((acc, result) => {
+      const key = `${result.studentId}-${result.semester}`;
+      if (!acc[key]) {
+          acc[key] = {
+              studentName: result.studentName,
+              semester: result.semester,
+              results: []
+          };
+      }
+      acc[key].results.push(result);
+      return acc;
+  }, {} as Record<string, { studentName: string, semester: number, results: EnrichedResult[] }>);
+
 
   return (
     <div>
@@ -130,40 +179,34 @@ export default function ResultsManager() {
             <TableRow>
               <TableHead>Student</TableHead>
               <TableHead>Semester</TableHead>
-              <TableHead>Subject</TableHead>
-              <TableHead>Marks</TableHead>
-              <TableHead>Grade</TableHead>
+              <TableHead>Details</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {results.map((result) => (
-              <TableRow key={result.id}>
-                <TableCell className="font-medium">{result.studentName}</TableCell>
-                <TableCell>{result.semester}</TableCell>
-                <TableCell>{result.subjectName}</TableCell>
-                <TableCell>{result.marks} / {result.totalMarks}</TableCell>
-                <TableCell>{result.grade}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this result entry.</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(result.id)}>Continue</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {Object.entries(resultsByStudentAndSemester).map(([key, group]) => {
+                const [studentId, semester] = key.split('-');
+                return (
+                    <TableRow key={key}>
+                        <TableCell className="font-medium">{group.studentName}</TableCell>
+                        <TableCell>{group.semester}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                            {group.results.map(r => `${r.subjectCode}: ${r.marks}`).join(', ')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => handleDownload(studentId, parseInt(semester))}
+                             disabled={isDownloading === key}
+                           >
+                            {isDownloading === key ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <Download className="h-4 w-4 mr-2"/>}
+                             PDF
+                           </Button>
+                        </TableCell>
+                    </TableRow>
+                )
+            })}
           </TableBody>
         </Table>
       </div>
@@ -227,5 +270,3 @@ export default function ResultsManager() {
     </div>
   );
 }
-
-    
