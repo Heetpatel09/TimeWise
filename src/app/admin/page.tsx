@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3 } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
