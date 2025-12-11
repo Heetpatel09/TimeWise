@@ -24,7 +24,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 32; // Increment this to force re-initialization
+const schemaVersion = 33; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -43,6 +43,11 @@ function setDbVersion(version: number) {
 function initializeDb() {
   const currentVersion = getDbVersion();
   const dbExists = fs.existsSync(dbFilePath);
+
+  if (dbExists && currentVersion < schemaVersion) {
+    fs.unlinkSync(dbFilePath);
+    console.log('Database file deleted due to schema update.');
+  }
 
   db = new Database(dbFilePath);
   
@@ -304,8 +309,6 @@ export { getDb as db };
 
 
       
-
-    
 
     
 
