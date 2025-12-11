@@ -684,20 +684,28 @@ export default function FacultyDashboard() {
                             const syllabusModules = parseSyllabus(subject.syllabus);
                             return (
                                 <AccordionItem value={subject.id} key={subject.id}>
-                                    <AccordionTrigger>
-                                        <div className="flex justify-between items-center w-full pr-4">
+                                    <div className="flex items-center justify-between pr-4 border-b">
+                                        <AccordionTrigger className="flex-1">
                                             <div className="flex flex-col text-left">
                                                 <h3 className="font-semibold">{subject.name}</h3>
                                                 <p className="text-sm text-muted-foreground">{subject.code}</p>
                                             </div>
-                                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleEditSyllabus(subject); }}>
-                                                Edit Syllabus
-                                            </Button>
-                                        </div>
-                                    </AccordionTrigger>
+                                        </AccordionTrigger>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditSyllabus(subject);
+                                            }}
+                                            className="ml-4"
+                                            >
+                                            Edit Syllabus
+                                        </Button>
+                                    </div>
                                     <AccordionContent>
                                         {syllabusModules.length > 0 ? (
-                                            <div className="space-y-4 pl-2">
+                                            <div className="space-y-4 pt-2 pl-2">
                                                 {syllabusModules.map((mod, index) => (
                                                     <div key={index} className="border-l-2 pl-4">
                                                         <div className="flex justify-between items-center">
@@ -711,7 +719,7 @@ export default function FacultyDashboard() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-muted-foreground text-sm pl-4">Syllabus not available. Click "Edit Syllabus" to add it.</p>
+                                            <p className="text-muted-foreground text-sm pt-2 pl-4">Syllabus not available. Click "Edit Syllabus" to add it.</p>
                                         )}
                                     </AccordionContent>
                                 </AccordionItem>
