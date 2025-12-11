@@ -6,7 +6,7 @@ import { useEffect, useState, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, AlertCircle, Check, HelpCircle, BarChart3, Download, GraduationCap } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, AlertCircle, Check, HelpCircle, BarChart3, Download, GraduationCap, StickyNote } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
 import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event, EnrichedAttendance, EnrichedResult, SyllabusModule } from '@/lib/types';
@@ -53,7 +53,7 @@ function ScheduleCalendar({
   schedule: EnrichedSchedule[], 
   leaveRequests: LeaveRequest[],
   events: Event[],
-  onDayClick: (date: Date) => void,
+  onDayClick: (date: Date, action: 'reminder' | 'leave' | 'note') => void,
 }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -156,10 +156,17 @@ function ScheduleCalendar({
             ) : (
                 <p className="text-sm text-muted-foreground">No classes or events scheduled.</p>
             )}
-             <Button size="sm" onClick={() => onDayClick(day)} className="mt-2">
-                <Plus className="h-4 w-4 mr-2"/>
-                Add Event
-            </Button>
+            <div className="grid grid-cols-1 gap-2 mt-2">
+                <Button size="sm" onClick={() => onDayClick(day, 'reminder')} variant="outline">
+                    <Bell className="h-4 w-4 mr-2"/> Add Reminder
+                </Button>
+                <Button size="sm" onClick={() => onDayClick(day, 'leave')} variant="outline">
+                    <CalendarIcon className="h-4 w-4 mr-2"/> Request Leave
+                </Button>
+                <Button size="sm" onClick={() => onDayClick(day, 'note')} variant="outline">
+                    <StickyNote className="h-4 w-4 mr-2"/> Add Note
+                </Button>
+            </div>
           </div>
         </PopoverContent>
       </Popover>
@@ -428,6 +435,7 @@ export default function StudentDashboard() {
   const [eventTitle, setEventTitle] = useState('');
   const [eventReminder, setEventReminder] = useState(true);
   const [reminderTime, setReminderTime] = useState('09:00');
+  const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
   
   const [isPending, startTransition] = useTransition();
 
@@ -473,10 +481,10 @@ export default function StudentDashboard() {
   }, [user]);
 
   const handleLeaveRequestSubmit = async () => {
-    if (!leaveStartDate || !leaveEndDate || !leaveReason) {
+    if ((dialogAction === 'leave' && (!leaveStartDate || !leaveEndDate)) || !leaveReason) {
       toast({
         title: 'Missing Information',
-        description: 'Please fill out all fields.',
+        description: 'Please fill out all required fields.',
         variant: 'destructive',
       });
       return;
@@ -485,18 +493,19 @@ export default function StudentDashboard() {
 
     setIsSubmitting(true);
     try {
+      const reason = dialogAction === 'note' ? `Note: ${leaveReason}` : leaveReason;
       await addLeaveRequest({
         requesterId: user.id,
         requesterName: student.name,
         requesterRole: 'student',
         startDate: leaveStartDate,
         endDate: leaveEndDate,
-        reason: leaveReason,
+        reason: reason,
       });
 
       toast({
-        title: 'Leave Request Sent',
-        description: 'Your request has been submitted for approval.',
+        title: `${dialogAction === 'note' ? 'Note' : 'Leave Request'} Sent`,
+        description: `Your ${dialogAction} has been submitted for approval.`,
       });
 
       setLeaveDialogOpen(false);
@@ -506,7 +515,7 @@ export default function StudentDashboard() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to submit leave request.',
+        description: `Failed to submit ${dialogAction}.`,
         variant: 'destructive',
       });
     } finally {
@@ -514,14 +523,22 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleDayClick = (date: Date) => {
+  const handleDayClick = (date: Date, action: 'reminder' | 'leave' | 'note') => {
     setSelectedDate(date);
-    setEventDialogOpen(true);
+    setDialogAction(action);
+    const dateStr = format(date, 'yyyy-MM-dd');
+    if (action === 'reminder') {
+        setEventDialogOpen(true);
+    } else {
+        setLeaveStartDate(dateStr);
+        setLeaveEndDate(dateStr);
+        setLeaveDialogOpen(true);
+    }
   };
   
   const handleAddEvent = async () => {
     if (!user || !selectedDate || !eventTitle) {
-      toast({ title: 'Missing Information', description: 'Please provide a title for the event.', variant: 'destructive' });
+      toast({ title: 'Missing Information', description: 'Please provide a title for the reminder.', variant: 'destructive' });
       return;
     }
     setIsSubmitting(true);
@@ -533,13 +550,13 @@ export default function StudentDashboard() {
         reminder: eventReminder,
         reminderTime: eventReminder ? reminderTime : undefined
       });
-      toast({ title: 'Event Added', description: 'Your event has been saved.' });
+      toast({ title: 'Reminder Added', description: 'Your reminder has been saved.' });
       setEventDialogOpen(false);
       setEventTitle('');
       setEventReminder(true);
       await loadData(); // Reload all data
     } catch(error) {
-       toast({ title: 'Error', description: 'Failed to add event.', variant: 'destructive' });
+       toast({ title: 'Error', description: 'Failed to add reminder.', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -577,6 +594,11 @@ export default function StudentDashboard() {
         </DashboardLayout>
     )
   }
+  
+  const leaveDialogTitle = dialogAction === 'leave' ? 'Request Leave of Absence' : 'Add a Note for Admin';
+  const leaveDialogDescription = dialogAction === 'leave' 
+    ? 'Please fill out the form below to submit your leave request.'
+    : 'Add a note for the administration regarding this day.';
 
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
@@ -598,7 +620,7 @@ export default function StudentDashboard() {
                                 <CalendarDays className="w-5 h-5 mr-2" />
                                 Monthly Calendar
                             </CardTitle>
-                            <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
+                            <CardDescription>Your class days and personal events. Click a day for options.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow">
                             <ScheduleCalendar 
@@ -649,23 +671,6 @@ export default function StudentDashboard() {
                             <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{student?.streak || 0}</div>
                             <p className="text-muted-foreground mt-2">Days in a row</p>
                         </CardContent>
-                    </Card>
-                    <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
-                        <CardHeader>
-                        <CardTitle>Request Leave</CardTitle>
-                        <CardDescription>Submit a request for a leave of absence.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                        <p className="text-sm text-muted-foreground">
-                            Need to take time off? Fill out the leave request form for approval.
-                        </p>
-                        </CardContent>
-                        <CardFooter>
-                        <Button onClick={() => setLeaveDialogOpen(true)}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            Open Leave Form
-                        </Button>
-                        </CardFooter>
                     </Card>
                     <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
                         <CardHeader>
@@ -760,39 +765,40 @@ export default function StudentDashboard() {
         <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Request Leave of Absence</DialogTitle>
-            <DialogDescription>
-              Please fill out the form below to submit your leave request.
-            </DialogDescription>
+            <DialogTitle>{leaveDialogTitle}</DialogTitle>
+            <DialogDescription>{leaveDialogDescription}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div className="space-y-2">
-                <Label htmlFor="start-date">Start Date</Label>
-                <Input 
-                  id="start-date" 
-                  type="date" 
-                  value={leaveStartDate}
-                  onChange={(e) => setLeaveStartDate(e.target.value ?? '')}
-                  disabled={isSubmitting}
-                />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="end-date">End Date</Label>
-                <Input 
-                  id="end-date" 
-                  type="date"
-                  value={leaveEndDate}
-                  onChange={(e) => setLeaveEndDate(e.target.value ?? '')}
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
+            {dialogAction === 'leave' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                    <Label htmlFor="start-date">Start Date</Label>
+                    <Input 
+                      id="start-date" 
+                      type="date" 
+                      value={leaveStartDate}
+                      onChange={(e) => setLeaveStartDate(e.target.value ?? '')}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="end-date">End Date</Label>
+                    <Input 
+                      id="end-date" 
+                      type="date"
+                      value={leaveEndDate}
+                      onChange={(e) => setLeaveEndDate(e.target.value ?? '')}
+                      disabled={isSubmitting}
+                      min={leaveStartDate}
+                    />
+                  </div>
+                </div>
+            )}
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason for Leave</Label>
+              <Label htmlFor="reason">Reason / Note</Label>
               <Textarea 
                 id="reason"
-                placeholder="Please provide a brief reason for your absence..."
+                placeholder="Please provide a brief reason..."
                 value={leaveReason}
                 onChange={(e) => setLeaveReason(e.target.value)}
                 disabled={isSubmitting}
@@ -807,7 +813,7 @@ export default function StudentDashboard() {
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}
-              Submit Request
+              Submit
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -822,8 +828,8 @@ export default function StudentDashboard() {
       }}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Add Event</DialogTitle>
-                <DialogDescription>Add a new event for {selectedDate ? format(selectedDate, 'PPP') : ''}</DialogDescription>
+                <DialogTitle>Add Reminder</DialogTitle>
+                <DialogDescription>Add a new reminder for {selectedDate ? format(selectedDate, 'PPP') : ''}</DialogDescription>
             </DialogHeader>
              <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -835,7 +841,7 @@ export default function StudentDashboard() {
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
                       className="col-span-3"
-                      placeholder="e.g. John's Birthday"
+                      placeholder="e.g. Project Deadline"
                       disabled={isSubmitting}
                   />
                 </div>
@@ -871,7 +877,7 @@ export default function StudentDashboard() {
                 <Button variant="outline" onClick={() => setEventDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
                 <Button onClick={handleAddEvent} disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Event
+                  Save Reminder
                 </Button>
             </DialogFooter>
         </DialogContent>
