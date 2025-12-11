@@ -2,11 +2,51 @@
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom } from './types';
 
 export const subjects: Subject[] = [
-  { id: 'SUB001', name: 'Introduction to Computer Science', code: 'CS101', isSpecial: true, type: 'theory', semester: 1 },
-  { id: 'SUB002', name: 'Data Structures and Algorithms', code: 'CS201', isSpecial: false, type: 'lab', semester: 3 },
-  { id: 'SUB003', name: 'Database Management Systems', code: 'CS301', isSpecial: false, type: 'theory', semester: 5 },
-  { id: 'SUB004', name: 'Operating Systems', code: 'CS302', isSpecial: false, type: 'lab', semester: 5 },
-  { id: 'SUB005', name: 'Machine Learning', code: 'AI401', isSpecial: true, type: 'lab', semester: 7 },
+  { 
+    id: 'SUB001', 
+    name: 'Introduction to Computer Science', 
+    code: 'CS101', 
+    isSpecial: true, 
+    type: 'theory', 
+    semester: 1,
+    syllabus: '{"modules":[{"name":"Intro to Programming","topics":["Variables","Data Types","Control Flow"],"weightage":"30%"},{"name":"Intro to Web","topics":["HTML","CSS"],"weightage":"30%"},{"name":"Computer Architecture","topics":["CPU","Memory","Storage"],"weightage":"40%"}]}'
+  },
+  { 
+    id: 'SUB002', 
+    name: 'Data Structures and Algorithms', 
+    code: 'CS201', 
+    isSpecial: false, 
+    type: 'lab', 
+    semester: 3,
+    syllabus: '{"modules":[{"name":"Arrays and Strings","topics":["Sorting","Searching"],"weightage":"25%"},{"name":"Linked Lists","topics":["Singly","Doubly"],"weightage":"25%"},{"name":"Trees","topics":["BST","AVL"],"weightage":"25%"},{"name":"Graphs","topics":["BFS","DFS"],"weightage":"25%"}]}'
+  },
+  { 
+    id: 'SUB003', 
+    name: 'Database Management Systems', 
+    code: 'CS301', 
+    isSpecial: false, 
+    type: 'theory', 
+    semester: 5,
+    syllabus: '{"modules":[{"name":"SQL Basics","topics":["SELECT","UPDATE","DELETE"],"weightage":"40%"},{"name":"Normalization","topics":["1NF","2NF","3NF"],"weightage":"60%"}]}'
+  },
+  { 
+    id: 'SUB004', 
+    name: 'Operating Systems', 
+    code: 'CS302', 
+    isSpecial: false, 
+    type: 'lab', 
+    semester: 5,
+    syllabus: '{"modules":[{"name":"Process Management","topics":["Scheduling","Deadlocks"],"weightage":"50%"},{"name":"Memory Management","topics":["Paging","Segmentation"],"weightage":"50%"}]}'
+  },
+  { 
+    id: 'SUB005', 
+    name: 'Machine Learning', 
+    code: 'AI401', 
+    isSpecial: true, 
+    type: 'lab', 
+    semester: 7,
+    syllabus: '{"modules":[{"name":"Supervised Learning","topics":["Regression","Classification"],"weightage":"50%"},{"name":"Unsupervised Learning","topics":["Clustering","Dimensionality Reduction"],"weightage":"50%"}]}'
+  },
 ];
 
 export const classes: Class[] = [
@@ -17,9 +57,9 @@ export const classes: Class[] = [
 ];
 
 export const students: Student[] = [
-  { id: 'STU001', name: 'Alice Johnson', email: 'abc@example.com', classId: 'CLS004', streak: 12, profileCompleted: 0 },
-  { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003', streak: 5, profileCompleted: 0 },
-  { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004', streak: 23, profileCompleted: 0 },
+  { id: 'STU001', name: 'Alice Johnson', email: 'abc@example.com', classId: 'CLS004', streak: 12, profileCompleted: 0, sgpa: 8.5, cgpa: 8.2 },
+  { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', classId: 'CLS003', streak: 5, profileCompleted: 0, sgpa: 7.9, cgpa: 7.5 },
+  { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', classId: 'CLS004', streak: 23, profileCompleted: 0, sgpa: 9.1, cgpa: 8.8 },
 ];
 
 export const faculty: Faculty[] = [
@@ -61,7 +101,7 @@ export const scheduleChangeRequests: ScheduleChangeRequest[] = [
 ];
 
 export const notifications: Notification[] = [
-    { id: 'NOT001', userId: 'FAC001', message: 'Your leave request from 2024-07-20 to 2024-07-21 has been approved.', isRead: true, createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'NOT001', userId: 'FAC001', message: 'Your leave request from 2024-07-20 to 2024-07-21 has been approved.', isRead: true, createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), category: 'requests' },
 ];
 export const adminUser = {
   id: 'admin-user',

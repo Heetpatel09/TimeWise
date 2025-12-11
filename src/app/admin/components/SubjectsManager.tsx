@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Textarea } from '@/components/ui/textarea';
 
 export default function SubjectsManager() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -191,7 +192,7 @@ export default function SubjectsManager() {
         if (!isOpen) setCurrentSubject({});
         setDialogOpen(isOpen);
       }}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{currentSubject?.id ? 'Edit Subject' : 'Add Subject'}</DialogTitle>
             <DialogDescription>
@@ -200,51 +201,40 @@ export default function SubjectsManager() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={currentSubject.name ?? ''}
-                onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })}
-                className="col-span-3"
-                disabled={isSubmitting}
-              />
+              <Label htmlFor="name" className="text-right">Name</Label>
+              <Input id="name" value={currentSubject.name ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="code" className="text-right">
-                Code
-              </Label>
-              <Input
-                id="code"
-                value={currentSubject.code ?? ''}
-                onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })}
-                className="col-span-3"
-                disabled={isSubmitting}
-              />
+              <Label htmlFor="code" className="text-right">Code</Label>
+              <Input id="code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="semester" className="text-right">Semester</Label>
               <Input id="semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} className="col-span-3" disabled={isSubmitting}/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">
-                Type
-              </Label>
+              <Label htmlFor="type" className="text-right">Type</Label>
               <Select value={currentSubject?.type} onValueChange={(v: 'theory' | 'lab') => setCurrentSubject({ ...currentSubject, type: v })} disabled={isSubmitting}>
-                    <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select a type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="theory">Theory</SelectItem>
-                        <SelectItem value="lab">Lab</SelectItem>
-                    </SelectContent>
-                </Select>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder="Select a type" /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="theory">Theory</SelectItem>
+                    <SelectItem value="lab">Lab</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="special" className="text-right">
-                Special
-              </Label>
+              <Label htmlFor="syllabus" className="text-right">Syllabus</Label>
+                <Textarea 
+                    id="syllabus" 
+                    value={currentSubject.syllabus ?? ''} 
+                    onChange={(e) => setCurrentSubject({ ...currentSubject, syllabus: e.target.value })} 
+                    className="col-span-3" 
+                    placeholder='Enter as JSON, e.g., {"modules":[{"name":"Module 1","topics":["Topic A"],"weightage":"50%"}]}'
+                    disabled={isSubmitting}
+                />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="special" className="text-right">Special</Label>
                <div className="col-span-3 flex items-center space-x-2">
                  <Switch
                     id="special"

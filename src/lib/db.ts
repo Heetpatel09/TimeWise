@@ -24,7 +24,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 23; // Increment this to force re-initialization
+const schemaVersion = 24; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -72,7 +72,8 @@ function createSchemaAndSeed() {
         code TEXT NOT NULL,
         isSpecial BOOLEAN NOT NULL DEFAULT 0,
         type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory',
-        semester INTEGER NOT NULL
+        semester INTEGER NOT NULL,
+        syllabus TEXT
     );
     CREATE TABLE IF NOT EXISTS classes (
         id TEXT PRIMARY KEY,
@@ -244,7 +245,7 @@ function createSchemaAndSeed() {
   `);
   
   // Seed the database
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, classId, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -257,7 +258,7 @@ function createSchemaAndSeed() {
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
         faculty.forEach(f => {

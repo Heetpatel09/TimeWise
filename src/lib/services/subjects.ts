@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -19,16 +20,16 @@ export async function addSubject(item: Omit<Subject, 'id'>) {
     const db = getDb();
     const id = `SUB${Date.now()}`;
     const newItem: Subject = { ...item, id };
-    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, item.name, item.code, item.isSpecial ? 1 : 0, item.type, item.semester);
+    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, item.name, item.code, item.isSpecial ? 1 : 0, item.type, item.semester, item.syllabus);
     revalidateAll();
     return Promise.resolve(newItem);
 }
 
 export async function updateSubject(updatedItem: Subject) {
     const db = getDb();
-    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.code, updatedItem.isSpecial ? 1 : 0, updatedItem.type, updatedItem.semester, updatedItem.id);
+    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.code, updatedItem.isSpecial ? 1 : 0, updatedItem.type, updatedItem.semester, updatedItem.syllabus, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }

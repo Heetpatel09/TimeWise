@@ -7,6 +7,7 @@ export interface Subject {
   isSpecial?: boolean;
   type: 'theory' | 'lab';
   semester: number;
+  syllabus?: string;
 }
 
 export interface Class {
@@ -212,4 +213,9 @@ export interface EnrichedResult extends Result {
     subjectCode: string;
 }
 
+export interface SyllabusModule {
+    name: string;
+    topics: string[];
+    weightage: string;
+}
     
