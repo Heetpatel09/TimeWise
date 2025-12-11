@@ -612,7 +612,7 @@ export default function FacultyDashboard() {
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
                       className="col-span-3"
-                      placeholder="e.g. John's Birthday"
+                      placeholder="e.g. Staff Meeting"
                       disabled={isSubmitting}
                   />
                 </div>
@@ -757,4 +757,3 @@ export default function FacultyDashboard() {
   );
 }
 
-    

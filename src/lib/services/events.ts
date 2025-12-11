@@ -91,5 +91,3 @@ export async function checkForEventReminders(userId: string) {
     }
   }
 }
-
-    

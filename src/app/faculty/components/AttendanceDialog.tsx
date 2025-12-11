@@ -84,7 +84,7 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     setAttendance(prev => ({...prev, [studentId]: status}));
   }
 
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean | string) => {
     if (students) {
         const newAttendance = students.reduce((acc, student) => {
             acc[student.id] = checked ? 'present' : 'absent';
@@ -170,4 +170,3 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
   );
 }
 
-    
