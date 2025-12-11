@@ -102,7 +102,11 @@ async function calculateAndSaveGpa(studentId: string) {
     
     semesters.forEach(sem => {
         const semesterResults = resultsBySemester[sem];
-        const semesterGradePoints = semesterResults.reduce((sum, r) => sum + getGradePoint(r.grade), 0);
+        const semesterGradePoints = semesterResults.reduce((sum, r) => {
+            const grade = r.grade || getGrade(r.marks, r.totalMarks);
+            return sum + getGradePoint(grade);
+        }, 0);
+
         totalGradePoints += semesterGradePoints;
         totalSubjects += semesterResults.length;
         
@@ -117,28 +121,12 @@ async function calculateAndSaveGpa(studentId: string) {
     db.prepare('UPDATE students SET sgpa = ?, cgpa = ? WHERE id = ?').run(latestSemesterSgpa.toFixed(2), cgpa.toFixed(2), studentId);
 }
 
-export async function addResult(item: Omit<Result, 'id' | 'grade' | 'totalMarks'> & { totalMarks?: number }) {
-    const db = getDb();
-    const id = `RES${Date.now()}`;
-    const totalMarks = item.totalMarks || 100;
-    const grade = getGrade(item.marks, totalMarks);
-    
-    const stmt = db.prepare('INSERT OR REPLACE INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, item.studentId, item.subjectId, item.semester, item.marks, totalMarks, grade);
-
-    await calculateAndSaveGpa(item.studentId);
-    
-    revalidateAll();
-    const newItem: Result = { ...item, id, grade, totalMarks };
-    return Promise.resolve(newItem);
-}
-
 export async function addOrUpdateResults(results: (Omit<Result, 'id' | 'grade' | 'totalMarks'> & { totalMarks?: number })[]) {
     const db = getDb();
     
     const studentIds = new Set(results.map(r => r.studentId));
 
-    const insertStmt = db.prepare(`
+    const insertOrUpdateStmt = db.prepare(`
       INSERT INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade) 
       VALUES (@id, @studentId, @subjectId, @semester, @marks, @totalMarks, @grade)
       ON CONFLICT(studentId, subjectId, semester) DO UPDATE SET
@@ -152,7 +140,7 @@ export async function addOrUpdateResults(results: (Omit<Result, 'id' | 'grade' |
              const id = `RES${Date.now()}${Math.random().toString(36).substring(2, 8)}`;
              const totalMarks = item.totalMarks || 100;
              const grade = getGrade(item.marks, totalMarks);
-             insertStmt.run({
+             insertOrUpdateStmt.run({
                 id,
                 studentId: item.studentId,
                 subjectId: item.subjectId,
@@ -186,7 +174,3 @@ export async function deleteResult(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    
-
-    
