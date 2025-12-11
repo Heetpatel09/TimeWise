@@ -76,7 +76,7 @@ export async function getResultsForStudent(studentId: string): Promise<EnrichedR
     JOIN students s ON r.studentId = s.id
     JOIN subjects sub ON r.subjectId = sub.id
     WHERE r.studentId = ?
-    ORDER BY r.semester
+    ORDER BY r.semester, r.examType
   `);
   const results = stmt.all(studentId) as any[];
   return results.map(r => ({
@@ -111,14 +111,24 @@ async function calculateAndSaveGpa(studentId: string) {
     
     semesters.forEach(sem => {
         const semesterResults = resultsBySemester[sem];
-        const semesterGradePoints = semesterResults.reduce((sum, r) => {
-            return sum + getGradePoint(r.grade);
-        }, 0);
+        let semesterGradePoints = 0;
+        
+        // Use a map to handle internal and external results for the same subject
+        const subjectGradeMap = new Map<string, number>();
+
+        semesterResults.forEach(r => {
+            const gradePoint = getGradePoint(r.grade);
+            if (!subjectGradeMap.has(r.subjectId) || gradePoint > (subjectGradeMap.get(r.subjectId) ?? 0)) {
+                subjectGradeMap.set(r.subjectId, gradePoint);
+            }
+        });
+        
+        semesterGradePoints = Array.from(subjectGradeMap.values()).reduce((sum, gp) => sum + gp, 0);
 
         totalGradePoints += semesterGradePoints;
-        totalSubjects += semesterResults.length;
+        totalSubjects += subjectGradeMap.size;
         
-        const sgpa = semesterResults.length > 0 ? semesterGradePoints / semesterResults.length : 0;
+        const sgpa = subjectGradeMap.size > 0 ? semesterGradePoints / subjectGradeMap.size : 0;
         if (sem === semesters[semesters.length - 1]) {
             latestSemesterSgpa = sgpa;
         }
@@ -137,11 +147,10 @@ export async function addOrUpdateResults(results: (Omit<Result, 'id'>)[]) {
     const insertOrUpdateStmt = db.prepare(`
       INSERT INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade, examType) 
       VALUES (@id, @studentId, @subjectId, @semester, @marks, @totalMarks, @grade, @examType)
-      ON CONFLICT(studentId, subjectId, semester) DO UPDATE SET
+      ON CONFLICT(studentId, subjectId, semester, examType) DO UPDATE SET
         marks = excluded.marks,
         totalMarks = excluded.totalMarks,
-        grade = excluded.grade,
-        examType = excluded.examType
+        grade = excluded.grade
     `);
 
     db.transaction(() => {
@@ -187,3 +196,5 @@ export async function deleteResult(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+    

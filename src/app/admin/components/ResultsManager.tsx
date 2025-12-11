@@ -28,9 +28,9 @@ export default function ResultsManager() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [currentResults, setCurrentResults] = useState<Partial<Result>[]>([]);
+  const [currentResults, setCurrentResults] = useState<(Partial<Result> & { subjectId: string })[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>();
   const [selectedSemester, setSelectedSemester] = useState<number | undefined>();
-  const [selectedStudent, setSelectedStudent] = useState<Student | undefined>();
   const [examType, setExamType] = useState<'internal' | 'external'>('internal');
 
   const { toast } = useToast();
@@ -54,13 +54,18 @@ export default function ResultsManager() {
   }, []);
 
   const handleSave = async () => {
-    if (currentResults.length > 0 && selectedStudent && selectedSemester) {
+    if (currentResults.length > 0 && selectedStudentId && selectedSemester) {
         const completeResults = currentResults.map(r => ({
             ...r,
-            studentId: selectedStudent.id,
+            studentId: selectedStudentId,
             semester: selectedSemester,
             examType: examType,
-        })).filter(r => r.subjectId && (r.marks !== undefined || r.grade)) as Omit<Result, 'id'>[];
+        })).filter(r => r.subjectId && (r.marks !== null || r.grade)) as Omit<Result, 'id'>[];
+
+      if (completeResults.length === 0) {
+        toast({ title: "No Data", description: "No results entered to save.", variant: "destructive" });
+        return;
+      }
 
       setIsSubmitting(true);
       try {
@@ -69,7 +74,7 @@ export default function ResultsManager() {
         await loadData();
         setDialogOpen(false);
         setCurrentResults([]);
-        setSelectedStudent(undefined);
+        setSelectedStudentId(undefined);
         setSelectedSemester(undefined);
         setExamType('internal');
       } catch (error: any) {
@@ -78,7 +83,7 @@ export default function ResultsManager() {
         setIsSubmitting(false);
       }
     } else {
-        toast({ title: "Missing Information", description: "Please fill out all results for the student.", variant: "destructive" });
+        toast({ title: "Missing Information", description: "Please select a student and semester.", variant: "destructive" });
     }
   };
   
@@ -94,32 +99,51 @@ export default function ResultsManager() {
   
   const openNewDialog = () => {
     setCurrentResults([]);
-    setSelectedStudent(undefined);
+    setSelectedStudentId(undefined);
     setSelectedSemester(undefined);
     setExamType('internal');
     setDialogOpen(true);
   };
   
   const handleStudentAndSemesterSelect = (studentId: string, semester: number) => {
-    const student = students.find(s => s.id === studentId);
-    setSelectedStudent(student);
+    setSelectedStudentId(studentId);
     setSelectedSemester(semester);
     
     const semesterSubjects = subjects.filter(s => s.semester === semester);
     const existingResultsForStudent = results.filter(r => r.studentId === studentId && r.semester === semester);
 
     const initialResults = semesterSubjects.map(sub => {
-        const existing = existingResultsForStudent.find(r => r.subjectId === sub.id);
-        return {
-            subjectId: sub.id,
-            marks: existing?.marks || null,
-            grade: existing?.grade || null,
-            totalMarks: existing?.totalMarks || 100,
-            examType: existing?.examType || 'internal',
-        };
+        const existingInternal = existingResultsForStudent.find(r => r.subjectId === sub.id && r.examType === 'internal');
+        const existingExternal = existingResultsForStudent.find(r => r.subjectId === sub.id && r.examType === 'external');
+        
+        if (examType === 'internal') {
+            return {
+                subjectId: sub.id,
+                marks: existingInternal?.marks ?? null,
+                grade: existingInternal?.grade ?? null,
+                totalMarks: existingInternal?.totalMarks || 100,
+                examType: 'internal',
+            };
+        } else {
+             return {
+                subjectId: sub.id,
+                marks: existingExternal?.marks ?? null,
+                grade: existingExternal?.grade ?? null,
+                totalMarks: existingExternal?.totalMarks || 100,
+                examType: 'external',
+            };
+        }
     });
     setCurrentResults(initialResults);
   }
+
+  const handleExamTypeChange = (newExamType: 'internal' | 'external') => {
+      setExamType(newExamType);
+      if (selectedStudentId && selectedSemester) {
+          handleStudentAndSemesterSelect(selectedStudentId, selectedSemester);
+      }
+  }
+
 
   const handleDownload = async (studentId: string, semester: number) => {
     const student = students.find(s => s.id === studentId);
@@ -163,13 +187,14 @@ export default function ResultsManager() {
       if (!acc[key]) {
           acc[key] = {
               studentName: result.studentName,
+              className: students.find(s => s.id === result.studentId)?.className || 'N/A',
               semester: result.semester,
               results: []
           };
       }
       acc[key].results.push(result);
       return acc;
-  }, {} as Record<string, { studentName: string, semester: number, results: EnrichedResult[] }>);
+  }, {} as Record<string, { studentName: string, className: string, semester: number, results: EnrichedResult[] }>);
 
 
   return (
@@ -186,6 +211,7 @@ export default function ResultsManager() {
             <TableRow>
               <TableHead>Student</TableHead>
               <TableHead>Semester</TableHead>
+              <TableHead>Class</TableHead>
               <TableHead>Details</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -197,8 +223,9 @@ export default function ResultsManager() {
                     <TableRow key={key}>
                         <TableCell className="font-medium">{group.studentName}</TableCell>
                         <TableCell>{group.semester}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                            {group.results.map(r => `${r.subjectCode}: ${r.examType === 'internal' ? r.marks : r.grade}`).join(', ')}
+                        <TableCell>{group.className}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
+                            {group.results.map(r => `${r.subjectCode}: ${r.grade}`).join(', ')}
                         </TableCell>
                         <TableCell className="text-right">
                            <Button 
@@ -227,25 +254,25 @@ export default function ResultsManager() {
             <div className="grid grid-cols-2 gap-4">
                 <div className='space-y-2'>
                     <Label>Student</Label>
-                    <Select value={selectedStudent?.id} onValueChange={(v) => handleStudentAndSemesterSelect(v, selectedSemester || 1)}>
+                    <Select value={selectedStudentId} onValueChange={(v) => handleStudentAndSemesterSelect(v, selectedSemester || 1)}>
                         <SelectTrigger><SelectValue placeholder="Select a student" /></SelectTrigger>
                         <SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                     </Select>
                 </div>
                 <div className='space-y-2'>
                      <Label>Semester</Label>
-                    <Select value={selectedSemester?.toString()} onValueChange={(v) => handleStudentAndSemesterSelect(selectedStudent!.id, parseInt(v))} disabled={!selectedStudent}>
+                    <Select value={selectedSemester?.toString()} onValueChange={(v) => handleStudentAndSemesterSelect(selectedStudentId!, parseInt(v))} disabled={!selectedStudentId}>
                         <SelectTrigger><SelectValue placeholder="Select semester" /></SelectTrigger>
                         <SelectContent>{[...Array(8).keys()].map(i => <SelectItem key={i+1} value={(i+1).toString()}>{i+1}</SelectItem>)}</SelectContent>
                     </Select>
                 </div>
             </div>
 
-            {selectedStudent && selectedSemester && (
+            {selectedStudentId && selectedSemester && (
               <>
                 <div className='space-y-2'>
                     <Label>Exam Type</Label>
-                    <RadioGroup value={examType} onValueChange={(v: 'internal' | 'external') => setExamType(v)} className="flex gap-4">
+                    <RadioGroup value={examType} onValueChange={handleExamTypeChange} className="flex gap-4">
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="internal" id="internal" />
                             <Label htmlFor="internal">Internal (Marks)</Label>
@@ -265,10 +292,10 @@ export default function ResultsManager() {
                                     <Input 
                                         id={`marks-${result.subjectId}`} 
                                         type="number" 
-                                        value={result.marks || ''} 
+                                        value={result.marks ?? ''} 
                                         onChange={(e) => {
                                             const newResults = [...currentResults];
-                                            newResults[index].marks = parseInt(e.target.value) || 0;
+                                            newResults[index].marks = e.target.value ? parseInt(e.target.value) : null;
                                             setCurrentResults(newResults);
                                         }}
                                         className="col-span-1"
@@ -277,11 +304,11 @@ export default function ResultsManager() {
                                     <Input 
                                         id={`grade-${result.subjectId}`} 
                                         type="text" 
-                                        value={result.grade || ''} 
-                                        placeholder="e.g. A, B+"
+                                        value={result.grade ?? ''} 
+                                        placeholder="e.g. O, A, B+"
                                         onChange={(e) => {
                                             const newResults = [...currentResults];
-                                            newResults[index].grade = e.target.value;
+                                            newResults[index].grade = e.target.value || null;
                                             setCurrentResults(newResults);
                                         }}
                                         className="col-span-1"
@@ -297,7 +324,7 @@ export default function ResultsManager() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSubmitting || !selectedStudent || !selectedSemester}>
+            <Button onClick={handleSave} disabled={isSubmitting || !selectedStudentId || !selectedSemester}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Results
             </Button>
@@ -307,3 +334,5 @@ export default function ResultsManager() {
     </div>
   );
 }
+
+    
