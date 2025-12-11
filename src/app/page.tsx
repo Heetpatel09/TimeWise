@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight, BrainCircuit } from 'lucide-react';
+import { LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
@@ -35,6 +35,7 @@ const TimeWiseLogo = () => (
 const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
@@ -100,14 +101,25 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
               <Label htmlFor="password" className="text-right">
                 Password
               </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="col-span-3"
-                disabled={isLoading}
-              />
+              <div className="col-span-3 relative">
+                <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-10"
+                    disabled={isLoading}
+                />
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute inset-y-0 right-0 h-full px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
           </div>
           <DialogFooter className="sm:justify-between gap-2 flex-col sm:flex-row">
