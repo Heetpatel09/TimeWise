@@ -106,13 +106,13 @@ async function calculateAndSaveGpa(studentId: string) {
         totalGradePoints += semesterGradePoints;
         totalSubjects += semesterResults.length;
         
-        const sgpa = semesterGradePoints / semesterResults.length;
+        const sgpa = semesterResults.length > 0 ? semesterGradePoints / semesterResults.length : 0;
         if (sem === semesters[semesters.length - 1]) {
             latestSemesterSgpa = sgpa;
         }
     });
 
-    const cgpa = totalGradePoints / totalSubjects;
+    const cgpa = totalSubjects > 0 ? totalGradePoints / totalSubjects : 0;
 
     db.prepare('UPDATE students SET sgpa = ?, cgpa = ? WHERE id = ?').run(latestSemesterSgpa.toFixed(2), cgpa.toFixed(2), studentId);
 }
@@ -138,15 +138,29 @@ export async function addOrUpdateResults(results: (Omit<Result, 'id' | 'grade' |
     
     const studentIds = new Set(results.map(r => r.studentId));
 
-    const insertStmt = db.prepare('INSERT OR REPLACE INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertStmt = db.prepare(`
+      INSERT INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade) 
+      VALUES (@id, @studentId, @subjectId, @semester, @marks, @totalMarks, @grade)
+      ON CONFLICT(studentId, subjectId, semester) DO UPDATE SET
+        marks = excluded.marks,
+        totalMarks = excluded.totalMarks,
+        grade = excluded.grade
+    `);
 
     db.transaction(() => {
         for (const item of results) {
-             const existing: Result | undefined = db.prepare('SELECT * FROM results WHERE studentId = ? AND subjectId = ? AND semester = ?').get(item.studentId, item.subjectId, item.semester) as any;
-             const id = existing?.id || `RES${Date.now()}${Math.random()}`;
+             const id = `RES${Date.now()}${Math.random().toString(36).substring(2, 8)}`;
              const totalMarks = item.totalMarks || 100;
              const grade = getGrade(item.marks, totalMarks);
-             insertStmt.run(id, item.studentId, item.subjectId, item.semester, item.marks, totalMarks, grade);
+             insertStmt.run({
+                id,
+                studentId: item.studentId,
+                subjectId: item.subjectId,
+                semester: item.semester,
+                marks: item.marks,
+                totalMarks: totalMarks,
+                grade: grade,
+             });
         }
     })();
     
@@ -172,5 +186,7 @@ export async function deleteResult(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+    
 
     
