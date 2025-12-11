@@ -86,7 +86,8 @@ export async function checkForEventReminders(userId: string) {
     if (!recentNotification) {
       await addNotification({
         userId: userId,
-        message: message
+        message: message,
+        category: 'general'
       });
     }
   }

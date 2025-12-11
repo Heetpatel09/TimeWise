@@ -113,26 +113,56 @@ function ScheduleCalendar({
     const isHoliday = holidayDates.has(dayStr);
     
     return (
-      <div
-        key={day.toString()}
-        className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
-          !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
-        } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
-        onClick={() => onDayClick(day)}
-      >
-        <div className="flex justify-between items-center">
-            <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
-              {format(day, 'd')}
-            </time>
-        </div>
-        <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
-            {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
-            {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
-            {daySchedule.slice(0, 1).map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
-            {dayEvents.slice(0, 1).map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
-            {(daySchedule.length + dayEvents.length) > 1 && <div className="text-muted-foreground">+ {daySchedule.length + dayEvents.length - 1} more</div>}
-        </div>
-      </div>
+      <Popover key={day.toString()}>
+        <PopoverTrigger asChild>
+          <div
+            className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
+              !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
+            } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
+          >
+            <div className="flex justify-between items-center">
+                <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
+                  {format(day, 'd')}
+                </time>
+            </div>
+            <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
+                {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
+                {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
+                {daySchedule.slice(0, 1).map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
+                {dayEvents.slice(0, 1).map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
+                {(daySchedule.length + dayEvents.length) > 1 && <div className="text-muted-foreground">+ {daySchedule.length + dayEvents.length - 1} more</div>}
+            </div>
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-80" onClick={(e) => e.stopPropagation()}>
+          <div className="grid gap-4">
+            <div className="space-y-2">
+                <h4 className="font-medium leading-none">{format(day, 'PPP')}</h4>
+            </div>
+            {(daySchedule.length > 0 || dayEvents.length > 0) ? (
+                <div className="grid gap-2">
+                    {daySchedule.map(slot => (
+                        <div key={slot.id} className="p-2 rounded-md bg-primary/10">
+                            <p className="font-semibold text-sm">{slot.subjectName}</p>
+                            <p className="text-xs text-muted-foreground">{slot.time}</p>
+                        </div>
+                    ))}
+                     {dayEvents.map(event => (
+                        <div key={event.id} className="p-2 rounded-md bg-accent/80">
+                            <p className="font-semibold text-sm">{event.title}</p>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-sm text-muted-foreground">No classes or events scheduled.</p>
+            )}
+             <Button size="sm" onClick={() => onDayClick(day)} className="mt-2">
+                <Plus className="h-4 w-4 mr-2"/>
+                Add Event
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   };
 
@@ -486,12 +516,7 @@ export default function StudentDashboard() {
 
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
-    const eventsOnDay = events.filter(e => format(parseISO(e.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
-    if (eventsOnDay.length > 0) {
-      // Logic to show popover is handled by PopoverTrigger
-    } else {
-      setEventDialogOpen(true);
-    }
+    setEventDialogOpen(true);
   };
   
   const handleAddEvent = async () => {
@@ -576,44 +601,12 @@ export default function StudentDashboard() {
                             <CardDescription>Your class days and personal events. Click a day to add an event.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow">
-                             <Popover>
-                                <PopoverTrigger asChild>
-                                    <div className="w-full">
-                                        <ScheduleCalendar 
-                                            schedule={schedule} 
-                                            leaveRequests={leaveRequests} 
-                                            events={events}
-                                            onDayClick={handleDayClick}
-                                        />
-                                    </div>
-                                </PopoverTrigger>
-                                {selectedDateEvents.length > 0 && (
-                                    <PopoverContent className="w-80">
-                                    <div className="grid gap-4">
-                                        <div className="space-y-2">
-                                        <h4 className="font-medium leading-none">Events for {selectedDate ? format(selectedDate, 'PPP') : ''}</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                            You have {selectedDateEvents.length} event(s) today.
-                                        </p>
-                                        </div>
-                                        <div className="grid gap-2">
-                                        {selectedDateEvents.map(event => (
-                                            <div key={event.id} className="grid grid-cols-[1fr_auto] items-center">
-                                            <p className="text-sm font-medium">{event.title}</p>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)} disabled={isPending}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                            </div>
-                                        ))}
-                                        </div>
-                                        <Button size="sm" onClick={() => setEventDialogOpen(true)} className="mt-2">
-                                        <Plus className="h-4 w-4 mr-2"/>
-                                        Add Event
-                                        </Button>
-                                    </div>
-                                    </PopoverContent>
-                                )}
-                            </Popover>
+                            <ScheduleCalendar 
+                                schedule={schedule} 
+                                leaveRequests={leaveRequests} 
+                                events={events}
+                                onDayClick={handleDayClick}
+                            />
                         </CardContent>
                     </Card>
                 </div>
