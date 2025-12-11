@@ -2,7 +2,10 @@
 'use server';
 
 import { db as getDb } from '@/lib/db';
-import type { Student, EnrichedSchedule, Subject } from '@/lib/types';
+import type { Student, EnrichedSchedule, Subject, EnrichedResult } from '@/lib/types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
 
 export async function getTimetableDataForStudent(studentId: string) {
     const db = getDb();
@@ -63,4 +66,36 @@ export async function getSubjectsForStudent(studentId: string): Promise<Subject[
 
     const subjects = db.prepare('SELECT * FROM subjects WHERE semester = ?').all(studentClass.semester) as any[];
     return subjects.map(s => ({ ...s, isSpecial: !!s.isSpecial }));
+}
+
+export async function exportResultsToPDF(
+    student: Student,
+    results: EnrichedResult[],
+    semester: number
+): Promise<{ pdf?: string, error?: string }> {
+    try {
+        const doc = new jsPDF();
+        doc.text(`Result for ${student.name} - Semester ${semester}`, 14, 16);
+        doc.text(`Class: ${student.className}`, 14, 22);
+
+        const tableData = results.map(res => [
+            res.subjectName,
+            res.marks,
+            res.totalMarks,
+            res.grade,
+        ]);
+
+        (doc as any).autoTable({
+            head: [['Subject', 'Marks Obtained', 'Total Marks', 'Grade']],
+            body: tableData,
+            startY: 30,
+        });
+
+        const pdfOutput = doc.output('datauristring');
+        // Return base64 part of the data URI
+        return { pdf: pdfOutput.split(',')[1] };
+    } catch (error: any) {
+        console.error('PDF generation failed:', error);
+        return { error: error.message || 'Failed to generate PDF.' };
+    }
 }

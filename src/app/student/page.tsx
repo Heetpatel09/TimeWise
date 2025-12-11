@@ -6,7 +6,7 @@ import { useEffect, useState, useTransition, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import TimetableView from "./components/TimetableView";
-import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, AlertCircle, Check, HelpCircle, BarChart3 } from "lucide-react";
+import { Bell, Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, CalendarDays, Circle, Dot, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, AlertCircle, Check, HelpCircle, BarChart3, Download } from "lucide-react";
 import { getStudents } from '@/lib/services/students';
 import { getNotificationsForUser } from '@/lib/services/notifications';
 import type { Student, Notification, Subject, EnrichedSchedule, LeaveRequest, Event, EnrichedAttendance, EnrichedResult } from '@/lib/types';
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { addLeaveRequest, getLeaveRequests } from '@/lib/services/leave';
-import { getSubjectsForStudent, getTimetableDataForStudent } from './actions';
+import { getSubjectsForStudent, getTimetableDataForStudent, exportResultsToPDF } from './actions';
 import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
 import { getResultsForStudent } from '@/lib/services/results';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -252,8 +252,10 @@ function AttendanceTracker() {
     )
 }
 
-function ResultsView({ student, results }: { student: Student | null, results: EnrichedResult[] }) {
+function ResultsView({ student, results }: { student: (Student & { className: string }) | null, results: EnrichedResult[] }) {
+    const { toast } = useToast();
     const [isDialogOpen, setDialogOpen] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     
     const resultsBySemester = useMemo(() => {
         const grouped: Record<number, EnrichedResult[]> = {};
@@ -267,6 +269,29 @@ function ResultsView({ student, results }: { student: Student | null, results: E
     }, [results]);
 
     const semesters = Object.keys(resultsBySemester).map(Number).sort((a,b) => a-b);
+
+    const handleDownload = async (semester: number) => {
+        if (!student) return;
+        setIsDownloading(true);
+        try {
+            const semesterResults = resultsBySemester[semester];
+            const { pdf, error } = await exportResultsToPDF(student, semesterResults, semester);
+            if (error) throw new Error(error);
+
+            const blob = new Blob([new Uint8Array(atob(pdf!).split('').map(char => char.charCodeAt(0)))], { type: 'application/pdf' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `result_semester_${semester}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+        } catch (err: any) {
+            toast({ title: 'Download Failed', description: err.message, variant: 'destructive' });
+        } finally {
+            setIsDownloading(false);
+        }
+    }
     
     return (
         <Card className="flex flex-col animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
@@ -299,8 +324,17 @@ function ResultsView({ student, results }: { student: Student | null, results: E
                         <div className="space-y-6 pr-4">
                             {semesters.map(semester => (
                                 <Card key={semester}>
-                                    <CardHeader>
+                                    <CardHeader className='flex-row items-center justify-between'>
                                         <CardTitle>Semester {semester}</CardTitle>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => handleDownload(semester)}
+                                            disabled={isDownloading}
+                                        >
+                                            {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                                            PDF
+                                        </Button>
                                     </CardHeader>
                                     <CardContent>
                                         <Table>
@@ -339,7 +373,7 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [student, setStudent] = useState<Student | null>(null);
+  const [student, setStudent] = useState<(Student & { className: string }) | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -370,14 +404,12 @@ export default function StudentDashboard() {
       if (user) {
         setIsLoading(true);
         const [
-            studentData, 
             userNotifications, 
             timetableData, 
             allLeaveRequests,
             userEvents,
             studentResults
         ] = await Promise.all([
-            getStudents(),
             getNotificationsForUser(user.id),
             getTimetableDataForStudent(user.id),
             getLeaveRequests(),
@@ -385,10 +417,9 @@ export default function StudentDashboard() {
             getResultsForStudent(user.id)
         ]);
 
-        const currentStudent = studentData.find(s => s.id === user.id);
-        if (currentStudent) {
-            setStudent(currentStudent);
-            const studentSubjects = await getSubjectsForStudent(currentStudent.id);
+        if (timetableData.student) {
+            setStudent(timetableData.student as Student & { className: string });
+            const studentSubjects = await getSubjectsForStudent(timetableData.student.id);
             setSubjects(studentSubjects);
         }
         
@@ -548,7 +579,7 @@ export default function StudentDashboard() {
                                     <PopoverContent className="w-80">
                                     <div className="grid gap-4">
                                         <div className="space-y-2">
-                                        <h4 className="font-medium leading-none">Events for {format(selectedDate!, 'PPP')}</h4>
+                                        <h4 className="font-medium leading-none">Events for {selectedDate ? format(selectedDate, 'PPP') : ''}</h4>
                                         <p className="text-sm text-muted-foreground">
                                             You have {selectedDateEvents.length} event(s) today.
                                         </p>
