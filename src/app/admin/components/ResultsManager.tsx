@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportResultsToPDF } from '@/app/student/actions';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function ResultsManager() {
   const [results, setResults] = useState<EnrichedResult[]>([]);
@@ -30,6 +31,7 @@ export default function ResultsManager() {
   const [currentResults, setCurrentResults] = useState<Partial<Result>[]>([]);
   const [selectedSemester, setSelectedSemester] = useState<number | undefined>();
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>();
+  const [examType, setExamType] = useState<'internal' | 'external'>('internal');
 
   const { toast } = useToast();
 
@@ -57,7 +59,8 @@ export default function ResultsManager() {
             ...r,
             studentId: selectedStudent.id,
             semester: selectedSemester,
-        })).filter(r => r.subjectId && r.marks !== undefined) as Omit<Result, 'id'>[];
+            examType: examType,
+        })).filter(r => r.subjectId && (r.marks !== undefined || r.grade)) as Omit<Result, 'id'>[];
 
       setIsSubmitting(true);
       try {
@@ -68,13 +71,14 @@ export default function ResultsManager() {
         setCurrentResults([]);
         setSelectedStudent(undefined);
         setSelectedSemester(undefined);
+        setExamType('internal');
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
     } else {
-        toast({ title: "Missing Information", description: "Please fill out all marks for the student.", variant: "destructive" });
+        toast({ title: "Missing Information", description: "Please fill out all results for the student.", variant: "destructive" });
     }
   };
   
@@ -92,6 +96,7 @@ export default function ResultsManager() {
     setCurrentResults([]);
     setSelectedStudent(undefined);
     setSelectedSemester(undefined);
+    setExamType('internal');
     setDialogOpen(true);
   };
   
@@ -100,7 +105,6 @@ export default function ResultsManager() {
     setSelectedStudent(student);
     setSelectedSemester(semester);
     
-    // Prefill with existing data or create empty shells
     const semesterSubjects = subjects.filter(s => s.semester === semester);
     const existingResultsForStudent = results.filter(r => r.studentId === studentId && r.semester === semester);
 
@@ -108,7 +112,10 @@ export default function ResultsManager() {
         const existing = existingResultsForStudent.find(r => r.subjectId === sub.id);
         return {
             subjectId: sub.id,
-            marks: existing?.marks || 0,
+            marks: existing?.marks || null,
+            grade: existing?.grade || null,
+            totalMarks: existing?.totalMarks || 100,
+            examType: existing?.examType || 'internal',
         };
     });
     setCurrentResults(initialResults);
@@ -191,7 +198,7 @@ export default function ResultsManager() {
                         <TableCell className="font-medium">{group.studentName}</TableCell>
                         <TableCell>{group.semester}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                            {group.results.map(r => `${r.subjectCode}: ${r.marks}`).join(', ')}
+                            {group.results.map(r => `${r.subjectCode}: ${r.examType === 'internal' ? r.marks : r.grade}`).join(', ')}
                         </TableCell>
                         <TableCell className="text-right">
                            <Button 
@@ -235,26 +242,56 @@ export default function ResultsManager() {
             </div>
 
             {selectedStudent && selectedSemester && (
+              <>
+                <div className='space-y-2'>
+                    <Label>Exam Type</Label>
+                    <RadioGroup value={examType} onValueChange={(v: 'internal' | 'external') => setExamType(v)} className="flex gap-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="internal" id="internal" />
+                            <Label htmlFor="internal">Internal (Marks)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="external" id="external" />
+                            <Label htmlFor="external">External (Grade)</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
                 <ScrollArea className="h-72 mt-4 border rounded-md p-4">
                     <div className="space-y-4">
                         {currentResults.map((result, index) => (
                              <div key={result.subjectId} className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor={`marks-${result.subjectId}`} className="col-span-2">{subjects.find(s => s.id === result.subjectId)?.name}</Label>
-                                <Input 
-                                    id={`marks-${result.subjectId}`} 
-                                    type="number" 
-                                    value={result.marks || ''} 
-                                    onChange={(e) => {
-                                        const newResults = [...currentResults];
-                                        newResults[index].marks = parseInt(e.target.value) || 0;
-                                        setCurrentResults(newResults);
-                                    }}
-                                    className="col-span-1"
-                                />
+                                {examType === 'internal' ? (
+                                    <Input 
+                                        id={`marks-${result.subjectId}`} 
+                                        type="number" 
+                                        value={result.marks || ''} 
+                                        onChange={(e) => {
+                                            const newResults = [...currentResults];
+                                            newResults[index].marks = parseInt(e.target.value) || 0;
+                                            setCurrentResults(newResults);
+                                        }}
+                                        className="col-span-1"
+                                    />
+                                ) : (
+                                    <Input 
+                                        id={`grade-${result.subjectId}`} 
+                                        type="text" 
+                                        value={result.grade || ''} 
+                                        placeholder="e.g. A, B+"
+                                        onChange={(e) => {
+                                            const newResults = [...currentResults];
+                                            newResults[index].grade = e.target.value;
+                                            setCurrentResults(newResults);
+                                        }}
+                                        className="col-span-1"
+                                    />
+                                )}
                              </div>
                         ))}
                     </div>
                 </ScrollArea>
+              </>
             )}
 
           </div>

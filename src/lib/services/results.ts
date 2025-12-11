@@ -10,7 +10,8 @@ function revalidateAll() {
     revalidatePath('/student', 'layout');
 }
 
-function getGrade(marks: number, totalMarks: number): string {
+function getGrade(marks: number | null, totalMarks: number | null): string {
+    if (marks === null || totalMarks === null || totalMarks === 0) return 'N/A';
     const percentage = (marks / totalMarks) * 100;
     if (percentage >= 90) return 'O';
     if (percentage >= 80) return 'A';
@@ -21,8 +22,9 @@ function getGrade(marks: number, totalMarks: number): string {
     return 'F';
 }
 
-function getGradePoint(grade: string): number {
-    switch(grade) {
+function getGradePoint(grade: string | null): number {
+    if (!grade) return 0;
+    switch(grade.toUpperCase()) {
         case 'O': return 10;
         case 'A': return 9;
         case 'B': return 8;
@@ -44,6 +46,7 @@ export async function getResults(): Promise<EnrichedResult[]> {
         r.marks,
         r.totalMarks,
         r.grade,
+        r.examType,
         s.name as studentName,
         sub.name as subjectName,
         sub.code as subjectCode
@@ -65,6 +68,7 @@ export async function getResultsForStudent(studentId: string): Promise<EnrichedR
         r.marks,
         r.totalMarks,
         r.grade,
+        r.examType,
         s.name as studentName,
         sub.name as subjectName,
         sub.code as subjectCode
@@ -74,7 +78,12 @@ export async function getResultsForStudent(studentId: string): Promise<EnrichedR
     WHERE r.studentId = ?
     ORDER BY r.semester
   `);
-  return stmt.all(studentId) as EnrichedResult[];
+  const results = stmt.all(studentId) as any[];
+  return results.map(r => ({
+      ...r,
+      marks: r.marks,
+      totalMarks: r.totalMarks,
+  }))
 }
 
 async function calculateAndSaveGpa(studentId: string) {
@@ -103,8 +112,7 @@ async function calculateAndSaveGpa(studentId: string) {
     semesters.forEach(sem => {
         const semesterResults = resultsBySemester[sem];
         const semesterGradePoints = semesterResults.reduce((sum, r) => {
-            const grade = r.grade || getGrade(r.marks, r.totalMarks);
-            return sum + getGradePoint(grade);
+            return sum + getGradePoint(r.grade);
         }, 0);
 
         totalGradePoints += semesterGradePoints;
@@ -121,33 +129,38 @@ async function calculateAndSaveGpa(studentId: string) {
     db.prepare('UPDATE students SET sgpa = ?, cgpa = ? WHERE id = ?').run(latestSemesterSgpa.toFixed(2), cgpa.toFixed(2), studentId);
 }
 
-export async function addOrUpdateResults(results: (Omit<Result, 'id' | 'grade' | 'totalMarks'> & { totalMarks?: number })[]) {
+export async function addOrUpdateResults(results: (Omit<Result, 'id'>)[]) {
     const db = getDb();
     
     const studentIds = new Set(results.map(r => r.studentId));
 
     const insertOrUpdateStmt = db.prepare(`
-      INSERT INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade) 
-      VALUES (@id, @studentId, @subjectId, @semester, @marks, @totalMarks, @grade)
+      INSERT INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade, examType) 
+      VALUES (@id, @studentId, @subjectId, @semester, @marks, @totalMarks, @grade, @examType)
       ON CONFLICT(studentId, subjectId, semester) DO UPDATE SET
         marks = excluded.marks,
         totalMarks = excluded.totalMarks,
-        grade = excluded.grade
+        grade = excluded.grade,
+        examType = excluded.examType
     `);
 
     db.transaction(() => {
         for (const item of results) {
              const id = `RES${Date.now()}${Math.random().toString(36).substring(2, 8)}`;
-             const totalMarks = item.totalMarks || 100;
-             const grade = getGrade(item.marks, totalMarks);
+             let finalGrade = item.grade;
+             if (item.examType === 'internal') {
+                finalGrade = getGrade(item.marks, item.totalMarks);
+             }
+
              insertOrUpdateStmt.run({
                 id,
                 studentId: item.studentId,
                 subjectId: item.subjectId,
                 semester: item.semester,
                 marks: item.marks,
-                totalMarks: totalMarks,
-                grade: grade,
+                totalMarks: item.totalMarks,
+                grade: finalGrade,
+                examType: item.examType,
              });
         }
     })();

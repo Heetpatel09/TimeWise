@@ -379,6 +379,7 @@ function ResultsView({ student, results }: { student: (Student & { className: st
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>Subject</TableHead>
+                                                    <TableHead>Type</TableHead>
                                                     <TableHead>Marks</TableHead>
                                                     <TableHead>Grade</TableHead>
                                                 </TableRow>
@@ -387,7 +388,8 @@ function ResultsView({ student, results }: { student: (Student & { className: st
                                                 {resultsBySemester[semester].map(res => (
                                                     <TableRow key={res.id}>
                                                         <TableCell>{res.subjectName}</TableCell>
-                                                        <TableCell>{res.marks}/{res.totalMarks}</TableCell>
+                                                        <TableCell className="capitalize">{res.examType}</TableCell>
+                                                        <TableCell>{res.examType === 'internal' ? `${res.marks}/${res.totalMarks}` : '-'}</TableCell>
                                                         <TableCell>{res.grade}</TableCell>
                                                     </TableRow>
                                                 ))}

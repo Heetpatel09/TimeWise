@@ -78,15 +78,15 @@ export async function exportResultsToPDF(
         doc.text(`Result for ${student.name} - Semester ${semester}`, 14, 16);
         doc.text(`Class: ${student.className}`, 14, 22);
 
-        const tableData = results.map(res => [
-            res.subjectName,
-            res.marks,
-            res.totalMarks,
-            res.grade,
-        ]);
+        const tableData = results.map(res => {
+            if (res.examType === 'internal') {
+                return [res.subjectName, 'Internal', res.marks, res.totalMarks, res.grade];
+            }
+            return [res.subjectName, 'External', '-', '-', res.grade];
+        });
 
         (doc as any).autoTable({
-            head: [['Subject', 'Marks Obtained', 'Total Marks', 'Grade']],
+            head: [['Subject', 'Type', 'Marks Obtained', 'Total Marks', 'Grade']],
             body: tableData,
             startY: 30,
         });

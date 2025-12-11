@@ -202,9 +202,10 @@ export interface Result {
     studentId: string;
     subjectId: string;
     semester: number;
-    marks: number;
-    totalMarks: number;
-    grade: string;
+    marks: number | null;
+    totalMarks: number | null;
+    grade: string | null;
+    examType: 'internal' | 'external';
 }
 
 export interface EnrichedResult extends Result {
