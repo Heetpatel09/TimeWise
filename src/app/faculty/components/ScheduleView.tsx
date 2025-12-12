@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getSchedule, addSchedule } from '@/lib/services/schedule';
+import { getSchedule } from '@/lib/services/schedule';
 import type { Schedule, Class, Subject, Classroom, EnrichedSchedule, NewSlotRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Send, Loader2, Star, Library, Coffee, PlusSquare, CheckSquare } from 'lucide-react';
@@ -250,7 +250,6 @@ export default function ScheduleView() {
   const selectedSubjectType = subjects.find(s => s.id === newSlotRequest?.subjectId)?.type;
   const filteredClassroomsForNewSlot = classrooms.filter(c => !selectedSubjectType || c.type === selectedSubjectType);
 
-  const dayNameToIndex: { [key: string]: number } = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
   const todayName = format(new Date(), 'EEEE');
 
 

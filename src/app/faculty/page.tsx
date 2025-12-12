@@ -4,8 +4,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, GraduationCap, Bell, StickyNote, CalendarDays, ChevronLeft, ChevronRight, CheckSquare } from "lucide-react";
-import type { Faculty as FacultyType, Notification, Subject, SyllabusModule, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
+import ScheduleView from "./components/ScheduleView";
+import { Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, GraduationCap, Bell, StickyNote } from "lucide-react";
+import type { Faculty as FacultyType, Notification, Subject, SyllabusModule, LeaveRequest, Event } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,180 +21,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getSchedule } from '@/lib/services/schedule';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameMonth, isToday } from 'date-fns';
-import { holidays } from '@/lib/holidays';
-import { Switch } from '@/components/ui/switch';
-import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
-import { getNotificationsForUser } from '@/lib/services/notifications';
-import AttendanceDialog from './components/AttendanceDialog';
-
-function getDatesInRange(startDate: Date, endDate: Date) {
-  const dates = [];
-  let currentDate = new Date(startDate);
-  while (currentDate <= endDate) {
-    dates.push(new Date(currentDate));
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  return dates;
-}
-
-function ScheduleCalendar({ 
-  schedule, 
-  leaveRequests,
-  events,
-  onDayClick,
-}: { 
-  schedule: EnrichedSchedule[], 
-  leaveRequests: LeaveRequest[],
-  events: Event[],
-  onDayClick: (date: Date, action: 'reminder' | 'leave' | 'note') => void,
-}) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  const daysInMonth = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  const approvedLeaveDates = useMemo(() => 
-    new Set(leaveRequests
-        .filter(lr => lr.status === 'approved')
-        .flatMap(lr => getDatesInRange(new Date(lr.startDate), new Date(lr.endDate)))
-        .map(d => format(d, 'yyyy-MM-dd')))
-  , [leaveRequests]);
-
-  const holidayDates = useMemo(() =>
-    new Set(holidays.map(h => format(h.date, 'yyyy-MM-dd')))
-  , []);
-  
-  const eventDates = useMemo(() => {
-    const dateMap = new Map<string, Event[]>();
-    events.forEach(e => {
-      const dateStr = format(parseISO(e.date), 'yyyy-MM-dd');
-      if (!dateMap.has(dateStr)) {
-        dateMap.set(dateStr, []);
-      }
-      dateMap.get(dateStr)!.push(e);
-    });
-    return dateMap;
-  }, [events]);
-
-  const scheduleDates = useMemo(() => {
-    const dateMap = new Map<string, EnrichedSchedule[]>();
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-
-    eachDayOfInterval({start: monthStart, end: monthEnd}).forEach(date => {
-        const dayName = format(date, 'EEEE'); // Monday, Tuesday etc.
-        const todaysScheduledSlots = schedule.filter(s => s.day === dayName);
-        if (todaysScheduledSlots.length > 0) {
-            dateMap.set(format(date, 'yyyy-MM-dd'), todaysScheduledSlots);
-        }
-    });
-    return dateMap;
-  }, [schedule, currentMonth]);
-
-
-  const renderDayCell = (day: Date) => {
-    const dayStr = format(day, 'yyyy-MM-dd');
-    const isCurrentMonth = isSameMonth(day, currentMonth);
-    const isCurrentToday = isToday(day);
-
-    const dayEvents = eventDates.get(dayStr) || [];
-    const daySchedule = scheduleDates.get(dayStr) || [];
-    const isLeave = approvedLeaveDates.has(dayStr);
-    const isHoliday = holidayDates.has(dayStr);
-    
-    return (
-      <Popover key={day.toString()}>
-        <PopoverTrigger asChild>
-          <div
-            className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
-              !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
-            } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
-          >
-            <div className="flex justify-between items-center">
-                <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
-                  {format(day, 'd')}
-                </time>
-            </div>
-            <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
-                {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
-                {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
-                {daySchedule.slice(0, 1).map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
-                {dayEvents.slice(0, 1).map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
-                {(daySchedule.length + dayEvents.length) > 1 && <div className="text-muted-foreground">+ {daySchedule.length + dayEvents.length - 1} more</div>}
-            </div>
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-80" onClick={(e) => e.stopPropagation()}>
-          <div className="grid gap-4">
-            <div className="space-y-2">
-                <h4 className="font-medium leading-none">{format(day, 'PPP')}</h4>
-            </div>
-            {(daySchedule.length > 0 || dayEvents.length > 0) ? (
-                <div className="grid gap-2">
-                    {daySchedule.map(slot => (
-                        <div key={slot.id} className="p-2 rounded-md bg-primary/10">
-                            <p className="font-semibold text-sm">{slot.subjectName}</p>
-                            <p className="text-xs text-muted-foreground">{slot.time}</p>
-                        </div>
-                    ))}
-                     {dayEvents.map(event => (
-                        <div key={event.id} className="p-2 rounded-md bg-accent/80">
-                            <p className="font-semibold text-sm">{event.title}</p>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-sm text-muted-foreground">No classes or events scheduled.</p>
-            )}
-            <div className="grid grid-cols-1 gap-2 mt-2">
-                <Button size="sm" onClick={() => onDayClick(day, 'reminder')} variant="outline">
-                    <Bell className="h-4 w-4 mr-2"/> Add Reminder
-                </Button>
-                <Button size="sm" onClick={() => onDayClick(day, 'leave')} variant="outline">
-                    <CalendarIcon className="h-4 w-4 mr-2"/> Request Leave
-                </Button>
-                <Button size="sm" onClick={() => onDayClick(day, 'note')} variant="outline">
-                    <StickyNote className="h-4 w-4 mr-2"/> Add Note
-                </Button>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    );
-  };
-
-  return (
-     <Card className="h-full flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{format(currentMonth, 'MMMM yyyy')}</CardTitle>
-            <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            </div>
-        </CardHeader>
-        <CardContent className="flex-grow">
-            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="py-2 border-t">{day}</div>
-                ))}
-            </div>
-            <div className="grid grid-cols-7 h-full">
-                {daysInMonth.map(renderDayCell)}
-            </div>
-        </CardContent>
-    </Card>
-  )
-}
-
+import { addEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -208,8 +36,6 @@ export default function FacultyDashboard() {
   
   const [isSyllabusDialogOpen, setSyllabusDialogOpen] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [syllabusContent, setSyllabusContent] = useState('');
   
@@ -220,9 +46,6 @@ export default function FacultyDashboard() {
   const [eventReminder, setEventReminder] = useState(true);
   const [reminderTime, setReminderTime] = useState('09:00');
   const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
-
-  const [isAttendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
-  const [selectedSlotForAttendance, setSelectedSlotForAttendance] = useState<EnrichedSchedule | null>(null);
 
   const parseSyllabus = (syllabusString?: string): SyllabusModule[] => {
     if (!syllabusString) return [];
@@ -235,32 +58,25 @@ export default function FacultyDashboard() {
     }
   };
 
-
   const loadData = async () => {
         if (user) {
             setIsLoading(true);
             const [
               allFaculty, 
-              allSchedule,
               allSubjects,
-              allLeaveRequests,
               userEvents,
             ] = await Promise.all([
                 getFaculty(),
-                getSchedule(),
                 getSubjects(),
-                getLeaveRequests(),
                 getEventsForUser(user.id),
             ]);
             
             const fac = allFaculty.find(f => f.id === user.id);
             if (fac) setCurrentFaculty(fac);
             
-            const facultySchedule = allSchedule.filter(s => s.facultyId === user.id);
+            const facultySchedule = (await getSchedule()).filter(s => s.facultyId === user.id);
             const taughtSubjectIds = new Set(facultySchedule.map(s => s.subjectId));
-            setSubjects(allSubjects.filter(s => s.id));
-            setSchedule(facultySchedule as EnrichedSchedule[]);
-            setLeaveRequests(allLeaveRequests.filter(lr => lr.requesterId === user.id));
+            setSubjects(allSubjects.filter(s => taughtSubjectIds.has(s.id)));
             setEvents(userEvents);
 
             setIsLoading(false);
@@ -317,19 +133,6 @@ export default function FacultyDashboard() {
     }
   };
   
-   const handleDayClick = (date: Date, action: 'reminder' | 'leave' | 'note') => {
-    setSelectedDate(date);
-    setDialogAction(action);
-    const dateStr = format(date, 'yyyy-MM-dd');
-    if (action === 'reminder') {
-        setEventDialogOpen(true);
-    } else {
-        setLeaveStartDate(dateStr);
-        setLeaveEndDate(dateStr);
-        setLeaveDialogOpen(true);
-    }
-  };
-
   const handleEditSyllabus = (subject: Subject) => {
     setSelectedSubject(subject);
     setSyllabusContent(subject.syllabus || '');
@@ -355,102 +158,18 @@ export default function FacultyDashboard() {
     }
   }
 
-  const handleAddEvent = async () => {
-    if (!user || !selectedDate || !eventTitle) {
-      toast({ title: 'Missing Information', description: 'Please provide a title for the reminder.', variant: 'destructive' });
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      await addEvent({
-        userId: user.id,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        title: eventTitle,
-        reminder: eventReminder,
-        reminderTime: eventReminder ? reminderTime : undefined
-      });
-      toast({ title: 'Reminder Added', description: 'Your reminder has been saved.' });
-      setEventDialogOpen(false);
-      setEventTitle('');
-      setEventReminder(true);
-      await loadData(); // Reload all data
-    } catch(error) {
-       toast({ title: 'Error', description: 'Failed to add reminder.', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  const handleTakeAttendance = (slot: EnrichedSchedule) => {
-    setSelectedSlotForAttendance(slot);
-    setAttendanceDialogOpen(true);
-  };
-
-  const todaysClasses = useMemo(() => {
-    const todayName = format(new Date(), 'EEEE');
-    return schedule.filter(slot => slot.day === todayName);
-  }, [schedule]);
-
-
   if (isLoading) {
     return <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
       <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>
     </DashboardLayout>
   }
   
-  const leaveDialogTitle = dialogAction === 'leave' ? 'Request Leave of Absence' : 'Add a Note for Admin';
-  const leaveDialogDescription = dialogAction === 'leave' 
-    ? 'Please fill out the form below to submit your leave request.'
-    : 'Add a note for the administration regarding this day.';
-
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
        <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                   <Card>
-                      <CardHeader>
-                        <CardTitle>Today's Classes</CardTitle>
-                        <CardDescription>View and mark attendance for your classes scheduled today.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {todaysClasses.length > 0 ? (
-                          <div className="space-y-4">
-                            {todaysClasses.map(slot => (
-                              <div key={slot.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                  <p className="font-semibold">{slot.subjectName} ({slot.className})</p>
-                                  <p className="text-sm text-muted-foreground">{slot.time} - {slot.classroomName}</p>
-                                </div>
-                                <Button size="sm" variant="outline" onClick={() => handleTakeAttendance(slot)}>
-                                  <CheckSquare className="mr-2 h-4 w-4" />
-                                  Mark Attendance
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-center text-muted-foreground py-4">No classes scheduled for today.</p>
-                        )}
-                      </CardContent>
-                   </Card>
-                   <Card className="h-full flex flex-col">
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <CalendarDays className="w-5 h-5 mr-2" />
-                                Monthly Calendar
-                            </CardTitle>
-                            <CardDescription>Your class days and personal events. Click a day for options.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            <ScheduleCalendar 
-                                schedule={schedule} 
-                                leaveRequests={leaveRequests} 
-                                events={events}
-                                onDayClick={handleDayClick}
-                            />
-                        </CardContent>
-                    </Card>
+                   <ScheduleView />
                 </div>
                  <div className="lg:col-span-1 space-y-6">
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
@@ -490,35 +209,33 @@ export default function FacultyDashboard() {
       <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{leaveDialogTitle}</DialogTitle>
-            <DialogDescription>{leaveDialogDescription}</DialogDescription>
+            <DialogTitle>Request Leave</DialogTitle>
+            <DialogDescription>Please fill out the form to submit your leave request.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {dialogAction === 'leave' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date</Label>
-                    <Input 
-                      id="start-date" 
-                      type="date" 
-                      value={leaveStartDate}
-                      onChange={(e) => setLeaveStartDate(e.target.value ?? '')}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                   <div className="space-y-2">
-                    <Label htmlFor="end-date">End Date</Label>
-                    <Input 
-                      id="end-date" 
-                      type="date"
-                      value={leaveEndDate}
-                      onChange={(e) => setLeaveEndDate(e.target.value ?? '')}
-                      disabled={isSubmitting}
-                      min={leaveStartDate}
-                    />
-                  </div>
-                </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <div className="space-y-2">
+                <Label htmlFor="start-date">Start Date</Label>
+                <Input 
+                  id="start-date" 
+                  type="date" 
+                  value={leaveStartDate}
+                  onChange={(e) => setLeaveStartDate(e.target.value ?? '')}
+                  disabled={isSubmitting}
+                />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="end-date">End Date</Label>
+                <Input 
+                  id="end-date" 
+                  type="date"
+                  value={leaveEndDate}
+                  onChange={(e) => setLeaveEndDate(e.target.value ?? '')}
+                  disabled={isSubmitting}
+                  min={leaveStartDate}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="reason">Reason / Note</Label>
               <Textarea 
@@ -544,70 +261,6 @@ export default function FacultyDashboard() {
         </DialogContent>
       </Dialog>
       
-       <Dialog open={isEventDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-            setEventTitle('');
-            setEventReminder(true);
-        }
-        setEventDialogOpen(open);
-      }}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Add Reminder</DialogTitle>
-                <DialogDescription>Add a new reminder for {selectedDate ? format(selectedDate, 'PPP') : ''}</DialogDescription>
-            </DialogHeader>
-             <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="event-title" className="text-right">
-                      Title
-                  </Label>
-                  <Input
-                      id="event-title"
-                      value={eventTitle}
-                      onChange={(e) => setEventTitle(e.target.value)}
-                      className="col-span-3"
-                      placeholder="e.g. Project Deadline"
-                      disabled={isSubmitting}
-                  />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="reminder" className="text-right flex items-center gap-2">
-                        <Bell className="w-4 h-4" />
-                        Reminder
-                    </Label>
-                    <div className="col-span-3 flex items-center">
-                        <Switch
-                            id="reminder"
-                            checked={eventReminder}
-                            onCheckedChange={setEventReminder}
-                            disabled={isSubmitting}
-                        />
-                    </div>
-                </div>
-                {eventReminder && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="reminder-time" className="text-right">Time</Label>
-                        <Input 
-                            id="reminder-time"
-                            type="time"
-                            value={reminderTime}
-                            onChange={(e) => setReminderTime(e.target.value)}
-                            className="col-span-3"
-                            disabled={isSubmitting}
-                        />
-                    </div>
-                )}
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setEventDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                <Button onClick={handleAddEvent} disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Reminder
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isSyllabusDialogOpen} onOpenChange={(isOpen) => {
         if (!isOpen) setSelectedSubject(null);
         setSyllabusDialogOpen(isOpen);
@@ -698,16 +351,6 @@ export default function FacultyDashboard() {
         </DialogContent>
       </Dialog>
       
-      {isAttendanceDialogOpen && selectedSlotForAttendance && (
-        <AttendanceDialog
-          slot={selectedSlotForAttendance}
-          date={new Date()}
-          isOpen={isAttendanceDialogOpen}
-          onOpenChange={setAttendanceDialogOpen}
-        />
-      )}
     </DashboardLayout>
   );
 }
-
-    
