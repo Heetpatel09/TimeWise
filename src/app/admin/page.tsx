@@ -18,6 +18,7 @@ import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/u
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 
 const managementCards = [
