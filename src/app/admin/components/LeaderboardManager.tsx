@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { getStudents } from '@/lib/services/students';
@@ -45,10 +46,11 @@ export default function LeaderboardManager() {
 
     const handleUpdateStreaks = async () => {
         setIsUpdating(true);
+        toast({ title: "Please wait...", description: "Recalculating all streaks." });
         try {
             await updateAllStreaks();
             await loadData();
-            toast({ title: 'Streaks Updated', description: 'All student and faculty streaks have been recalculated.' });
+            toast({ title: 'Streaks Updated', description: 'All student and faculty streaks have been recalculated based on daily attendance.' });
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to update streaks.', variant: 'destructive' });
         } finally {
@@ -65,7 +67,7 @@ export default function LeaderboardManager() {
             <Card>
                 <CardHeader>
                     <CardTitle>Streak Management</CardTitle>
-                    <CardDescription>Recalculate all teaching and attendance streaks based on the current weekly schedule.</CardDescription>
+                    <CardDescription>Recalculate all teaching and attendance streaks based on consecutive daily activity.</CardDescription>
                 </CardHeader>
                 <CardFooter>
                     <Button onClick={handleUpdateStreaks} disabled={isUpdating}>
@@ -79,7 +81,7 @@ export default function LeaderboardManager() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Faculty Teaching Streak</CardTitle>
-                        <CardDescription>Top faculty members by scheduled classes this week.</CardDescription>
+                        <CardDescription>Top faculty members by consecutive daily teaching.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -121,7 +123,7 @@ export default function LeaderboardManager() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Student Attendance Streak</CardTitle>
-                        <CardDescription>Top students by scheduled classes this week.</CardDescription>
+                        <CardDescription>Top students by consecutive daily attendance.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>

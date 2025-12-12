@@ -5,11 +5,15 @@ import type { EnrichedAttendance } from '@/lib/types';
 import { getStudentAttendance } from '@/lib/services/attendance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import React, { useState, useMemo } from 'react';
 
 interface AttendanceDialogProps {
   isOpen: boolean;
@@ -53,6 +57,66 @@ function AttendanceStats({ records }: { records: EnrichedAttendance[] }) {
     )
 }
 
+function AttendanceCalculator({ records }: { records: EnrichedAttendance[] }) {
+    const [targetPercentage, setTargetPercentage] = useState(75);
+    const total = records.length;
+    const present = records.filter(r => r.status === 'present').length;
+    const currentPercentage = total > 0 ? (present / total) * 100 : 100;
+
+    const classesToAttend = useMemo(() => {
+        if (currentPercentage >= targetPercentage) return 0;
+        // Formula: (target * total - 100 * present) / (100 - target)
+        const numerator = (targetPercentage * total) - (100 * present);
+        const denominator = 100 - targetPercentage;
+        if (denominator <= 0) return Infinity; // Cannot reach target
+        return Math.ceil(numerator / denominator);
+    }, [targetPercentage, currentPercentage, total, present]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Attendance Calculator</CardTitle>
+                <CardDescription>Calculate how many classes you need to attend to reach your target percentage.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 {currentPercentage < 75 && (
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4"/>
+                        <AlertTitle>Low Attendance Warning</AlertTitle>
+                        <AlertDescription>
+                            Your current attendance is {currentPercentage.toFixed(1)}%. You need to attend more classes to avoid consequences.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="space-y-2 flex-1 w-full">
+                        <Label htmlFor="target">Target Percentage (%)</Label>
+                        <Input
+                            id="target"
+                            type="number"
+                            value={targetPercentage}
+                            onChange={e => setTargetPercentage(Number(e.target.value))}
+                            min="1"
+                            max="100"
+                        />
+                    </div>
+                    <div className="text-center bg-secondary p-4 rounded-md flex-1 w-full mt-2 sm:mt-0">
+                        {classesToAttend === Infinity ? (
+                            <p className="text-lg font-bold text-destructive">Target Unreachable</p>
+                        ) : (
+                            <>
+                                <p className="text-sm text-muted-foreground">You need to attend</p>
+                                <p className="text-3xl font-bold">{classesToAttend}</p>
+                                <p className="text-sm text-muted-foreground">more class(es) to reach {targetPercentage}%.</p>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: AttendanceDialogProps) {
 
   const { data: attendanceRecords, isLoading } = useQuery<EnrichedAttendance[]>({
@@ -76,7 +140,7 @@ export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: At
         <DialogHeader>
           <DialogTitle>My Attendance</DialogTitle>
           <DialogDescription>
-            Here is a log of your attendance records.
+            Here is a log of your attendance records and a tool to calculate your required attendance.
           </DialogDescription>
         </DialogHeader>
         {isLoading ? (
@@ -90,6 +154,7 @@ export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: At
         ) : (
           <div className="max-h-[70vh] overflow-y-auto space-y-4 p-1">
              <AttendanceStats records={attendanceRecords}/>
+             <AttendanceCalculator records={attendanceRecords}/>
             <Card>
                 <CardHeader><CardTitle>Attendance Log</CardTitle></CardHeader>
                 <CardContent>

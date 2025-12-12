@@ -61,7 +61,7 @@ export default function HallOfFamePage() {
             <div className="text-center mb-12 animate-in fade-in slide-in-from-top-12 duration-500">
                  <h1 className="text-4xl font-bold font-headline tracking-tight">Hall of Fame</h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto mt-2">
-                    Celebrating the most dedicated members of our university community. Here are our current champions.
+                    Celebrating the most dedicated members of our university community, based on their consecutive daily activity.
                 </p>
             </div>
            

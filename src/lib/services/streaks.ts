@@ -1,8 +1,10 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Student, Faculty, Schedule } from '@/lib/types';
+import type { Student, Faculty, Attendance } from '@/lib/types';
+import { format, subDays, startOfDay } from 'date-fns';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
@@ -11,30 +13,41 @@ function revalidateAll() {
 }
 
 /**
- * Calculates a streak based on recent, distinct day activity.
- * This provides a more accurate "streak" than a simple count.
+ * Calculates a streak based on consecutive days of attendance.
+ * Similar to Snapchat streaks.
  */
-function calculateStreak(schedule: Pick<Schedule, 'day'>[]): number {
-    const today = new Date().getDay(); // Sunday - 0, Monday - 1, ...
-    const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function calculateAttendanceStreak(attendanceRecords: Pick<Attendance, 'date'>[]): number {
+    if (attendanceRecords.length === 0) return 0;
     
-    const scheduledDays = new Set(schedule.map(s => s.day));
+    // Get unique, sorted dates
+    const attendedDates = [...new Set(attendanceRecords.map(r => format(startOfDay(new Date(r.date)), 'yyyy-MM-dd')))].sort().reverse();
+    
     let streak = 0;
+    let currentDate = startOfDay(new Date());
+
+    // Check if today is an attended day
+    if (attendedDates[0] === format(currentDate, 'yyyy-MM-dd')) {
+        streak++;
+        currentDate = subDays(currentDate, 1);
+    } else {
+        // If they haven't attended today, the streak is based on days before today
+        currentDate = subDays(currentDate, 1);
+    }
     
-    // Check backwards from yesterday for 5 days (Monday-Friday)
-    for (let i = 1; i <= 5; i++) {
-        const dayIndex = (today - i + 7) % 7;
-        // Skip weekend days for streak calculation
-        if (dayIndex === 0 || dayIndex === 6) continue;
-        
-        const dayName = dayMap[dayIndex];
-        if (scheduledDays.has(dayName as any)) {
+    // Continue checking backwards from yesterday
+    let i = streak; // Start from 1 if today was attended, 0 otherwise
+    while (i < attendedDates.length) {
+        const expectedDate = format(currentDate, 'yyyy-MM-dd');
+        if (attendedDates[i] === expectedDate) {
             streak++;
+            currentDate = subDays(currentDate, 1);
+            i++;
         } else {
-            // Break the streak if a weekday is missed
+            // Break the streak if a day is missed
             break;
         }
     }
+    
     return streak;
 }
 
@@ -42,27 +55,27 @@ function calculateStreak(schedule: Pick<Schedule, 'day'>[]): number {
 export async function updateAllStreaks() {
     const db = getDb();
     
-    // Update faculty streaks
-    const allFaculty: Faculty[] = db.prepare('SELECT * FROM faculty').all() as any[];
+    // Update faculty streaks based on teaching
+    const allFaculty: Faculty[] = db.prepare('SELECT id FROM faculty').all() as any[];
     const facultyUpdateStmt = db.prepare('UPDATE faculty SET streak = ? WHERE id = ?');
 
     allFaculty.forEach(faculty => {
-        const facultySchedule = db.prepare(
-            'SELECT day FROM schedule WHERE facultyId = ?'
-        ).all(faculty.id) as Pick<Schedule, 'day'>[];
-        const streak = calculateStreak(facultySchedule);
+        const facultyAttendance = db.prepare(
+            'SELECT DISTINCT date FROM attendance WHERE scheduleId IN (SELECT id FROM schedule WHERE facultyId = ?)'
+        ).all(faculty.id) as Pick<Attendance, 'date'>[];
+        const streak = calculateAttendanceStreak(facultyAttendance);
         facultyUpdateStmt.run(streak, faculty.id);
     });
 
-    // Update student streaks
-    const allStudents: Student[] = db.prepare('SELECT * FROM students').all() as any[];
+    // Update student streaks based on attendance
+    const allStudents: Student[] = db.prepare('SELECT id FROM students').all() as any[];
     const studentUpdateStmt = db.prepare('UPDATE students SET streak = ? WHERE id = ?');
 
     allStudents.forEach(student => {
-        const studentSchedule = db.prepare(
-            'SELECT day FROM schedule WHERE classId = ?'
-        ).all(student.classId) as Pick<Schedule, 'day'>[];
-        const streak = calculateStreak(studentSchedule);
+        const studentAttendance = db.prepare(
+            "SELECT date FROM attendance WHERE studentId = ? AND status = 'present'"
+        ).all(student.id) as Pick<Attendance, 'date'>[];
+        const streak = calculateAttendanceStreak(studentAttendance);
         studentUpdateStmt.run(streak, student.id);
     });
 
