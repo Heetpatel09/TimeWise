@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { EnrichedSchedule, Class, Subject, Classroom } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, Library, Coffee, Star, PlusSquare, CheckSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Loader2, Library, Coffee, Star, PlusSquare, CheckSquare } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
@@ -50,8 +50,6 @@ export default function TimetableView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAttendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedSlotForAttendance, setSelectedSlotForAttendance] = useState<EnrichedSchedule | null>(null);
-
-  const [currentDayIndex, setCurrentDayIndex] = useState(new Date().getDay() - 1);
 
   useEffect(() => {
     async function loadData() {
@@ -112,24 +110,18 @@ export default function TimetableView() {
     doc.save('my_schedule.pdf');
   }
 
-  const changeDay = (direction: 'next' | 'prev') => {
-      if (direction === 'next') {
-          setCurrentDayIndex((prev) => (prev + 1) % DAYS.length);
-      } else {
-          setCurrentDayIndex((prev) => (prev - 1 + DAYS.length) % DAYS.length);
-      }
-  }
-
-  const currentDay = DAYS[currentDayIndex];
-  const daySlots = facultySchedule.filter(slot => slot.day === currentDay);
-  const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
+  const scheduleByDay = DAYS.map(day => {
+    const daySlots = facultySchedule.filter(slot => slot.day === day);
+    const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
         if (BREAK_SLOTS.includes(time)) {
-            return { id: `${currentDay}-${time}-break`, time: time, isBreak: true, day: currentDay };
+            return { id: `${day}-${time}-break`, time: time, isBreak: true, day: day };
         }
         const scheduledSlot = daySlots.find(slot => slot.time === time);
         if (scheduledSlot) return scheduledSlot;
-        return { id: `${currentDay}-${time}-library`, time: time, day: currentDay, isLibrary: true };
+        return { id: `${day}-${time}-library`, time: time, day: day, isLibrary: true };
     }).sort((a,b) => sortTime(a.time, b.time));
+    return { day, slots: fullDaySchedule };
+  });
   
   const todayName = format(new Date(), 'EEEE');
 
@@ -139,28 +131,20 @@ export default function TimetableView() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => changeDay('prev')}>
-                <ChevronLeft className="h-4 w-4"/>
-            </Button>
-             <h2 className="text-2xl font-bold tracking-tight w-48 text-center">{currentDay}</h2>
-             <Button variant="outline" size="icon" onClick={() => changeDay('next')}>
-                <ChevronRight className="h-4 w-4"/>
-            </Button>
-        </div>
+      <div className="flex justify-end mb-4">
         <Button onClick={exportPDF} variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Download Full PDF
+            Download PDF
         </Button>
-    </div>
+      </div>
       <div className="space-y-6">
-        <Card>
+        {scheduleByDay.map(({ day, slots }) => (
+          <Card key={day}>
             <CardHeader>
-              <CardTitle>Daily Schedule</CardTitle>
+              <CardTitle>{day}</CardTitle>
             </CardHeader>
             <CardContent>
-              {fullDaySchedule.length > 0 ? (
+              {slots.length > 0 ? (
                 <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -173,7 +157,7 @@ export default function TimetableView() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {fullDaySchedule.map((slot: any) => (
+                        {slots.map((slot: any) => (
                           <TableRow key={slot.id} className={slot.subjectIsSpecial ? `bg-purple-100 dark:bg-purple-900/50` : ''}>
                             <TableCell>{slot.time}</TableCell>
                             {slot.isLibrary ? (
@@ -209,7 +193,7 @@ export default function TimetableView() {
                                         variant="outline" 
                                         size="sm" 
                                         onClick={() => handleTakeAttendance(slot)}
-                                        disabled={currentDay !== todayName}
+                                        disabled={day !== todayName}
                                     >
                                         <CheckSquare className="h-4 w-4 mr-2" />
                                         Mark Attendance
@@ -223,10 +207,11 @@ export default function TimetableView() {
                     </Table>
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-4">No classes scheduled for {currentDay}.</p>
+                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
               )}
             </CardContent>
           </Card>
+        ))}
       </div>
       
       {isAttendanceDialogOpen && selectedSlotForAttendance && (
