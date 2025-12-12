@@ -100,9 +100,14 @@ export const classrooms: Classroom[] = Array.from({ length: 25 }, (_, i) => {
 });
 
 export const schedule: Schedule[] = [
-  // Dr. Alan Turing (FAC001) - 6 lectures, 6 labs
-  // Lectures
+  // Dr. Alan Turing (FAC001) - More lectures on Monday
   { id: 'SCH_F1_L1', classId: 'CLS007', subjectId: 'SUB014', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:30 AM' },
+  { id: 'SCH_F1_L7', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR005', day: 'Monday', time: '08:30 AM - 09:30 AM' }, // New
+  { id: 'SCH_F1_B2', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC001', classroomId: 'CR021', day: 'Monday', time: '10:00 AM - 11:00 AM' },
+  { id: 'SCH_F1_B3', classId: 'CLS004', subjectId: 'SUB006', facultyId: 'FAC001', classroomId: 'CR023', day: 'Monday', time: '01:00 PM - 02:00 PM' },
+  { id: 'SCH_F1_L8', classId: 'CLS005', subjectId: 'SUB009', facultyId: 'FAC001', classroomId: 'CR010', day: 'Monday', time: '02:00 PM - 03:00 PM' }, // New
+
+  // Rest of Dr. Turing's schedule
   { id: 'SCH_F1_L2', classId: 'CLS001', subjectId: 'SUB004', facultyId: 'FAC001', classroomId: 'CR016', day: 'Wednesday', time: '11:00 AM - 12:00 PM' },
   { id: 'SCH_F1_L3', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC001', classroomId: 'CR002', day: 'Thursday', time: '02:00 PM - 03:00 PM' },
   { id: 'SCH_F1_L4', classId: 'CLS003', subjectId: 'SUB007', facultyId: 'FAC001', classroomId: 'CR003', day: 'Thursday', time: '07:30 AM - 08:30 AM' },
@@ -110,8 +115,6 @@ export const schedule: Schedule[] = [
   { id: 'SCH_F1_L6', classId: 'CLS003', subjectId: 'SUB005', facultyId: 'FAC001', classroomId: 'CR017', day: 'Friday', time: '10:00 AM - 11:00 AM' },
   // Labs
   { id: 'SCH_F1_B1', classId: 'CLS002', subjectId: 'SUB002', facultyId: 'FAC001', classroomId: 'CR023', day: 'Friday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH_F1_B2', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC001', classroomId: 'CR021', day: 'Monday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH_F1_B3', classId: 'CLS004', subjectId: 'SUB006', facultyId: 'FAC001', classroomId: 'CR023', day: 'Monday', time: '01:00 PM - 02:00 PM' },
   { id: 'SCH_F1_B4', classId: 'CLS006', subjectId: 'SUB010', facultyId: 'FAC001', classroomId: 'CR022', day: 'Thursday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH_F1_B5', classId: 'CLS001', subjectId: 'SUB002', facultyId: 'FAC001', classroomId: 'CR024', day: 'Thursday', time: '11:00 AM - 12:00 PM' },
   { id: 'SCH_F1_B6', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC001', classroomId: 'CR025', day: 'Friday', time: '01:00 PM - 02:00 PM' },
