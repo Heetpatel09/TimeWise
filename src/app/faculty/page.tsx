@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BookOpen, MessageSquare, Loader2, Flame } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, Loader2, Flame, CheckCircle, ClipboardList } from "lucide-react";
 import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -229,6 +230,14 @@ export default function FacultyDashboard() {
                         <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({ title: 'Coming Soon!' })}>
                             <BookOpen className="w-7 h-7" />
                             <span>Syllabus</span>
+                        </Button>
+                        <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({title: "Coming Soon!"})}>
+                            <CheckCircle className="w-7 h-7" />
+                            <span>To-do List</span>
+                        </Button>
+                        <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({title: "Coming Soon!"})}>
+                            <ClipboardList className="w-7 h-7" />
+                            <span>Assignments</span>
                         </Button>
                         <Button variant="outline" className="h-24 flex-col gap-2 col-span-2" onClick={() => setSlotChangeDialogOpen(true)}>
                             <MessageSquare className="w-7 h-7" />

@@ -94,7 +94,7 @@ export function ScheduleCalendar({
         <PopoverTrigger asChild>
           <div
             className={cn(
-                "relative h-24 md:h-28 p-2 flex flex-col cursor-pointer transition-colors duration-200 hover:bg-accent/50 border-t border-r",
+                "relative h-20 md:h-24 p-2 flex flex-col cursor-pointer transition-colors duration-200 hover:bg-accent/50 border-t border-r",
                 !isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-background'
             )}
           >
