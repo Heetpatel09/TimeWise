@@ -122,9 +122,8 @@ function ScheduleCalendar({
             <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
                 {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
                 {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
-                {daySchedule.slice(0, 1).map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
-                {dayEvents.slice(0, 1).map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
-                {(daySchedule.length + dayEvents.length) > 1 && <div className="text-muted-foreground">+ {daySchedule.length + dayEvents.length - 1} more</div>}
+                {daySchedule.map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
+                {dayEvents.map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
             </div>
           </div>
         </PopoverTrigger>
@@ -694,5 +693,3 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   );
 }
-
-    
