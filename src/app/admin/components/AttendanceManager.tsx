@@ -122,6 +122,19 @@ export default function AttendanceManager() {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
   
+  if (!sortedGroups || sortedGroups.length === 0) {
+      return (
+          <Card>
+              <CardHeader>
+                  <CardTitle>No Attendance Records</CardTitle>
+                  <CardDescription>
+                      There are no attendance records to display yet. Faculty can start taking attendance from their dashboard.
+                  </CardDescription>
+              </CardHeader>
+          </Card>
+      )
+  }
+
   return (
     <Accordion type="single" collapsible className="w-full space-y-4">
       {sortedGroups.map(({ details, records }) => (
