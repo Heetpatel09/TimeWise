@@ -128,9 +128,8 @@ function ScheduleCalendar({
             <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
                 {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
                 {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
-                {daySchedule.slice(0, 1).map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName}</div>)}
-                {dayEvents.slice(0, 1).map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
-                {(daySchedule.length + dayEvents.length) > 1 && <div className="text-muted-foreground">+ {daySchedule.length + dayEvents.length - 1} more</div>}
+                {daySchedule.map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName} - {s.className}</div>)}
+                {dayEvents.map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
             </div>
           </div>
         </PopoverTrigger>
@@ -143,7 +142,7 @@ function ScheduleCalendar({
                 <div className="grid gap-2">
                     {daySchedule.map(slot => (
                         <div key={slot.id} className="p-2 rounded-md bg-primary/10">
-                            <p className="font-semibold text-sm">{slot.subjectName}</p>
+                            <p className="font-semibold text-sm">{slot.subjectName} - {slot.className}</p>
                             <p className="text-xs text-muted-foreground">{slot.time}</p>
                         </div>
                     ))}
@@ -201,8 +200,25 @@ function ScheduleCalendar({
 }
 
 function AttendanceReport({ subjects, attendanceRecords }: { subjects: Subject[], attendanceRecords: EnrichedAttendance[] }) {
+    const [isDetailsOpen, setDetailsOpen] = useState(false);
+
+    const overallStats = useMemo(() => {
+        const presentCount = attendanceRecords.filter(r => r.status === 'present').length;
+        const absentCount = attendanceRecords.filter(r => r.status !== 'present').length; // absent or disputed
+        const totalHeld = presentCount + absentCount;
+        const currentPercentage = totalHeld > 0 ? (presentCount / totalHeld) * 100 : 100;
+
+        let neededFor75 = 0;
+        if (currentPercentage < 75) {
+            // Formula: 0.75 * (Total + x) = Present + x  => 0.75*Total + 0.75x = P + x => 0.75T - P = 0.25x => x = (0.75T - P) / 0.25 => x = 3T - 4P
+            neededFor75 = Math.ceil((0.75 * totalHeld - presentCount) / 0.25);
+            if (neededFor75 < 0) neededFor75 = 0;
+        }
+
+        return { presentCount, absentCount, totalHeld, currentPercentage, neededFor75 };
+    }, [attendanceRecords]);
     
-    const stats = useMemo(() => {
+    const subjectStats = useMemo(() => {
         return subjects.map(subject => {
             const subjectRecords = attendanceRecords.filter(r => r.subjectName === subject.name);
             const presentCount = subjectRecords.filter(r => r.status === 'present').length;
@@ -225,31 +241,84 @@ function AttendanceReport({ subjects, attendanceRecords }: { subjects: Subject[]
     }
 
     return (
-        <ScrollArea className="h-72">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Subject</TableHead>
-                        <TableHead className="text-center">Present</TableHead>
-                        <TableHead className="text-center">Absent</TableHead>
-                        <TableHead className="text-center">Total</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {stats.map(stat => (
-                        <TableRow key={stat.subjectName}>
-                            <TableCell>
-                                <div>{stat.subjectName}</div>
-                                <Progress value={stat.percentage} className="h-2 mt-1" />
-                            </TableCell>
-                            <TableCell className="text-center font-medium text-green-600">{stat.presentCount}</TableCell>
-                            <TableCell className="text-center font-medium text-red-600">{stat.absentCount}</TableCell>
-                            <TableCell className="text-center font-bold">{stat.totalLectures}</TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </ScrollArea>
+        <div className="space-y-4">
+            <div>
+                 <div className="flex justify-between items-baseline">
+                    <Label className="text-muted-foreground">Overall Attendance</Label>
+                    <span className="font-bold text-lg">{overallStats.currentPercentage.toFixed(1)}%</span>
+                </div>
+                <Progress value={overallStats.currentPercentage} className="h-2 mt-1" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/50">
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{overallStats.presentCount}</p>
+                    <p className="text-xs text-muted-foreground">Present</p>
+                </div>
+                 <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/50">
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overallStats.absentCount}</p>
+                    <p className="text-xs text-muted-foreground">Absent</p>
+                </div>
+            </div>
+
+            {overallStats.currentPercentage < 75 ? (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Attendance Warning</AlertTitle>
+                    <AlertDescription>
+                        You need to attend <strong>{overallStats.neededFor75} more classes</strong> to meet the 75% attendance criteria.
+                    </AlertDescription>
+                </Alert>
+            ) : (
+                 <Alert className="border-green-300 dark:border-green-700">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-700 dark:text-green-500">On Track!</AlertTitle>
+                    <AlertDescription>
+                        You are meeting the 75% attendance criteria. Keep it up!
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            <Dialog open={isDetailsOpen} onOpenChange={setDetailsOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="link" className="p-0 h-auto">View subject-wise details</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Subject-wise Attendance Report</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="h-96">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Subject</TableHead>
+                                    <TableHead className="text-center">Present</TableHead>
+                                    <TableHead className="text-center">Absent</TableHead>
+                                    <TableHead className="text-center">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {subjectStats.map(stat => (
+                                    <TableRow key={stat.subjectName}>
+                                        <TableCell>
+                                            <div>{stat.subjectName}</div>
+                                            <Progress value={stat.percentage} className="h-2 mt-1" />
+                                        </TableCell>
+                                        <TableCell className="text-center font-medium text-green-600">{stat.presentCount}</TableCell>
+                                        <TableCell className="text-center font-medium text-red-600">{stat.absentCount}</TableCell>
+                                        <TableCell className="text-center font-bold">{stat.totalLectures}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                     <DialogFooter>
+                        <Button variant="outline" onClick={() => setDetailsOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+        </div>
     )
 }
 
@@ -606,7 +675,7 @@ export default function StudentDashboard() {
                 </div>
                  <div className="lg:col-span-1 space-y-6">
                     <ResultsView student={student} results={results} />
-                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
+                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
                         <CardHeader>
                             <CardTitle>My Attendance Report</CardTitle>
                             <CardDescription>Your attendance summary for each subject.</CardDescription>
