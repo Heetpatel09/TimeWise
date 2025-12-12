@@ -84,7 +84,7 @@ export default function StudentsManager() {
   }
 
   const handleSave = async () => {
-    if (currentStudent && currentStudent.classId) {
+    if (currentStudent && currentStudent.classId && currentStudent.name && currentStudent.email && currentStudent.enrollmentNumber && currentStudent.section && currentStudent.category) {
        if (!currentStudent.id && passwordOption === 'manual' && !manualPassword) {
         toast({ title: "Password Required", description: "Please enter a password for the new student.", variant: "destructive" });
         return;
@@ -115,7 +115,7 @@ export default function StudentsManager() {
         setIsSubmitting(false);
       }
     } else {
-        toast({ title: "Missing Information", description: "Please select a class for the student.", variant: "destructive" });
+        toast({ title: "Missing Information", description: "Please fill all the fields.", variant: "destructive" });
     }
   };
 
@@ -140,10 +140,6 @@ export default function StudentsManager() {
     setManualPassword('');
     setDialogOpen(true);
   };
-
-  const getStudentClassInfo = (classId: string) => {
-    return classes.find(c => c.id === classId) || null;
-  }
   
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -162,16 +158,16 @@ export default function StudentsManager() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Semester</TableHead>
+              <TableHead>Enrollment No.</TableHead>
+              <TableHead>Section</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>CGPA</TableHead>
               <TableHead>Attendance</TableHead>
-              <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {students.map((student) => {
-              const classInfo = getStudentClassInfo(student.classId);
               const attendance = studentAttendanceStats[student.id];
               return (
               <TableRow key={student.id}>
@@ -187,8 +183,10 @@ export default function StudentsManager() {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{classInfo?.name || 'N/A'}</TableCell>
-                <TableCell>{classInfo?.semester || 'N/A'}</TableCell>
+                <TableCell>{student.enrollmentNumber}</TableCell>
+                <TableCell>{student.section}</TableCell>
+                <TableCell>{student.category}</TableCell>
+                <TableCell>{student.cgpa.toFixed(2)}</TableCell>
                 <TableCell>
                   {attendance && attendance.total > 0 ? (
                     <div className="flex items-center gap-2">
@@ -199,7 +197,6 @@ export default function StudentsManager() {
                     <span className="text-muted-foreground text-xs">No records</span>
                   )}
                 </TableCell>
-                <TableCell>{student.streak}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -250,7 +247,7 @@ export default function StudentsManager() {
         }
         setDialogOpen(isOpen);
       }}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{currentStudent?.id ? 'Edit Student' : 'Add Student'}</DialogTitle>
             <DialogDescription>
@@ -258,18 +255,32 @@ export default function StudentsManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentStudent.name ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} className="col-span-3" disabled={isSubmitting} />
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={currentStudent.name ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} disabled={isSubmitting} />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentStudent.email ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} className="col-span-3" disabled={isSubmitting} />
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={currentStudent.email ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} disabled={isSubmitting} />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="class" className="text-right">Class</Label>
+            <div className="space-y-2">
+              <Label htmlFor="enrollmentNumber">Enrollment Number</Label>
+              <Input id="enrollmentNumber" value={currentStudent.enrollmentNumber ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, enrollmentNumber: e.target.value })} disabled={isSubmitting} />
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="section">Section</Label>
+                  <Input id="section" value={currentStudent.section ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, section: e.target.value })} disabled={isSubmitting} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Input id="category" value={currentStudent.category ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, category: e.target.value })} disabled={isSubmitting} />
+                </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="class">Class</Label>
               <Select value={currentStudent?.classId || ''} onValueChange={(value) => setCurrentStudent({ ...currentStudent, classId: value })} disabled={isSubmitting}>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Select a class" />
                 </SelectTrigger>
                 <SelectContent>
@@ -279,9 +290,9 @@ export default function StudentsManager() {
             </div>
             {!currentStudent.id && (
               <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                   <Label className="text-right">Password</Label>
-                   <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="col-span-3 flex gap-4">
+                <div className="space-y-2">
+                   <Label>Password</Label>
+                   <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="auto" id="auto-student" />
                         <Label htmlFor="auto-student">Auto-generate</Label>
@@ -293,9 +304,9 @@ export default function StudentsManager() {
                    </RadioGroup>
                 </div>
                  {passwordOption === 'manual' && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="manual-password-student" className="text-right">Set Password</Label>
-                        <div className="col-span-3 relative">
+                    <div className="space-y-2">
+                        <Label htmlFor="manual-password-student">Set Password</Label>
+                        <div className="relative">
                             <Input 
                                 id="manual-password-student" 
                                 type={showPassword ? "text" : "password"}

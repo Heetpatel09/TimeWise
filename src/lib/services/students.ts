@@ -33,7 +33,7 @@ export async function getStudentsByClass(classId: string): Promise<Student[]> {
 }
 
 export async function addStudent(
-    item: Omit<Student, 'id' | 'streak' | 'profileCompleted' | 'sgpa' | 'cgpa'> & { streak?: number, profileCompleted?: number, sgpa?: number, cgpa?: number },
+    item: Omit<Student, 'id' | 'profileCompleted' | 'sgpa' | 'cgpa'> & { profileCompleted?: number, sgpa?: number, cgpa?: number },
     password?: string
 ) {
     const db = getDb();
@@ -46,15 +46,14 @@ export async function addStudent(
     const newItem: Student = {
         ...item,
         id,
-        streak: item.streak || 0,
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
         profileCompleted: item.profileCompleted || 0,
         sgpa: item.sgpa || 0,
         cgpa: item.cgpa || 0,
     };
 
-    const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa);
+    const stmt = db.prepare('INSERT INTO students (id, name, email, enrollmentNumber, section, category, classId, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.enrollmentNumber, newItem.section, newItem.category, newItem.classId, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -95,8 +94,8 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
         throw new Error("Student not found.");
     }
     
-    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, classId = ?, streak = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.classId, updatedItem.streak, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.id);
+    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, enrollmentNumber = ?, section = ?, category = ?, classId = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.enrollmentNumber, updatedItem.section, updatedItem.category, updatedItem.classId, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.id);
     
     if (oldStudent.email !== updatedItem.email) {
          await addCredential({

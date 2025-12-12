@@ -122,8 +122,10 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
+        enrollmentNumber TEXT NOT NULL,
+        section TEXT NOT NULL,
+        category TEXT NOT NULL,
         classId TEXT NOT NULL,
-        streak INTEGER NOT NULL,
         avatar TEXT,
         profileCompleted INTEGER NOT NULL DEFAULT 0,
         sgpa REAL NOT NULL DEFAULT 0,
@@ -265,7 +267,7 @@ function createSchemaAndSeed() {
   // Seed the database
     const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
-    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, section, category, classId, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
     const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -284,13 +286,13 @@ function createSchemaAndSeed() {
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
             if (s.email !== 'aarav.sharma@example.com') { // Exclude the specific user
-                insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
+                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.section, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
             }
         });
         // Insert the specific student separately to ensure their data is correct
         const specificStudent = students.find(s => s.email === 'aarav.sharma@example.com');
         if (specificStudent) {
-            insertStudent.run(specificStudent.id, specificStudent.name, specificStudent.email, specificStudent.classId, specificStudent.streak, specificStudent.avatar || null, specificStudent.profileCompleted || 0, specificStudent.sgpa, specificStudent.cgpa);
+            insertStudent.run(specificStudent.id, specificStudent.name, specificStudent.email, specificStudent.enrollmentNumber, specificStudent.section, specificStudent.category, specificStudent.classId, specificStudent.avatar || null, specificStudent.profileCompleted || 0, specificStudent.sgpa, specificStudent.cgpa);
         }
         
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));

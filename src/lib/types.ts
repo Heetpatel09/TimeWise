@@ -21,8 +21,10 @@ export interface Student {
   id: string;
   name: string;
   email: string;
+  enrollmentNumber: string;
+  section: string;
+  category: string;
   classId: string;
-  streak: number;
   avatar?: string;
   className?: string; // Optional: can be added when joining with classes table
   profileCompleted: number;

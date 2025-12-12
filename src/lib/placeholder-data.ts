@@ -57,8 +57,10 @@ export const students: Student[] = studentNames.map((name, index) => {
     id: `STU${(index + 1).toString().padStart(3, '0')}`,
     name,
     email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
+    enrollmentNumber: `ENRL${new Date().getFullYear()}${(index + 1).toString().padStart(4, '0')}`,
+    section: (index % 2 === 0) ? 'A' : 'B',
+    category: (index % 5 === 0) ? 'Scholarship' : 'General',
     classId,
-    streak: Math.floor(Math.random() * 30),
     profileCompleted: 50 + Math.floor(Math.random() * 51),
     sgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
     cgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
@@ -165,7 +167,7 @@ export const leaveRequests: LeaveRequest[] = [
   { id: 'LR001', requesterId: 'FAC002', requesterName: 'Dr. Ada Lovelace', requesterRole: 'faculty', startDate: '2024-08-01', endDate: '2024-08-05', reason: 'Family wedding.', status: 'pending' },
   { id: 'LR002', requesterId: 'FAC003', requesterName: 'Dr. Grace Hopper', requesterRole: 'faculty', startDate: '2024-08-10', endDate: '2024-08-12', reason: 'Attending a conference.', status: 'pending' },
   { id: 'LR003', requesterId: 'FAC001', requesterName: 'Dr. Alan Turing', requesterRole: 'faculty', startDate: '2024-07-20', endDate: '2024-07-21', reason: 'Personal reasons.', status: 'approved' },
-  { id: 'LR004', requesterId: 'STU001', requesterName: 'Alice Johnson', requesterRole: 'student', startDate: '2024-08-02', endDate: '2024-08-03', reason: 'Medical appointment.', status: 'pending' },
+  { id: 'LR004', requesterId: 'STU001', requesterName: 'Aarav Sharma', requesterRole: 'student', startDate: '2024-08-02', endDate: '2024-08-03', reason: 'Medical appointment.', status: 'pending' },
 ];
 
 export const scheduleChangeRequests: ScheduleChangeRequest[] = [
