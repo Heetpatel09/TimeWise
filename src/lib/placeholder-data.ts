@@ -169,7 +169,7 @@ export const leaveRequests: LeaveRequest[] = [
 ];
 
 export const scheduleChangeRequests: ScheduleChangeRequest[] = [
-    { id: 'SCR001', scheduleId: 'SCH001', facultyId: 'FAC001', reason: 'Need to swap this class with my afternoon slot.', status: 'pending' },
+    { id: 'SCR001', scheduleId: 'SCH_F1_L1', facultyId: 'FAC001', reason: 'Need to swap this class with my afternoon slot.', status: 'pending' },
     { id: 'SCR002', scheduleId: 'SCH003', facultyId: 'FAC003', reason: 'Lab equipment is unavailable.', status: 'pending' },
     { id: 'SCR003', scheduleId: 'SCH012', facultyId: 'FAC011', reason: 'Requesting to move to Room 102.', status: 'pending', requestedClassroomId: 'CR002' },
 ];
