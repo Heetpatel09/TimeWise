@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { addSlotRequest } from '@/lib/services/new-slot-requests';
 import AttendanceDialog from './AttendanceDialog';
-import { isToday as isDateToday } from 'date-fns';
+import { isToday as isDateToday, format } from 'date-fns';
 
 
 const ALL_TIME_SLOTS = [
@@ -120,7 +120,7 @@ export default function ScheduleView() {
     switch (type) {
       case 'class': return classes.find(c => c.id === id)?.name;
       case 'subject': return subjects.find(s => s.id === id)?.name;
-      case 'classroom': return classrooms.find(cr => cr.id === id)?.name;
+      case 'classroom': return classrooms.find(cr => cr.id === cr.id)?.name;
       default: return 'N/A';
     }
   };
@@ -251,7 +251,7 @@ export default function ScheduleView() {
   const filteredClassroomsForNewSlot = classrooms.filter(c => !selectedSubjectType || c.type === selectedSubjectType);
 
   const dayNameToIndex: { [key: string]: number } = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
-  const isCurrentDay = (day: string) => dayNameToIndex[day] === new Date().getDay();
+  const todayName = format(new Date(), 'EEEE');
 
 
   if (isLoading) {
@@ -334,7 +334,7 @@ export default function ScheduleView() {
                                         variant="outline" 
                                         size="sm" 
                                         onClick={() => handleTakeAttendance(slot)}
-                                        disabled={!isDateToday(new Date()) || !isCurrentDay(day)}
+                                        disabled={day !== todayName}
                                     >
                                         <CheckSquare className="h-4 w-4 mr-2" />
                                         Mark Attendance
@@ -469,5 +469,3 @@ export default function ScheduleView() {
     </div>
   );
 }
-
-    
