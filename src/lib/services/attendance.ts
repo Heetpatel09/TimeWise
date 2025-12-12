@@ -34,7 +34,6 @@ export async function getStudentAttendance(studentId: string): Promise<EnrichedA
         JOIN subjects sub ON sch.subjectId = sub.id
         WHERE a.studentId = ? 
         ORDER BY a.date DESC, a.timestamp DESC
-        LIMIT 20
     `);
     const results = stmt.all(studentId) as any[];
     return results.map(r => ({ ...r, isLocked: !!r.isLocked }));

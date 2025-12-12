@@ -756,4 +756,3 @@ export default function FacultyDashboard() {
     </DashboardLayout>
   );
 }
-
