@@ -290,15 +290,8 @@ function createSchemaAndSeed() {
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
-            if (s.email !== 'aarav.sharma@example.com') { // Exclude the specific user
-                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.section, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
-            }
+            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.section, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
         });
-        // Insert the specific student separately to ensure their data is correct
-        const specificStudent = students.find(s => s.email === 'aarav.sharma@example.com');
-        if (specificStudent) {
-            insertStudent.run(specificStudent.id, specificStudent.name, specificStudent.email, specificStudent.enrollmentNumber, specificStudent.section, specificStudent.category, specificStudent.classId, specificStudent.avatar || null, specificStudent.profileCompleted || 0, specificStudent.sgpa, specificStudent.cgpa);
-        }
         
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
@@ -311,13 +304,14 @@ function createSchemaAndSeed() {
         });
         
         students.forEach(s => {
-            if (s.email !== 'aarav.sharma@example.com') {
+            // Check if the student is the specific one we want a fixed password for
+            if (s.email === 'aarav.sharma@example.com') {
+                insertUser.run(s.email, s.id, 'student123', 'student', 0);
+            } else {
                 const randomPassword = randomBytes(8).toString('hex');
                 insertUser.run(s.email, s.id, randomPassword, 'student', 1);
             }
         });
-        // Explicitly set the sample student password AFTER all others are set
-        insertUser.run('aarav.sharma@example.com', 'STU001', 'student123', 'student', 0);
 
 
         // Step 3: Insert all other relational data
@@ -347,4 +341,5 @@ export { getDb as db };
     
 
     
+
 
