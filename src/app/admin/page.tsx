@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
@@ -38,6 +38,7 @@ const managementCards = [
   { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or reject leave." },
   { href: "/admin/schedule-requests", title: "Schedule Changes", icon: PencilRuler, description: "Review schedule change requests." },
   { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare, description: "Review new slot requests from faculty." },
+  { href: "/admin/api-test", title: "API Key Test", icon: KeyRound, description: "Verify your Gemini API key." },
 ];
 
 const StatItem = ({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) => {
