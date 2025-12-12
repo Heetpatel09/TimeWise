@@ -124,7 +124,7 @@ export async function getAllAttendanceRecords(): Promise<EnrichedAttendance[]> {
         JOIN classes c ON sch.classId = c.id
         JOIN subjects sub ON sch.subjectId = sub.id
         JOIN faculty f ON sch.facultyId = f.id
-        ORDER BY a.date DESC
+        ORDER BY a.date DESC, sch.time ASC
     `);
      const results = stmt.all() as any[];
     return results.map(r => ({ ...r, isLocked: !!r.isLocked }));

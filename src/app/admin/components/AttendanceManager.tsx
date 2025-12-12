@@ -1,7 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllAttendanceRecords, lockAttendanceSlot } from '@/lib/services/attendance';
 import type { EnrichedAttendance } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,7 +22,6 @@ import {
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Progress } from '@/components/ui/progress';
 
 
 function AttendanceStats({ records }: { records: EnrichedAttendance[] }) {
