@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from "react";
@@ -95,22 +94,22 @@ export function ScheduleCalendar({
         <PopoverTrigger asChild>
           <div
             className={cn(
-                "relative h-32 md:h-40 p-2 flex flex-col cursor-pointer transition-colors duration-200 hover:bg-accent/50",
+                "relative h-24 md:h-28 p-2 flex flex-col cursor-pointer transition-colors duration-200 hover:bg-accent/50 border-t border-r",
                 !isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-background'
             )}
           >
             <div className="flex justify-between items-center">
                 <time dateTime={dayStr} className={cn(
-                    "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
+                    "text-xs font-medium h-6 w-6 flex items-center justify-center rounded-full",
                     isCurrentToday && 'bg-primary text-primary-foreground'
                 )}>
                   {format(day, 'd')}
                 </time>
             </div>
             <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1 no-scrollbar">
-                {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
-                {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
-                {dayEvents.map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
+                {isLeave && <Badge variant="destructive" className="w-full justify-center text-xs px-1">On Leave</Badge>}
+                {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800 text-xs px-1">Holiday</Badge>}
+                {dayEvents.map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate text-[10px]">{e.title}</div>)}
             </div>
           </div>
         </PopoverTrigger>
@@ -172,7 +171,7 @@ export function ScheduleCalendar({
                     <div key={day} className="py-2">{day}</div>
                 ))}
             </div>
-            <div className="grid grid-cols-7 flex-grow border-b border-l border-border">
+            <div className="grid grid-cols-7 flex-grow border-l border-b">
                 {daysInMonth.map(renderDayCell)}
             </div>
         </CardContent>
