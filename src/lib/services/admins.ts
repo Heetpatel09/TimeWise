@@ -22,7 +22,7 @@ export async function getAdmins(): Promise<Admin[]> {
     }))));
 }
 
-export async function addAdmin(item: Omit<Admin, 'id'>, password?: string) {
+export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Promise<{ id: string, name: string, email: string, initialPassword?: string }> {
     const db = getDb();
     const id = `ADM${Date.now()}`;
     const newItem: Admin = {
@@ -30,7 +30,7 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string) {
         id,
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
         role: item.role || 'manager',
-        permissions: item.permissions || [],
+        permissions: item.role === 'admin' ? ['*'] : item.permissions || [],
     };
     
     const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
@@ -47,36 +47,43 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string) {
 
     revalidateAll();
     
-    return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
+    return Promise.resolve({ id: newItem.id, name: newItem.name, email: newItem.email, initialPassword: password ? undefined : initialPassword });
 }
 
-export async function updateAdmin(updatedItem: Admin): Promise<Admin> {
+export async function updateAdmin(updatedItem: Partial<Admin> & { id: string }): Promise<Admin> {
     const db = getDb();
     const oldAdmin = db.prepare('SELECT * FROM admins WHERE id = ?').get(updatedItem.id) as Admin | undefined;
     if (!oldAdmin) {
         throw new Error("Admin not found.");
     }
     
+    const mergedItem = { ...oldAdmin, ...updatedItem };
+     // Ensure permissions are correctly set for admins
+    if (mergedItem.role === 'admin') {
+        mergedItem.permissions = ['*'];
+    }
+
+
     const stmt = db.prepare('UPDATE admins SET name = ?, email = ?, avatar = ?, role = ?, permissions = ? WHERE id = ?');
     stmt.run(
-        updatedItem.name, 
-        updatedItem.email, 
-        updatedItem.avatar,
-        updatedItem.role,
-        JSON.stringify(updatedItem.permissions || []),
-        updatedItem.id
+        mergedItem.name, 
+        mergedItem.email, 
+        mergedItem.avatar,
+        mergedItem.role,
+        JSON.stringify(mergedItem.permissions || []),
+        mergedItem.id
     );
 
-    if (oldAdmin.email !== updatedItem.email) {
+    if (oldAdmin.email !== mergedItem.email) {
         await addCredential({
-            userId: updatedItem.id,
-            email: updatedItem.email,
+            userId: mergedItem.id,
+            email: mergedItem.email,
             role: 'admin',
         });
     }
     
     revalidateAll();
-    const finalAdmin = db.prepare('SELECT * FROM admins WHERE id = ?').get(updatedItem.id) as Admin;
+    const finalAdmin: Admin = db.prepare('SELECT * FROM admins WHERE id = ?').get(updatedItem.id) as any;
     return Promise.resolve({
         ...finalAdmin,
         permissions: finalAdmin.permissions ? JSON.parse(finalAdmin.permissions as any) : []
