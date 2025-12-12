@@ -370,5 +370,3 @@ export default function StudentsManager() {
     </div>
   );
 }
-
-    

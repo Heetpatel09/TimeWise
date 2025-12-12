@@ -27,11 +27,15 @@ export async function getStudentAttendance(studentId: string): Promise<EnrichedA
             s.name as studentName,
             sch.day,
             sch.time,
-            sub.name as subjectName
+            sub.name as subjectName,
+            c.name as className,
+            f.name as facultyName
         FROM attendance a
         JOIN students s ON a.studentId = s.id
         JOIN schedule sch ON a.scheduleId = sch.id
         JOIN subjects sub ON sch.subjectId = sub.id
+        JOIN classes c ON sch.classId = c.id
+        JOIN faculty f ON sch.facultyId = f.id
         WHERE a.studentId = ? 
         ORDER BY a.date DESC, a.timestamp DESC
     `);

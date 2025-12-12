@@ -21,6 +21,42 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { format, parseISO } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Progress } from '@/components/ui/progress';
+
+
+function AttendanceStats({ records }: { records: EnrichedAttendance[] }) {
+    const total = records.length;
+    if (total === 0) return null;
+
+    const present = records.filter(r => r.status === 'present').length;
+    const absent = records.filter(r => r.status === 'absent').length;
+    const disputed = records.filter(r => r.status === 'disputed').length;
+    const percentage = (present / total) * 100;
+
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div className="p-2 rounded-lg bg-secondary">
+                <p className="text-2xl font-bold">{percentage.toFixed(0)}%</p>
+                <p className="text-xs text-muted-foreground">Present</p>
+            </div>
+             <div className="p-2 rounded-lg bg-secondary">
+                <p className="text-2xl font-bold text-green-600">{present}</p>
+                <p className="text-xs text-muted-foreground">Present</p>
+            </div>
+             <div className="p-2 rounded-lg bg-secondary">
+                <p className="text-2xl font-bold text-red-600">{absent}</p>
+                <p className="text-xs text-muted-foreground">Absent</p>
+            </div>
+             <div className="p-2 rounded-lg bg-secondary">
+                <p className="text-2xl font-bold text-yellow-600">{disputed}</p>
+                <p className="text-xs text-muted-foreground">Disputed</p>
+            </div>
+        </div>
+    )
+}
+
 
 export default function AttendanceManager() {
   const queryClient = useQueryClient();
@@ -82,61 +118,73 @@ export default function AttendanceManager() {
   }
   
   return (
-    <div className="space-y-6">
+    <Accordion type="single" collapsible className="w-full space-y-4">
       {sortedGroups.map(({ details, records }) => (
-        <div key={`${details.scheduleId}-${details.date}`} className="border rounded-lg p-4">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h3 className="font-semibold">{details.subjectName} - {details.className}</h3>
-              <p className="text-sm text-muted-foreground">
-                {format(parseISO(details.date), 'PPP')} | {details.day}, {details.time} | Prof. {details.facultyName}
-              </p>
-            </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" disabled={details.isLocked || lockMutation.isPending}>
-                  <Lock className="h-4 w-4 mr-2" />
-                  {details.isLocked ? 'Locked' : 'Lock Attendance'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure you want to lock this attendance?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. Locking will finalize the attendance for this slot, and no further changes can be made by faculty or students.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => lockMutation.mutate({ scheduleId: details.scheduleId, date: details.date })}>
-                    Confirm & Lock
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {records.map(record => (
-                <TableRow key={record.id}>
-                  <TableCell>{record.studentName}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(record.status)}>{record.status}</Badge>
-                  </TableCell>
-                  <TableCell>{new Date(record.timestamp).toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Card key={`${details.scheduleId}-${details.date}`}>
+            <AccordionItem value={`${details.scheduleId}-${details.date}`} className="border-b-0">
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                             <CardTitle>{details.subjectName} - {details.className}</CardTitle>
+                             <CardDescription>
+                                {format(parseISO(details.date), 'PPP')} | {details.day}, {details.time} | Prof. {details.facultyName}
+                            </CardDescription>
+                        </div>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline" disabled={details.isLocked || lockMutation.isPending}>
+                                <Lock className="h-4 w-4 mr-2" />
+                                {details.isLocked ? 'Locked' : 'Lock Attendance'}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to lock this attendance?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. Locking will finalize the attendance for this slot, and no further changes can be made by faculty or students.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => lockMutation.mutate({ scheduleId: details.scheduleId, date: details.date })}>
+                                    Confirm & Lock
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                   <AttendanceStats records={records} />
+                   <AccordionTrigger className="text-sm mt-4">View Details</AccordionTrigger>
+                </CardContent>
+                 <AccordionContent>
+                    <div className="border-t">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Student Name</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Timestamp</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {records.map(record => (
+                            <TableRow key={record.id}>
+                                <TableCell>{record.studentName}</TableCell>
+                                <TableCell>
+                                <Badge variant={getStatusVariant(record.status)}>{record.status}</Badge>
+                                </TableCell>
+                                <TableCell>{new Date(record.timestamp).toLocaleString()}</TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </div>
+                 </AccordionContent>
+            </AccordionItem>
+        </Card>
       ))}
-    </div>
+    </Accordion>
   );
 }
