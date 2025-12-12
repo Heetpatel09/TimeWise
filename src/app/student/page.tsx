@@ -224,15 +224,14 @@ export default function StudentDashboard() {
             <div className="lg:col-span-1 space-y-6">
                  <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                     <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Flame className="w-6 h-6 mr-2 text-orange-500"/>
-                            Attendance Streak
-                        </CardTitle>
-                        <CardDescription>For your consistent attendance.</CardDescription>
+                        <CardTitle>Attendance Streak</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-center">
-                        <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{student.streak || 0}</div>
-                        <p className="text-muted-foreground mt-2">Consecutive school days attended</p>
+                     <CardContent className="flex items-center gap-4">
+                       <Flame className="w-16 h-16 text-orange-500 animation-pulse" />
+                       <div>
+                            <p className="text-4xl font-bold">{student.streak || 0}</p>
+                            <p className="text-sm text-muted-foreground">Day Streak</p>
+                       </div>
                     </CardContent>
                 </Card>
                 <Card>

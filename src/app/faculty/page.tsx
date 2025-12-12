@@ -458,15 +458,14 @@ export default function FacultyDashboard() {
                     </Card>
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
                         <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Flame className="w-6 h-6 mr-2 text-orange-500"/>
-                                Teaching Streak
-                            </CardTitle>
-                            <CardDescription>For your consistent dedication.</CardDescription>
+                            <CardTitle>Teaching Streak</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-center">
-                            <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{currentFaculty?.streak || 0}</div>
-                            <p className="text-muted-foreground mt-2">Consecutive teaching days</p>
+                        <CardContent className="flex items-center gap-4">
+                           <Flame className="w-16 h-16 text-orange-500 animation-pulse" />
+                           <div>
+                                <p className="text-4xl font-bold">{currentFaculty?.streak || 0}</p>
+                                <p className="text-sm text-muted-foreground">Day Streak</p>
+                           </div>
                         </CardContent>
                     </Card>
                     <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
