@@ -78,21 +78,22 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
 export async function addCredential(credential: {userId: string, email: string, password?: string, role: 'admin' | 'faculty' | 'student', requiresPasswordChange?: boolean}): Promise<void> {
     const db = getDb();
     
-    const existing: { userId: string, password?: string, requiresPasswordChange?: number } | undefined = db.prepare('SELECT userId, password, requiresPasswordChange FROM user_credentials WHERE email = ?').get(credential.email) as any;
+    const existingForEmail: { userId: string, password?: string, requiresPasswordChange?: number } | undefined = db.prepare('SELECT userId, password, requiresPasswordChange FROM user_credentials WHERE email = ?').get(credential.email) as any;
 
-    const oldCredentialForUser: {email: string} | undefined = db.prepare('SELECT email FROM user_credentials WHERE userId = ?').get(credential.userId) as any;
+    const existingForUser: {email: string} | undefined = db.prepare('SELECT email FROM user_credentials WHERE userId = ?').get(credential.userId) as any;
 
-    if (oldCredentialForUser && oldCredentialForUser.email !== credential.email) {
-        db.prepare('DELETE FROM user_credentials WHERE userId = ?').run(credential.userId);
+    // If the user already has a credential but with a different email, we need to remove the old one.
+    if (existingForUser && existingForUser.email !== credential.email) {
+        db.prepare('DELETE FROM user_credentials WHERE email = ?').run(existingForUser.email);
     }
-
-    const passwordToSet = credential.password || existing?.password;
+    
+    const passwordToSet = credential.password || existingForEmail?.password;
     if (!passwordToSet) {
         throw new Error("Cannot create or update credential without a password.");
     }
     
     const requiresChange = credential.requiresPasswordChange === undefined 
-        ? (existing?.requiresPasswordChange ? 1 : 0) 
+        ? (existingForEmail?.requiresPasswordChange ? 1 : 0) 
         : (credential.requiresPasswordChange ? 1 : 0);
 
     const stmt = db.prepare('INSERT OR REPLACE INTO user_credentials (userId, email, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
