@@ -29,7 +29,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 44; // Increment this to force re-initialization
+const schemaVersion = 45; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -307,12 +307,11 @@ function createSchemaAndSeed() {
         });
         
         students.forEach(s => {
-            // Check if the student is the specific one we want a fixed password for
             if (s.email === 'aarav.sharma@example.com') {
-                insertUser.run(s.email, s.id, 'student123', 'student', 0);
+              insertUser.run(s.email, s.id, 'student123', 'student', 0);
             } else {
-                const randomPassword = randomBytes(8).toString('hex');
-                insertUser.run(s.email, s.id, randomPassword, 'student', 1);
+              const randomPassword = randomBytes(8).toString('hex');
+              insertUser.run(s.email, s.id, randomPassword, 'student', 1);
             }
         });
 
@@ -344,6 +343,7 @@ export { getDb as db };
     
 
     
+
 
 
 
