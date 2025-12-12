@@ -288,18 +288,12 @@ function createSchemaAndSeed() {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
         students.forEach(s => {
-             let password = randomBytes(8).toString('hex');
-            let requiresChange = 1;
-            
-            const predefinedPasswords: Record<string, string> = {
-                'aarav.sharma@example.com': 'student123',
-            };
-
-            if (predefinedPasswords[s.email]) {
-                password = predefinedPasswords[s.email];
-                requiresChange = 0;
+             // Hardcode password for aarav.sharma@example.com
+            if (s.email === 'aarav.sharma@example.com') {
+                insertUser.run(s.email, s.id, 'student123', 'student', 0);
+            } else {
+                insertUser.run(s.email, s.id, randomBytes(8).toString('hex'), 'student', 1);
             }
-             insertUser.run(s.email, s.id, password, 'student', requiresChange);
         });
 
         // Insert other data
@@ -327,5 +321,7 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
 
     
