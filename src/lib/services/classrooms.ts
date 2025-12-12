@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -22,8 +23,8 @@ export async function getClassrooms(): Promise<Classroom[]> {
 export async function addClassroom(item: Omit<Classroom, 'id'>) {
     const db = getDb();
     const id = `CR${Date.now()}`;
-    const stmt = db.prepare('INSERT INTO classrooms (id, name, type) VALUES (?, ?, ?)');
-    stmt.run(id, item.name, item.type);
+    const stmt = db.prepare('INSERT INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, item.name, item.type, item.capacity, item.maintenanceStatus, item.building);
     revalidateAll();
     const newItem: Classroom = { ...item, id };
     return Promise.resolve(newItem);
@@ -31,8 +32,8 @@ export async function addClassroom(item: Omit<Classroom, 'id'>) {
 
 export async function updateClassroom(updatedItem: Classroom) {
     const db = getDb();
-    const stmt = db.prepare('UPDATE classrooms SET name = ?, type = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.type, updatedItem.id);
+    const stmt = db.prepare('UPDATE classrooms SET name = ?, type = ?, capacity = ?, maintenanceStatus = ?, building = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.type, updatedItem.capacity, updatedItem.maintenanceStatus, updatedItem.building, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }

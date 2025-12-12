@@ -1,4 +1,5 @@
 
+
 export interface Subject {
   id: string;
   name: string;
@@ -66,7 +67,10 @@ export interface Admin {
 export interface Classroom {
   id: string;
   name: string;
-  type: 'classroom' | 'lab';
+  type: string;
+  capacity: number;
+  maintenanceStatus: 'available' | 'in_maintenance' | 'unavailable';
+  building: string;
 }
 
 export interface Schedule {

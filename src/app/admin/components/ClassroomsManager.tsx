@@ -23,10 +23,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getClassrooms, addClassroom, updateClassroom, deleteClassroom } from '@/lib/services/classrooms';
 import type { Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Building, Wrench } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+
+const maintenanceStatusOptions: Classroom['maintenanceStatus'][] = ['available', 'in_maintenance', 'unavailable'];
 
 export default function ClassroomsManager() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
@@ -53,7 +55,7 @@ export default function ClassroomsManager() {
   }, []);
 
   const handleSave = async () => {
-    if (currentClassroom && currentClassroom.name && currentClassroom.type) {
+    if (currentClassroom && currentClassroom.name && currentClassroom.type && currentClassroom.building && currentClassroom.capacity && currentClassroom.maintenanceStatus) {
       setIsSubmitting(true);
       try {
         if (currentClassroom.id) {
@@ -72,7 +74,7 @@ export default function ClassroomsManager() {
         setIsSubmitting(false);
       }
     } else {
-        toast({ title: "Missing Information", description: "Please provide a name and type.", variant: "destructive" });
+        toast({ title: "Missing Information", description: "Please provide all the required details.", variant: "destructive" });
     }
   };
 
@@ -92,8 +94,17 @@ export default function ClassroomsManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentClassroom({type: 'classroom'});
+    setCurrentClassroom({type: 'classroom', maintenanceStatus: 'available', capacity: 30});
     setDialogOpen(true);
+  };
+  
+  const getStatusVariant = (status: Classroom['maintenanceStatus']) => {
+    switch (status) {
+      case 'available': return 'default';
+      case 'in_maintenance': return 'secondary';
+      case 'unavailable': return 'destructive';
+      default: return 'outline';
+    }
   };
   
   if (isLoading) {
@@ -114,6 +125,9 @@ export default function ClassroomsManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Building</TableHead>
+              <TableHead>Capacity</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -123,6 +137,13 @@ export default function ClassroomsManager() {
                 <TableCell className="font-medium">{cls.name}</TableCell>
                  <TableCell className="capitalize">
                   <Badge variant={cls.type === 'lab' ? 'secondary' : 'outline'}>{cls.type}</Badge>
+                </TableCell>
+                <TableCell>{cls.building}</TableCell>
+                <TableCell>{cls.capacity}</TableCell>
+                <TableCell>
+                  <Badge variant={getStatusVariant(cls.maintenanceStatus)} className="capitalize">
+                    {cls.maintenanceStatus.replace('_', ' ')}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                    <DropdownMenu>
@@ -154,7 +175,7 @@ export default function ClassroomsManager() {
         if (!isOpen) setCurrentClassroom({});
         setDialogOpen(isOpen);
       }}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{currentClassroom?.id ? 'Edit Classroom' : 'Add Classroom'}</DialogTitle>
             <DialogDescription>
@@ -162,19 +183,34 @@ export default function ClassroomsManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentClassroom.name || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={currentClassroom.name || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, name: e.target.value })} disabled={isSubmitting}/>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="type" className="text-right">Type</Label>
-                 <Select value={currentClassroom?.type} onValueChange={(v: 'classroom' | 'lab') => setCurrentClassroom({ ...currentClassroom, type: v })} disabled={isSubmitting}>
-                    <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select a type" />
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="type">Type</Label>
+                    <Input id="type" value={currentClassroom.type || ''} placeholder="e.g. Classroom, Lab" onChange={(e) => setCurrentClassroom({ ...currentClassroom, type: e.target.value })} disabled={isSubmitting}/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="capacity">Capacity</Label>
+                    <Input id="capacity" type="number" value={currentClassroom.capacity || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, capacity: parseInt(e.target.value) || 0 })} disabled={isSubmitting}/>
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="building">Building</Label>
+                <Input id="building" value={currentClassroom.building || ''} placeholder="e.g. Main Building, Tech Park" onChange={(e) => setCurrentClassroom({ ...currentClassroom, building: e.target.value })} disabled={isSubmitting}/>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="status">Maintenance Status</Label>
+                 <Select value={currentClassroom?.maintenanceStatus} onValueChange={(v: Classroom['maintenanceStatus']) => setCurrentClassroom({ ...currentClassroom, maintenanceStatus: v })} disabled={isSubmitting}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="classroom">Classroom</SelectItem>
-                        <SelectItem value="lab">Lab</SelectItem>
+                        {maintenanceStatusOptions.map(opt => (
+                            <SelectItem key={opt} value={opt} className="capitalize">{opt.replace('_', ' ')}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>

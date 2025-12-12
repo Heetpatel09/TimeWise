@@ -96,6 +96,9 @@ export const classrooms: Classroom[] = Array.from({ length: 25 }, (_, i) => {
         id: `CR${num.toString().padStart(3, '0')}`,
         name: isLab ? `Lab ${String.fromCharCode(65 + (num - 21))}` : `Room ${100 + num}`,
         type: isLab ? 'lab' : 'classroom',
+        capacity: isLab ? 30 : 60,
+        maintenanceStatus: 'available',
+        building: num <= 10 ? 'Main Building' : 'Tech Park'
     };
 });
 

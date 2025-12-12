@@ -92,7 +92,10 @@ function createSchemaAndSeed() {
      CREATE TABLE IF NOT EXISTS classrooms (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
-        type TEXT NOT NULL CHECK(type IN ('classroom', 'lab'))
+        type TEXT NOT NULL,
+        capacity INTEGER,
+        maintenanceStatus TEXT,
+        building TEXT
     );
     CREATE TABLE IF NOT EXISTS admins (
         id TEXT PRIMARY KEY,
@@ -260,7 +263,7 @@ function createSchemaAndSeed() {
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type) VALUES (?, ?, ?)');
+    const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
     const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
@@ -275,21 +278,28 @@ function createSchemaAndSeed() {
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
-        students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa));
+        students.forEach(s => {
+            if (s.email !== 'aarav.sharma@example.com') { // Exclude the specific user
+                insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
+            }
+        });
+        // Insert the specific student separately to ensure their data is correct
+        const specificStudent = students.find(s => s.email === 'aarav.sharma@example.com');
+        if (specificStudent) {
+            insertStudent.run(specificStudent.id, specificStudent.name, specificStudent.email, specificStudent.classId, specificStudent.streak, specificStudent.avatar || null, specificStudent.profileCompleted || 0, specificStudent.sgpa, specificStudent.cgpa);
+        }
+        
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
-        classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
+        classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
 
         // Step 2: Insert credentials for all users
-        // Set specific passwords first
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
-        // Set default passwords for other users
         faculty.forEach(f => {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
         
         students.forEach(s => {
-            // Ensure we don't overwrite the specific password we just set
             if (s.email !== 'aarav.sharma@example.com') {
                 const randomPassword = randomBytes(8).toString('hex');
                 insertUser.run(s.email, s.id, randomPassword, 'student', 1);
