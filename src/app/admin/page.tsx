@@ -1,28 +1,9 @@
 
 'use client';
-import React, { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import ClassroomsManager from './components/ClassroomsManager';
-import FacultyManager from './components/FacultyManager';
-import StudentsManager from './components/StudentsManager';
-import ScheduleManager from './components/ScheduleManager';
-import LeaderboardManager from './components/LeaderboardManager';
-import HallOfFamePage from './hall-of-fame/page';
-import LeaveRequestsPage from './leave-requests/page';
-import ScheduleRequestsPage from './schedule-requests/page';
-import NewSlotRequestsPage from './components/NewSlotRequestsPage';
-import AdminsManager from './components/AdminsManager';
-import FeesManager from './components/FeesManager';
-import HostelsManager from './components/HostelsManager';
-import ExamsManager from './components/ExamsManager';
-import AttendanceManager from './components/AttendanceManager';
-import ResultsManager from './components/ResultsManager';
-import DepartmentsManager from './components/DepartmentsManager';
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
@@ -36,48 +17,27 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recha
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 
 const managementCards = [
-  { tab: "departments", title: "Departments", icon: Building, description: "Manage departments and subjects." },
-  { tab: "classrooms", title: "Classrooms", icon: Warehouse, description: "Manage rooms and labs." },
-  { tab: "admins", title: "Admins", icon: UserCog, description: "Manage administrator users." },
-  { tab: "faculty", title: "Faculty", icon: UserCheck, description: "Handle faculty profiles." },
-  { tab: "students", title: "Students", icon: Users, description: "Administer student records." },
-  { tab: "schedule", title: "Schedule", icon: Calendar, description: "Create and view timetables." },
-  { tab: "exams", title: "Exams", icon: FileText, description: "Manage exam timetables." },
-  { tab: "attendance", title: "Attendance", icon: CheckSquare, description: "Review and lock attendance." },
-  { tab: "fees", title: "Fees", icon: DollarSign, description: "Handle student fee payments." },
-  { tab: "hostels", title: "Hostels", icon: Home, description: "Manage hostel room assignments." },
-  { tab: "results", title: "Results", icon: BarChart3, description: "Upload and manage results." },
-  { tab: "leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
-  { tab: "hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate top achievers." },
-  { tab: "leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or reject leave." },
-  { tab: "schedule-requests", title: "Schedule Changes", icon: PencilRuler, description: "Review schedule change requests." },
-  { tab: "new-slot-requests", title: "New Slot Requests", icon: PlusSquare, description: "Review new slot requests from faculty." },
+  { href: "/admin/departments", title: "Departments", icon: Building, description: "Manage departments and subjects." },
+  { href: "/admin/classrooms", title: "Classrooms", icon: Warehouse, description: "Manage rooms and labs." },
+  { href: "/admin/admins", title: "Admins", icon: UserCog, description: "Manage administrator users." },
+  { href: "/admin/faculty", title: "Faculty", icon: UserCheck, description: "Handle faculty profiles." },
+  { href: "/admin/students", title: "Students", icon: Users, description: "Administer student records." },
+  { href: "/admin/schedule", title: "Schedule", icon: Calendar, description: "Create and view timetables." },
+  { href: "/admin/exams", title: "Exams", icon: FileText, description: "Manage exam timetables." },
+  { href: "/admin/attendance", title: "Attendance", icon: CheckSquare, description: "Review and lock attendance." },
+  { href: "/admin/fees", title: "Fees", icon: DollarSign, description: "Handle student fee payments." },
+  { href: "/admin/hostels", title: "Hostels", icon: Home, description: "Manage hostel room assignments." },
+  { href: "/admin/results", title: "Results", icon: BarChart3, description: "Upload and manage results." },
+  { href: "/admin/leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
+  { href: "/admin/hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate top achievers." },
+  { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or reject leave." },
+  { href: "/admin/schedule-requests", title: "Schedule Changes", icon: PencilRuler, description: "Review schedule change requests." },
+  { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare, description: "Review new slot requests from faculty." },
 ];
-
-const renderContent = (tab: string) => {
-    switch (tab) {
-        case 'departments': return <DepartmentsManager />;
-        case 'classrooms': return <ClassroomsManager />;
-        case 'faculty': return <FacultyManager />;
-        case 'students': return <StudentsManager />;
-        case 'schedule': return <ScheduleManager />;
-        case 'leaderboards': return <LeaderboardManager />;
-        case 'hall-of-fame': return <HallOfFamePage />;
-        case 'leave-requests': return <LeaveRequestsPage />;
-        case 'schedule-requests': return <ScheduleRequestsPage />;
-        case 'new-slot-requests': return <NewSlotRequestsPage />;
-        case 'admins': return <AdminsManager />;
-        case 'fees': return <FeesManager />;
-        case 'hostels': return <HostelsManager />;
-        case 'exams': return <ExamsManager />;
-        case 'attendance': return <AttendanceManager />;
-        case 'results': return <ResultsManager />;
-        default: return <AdminDashboard />;
-    }
-}
 
 const StatItem = ({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) => {
     const Icon = icon;
@@ -190,7 +150,7 @@ function AdminDashboard() {
                     {managementCards.map((card) => {
                         const Icon = card.icon;
                         return (
-                            <Link key={card.tab} href={`?tab=${card.tab}`} passHref>
+                            <Link key={card.href} href={card.href} passHref>
                                 <Card className="group hover:border-primary/80 hover:shadow-lg transition-all duration-300 h-full flex flex-col hover:-translate-y-1">
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                         <CardTitle className="text-lg font-semibold">{card.title}</CardTitle>
@@ -215,25 +175,9 @@ function AdminDashboard() {
 }
 
 export default function AdminPage() {
-    const { user } = useAuth();
-    const searchParams = useSearchParams();
-    const tab = searchParams.get('tab');
-
-    if (!user) return null;
-
-    const pageTitle = managementCards.find(c => c.tab === tab)?.title || 'Dashboard';
-    
     return (
-        <DashboardLayout pageTitle={tab ? `Admin / ${pageTitle}` : 'Admin Dashboard'} role="admin">
-            {tab && (
-                 <Button asChild variant="outline" size="sm" className="mb-4">
-                    <Link href="/admin">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dashboard
-                    </Link>
-                </Button>
-            )}
-            {renderContent(tab || 'dashboard')}
+        <DashboardLayout pageTitle='Admin Dashboard' role="admin">
+            <AdminDashboard />
         </DashboardLayout>
     );
 }
