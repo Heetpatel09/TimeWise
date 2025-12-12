@@ -104,7 +104,7 @@ export function ScheduleCalendar({
             <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
                 {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
                 {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
-                {daySchedule.map(s => <div key={s.id} className="p-1 rounded bg-primary/10 text-primary truncate">{s.subjectName} - {s.className}</div>)}
+                
                 {dayEvents.map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
             </div>
           </div>

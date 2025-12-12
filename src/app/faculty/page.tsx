@@ -64,8 +64,6 @@ export default function FacultyDashboard() {
   const [reminderTime, setReminderTime] = useState('09:00');
   const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
 
-  const [isTimetableModalOpen, setTimetableModalOpen] = useState(false);
-
   const parseSyllabus = (syllabusString?: string): SyllabusModule[] => {
     if (!syllabusString) return [];
     try {
@@ -243,7 +241,6 @@ export default function FacultyDashboard() {
   }
 
   const features = [
-      { title: "My Weekly Schedule", icon: CalendarIcon, onClick: () => setTimetableModalOpen(true) },
       { title: "Manage Syllabus", icon: BookOpen, onClick: () => setSyllabusDialogOpen(true) },
       { title: "Slot Change Request", icon: PencilRuler, onClick: () => setSlotChangeDialogOpen(true) },
   ];
@@ -263,32 +260,7 @@ export default function FacultyDashboard() {
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             <div className="lg:col-span-2 flex flex-col">
-                <Card className="mb-6">
-                    <CardHeader>
-                        <div className="flex items-center gap-4">
-                            <UserCheck className="w-12 h-12 text-primary" />
-                            <div>
-                                <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
-                                    Hi, {currentFaculty?.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
-                                </CardTitle>
-                                <CardDescription>{currentFaculty?.email}</CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <InfoItem label="Designation" value={currentFaculty?.designation || 'N/A'} />
-                        <InfoItem label="Department" value={currentFaculty?.department || 'N/A'} />
-                        <InfoItem label="Roles" value={currentFaculty?.roles?.join(', ') || 'N/A'} />
-                    </CardContent>
-                </Card>
-                <div className="flex-grow">
-                  <ScheduleCalendar
-                    schedule={facultySchedule}
-                    leaveRequests={leaveRequests}
-                    events={events}
-                    onDayClick={handleDayClick}
-                  />
-                </div>
+                 <TimetableView />
             </div>
              <div className="lg:col-span-1 space-y-6">
                  <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
@@ -537,14 +509,6 @@ export default function FacultyDashboard() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isTimetableModalOpen} onOpenChange={setTimetableModalOpen}>
-          <DialogContent className="max-w-7xl">
-              <DialogHeader><DialogTitle>My Weekly Timetable</DialogTitle></DialogHeader>
-              <div className="max-h-[80vh] overflow-y-auto p-1"><TimetableView /></div>
-              <DialogFooter><Button variant="outline" onClick={() => setTimetableModalOpen(false)}>Close</Button></DialogFooter>
-          </DialogContent>
-      </Dialog>
-
     </DashboardLayout>
   );
 }
