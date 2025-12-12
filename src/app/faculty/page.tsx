@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit, Check, PlusCircle, Flag, Tag, X } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit, Check, PlusCircle, Flag, Tag, X, Archive, Trash2, MoreVertical, ArchiveRestore, ChevronDown } from "lucide-react";
 import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,9 @@ import GenerateTestDialog from './components/GenerateTestDialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface TodoItem {
   id: string;
@@ -36,6 +39,7 @@ interface TodoItem {
   dueDate?: string;
   tags: string[];
   isEvent?: boolean;
+  archived?: boolean;
 }
 
 export default function FacultyDashboard() {
@@ -212,7 +216,22 @@ export default function FacultyDashboard() {
   const toggleTodo = (id: string) => {
     setTodoList(prev => prev.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
   };
+
+  const deleteTodo = (id: string) => {
+    setTodoList(prev => prev.filter(todo => todo.id !== id));
+    toast({ title: "Task Deleted" });
+  };
+
+  const archiveTodo = (id: string) => {
+    setTodoList(prev => prev.map(todo => todo.id === id ? { ...todo, archived: true, completed: true } : todo));
+    toast({ title: "Task Archived" });
+  };
   
+  const unarchiveTodo = (id: string) => {
+    setTodoList(prev => prev.map(todo => todo.id === id ? { ...todo, archived: false } : todo));
+  };
+
+
   const getPriorityBadgeVariant = (priority: 'High' | 'Medium' | 'Low') => {
     switch (priority) {
         case 'High': return 'destructive';
@@ -220,6 +239,10 @@ export default function FacultyDashboard() {
         case 'Low': return 'outline';
     }
   }
+  
+  const activeTodos = todoList.filter(t => !t.archived);
+  const archivedTodos = todoList.filter(t => t.archived);
+
 
   if (isLoading || !facultyMember) {
     return (
@@ -243,29 +266,75 @@ export default function FacultyDashboard() {
                     <CardHeader className="flex flex-row justify-between items-start">
                         <div>
                             <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
-                            Welcome back, {facultyMember.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
+                                Welcome back, {facultyMember.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
                             </CardTitle>
                             <CardDescription>Here's what's on your plate today.</CardDescription>
                         </div>
                         <Button onClick={() => setTodoDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Add Task</Button>
                     </CardHeader>
                     <CardContent>
-                       <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
-                           {todoList.sort((a,b) => a.completed ? 1 : -1).map(todo => (
+                       <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                           {activeTodos.sort((a,b) => a.completed ? 1 : -1).map(todo => (
                                <div key={todo.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50">
                                    <Checkbox id={`todo-${todo.id}`} checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
                                    <div className="flex-1">
                                        <label htmlFor={`todo-${todo.id}`} className={`text-sm ${todo.completed ? 'line-through text-muted-foreground' : ''}`}>{todo.text}</label>
-                                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                            {todo.dueDate && <span>Due: {format(parseISO(todo.dueDate), 'MMM dd')}</span>}
                                            {todo.dueDate && todo.tags.length > 0 && <span>&bull;</span>}
-                                           {todo.tags.map(tag => <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>)}
+                                           {todo.tags.map(tag => <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0.5">{tag}</Badge>)}
                                        </div>
                                    </div>
                                    <Badge variant={getPriorityBadgeVariant(todo.priority)}>{todo.priority}</Badge>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => archiveTodo(todo.id)}><Archive className="mr-2 h-4 w-4" />Archive</DropdownMenuItem>
+                                             <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>This action cannot be undone. This will permanently delete the task.</AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => deleteTodo(todo.id)}>Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                </div>
                            ))}
                        </div>
+                        {archivedTodos.length > 0 && (
+                            <Collapsible className="mt-4">
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="w-full">
+                                        <ChevronDown className="h-4 w-4 mr-2" />
+                                        Completed & Archived ({archivedTodos.length})
+                                    </Button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="space-y-2 mt-2 max-h-32 overflow-y-auto pr-2">
+                                     {archivedTodos.map(todo => (
+                                       <div key={todo.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 text-muted-foreground">
+                                           <Checkbox id={`todo-${todo.id}`} checked={todo.completed} disabled />
+                                           <div className="flex-1">
+                                               <label htmlFor={`todo-${todo.id}`} className="text-sm line-through">{todo.text}</label>
+                                           </div>
+                                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => unarchiveTodo(todo.id)}>
+                                               <ArchiveRestore className="h-4 w-4" />
+                                           </Button>
+                                       </div>
+                                   ))}
+                                </CollapsibleContent>
+                            </Collapsible>
+                       )}
                     </CardContent>
                 </Card>
                 <div className="flex-grow">
