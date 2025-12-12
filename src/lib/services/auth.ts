@@ -37,7 +37,7 @@ export async function login(email: string, password: string): Promise<User> {
             tableName = 'students';
             break;
         default:
-             throw new Error('User details not found.');
+             throw new Error('User role is invalid.');
     }
 
     details = db.prepare(`SELECT * FROM ${tableName} WHERE id = ?`).get(credentialEntry.userId);

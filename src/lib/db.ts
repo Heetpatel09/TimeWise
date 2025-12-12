@@ -266,7 +266,7 @@ function createSchemaAndSeed() {
     const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
     const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
+    const insertUser = db.prepare('INSERT OR REPLACE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
     const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
@@ -291,31 +291,25 @@ function createSchemaAndSeed() {
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
         faculty.forEach(f => {
-            const existingCredential = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(f.email);
-            if (!existingCredential) {
-              insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
-            }
+            insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
         
         students.forEach(s => {
-            const existingCredential = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(s.email);
-            if (!existingCredential) {
-              let password = randomBytes(8).toString('hex');
-              let requiresChange = 1;
-              
-              const predefinedPasswords: Record<string, string> = {
-                  'bob.williams@example.com': 'student123',
-                  'alice.johnson@example.com': 'student123',
-                  'charlie.brown@example.com': 'student123',
-              };
+            let password = randomBytes(8).toString('hex');
+            let requiresChange = 1;
+            
+            const predefinedPasswords: Record<string, string> = {
+                'bob.williams@example.com': 'student123',
+                'alice.johnson@example.com': 'student123',
+                'charlie.brown@example.com': 'student123',
+            };
 
-              if (predefinedPasswords[s.email]) {
-                  password = predefinedPasswords[s.email];
-                  requiresChange = 0;
-              }
-
-              insertUser.run(s.email, s.id, password, 'student', requiresChange);
+            if (predefinedPasswords[s.email]) {
+                password = predefinedPasswords[s.email];
+                requiresChange = 0;
             }
+
+            insertUser.run(s.email, s.id, password, 'student', requiresChange);
         });
     })();
     console.log('Database initialized and seeded successfully.');
@@ -331,5 +325,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    
