@@ -26,7 +26,6 @@ import type { Subject, Class } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star, Beaker, BookOpen, Building } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -116,7 +115,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewDialog = (department?: string) => {
-    setCurrentSubject({ isSpecial: false, type: 'theory', semester: 1, department });
+    setCurrentSubject({ isSpecial: false, type: 'Theory', semester: 1, department });
     setDialogOpen(true);
   };
 
@@ -146,7 +145,6 @@ export default function DepartmentsManager() {
                               <TableHead>Code</TableHead>
                               <TableHead>Type</TableHead>
                               <TableHead>Semester</TableHead>
-                              <TableHead>Special</TableHead>
                               <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -156,15 +154,12 @@ export default function DepartmentsManager() {
                                 <TableCell className="font-medium">{subject.name}</TableCell>
                                 <TableCell>{subject.code}</TableCell>
                                 <TableCell className='capitalize'>
-                                    <Badge variant={subject.type === 'lab' ? 'secondary' : 'outline'} className="gap-1">
-                                        {subject.type === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                                    <Badge variant={'outline'} className="gap-1">
+                                        {subject.type === 'Lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
                                         {subject.type}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>{subject.semester}</TableCell>
-                                <TableCell>
-                                  {subject.isSpecial && <Badge variant="secondary" className="text-amber-600 border-amber-500/50"><Star className="h-3 w-3 mr-1" />Special</Badge>}
-                                </TableCell>
                                 <TableCell className="text-right">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -204,7 +199,7 @@ export default function DepartmentsManager() {
                               </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">No subjects found for this department.</TableCell>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground">No subjects found for this department.</TableCell>
                                 </TableRow>
                             )}
                           </TableBody>
@@ -250,13 +245,7 @@ export default function DepartmentsManager() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
-                  <Select value={currentSubject?.type} onValueChange={(v: 'theory' | 'lab') => setCurrentSubject({ ...currentSubject, type: v })} disabled={isSubmitting}>
-                    <SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="theory">Theory</SelectItem>
-                        <SelectItem value="lab">Lab</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input id="type" value={currentSubject.type ?? ''} placeholder="e.g. Theory, Lab" onChange={(e) => setCurrentSubject({ ...currentSubject, type: e.target.value })} disabled={isSubmitting}/>
                 </div>
             </div>
             <div className="space-y-2">
@@ -268,15 +257,6 @@ export default function DepartmentsManager() {
                     placeholder='e.g., {"modules":[{"name":"Module 1","topics":["Topic A"],"weightage":"50%"}]}'
                     disabled={isSubmitting}
                 />
-            </div>
-            <div className="flex items-center space-x-2 pt-2">
-                 <Switch
-                    id="special"
-                    checked={currentSubject.isSpecial || false}
-                    onCheckedChange={(checked) => setCurrentSubject({ ...currentSubject, isSpecial: checked })}
-                    disabled={isSubmitting}
-                />
-                <Label htmlFor="special" className="text-sm text-muted-foreground">This is a fixed, non-reschedulable subject.</Label>
             </div>
           </div>
           <DialogFooter>

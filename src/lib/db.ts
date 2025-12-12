@@ -79,7 +79,7 @@ function createSchemaAndSeed() {
         name TEXT NOT NULL,
         code TEXT NOT NULL,
         isSpecial BOOLEAN NOT NULL DEFAULT 0,
-        type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory',
+        type TEXT NOT NULL,
         semester INTEGER NOT NULL,
         syllabus TEXT,
         department TEXT
@@ -272,41 +272,37 @@ function createSchemaAndSeed() {
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
 
     db.transaction(() => {
-        // Step 1: Insert base data
+        // Step 1: Insert base data for users and other entities
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
-        faculty.forEach(f => {
-            insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0);
-        });
+        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
-        students.forEach(s => {
-            insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
-        });
+        students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
+        classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
 
         // Step 2: Insert credentials for all users
+        // Set specific passwords first
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
-        
+        insertUser.run('aarav.sharma@example.com', 'STU001', 'student123', 'student', 0);
+
+        // Set default passwords for other users
         faculty.forEach(f => {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
         
         students.forEach(s => {
+            // Ensure we don't overwrite the specific password we just set
             if (s.email !== 'aarav.sharma@example.com') {
                 const randomPassword = randomBytes(8).toString('hex');
                 insertUser.run(s.email, s.id, randomPassword, 'student', 1);
             }
         });
-        
-        // Explicitly set the password for the one student we need for testing
-        insertUser.run('aarav.sharma@example.com', 'STU001', 'student123', 'student', 0);
 
         // Step 3: Insert all other relational data
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
-        classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status));
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt, n.category || 'general'));
-        
         hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
         rooms.forEach(r => insertRoom.run(r.id, r.hostelId, r.roomNumber, r.block, r.studentId));
         

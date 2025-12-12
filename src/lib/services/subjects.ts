@@ -23,7 +23,7 @@ export async function addSubject(item: Omit<Subject, 'id'>) {
     const id = `SUB${Date.now()}`;
     const newItem: Subject = { ...item, id };
     const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, item.name, item.code, item.isSpecial ? 1 : 0, item.type, item.semester, item.syllabus, item.department);
+    stmt.run(id, item.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.department);
     revalidateAll();
     return Promise.resolve(newItem);
 }
@@ -31,7 +31,7 @@ export async function addSubject(item: Omit<Subject, 'id'>) {
 export async function updateSubject(updatedItem: Subject) {
     const db = getDb();
     const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, department = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.code, updatedItem.isSpecial ? 1 : 0, updatedItem.type, updatedItem.semester, updatedItem.syllabus, updatedItem.department, updatedItem.id);
+    stmt.run(updatedItem.name, updatedItem.code, (updatedItem.isSpecial || false) ? 1 : 0, updatedItem.type, updatedItem.semester, updatedItem.syllabus, updatedItem.department, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }

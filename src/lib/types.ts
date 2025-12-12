@@ -4,7 +4,7 @@ export interface Subject {
   name: string;
   code: string;
   isSpecial?: boolean;
-  type: 'theory' | 'lab';
+  type: string;
   semester: number;
   syllabus?: string;
   department?: string;

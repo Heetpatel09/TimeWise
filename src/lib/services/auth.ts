@@ -97,7 +97,7 @@ export async function addCredential(credential: {userId: string, email: string, 
     // Determine the final password. Use new one if provided, otherwise fall back to existing.
     const passwordToSet = credential.password || existingForEmail?.password;
     if (!passwordToSet) {
-        throw new Error("Cannot create or update credential without a password.");
+        console.warn(`Attempting to add/update credential for ${credential.email} without a password. This may fail if no password exists.`);
     }
     
     // Determine the 'requiresPasswordChange' flag.
