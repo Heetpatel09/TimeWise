@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit, Check, PlusCircle, Flag, Tag, X } from "lucide-react";
 import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
 import { getEventsForUser, addEvent } from '@/lib/services/events';
 import { getLeaveRequests, addLeaveRequest } from '@/lib/services/leave';
-import { format } from 'date-fns';
+import { format, isFuture, parseISO } from 'date-fns';
 import { ScheduleCalendar } from './components/ScheduleCalendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,19 @@ import { Switch } from '@/components/ui/switch';
 import DailySchedule from './components/DailySchedule';
 import SlotChangeRequestDialog from './components/SlotChangeRequestDialog';
 import GenerateTestDialog from './components/GenerateTestDialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface TodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  priority: 'High' | 'Medium' | 'Low';
+  dueDate?: string;
+  tags: string[];
+  isEvent?: boolean;
+}
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -53,6 +66,13 @@ export default function FacultyDashboard() {
   const [leaveReason, setLeaveReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // To-do list state
+  const [todoList, setTodoList] = useState<TodoItem[]>([]);
+  const [isTodoDialogOpen, setTodoDialogOpen] = useState(false);
+  const [newTodoText, setNewTodoText] = useState('');
+  const [newTodoPriority, setNewTodoPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
+  const [newTodoDueDate, setNewTodoDueDate] = useState('');
+  const [newTodoTags, setNewTodoTags] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -83,6 +103,25 @@ export default function FacultyDashboard() {
     }
     loadData();
   }, [user, toast]);
+
+  useEffect(() => {
+    const calendarTodos: TodoItem[] = events
+        .filter(event => isFuture(parseISO(event.date)))
+        .map(event => ({
+            id: `event-${event.id}`,
+            text: event.title,
+            completed: false,
+            priority: 'Medium',
+            dueDate: event.date,
+            tags: ['Calendar'],
+            isEvent: true,
+        }));
+    
+    // This will overwrite calendar events every time, but keeps manual todos
+    setTodoList(prev => [...prev.filter(t => !t.isEvent), ...calendarTodos]);
+
+  }, [events]);
+
 
   const handleDayClick = (date: Date, action: 'reminder' | 'leave' | 'note') => {
     setSelectedDate(date);
@@ -149,6 +188,39 @@ export default function FacultyDashboard() {
       }
   }
 
+  const handleAddTodo = () => {
+    if (!newTodoText) {
+        toast({ title: 'Task cannot be empty', variant: 'destructive' });
+        return;
+    }
+    const newTodo: TodoItem = {
+        id: `todo-${Date.now()}`,
+        text: newTodoText,
+        completed: false,
+        priority: newTodoPriority,
+        dueDate: newTodoDueDate || undefined,
+        tags: newTodoTags.split(',').map(t => t.trim()).filter(Boolean),
+    };
+    setTodoList(prev => [newTodo, ...prev]);
+    setTodoDialogOpen(false);
+    setNewTodoText('');
+    setNewTodoPriority('Medium');
+    setNewTodoDueDate('');
+    setNewTodoTags('');
+  };
+
+  const toggleTodo = (id: string) => {
+    setTodoList(prev => prev.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
+  };
+  
+  const getPriorityBadgeVariant = (priority: 'High' | 'Medium' | 'Low') => {
+    switch (priority) {
+        case 'High': return 'destructive';
+        case 'Medium': return 'secondary';
+        case 'Low': return 'outline';
+    }
+  }
+
   if (isLoading || !facultyMember) {
     return (
         <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
@@ -175,7 +247,26 @@ export default function FacultyDashboard() {
                             </CardTitle>
                             <CardDescription>Here's what's on your plate today.</CardDescription>
                         </div>
+                        <Button onClick={() => setTodoDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Add Task</Button>
                     </CardHeader>
+                    <CardContent>
+                       <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                           {todoList.sort((a,b) => a.completed ? 1 : -1).map(todo => (
+                               <div key={todo.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50">
+                                   <Checkbox id={`todo-${todo.id}`} checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
+                                   <div className="flex-1">
+                                       <label htmlFor={`todo-${todo.id}`} className={`text-sm ${todo.completed ? 'line-through text-muted-foreground' : ''}`}>{todo.text}</label>
+                                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                           {todo.dueDate && <span>Due: {format(parseISO(todo.dueDate), 'MMM dd')}</span>}
+                                           {todo.dueDate && todo.tags.length > 0 && <span>&bull;</span>}
+                                           {todo.tags.map(tag => <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>)}
+                                       </div>
+                                   </div>
+                                   <Badge variant={getPriorityBadgeVariant(todo.priority)}>{todo.priority}</Badge>
+                               </div>
+                           ))}
+                       </div>
+                    </CardContent>
                 </Card>
                 <div className="flex-grow">
                      <ScheduleCalendar 
@@ -264,6 +355,48 @@ export default function FacultyDashboard() {
                     </div>
                  )}
                 <DialogFooter><Button variant="outline" onClick={() => setEventDialogOpen(false)}>Cancel</Button><Button onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Save</Button></DialogFooter>
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isTodoDialogOpen} onOpenChange={setTodoDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add a New Task</DialogTitle>
+                    <DialogDescription>What do you need to get done?</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="todo-text">Task</Label>
+                        <Textarea id="todo-text" value={newTodoText} onChange={(e) => setNewTodoText(e.target.value)} placeholder="e.g., Grade midterm papers"/>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="todo-priority">Priority</Label>
+                            <Select value={newTodoPriority} onValueChange={(v: any) => setNewTodoPriority(v)}>
+                                <SelectTrigger id="todo-priority">
+                                    <SelectValue placeholder="Set priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="todo-due-date">Due Date</Label>
+                            <Input id="todo-due-date" type="date" value={newTodoDueDate} onChange={e => setNewTodoDueDate(e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="todo-tags">Tags (comma-separated)</Label>
+                        <Input id="todo-tags" value={newTodoTags} onChange={e => setNewTodoTags(e.target.value)} placeholder="e.g., Grading, CS101" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setTodoDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAddTodo}>Add Task</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
 
