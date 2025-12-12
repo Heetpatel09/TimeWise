@@ -26,7 +26,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 36; // Increment this to force re-initialization
+const schemaVersion = 37; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -332,6 +332,7 @@ export { getDb as db };
 
 
     
+
 
 
 
