@@ -1,5 +1,5 @@
 
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom } from './types';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room } from './types';
 
 export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', isSpecial: false, type: 'theory', semester: 1, syllabus: '{"modules":[{"name":"Basics","topics":["Variables","Data Types"],"weightage":"50%"},{"name":"Control Flow","topics":["If/Else","Loops"],"weightage":"50%"}]}' },
@@ -180,3 +180,45 @@ export const adminUser = {
   role: 'admin',
   avatar: 'https://avatar.vercel.sh/admin.png'
 };
+
+export const hostels: Hostel[] = [
+    { id: 'HOS001', name: 'Jupiter Hall', blocks: 'A,B' },
+    { id: 'HOS002', name: 'Orion House', blocks: 'A,B,C' },
+    { id: 'HOS003', name: 'Phoenix Enclave', blocks: 'A' },
+    { id: 'HOS004', name: 'Sirius Residence', blocks: 'A,B' },
+    { id: 'HOS005', name: 'Nova Tower', blocks: 'A,B,C' },
+    { id: 'HOS006', name: 'Galaxy Apartments', blocks: 'A' },
+    { id: 'HOS007', name: 'Cosmos Quarters', blocks: 'A,B' },
+    { id: 'HOS008', name: 'Apollo Building', blocks: 'A' },
+    { id: 'HOS009', name: 'Pegasus Place', blocks: 'A,B' },
+    { id: 'HOS010', name: 'Andromeda Complex', blocks: 'A,B,C' },
+];
+
+export const rooms: Room[] = [];
+
+let roomCounter = 1;
+hostels.forEach(hostel => {
+    const blocks = hostel.blocks.split(',');
+    blocks.forEach(block => {
+        for (let i = 1; i <= 10; i++) { // 10 rooms per block
+            const room: Room = {
+                id: `ROOM${roomCounter.toString().padStart(3, '0')}`,
+                hostelId: hostel.id,
+                roomNumber: `${block}${i.toString().padStart(2, '0')}`,
+                block: block,
+                studentId: null,
+            };
+            rooms.push(room);
+            roomCounter++;
+        }
+    });
+});
+
+// Allocate students to rooms
+students.forEach((student, index) => {
+    if (index < rooms.length) {
+        rooms[index].studentId = student.id;
+    }
+});
+
+    

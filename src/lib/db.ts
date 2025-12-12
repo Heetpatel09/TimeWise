@@ -13,7 +13,9 @@ import {
   scheduleChangeRequests,
   notifications,
   classrooms,
-  adminUser
+  adminUser,
+  hostels,
+  rooms
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
@@ -266,6 +268,8 @@ function createSchemaAndSeed() {
     const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
     const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
+    const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
 
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
@@ -279,6 +283,9 @@ function createSchemaAndSeed() {
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status));
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt, n.category || 'general'));
+        
+        hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
+        rooms.forEach(r => insertRoom.run(r.id, r.hostelId, r.roomNumber, r.block, r.studentId));
         
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
@@ -324,3 +331,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
