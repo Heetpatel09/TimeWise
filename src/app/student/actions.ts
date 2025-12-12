@@ -129,7 +129,7 @@ export async function getSubjectsForStudent(studentId: string): Promise<Subject[
 }
 
 export async function exportResultsToPDF(
-    student: Student,
+    student: Student & { className: string },
     results: EnrichedResult[],
     semester: number
 ): Promise<{ pdf?: string, error?: string }> {
@@ -137,27 +137,59 @@ export async function exportResultsToPDF(
         const doc = new jsPDF();
         doc.text(`Result for ${student.name} - Semester ${semester}`, 14, 16);
         doc.text(`Class: ${student.className}`, 14, 22);
+        doc.text(`CGPA: ${student.cgpa.toFixed(2)} | SGPA: ${student.sgpa.toFixed(2)}`, 14, 28);
+
 
         const tableData = results.map(res => {
-            if (res.examType === 'internal') {
-                return [res.subjectName, 'Internal', res.marks, res.totalMarks, res.grade];
+            const internalMarks = res.examType === 'internal' ? `${res.marks ?? '-'} / ${res.totalMarks ?? '-'}` : '-';
+            const externalGrade = res.examType === 'external' ? res.grade : '-';
+            return [res.subjectName, internalMarks, externalGrade, res.grade];
+        });
+        
+        const subjectMap = new Map<string, { subjectName: string, subjectCode: string, internal: string, external: string, finalGrade: string }>();
+
+        results.forEach(res => {
+            if (!subjectMap.has(res.subjectId)) {
+                subjectMap.set(res.subjectId, {
+                    subjectName: res.subjectName,
+                    subjectCode: res.subjectCode,
+                    internal: '-',
+                    external: '-',
+                    finalGrade: '-'
+                });
             }
-            return [res.subjectName, 'External', '-', '-', res.grade];
+            const entry = subjectMap.get(res.subjectId)!;
+            if (res.examType === 'internal') {
+                entry.internal = `${res.marks ?? '-'} / ${res.totalMarks ?? '-'}`;
+                // Assuming internal marks contribute to final grade if external is not present
+                if (!entry.finalGrade || entry.finalGrade === '-') {
+                    entry.finalGrade = res.grade || '-';
+                }
+            } else {
+                entry.external = res.grade || '-';
+                entry.finalGrade = res.grade || '-'; 
+            }
         });
 
+
+        const finalTableData = Array.from(subjectMap.values()).map(item => [
+            item.subjectName,
+            item.subjectCode,
+            item.internal,
+            item.external,
+            item.finalGrade
+        ]);
+
         (doc as any).autoTable({
-            head: [['Subject', 'Type', 'Marks Obtained', 'Total Marks', 'Grade']],
-            body: tableData,
-            startY: 30,
+            head: [['Subject', 'Code', 'Internal Marks', 'External Grade', 'Final Grade']],
+            body: finalTableData,
+            startY: 35,
         });
 
         const pdfOutput = doc.output('datauristring');
-        // Return base64 part of the data URI
         return { pdf: pdfOutput.split(',')[1] };
     } catch (error: any) {
         console.error('PDF generation failed:', error);
         return { error: error.message || 'Failed to generate PDF.' };
     }
 }
-
-    
