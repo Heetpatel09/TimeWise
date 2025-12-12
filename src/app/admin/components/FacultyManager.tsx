@@ -137,7 +137,6 @@ export default function FacultyManager() {
               <TableHead>Code</TableHead>
               <TableHead>Designation</TableHead>
               <TableHead>Department</TableHead>
-              <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -159,7 +158,6 @@ export default function FacultyManager() {
                 <TableCell>{fac.code}</TableCell>
                 <TableCell>{fac.designation}</TableCell>
                 <TableCell>{fac.department}</TableCell>
-                <TableCell>{fac.streak}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -350,5 +348,7 @@ export default function FacultyManager() {
     </div>
   );
 }
+
+    
 
     
