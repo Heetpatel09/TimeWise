@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BookOpen, MessageSquare, Loader2, Flame, StickyNote, Bell } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, Loader2, Flame } from "lucide-react";
 import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import DailySchedule from './components/DailySchedule';
 import SlotChangeRequestDialog from './components/SlotChangeRequestDialog';
+
+const InfoItem = ({ label, value }: { label: string, value: string | number | undefined }) => (
+    <div className="flex flex-col text-left">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="font-semibold text-sm">{value || 'N/A'}</span>
+    </div>
+);
+
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -166,58 +174,70 @@ export default function FacultyDashboard() {
 
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-8 xl:col-span-9 animate-in fade-in-0 duration-500">
-            <ScheduleCalendar 
-                schedule={facultySchedule}
-                leaveRequests={leaveRequests}
-                events={events}
-                onDayClick={handleDayClick}
-            />
-        </div>
-        <div className="lg:col-span-4 xl:col-span-3 space-y-6 animate-in fade-in-0 slide-in-from-right-8 duration-500">
-            <Card>
-                 <CardHeader>
-                    <div className="flex items-center gap-4">
-                        <Avatar className="w-16 h-16 border-2 border-primary">
-                            <AvatarImage src={facultyMember.avatar} alt={facultyMember.name} />
-                            <AvatarFallback>{facultyMember.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <CardTitle className="text-xl">Hi, {facultyMember.name.split(' ')[0]} 👋</CardTitle>
-                            <CardDescription>{facultyMember.email}</CardDescription>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+            <div className="lg:col-span-2 flex flex-col space-y-6">
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-4">
+                            <Avatar className="w-16 h-16">
+                                <AvatarImage src={facultyMember.avatar} alt={facultyMember.name} />
+                                <AvatarFallback>{facultyMember.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
+                                    Hi, {facultyMember.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
+                                </CardTitle>
+                                <CardDescription>{facultyMember.email}</CardDescription>
+                            </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex items-center gap-4">
-                    <Flame className="w-10 h-10 text-orange-500 animation-pulse" />
-                    <div>
-                        <p className="text-3xl font-bold">{facultyMember.streak || 0}</p>
-                        <p className="text-sm text-muted-foreground">Day Streak</p>
-                    </div>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => setTimetableModalOpen(true)}>
-                        <Calendar className="w-7 h-7" />
-                        <span>My Schedule</span>
-                    </Button>
-                    <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({ title: 'Coming Soon!' })}>
-                        <BookOpen className="w-7 h-7" />
-                        <span>Syllabus</span>
-                    </Button>
-                    <Button variant="outline" className="h-24 flex-col gap-2 col-span-2" onClick={() => setSlotChangeDialogOpen(true)}>
-                        <MessageSquare className="w-7 h-7" />
-                        <span>Slot Change Request</span>
-                    </Button>
-                </CardContent>
-            </Card>
-            <DailySchedule schedule={facultySchedule} />
-        </div>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <InfoItem label="Designation" value={facultyMember.designation} />
+                        <InfoItem label="Department" value={facultyMember.department} />
+                        <InfoItem label="Code" value={facultyMember.code} />
+                        <InfoItem label="Employment" value={facultyMember.employmentType} />
+                    </CardContent>
+                </Card>
+                <div className="flex-grow">
+                     <ScheduleCalendar 
+                        schedule={facultySchedule}
+                        leaveRequests={leaveRequests}
+                        events={events}
+                        onDayClick={handleDayClick}
+                    />
+                </div>
+            </div>
+            <div className="lg:col-span-1 space-y-6">
+                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+                     <CardContent className="flex items-center gap-4 p-6">
+                       <Flame className="w-10 h-10 text-orange-500 animation-pulse" />
+                       <div>
+                            <p className="text-2xl font-bold">{facultyMember.streak || 0}</p>
+                            <p className="text-sm text-muted-foreground">Day Streak</p>
+                       </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-4">
+                        <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => setTimetableModalOpen(true)}>
+                            <Calendar className="w-7 h-7" />
+                            <span>My Schedule</span>
+                        </Button>
+                        <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({ title: 'Coming Soon!' })}>
+                            <BookOpen className="w-7 h-7" />
+                            <span>Syllabus</span>
+                        </Button>
+                        <Button variant="outline" className="h-24 flex-col gap-2 col-span-2" onClick={() => setSlotChangeDialogOpen(true)}>
+                            <MessageSquare className="w-7 h-7" />
+                            <span>Slot Change Request</span>
+                        </Button>
+                    </CardContent>
+                </Card>
+                <DailySchedule schedule={facultySchedule} />
+            </div>
       </div>
       
         <Dialog open={isTimetableModalOpen} onOpenChange={setTimetableModalOpen}>
