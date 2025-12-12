@@ -26,7 +26,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 35; // Increment this to force re-initialization
+const schemaVersion = 36; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -292,7 +292,7 @@ function createSchemaAndSeed() {
             if (!existingCredential) {
               let password = randomBytes(8).toString('hex');
               let requiresChange = 1;
-              if (s.email === 'alice@example.com' || s.email === 'charlie@example.com') {
+              if (s.email === 'alice@example.com' || s.email === 'charlie@example.com' || s.email === 'bob@example.com') {
                   password = 'student123';
                   requiresChange = 0;
               }
@@ -332,4 +332,5 @@ export { getDb as db };
 
 
     
+
 
