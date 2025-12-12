@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getStudents, addStudent, updateStudent, deleteStudent } from '@/lib/services/students';
 import { getClasses } from '@/lib/services/classes';
-import type { Student, Class } from '@/lib/types';
+import { getAllAttendanceRecords } from '@/lib/services/attendance';
+import type { Student, Class, EnrichedAttendance } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,10 +28,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Progress } from '@/components/ui/progress';
 
 export default function StudentsManager() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<EnrichedAttendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,9 +47,10 @@ export default function StudentsManager() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const [studentData, classData] = await Promise.all([getStudents(), getClasses()]);
+      const [studentData, classData, attendanceData] = await Promise.all([getStudents(), getClasses(), getAllAttendanceRecords()]);
       setStudents(studentData);
       setClasses(classData);
+      setAttendanceRecords(attendanceData);
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to load data.", variant: "destructive" });
     } finally {
@@ -57,6 +61,22 @@ export default function StudentsManager() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const studentAttendanceStats = useMemo(() => {
+    const stats: Record<string, { present: number, total: number, percentage: number }> = {};
+    students.forEach(student => {
+        const studentRecords = attendanceRecords.filter(rec => rec.studentId === student.id);
+        const presentCount = studentRecords.filter(rec => rec.status === 'present').length;
+        const totalCount = studentRecords.length;
+        stats[student.id] = {
+            present: presentCount,
+            total: totalCount,
+            percentage: totalCount > 0 ? (presentCount / totalCount) * 100 : 0
+        };
+    });
+    return stats;
+  }, [students, attendanceRecords]);
+
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -144,6 +164,7 @@ export default function StudentsManager() {
               <TableHead>Name</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Semester</TableHead>
+              <TableHead>Attendance</TableHead>
               <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -151,6 +172,7 @@ export default function StudentsManager() {
           <TableBody>
             {students.map((student) => {
               const classInfo = getStudentClassInfo(student.classId);
+              const attendance = studentAttendanceStats[student.id];
               return (
               <TableRow key={student.id}>
                 <TableCell className="font-medium">
@@ -167,6 +189,16 @@ export default function StudentsManager() {
                 </TableCell>
                 <TableCell>{classInfo?.name || 'N/A'}</TableCell>
                 <TableCell>{classInfo?.semester || 'N/A'}</TableCell>
+                <TableCell>
+                  {attendance && attendance.total > 0 ? (
+                    <div className="flex items-center gap-2">
+                        <span className="font-medium">{attendance.percentage.toFixed(0)}%</span>
+                        <Progress value={attendance.percentage} className="w-20 h-2" />
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">No records</span>
+                  )}
+                </TableCell>
                 <TableCell>{student.streak}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
