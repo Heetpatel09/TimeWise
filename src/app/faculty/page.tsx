@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -28,6 +27,7 @@ import { format, parseISO } from 'date-fns';
 import { ScheduleCalendar } from './components/ScheduleCalendar';
 import TimetableView from './components/TimetableView';
 import DailySchedule from './components/DailySchedule';
+import SlotChangeRequestDialog from './components/SlotChangeRequestDialog';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col text-left">
@@ -49,6 +49,7 @@ export default function FacultyDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [isSyllabusDialogOpen, setSyllabusDialogOpen] = useState(false);
+  const [isSlotChangeDialogOpen, setSlotChangeDialogOpen] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [syllabusContent, setSyllabusContent] = useState('');
@@ -244,7 +245,7 @@ export default function FacultyDashboard() {
   const features = [
       { title: "My Weekly Schedule", icon: CalendarIcon, onClick: () => setTimetableModalOpen(true) },
       { title: "Manage Syllabus", icon: BookOpen, onClick: () => setSyllabusDialogOpen(true) },
-      { title: "Slot Change Request", icon: PencilRuler, onClick: () => { toast({ title: 'Coming Soon', description: 'This feature is under development.'}) } },
+      { title: "Slot Change Request", icon: PencilRuler, onClick: () => setSlotChangeDialogOpen(true) },
   ];
 
   if (isLoading) {
@@ -462,6 +463,15 @@ export default function FacultyDashboard() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {user && facultySchedule && (
+        <SlotChangeRequestDialog 
+            isOpen={isSlotChangeDialogOpen}
+            onOpenChange={setSlotChangeDialogOpen}
+            facultyId={user.id}
+            facultySchedule={facultySchedule}
+        />
+      )}
 
        <Dialog open={isEventDialogOpen} onOpenChange={(open) => {
         if (!open) {
