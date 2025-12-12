@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import SubjectsManager from './components/SubjectsManager';
 import ClassroomsManager from './components/ClassroomsManager';
 import FacultyManager from './components/FacultyManager';
 import StudentsManager from './components/StudentsManager';
@@ -41,7 +40,6 @@ import { cn } from '@/lib/utils';
 
 const managementCards = [
   { tab: "departments", title: "Departments", icon: Building, description: "Manage departments and subjects." },
-  { tab: "subjects", title: "Subjects", icon: Book, description: "Manage all course subjects." },
   { tab: "classrooms", title: "Classrooms", icon: Warehouse, description: "Manage rooms and labs." },
   { tab: "admins", title: "Admins", icon: UserCog, description: "Manage administrator users." },
   { tab: "faculty", title: "Faculty", icon: UserCheck, description: "Handle faculty profiles." },
@@ -62,7 +60,6 @@ const managementCards = [
 const renderContent = (tab: string) => {
     switch (tab) {
         case 'departments': return <DepartmentsManager />;
-        case 'subjects': return <SubjectsManager />;
         case 'classrooms': return <ClassroomsManager />;
         case 'faculty': return <FacultyManager />;
         case 'students': return <StudentsManager />;
