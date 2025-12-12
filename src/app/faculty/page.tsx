@@ -25,13 +25,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import DailySchedule from './components/DailySchedule';
 import SlotChangeRequestDialog from './components/SlotChangeRequestDialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 
-const InfoItem = ({ label, value }: { label: string, value: string | number | undefined }) => (
-    <div className="flex flex-col text-left">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="font-semibold text-sm">{value || 'N/A'}</span>
-    </div>
-);
+
+const mockTodos = [
+    { id: 1, text: "Grade SE COMP A assignments", priority: "High", due: "Today", completed: false },
+    { id: 2, text: "Prepare slides for CS101 lecture", priority: "Medium", due: "Tomorrow", completed: false },
+    { id: 3, text: "Submit research paper draft", priority: "High", due: "2 days", completed: false },
+    { id: 4, text: "Review new curriculum proposal", priority: "Low", due: "Next week", completed: true },
+];
+
+const getPriorityVariant = (priority: string): 'destructive' | 'secondary' | 'outline' => {
+    switch (priority) {
+        case 'High': return 'destructive';
+        case 'Medium': return 'secondary';
+        case 'Low': return 'outline';
+        default: return 'outline';
+    }
+}
 
 
 export default function FacultyDashboard() {
@@ -48,6 +60,7 @@ export default function FacultyDashboard() {
   const [isLeaveModalOpen, setLeaveModalOpen] = useState(false);
   const [isEventDialogOpen, setEventDialogOpen] = useState(false);
   const [isSlotChangeDialogOpen, setSlotChangeDialogOpen] = useState(false);
+  const [todos, setTodos] = useState(mockTodos);
 
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -179,24 +192,32 @@ export default function FacultyDashboard() {
             <div className="lg:col-span-2 flex flex-col space-y-6">
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center gap-4">
-                            <Avatar className="w-16 h-16">
-                                <AvatarImage src={facultyMember.avatar} alt={facultyMember.name} />
-                                <AvatarFallback>{facultyMember.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
-                                    Hi, {facultyMember.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
-                                </CardTitle>
-                                <CardDescription>{facultyMember.email}</CardDescription>
-                            </div>
-                        </div>
+                        <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
+                           Welcome back, {facultyMember.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
+                        </CardTitle>
+                        <CardDescription>Here's what's on your plate today.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <InfoItem label="Designation" value={facultyMember.designation} />
-                        <InfoItem label="Department" value={facultyMember.department} />
-                        <InfoItem label="Code" value={facultyMember.code} />
-                        <InfoItem label="Employment" value={facultyMember.employmentType} />
+                    <CardContent>
+                        <div className="space-y-4">
+                            {todos.map(todo => (
+                                <div key={todo.id} className="flex items-center gap-4">
+                                    <Checkbox 
+                                        id={`todo-${todo.id}`} 
+                                        checked={todo.completed} 
+                                        onCheckedChange={(checked) => {
+                                            setTodos(currentTodos => currentTodos.map(t => t.id === todo.id ? {...t, completed: !!checked} : t))
+                                        }}
+                                    />
+                                    <div className="flex-grow">
+                                        <Label htmlFor={`todo-${todo.id}`} className={`text-sm ${todo.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                            {todo.text}
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">Due: {todo.due}</p>
+                                    </div>
+                                    <Badge variant={getPriorityVariant(todo.priority)}>{todo.priority}</Badge>
+                                </div>
+                            ))}
+                        </div>
                     </CardContent>
                 </Card>
                 <div className="flex-grow">
