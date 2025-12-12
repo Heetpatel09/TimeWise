@@ -18,6 +18,7 @@ import type { EnrichedRoom, GatePass, LeaveRequest } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/context/AuthContext';
 
 interface HostelDialogProps {
   isOpen: boolean;
