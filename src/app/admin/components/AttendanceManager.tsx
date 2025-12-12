@@ -1,3 +1,4 @@
+
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllAttendanceRecords, lockAttendanceSlot } from '@/lib/services/attendance';
@@ -36,7 +37,7 @@ function AttendanceStats({ records }: { records: EnrichedAttendance[] }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="p-4 rounded-lg bg-secondary">
                 <p className="text-3xl font-bold">{percentage.toFixed(0)}%</p>
-                <p className="text-sm text-muted-foreground">Present</p>
+                <p className="text-sm text-muted-foreground">Attendance</p>
             </div>
              <div className="p-4 rounded-lg bg-secondary">
                 <p className="text-3xl font-bold text-green-600">{present}</p>
@@ -108,7 +109,14 @@ export default function AttendanceManager() {
     return acc;
   }, {} as Record<string, { details: any, records: EnrichedAttendance[] }>);
 
-  const sortedGroups = Object.values(groupedRecords || {}).sort((a, b) => new Date(b.details.date).getTime() - new Date(a.details.date).getTime());
+  const sortedGroups = Object.values(groupedRecords || {}).sort((a, b) => {
+    const dateA = new Date(a.details.date).getTime();
+    const dateB = new Date(b.details.date).getTime();
+    if (dateA !== dateB) return dateB - dateA;
+    // You may want to add secondary sorting by time here if needed
+    return 0;
+  });
+
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
