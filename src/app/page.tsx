@@ -26,7 +26,7 @@ const TimeWiseLogo = () => (
     <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0">
         <BrainCircuit className="w-full h-full text-primary animation-pulse" />
     </div>
-    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-primary">
+    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-foreground">
       TimeWise
     </h1>
   </div>
@@ -124,7 +124,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
           </div>
           <DialogFooter className="sm:justify-between gap-2 flex-col sm:flex-row">
             <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>Back</Button>
-            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading} style={{ backgroundColor: '#420080', color: '#DOAFEF' }}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
                 Login
             </Button>
@@ -152,9 +152,9 @@ const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role
             </DialogHeader>
             <div className="grid gap-4 py-4">
                 {roles.map(({ role, title, description, icon: Icon }) => (
-                    <Card key={role} className="hover:bg-accent/10 hover:border-primary hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer animate-in fade-in-0 zoom-in-95" onClick={() => onSelectRole(role)}>
+                    <Card key={role} className="hover:bg-accent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer animate-in fade-in-0 zoom-in-95" onClick={() => onSelectRole(role)}>
                         <CardHeader className="flex flex-row items-center gap-4">
-                           <div className="bg-primary/10 p-3 rounded-lg">
+                           <div className="bg-secondary p-3 rounded-lg">
                              <Icon className="w-6 h-6 text-primary" />
                            </div>
                            <div>
@@ -180,7 +180,7 @@ export default function Home() {
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
           <TimeWiseLogo />
         </div>
-        <p className="mt-6 text-lg md:text-xl max-w-2xl text-primary/90 font-medium animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+        <p className="mt-6 text-lg md:text-xl max-w-2xl text-foreground/80 font-medium animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
             Developed with scalability, security, and ease of use in mind, TimeWise represents a step forward in modern academic management, ensuring that students and faculty can focus on learning and teaching while the system takes care of the rest.
         </p>
 
@@ -190,7 +190,7 @@ export default function Home() {
                 setDialogOpen(open);
              }}>
                 <DialogTrigger asChild>
-                    <Button size="lg" style={{ backgroundColor: '#420080', color: '#DOAFEF' }} className="hover:scale-105 hover:shadow-lg transform transition-transform">
+                    <Button size="lg" className="hover:scale-105 hover:shadow-lg transform transition-transform">
                         <LogIn className="mr-2 h-5 w-5" />
                         Login / Get Started
                     </Button>

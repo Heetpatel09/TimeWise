@@ -5,88 +5,70 @@
 
 @layer base {
   :root {
-    --background: 240 100% 97%; /* Very Light Lavender */
-    --foreground: 275 100% 25%; /* Deep Indigo */
+    --background: 240 60% 99%; /* Off-white with a hint of lavender */
+    --foreground: 240 10% 3.9%; /* Near-black */
     
-    --card: 240 100% 98%;
-    --card-foreground: 275 100% 25%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
     
-    --popover: 240 100% 98%;
-    --popover-foreground: 275 100% 25%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
     
-    --primary: 275 100% 25%; /* Deep Indigo: #4B0082, adjusted to #420080 */
+    --primary: 262 84% 57%; /* Vibrant Lavender/Violet */
     --primary-foreground: 0 0% 98%;
     
-    --secondary: 271 29% 90%; /* Lighter Lavender */
-    --secondary-foreground: 275 100% 25%;
+    --secondary: 240 4.8% 95.9%; /* Light Gray */
+    --secondary-foreground: 240 5.9% 10%;
     
-    --muted: 271 29% 90%;
-    --muted-foreground: 271 29% 60%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
     
-    --accent: 276 45% 60%; /* Muted Violet: #8E44AD */
-    --accent-foreground: 0 0% 98%;
+    --accent: 240 4.8% 95.9%; /* Light Gray */
+    --accent-foreground: 240 5.9% 10%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 271 29% 88%;
-    --input: 271 29% 91%;
-    --ring: 275 100% 25%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 262 84% 57%;
     
     --radius: 0.75rem;
 
-    --chart-1: 275 100% 25%;
-    --chart-2: 276 45% 60%;
-    --chart-3: 271 30% 75%;
-    --chart-4: 276 50% 40%;
-    --chart-5: 271 60% 55%;
-    
-    --sidebar-background: 271 29% 96%; /* Even Lighter Lavender */
-    --sidebar-foreground: 275 100% 15%;
-    --sidebar-primary: 275 100% 25%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 271 29% 90%;
-    --sidebar-accent-foreground: 275 100% 15%;
-    --sidebar-border: 271 29% 90%;
-    --sidebar-ring: 276 45% 60%;
+    --chart-1: 262 84% 57%;
+    --chart-2: 262 74% 67%;
+    --chart-3: 262 64% 77%;
+    --chart-4: 262 54% 87%;
+    --chart-5: 240 4.8% 95.9%;
   }
 
   .dark {
-    --background: 275 100% 5%; /* Very Dark version of Deep Indigo */
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 275 100% 10%;
+    --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-    --popover: 275 100% 5%;
+    --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 276 45% 60%; /* Muted Violet */
+    --primary: 262 84% 57%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 275 100% 15%;
+    --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 275 100% 15%;
-    --muted-foreground: 271 29% 70%;
-    --accent: 275 100% 25%; /* Deep Indigo */
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 275 100% 15%;
-    --input: 275 100% 15%;
-    --ring: 276 45% 60%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 262 84% 57%;
     --radius: 0.75rem;
 
-    --chart-1: 276 45% 60%;
-    --chart-2: 275 100% 25%;
-    --chart-3: 271 30% 75%;
-    --chart-4: 0 0% 98%;
-    --chart-5: 271 60% 55%;
-
-    --sidebar-background: 275 100% 8%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 275 100% 5%;
-    --sidebar-accent: 275 100% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 275 100% 15%;
-    --sidebar-ring: 276 45% 60%;
+    --chart-1: 262 84% 57%;
+    --chart-2: 262 74% 67%;
+    --chart-3: 262 64% 77%;
+    --chart-4: 262 54% 87%;
+    --chart-5: 240 3.7% 15.9%;
   }
 }
 

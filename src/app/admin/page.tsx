@@ -118,17 +118,15 @@ function AdminDashboard() {
                         const Icon = card.icon;
                         return (
                             <Link key={card.tab} href={`?tab=${card.tab}`} passHref>
-                                <Card className="group hover:bg-primary/5 hover:border-primary transition-all duration-300 h-full flex flex-col">
+                                <Card className="group hover:border-primary/80 hover:shadow-lg transition-all duration-300 h-full flex flex-col hover:-translate-y-1">
                                     <CardHeader>
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                                <Icon className="h-6 w-6 text-primary" />
-                                            </div>
-                                            <CardTitle className="text-lg">{card.title}</CardTitle>
+                                        <div className="p-3 rounded-lg bg-secondary self-start">
+                                            <Icon className="h-6 w-6 text-primary" />
                                         </div>
                                     </CardHeader>
                                     <CardContent className="flex-grow">
-                                        <p className="text-sm text-muted-foreground">{card.description}</p>
+                                        <h3 className="font-semibold text-lg">{card.title}</h3>
+                                        <p className="text-sm text-muted-foreground mt-1">{card.description}</p>
                                     </CardContent>
                                 </Card>
                             </Link>
