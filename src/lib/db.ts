@@ -26,7 +26,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 37; // Increment this to force re-initialization
+const schemaVersion = 39; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -79,7 +79,8 @@ function createSchemaAndSeed() {
         isSpecial BOOLEAN NOT NULL DEFAULT 0,
         type TEXT NOT NULL CHECK(type IN ('theory', 'lab')) DEFAULT 'theory',
         semester INTEGER NOT NULL,
-        syllabus TEXT
+        syllabus TEXT,
+        department TEXT
     );
     CREATE TABLE IF NOT EXISTS classes (
         id TEXT PRIMARY KEY,
@@ -252,7 +253,7 @@ function createSchemaAndSeed() {
   `);
   
   // Seed the database
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -265,7 +266,7 @@ function createSchemaAndSeed() {
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
         faculty.forEach(f => {
@@ -292,10 +293,18 @@ function createSchemaAndSeed() {
             if (!existingCredential) {
               let password = randomBytes(8).toString('hex');
               let requiresChange = 1;
-              if (s.email === 'alice@example.com' || s.email === 'charlie@example.com' || s.email === 'bob@example.com') {
-                  password = 'student123';
+              
+              const predefinedPasswords: Record<string, string> = {
+                  'bob.williams@example.com': 'student123',
+                  'alice.johnson@example.com': 'student123',
+                  'charlie.brown@example.com': 'student123',
+              };
+
+              if (predefinedPasswords[s.email]) {
+                  password = predefinedPasswords[s.email];
                   requiresChange = 0;
               }
+
               insertUser.run(s.email, s.id, password, 'student', requiresChange);
             }
         });
@@ -313,27 +322,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-
-
-      
-
-    
-
-    
-
-    
-
-    
-
-    
-
-
-
-
-    
-
-
-
-
-
