@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -189,15 +189,18 @@ function AdminDashboard() {
                         return (
                             <Link key={card.tab} href={`?tab=${card.tab}`} passHref>
                                 <Card className="group hover:border-primary/80 hover:shadow-lg transition-all duration-300 h-full flex flex-col hover:-translate-y-1">
-                                    <CardHeader>
-                                        <div className="p-3 rounded-lg bg-secondary self-start">
-                                            <Icon className="h-6 w-6 text-primary" />
-                                        </div>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-lg font-semibold">{card.title}</CardTitle>
+                                        <Icon className="h-6 w-6 text-muted-foreground" />
                                     </CardHeader>
                                     <CardContent className="flex-grow">
-                                        <h3 className="font-semibold text-lg">{card.title}</h3>
                                         <p className="text-sm text-muted-foreground mt-1">{card.description}</p>
                                     </CardContent>
+                                    <CardFooter>
+                                        <div className="text-sm font-medium text-primary flex items-center group-hover:gap-2 transition-all duration-300">
+                                            Go to section <ArrowRight className="h-4 w-4 transform translate-x-0 group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                    </CardFooter>
                                 </Card>
                             </Link>
                         );
@@ -231,5 +234,7 @@ export default function AdminPage() {
         </DashboardLayout>
     );
 }
+
+    
 
     
