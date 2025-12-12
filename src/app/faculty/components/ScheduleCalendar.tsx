@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { Event, EnrichedSchedule, LeaveRequest } from '@/lib/types';
 import { holidays } from '@/lib/holidays';
 import { Bell, Calendar as CalendarIcon, ChevronLeft, ChevronRight, StickyNote } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function getDatesInRange(startDate: Date, endDate: Date) {
   const dates = [];
@@ -93,19 +94,22 @@ export function ScheduleCalendar({
       <Popover key={day.toString()}>
         <PopoverTrigger asChild>
           <div
-            className={`relative border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
-              !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
-            }`}
+            className={cn(
+                "relative h-32 md:h-40 p-2 flex flex-col cursor-pointer transition-colors duration-200 hover:bg-accent/50",
+                !isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : 'bg-background'
+            )}
           >
             <div className="flex justify-between items-center">
-                <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
+                <time dateTime={dayStr} className={cn(
+                    "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
+                    isCurrentToday && 'bg-primary text-primary-foreground'
+                )}>
                   {format(day, 'd')}
                 </time>
             </div>
-            <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1">
+            <div className="flex-grow overflow-y-auto text-xs space-y-1 mt-1 no-scrollbar">
                 {isLeave && <Badge variant="destructive" className="w-full justify-center">On Leave</Badge>}
                 {isHoliday && <Badge variant="secondary" className="w-full justify-center bg-blue-100 text-blue-800">Holiday</Badge>}
-                
                 {dayEvents.map(e => <div key={e.id} className="p-1 rounded bg-accent/80 text-accent-foreground truncate">{e.title}</div>)}
             </div>
           </div>
@@ -116,7 +120,7 @@ export function ScheduleCalendar({
                 <h4 className="font-medium leading-none">{format(day, 'PPP')}</h4>
             </div>
             {(daySchedule.length > 0 || dayEvents.length > 0) ? (
-                <div className="grid gap-2">
+                <div className="grid gap-2 max-h-60 overflow-y-auto">
                     {daySchedule.map(slot => (
                         <div key={slot.id} className="p-2 rounded-md bg-primary/10">
                             <p className="font-semibold text-sm">{slot.subjectName} - {slot.className}</p>
@@ -150,9 +154,9 @@ export function ScheduleCalendar({
   };
 
   return (
-     <Card className="h-full flex flex-col">
+     <Card className="h-full flex flex-col shadow-lg border-primary/10">
         <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{format(currentMonth, 'MMMM yyyy')}</CardTitle>
+            <CardTitle className="text-2xl font-bold font-headline">{format(currentMonth, 'MMMM yyyy')}</CardTitle>
             <div className="flex gap-2">
                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                     <ChevronLeft className="h-4 w-4" />
@@ -162,13 +166,13 @@ export function ScheduleCalendar({
                 </Button>
             </div>
         </CardHeader>
-        <CardContent className="flex-grow flex flex-col p-0 sm:p-6 sm:pt-0">
-            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
+        <CardContent className="flex-grow flex flex-col p-0">
+            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-t border-border">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="py-2 border-t">{day}</div>
+                    <div key={day} className="py-2">{day}</div>
                 ))}
             </div>
-            <div className="grid grid-cols-7 flex-grow h-full">
+            <div className="grid grid-cols-7 flex-grow border-b border-l border-border">
                 {daysInMonth.map(renderDayCell)}
             </div>
         </CardContent>

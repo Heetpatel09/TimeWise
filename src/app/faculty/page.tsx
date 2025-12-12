@@ -166,8 +166,8 @@ export default function FacultyDashboard() {
 
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-8 xl:col-span-9 animate-in fade-in-0 duration-500">
             <ScheduleCalendar 
                 schedule={facultySchedule}
                 leaveRequests={leaveRequests}
@@ -175,11 +175,11 @@ export default function FacultyDashboard() {
                 onDayClick={handleDayClick}
             />
         </div>
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-4 xl:col-span-3 space-y-6 animate-in fade-in-0 slide-in-from-right-8 duration-500">
             <Card>
                  <CardHeader>
                     <div className="flex items-center gap-4">
-                        <Avatar className="w-16 h-16">
+                        <Avatar className="w-16 h-16 border-2 border-primary">
                             <AvatarImage src={facultyMember.avatar} alt={facultyMember.name} />
                             <AvatarFallback>{facultyMember.name.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -192,7 +192,7 @@ export default function FacultyDashboard() {
                 <CardContent className="flex items-center gap-4">
                     <Flame className="w-10 h-10 text-orange-500 animation-pulse" />
                     <div>
-                        <p className="text-2xl font-bold">{facultyMember.streak || 0}</p>
+                        <p className="text-3xl font-bold">{facultyMember.streak || 0}</p>
                         <p className="text-sm text-muted-foreground">Day Streak</p>
                     </div>
                 </CardContent>
@@ -202,16 +202,16 @@ export default function FacultyDashboard() {
                     <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" className="h-20 flex-col gap-1" onClick={() => setTimetableModalOpen(true)}>
-                        <Calendar className="w-6 h-6" />
-                        <span>My Weekly Schedule</span>
+                    <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => setTimetableModalOpen(true)}>
+                        <Calendar className="w-7 h-7" />
+                        <span>My Schedule</span>
                     </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-1" onClick={() => toast({ title: 'Coming Soon!' })}>
-                        <BookOpen className="w-6 h-6" />
-                        <span>Manage Syllabus</span>
+                    <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({ title: 'Coming Soon!' })}>
+                        <BookOpen className="w-7 h-7" />
+                        <span>Syllabus</span>
                     </Button>
-                    <Button variant="outline" className="h-20 flex-col gap-1" onClick={() => setSlotChangeDialogOpen(true)}>
-                        <MessageSquare className="w-6 h-6" />
+                    <Button variant="outline" className="h-24 flex-col gap-2 col-span-2" onClick={() => setSlotChangeDialogOpen(true)}>
+                        <MessageSquare className="w-7 h-7" />
                         <span>Slot Change Request</span>
                     </Button>
                 </CardContent>

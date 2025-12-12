@@ -159,7 +159,7 @@ export default function TimetableView() {
                       </TableHeader>
                       <TableBody>
                         {slots.map((slot: any) => (
-                          <TableRow key={slot.id} className={slot.subjectIsSpecial ? `bg-purple-100 dark:bg-purple-900/50` : ''}>
+                          <TableRow key={slot.id} className={slot.subjectIsSpecial ? `bg-purple-900/10 dark:bg-purple-900/50` : ''}>
                             <TableCell>{slot.time}</TableCell>
                             {slot.isLibrary ? (
                                <TableCell colSpan={4} className="text-muted-foreground">
