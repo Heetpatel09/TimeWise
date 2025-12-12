@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { addSlotRequest } from '@/lib/services/new-slot-requests';
 import AttendanceDialog from './AttendanceDialog';
-import { isToday } from 'date-fns';
+import { isToday as isDateToday } from 'date-fns';
 
 
 const ALL_TIME_SLOTS = [
@@ -329,7 +329,7 @@ export default function ScheduleView() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right space-x-2">
-                                    {isCurrentDay(day) && (
+                                    {isDateToday(new Date()) && isCurrentDay(day) && (
                                         <Button variant="outline" size="sm" onClick={() => handleTakeAttendance(slot)}>
                                             <CheckSquare className="h-4 w-4 mr-2" />
                                             Attendance

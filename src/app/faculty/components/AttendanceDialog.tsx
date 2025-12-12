@@ -94,7 +94,7 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     }
   }
 
-  const allPresent = students ? Object.values(attendance).every(s => s === 'present') : false;
+  const allPresent = students ? students.every(s => attendance[s.id] === 'present') : false;
   const isLoading = studentsLoading || attendanceLoading;
 
   return (
@@ -169,4 +169,3 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     </Dialog>
   );
 }
-
