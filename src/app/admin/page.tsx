@@ -30,6 +30,7 @@ import { getSchedule } from '@/lib/services/schedule';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getClassrooms } from '@/lib/services/classrooms';
+import { getHostels } from '@/lib/services/hostels';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
@@ -103,6 +104,7 @@ function AdminDashboard() {
     const { data: classes, isLoading: classesLoading } = useQuery({ queryKey: ['classes'], queryFn: getClasses });
     const { data: subjects, isLoading: subjectsLoading } = useQuery({ queryKey: ['subjects'], queryFn: getSubjects });
     const { data: classrooms, isLoading: classroomsLoading } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
+    const { data: hostels, isLoading: hostelsLoading } = useQuery({ queryKey: ['hostels'], queryFn: getHostels });
     const [isChartOpen, setIsChartOpen] = useState(false);
     
     const studentCount = students?.length ?? 0;
@@ -110,11 +112,12 @@ function AdminDashboard() {
     const classCount = classes?.length ?? 0;
     const subjectCount = subjects?.length ?? 0;
     const classroomCount = classrooms?.length ?? 0;
+    const hostelCount = hostels?.length ?? 0;
 
     const chartData = [
-        { year: "Two Years Ago", students: Math.floor(studentCount * 0.8), faculty: Math.floor(facultyCount * 0.75), classes: Math.floor(classCount * 0.8), subjects: Math.floor(subjectCount * 0.85), classrooms: Math.floor(classroomCount * 0.7) },
-        { year: "Last Year", students: Math.floor(studentCount * 0.9), faculty: Math.floor(facultyCount * 0.85), classes: Math.floor(classCount * 0.9), subjects: Math.floor(subjectCount * 0.9), classrooms: Math.floor(classroomCount * 0.85) },
-        { year: "This Year", students: studentCount, faculty: facultyCount, classes: classCount, subjects: subjectCount, classrooms: classroomCount },
+        { year: "Two Years Ago", students: Math.floor(studentCount * 0.8), faculty: Math.floor(facultyCount * 0.75), classes: Math.floor(classCount * 0.8), subjects: Math.floor(subjectCount * 0.85), classrooms: Math.floor(classroomCount * 0.7), hostels: Math.floor(hostelCount * 0.6) },
+        { year: "Last Year", students: Math.floor(studentCount * 0.9), faculty: Math.floor(facultyCount * 0.85), classes: Math.floor(classCount * 0.9), subjects: Math.floor(subjectCount * 0.9), classrooms: Math.floor(classroomCount * 0.85), hostels: Math.floor(hostelCount * 0.8) },
+        { year: "This Year", students: studentCount, faculty: facultyCount, classes: classCount, subjects: subjectCount, classrooms: classroomCount, hostels: hostelCount },
     ];
 
     const chartConfig: ChartConfig = {
@@ -123,6 +126,7 @@ function AdminDashboard() {
         classes: { label: "Classes", color: "hsl(var(--chart-3))" },
         subjects: { label: "Subjects", color: "hsl(var(--chart-4))" },
         classrooms: { label: "Classrooms", color: "hsl(var(--chart-5))" },
+        hostels: { label: "Hostels", color: "hsl(var(--primary))" },
     }
 
     return (
@@ -140,6 +144,7 @@ function AdminDashboard() {
                             <StatItem title="Total Classes" value={classCount} icon={School} isLoading={classesLoading} />
                             <StatItem title="Total Subjects" value={subjectCount} icon={Book} isLoading={subjectsLoading} />
                             <StatItem title="Total Classrooms" value={classroomCount} icon={Warehouse} isLoading={classroomsLoading} />
+                            <StatItem title="Total Hostels" value={hostelCount} icon={Home} isLoading={hostelsLoading} />
                             <StatItem title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
                         </CardContent>
                         <CardFooter>
@@ -172,6 +177,7 @@ function AdminDashboard() {
                                             <Bar dataKey="classes" fill="var(--color-classes)" radius={4} />
                                             <Bar dataKey="subjects" fill="var(--color-subjects)" radius={4} />
                                             <Bar dataKey="classrooms" fill="var(--color-classrooms)" radius={4} />
+                                            <Bar dataKey="hostels" fill="var(--color-hostels)" radius={4} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </ChartContainer>
@@ -234,7 +240,3 @@ export default function AdminPage() {
         </DashboardLayout>
     );
 }
-
-    
-
-    
