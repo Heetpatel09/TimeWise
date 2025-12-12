@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo, useTransition } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, GraduationCap, Bell, StickyNote, CheckSquare, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import type { Faculty as FacultyType, Notification, Subject, SyllabusModule, LeaveRequest, Event, EnrichedSchedule } from '@/lib/types';
+import type { Faculty as FacultyType, Notification, Subject, SyllabusModule, LeaveRequest, Event, EnrichedSchedule, Class } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,6 +20,8 @@ import { getSubjects, updateSubject } from '@/lib/services/subjects';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getSchedule } from '@/lib/services/schedule';
+import { getClasses } from '@/lib/services/classes';
+import { getClassrooms } from '@/lib/services/classrooms';
 import { Badge } from '@/components/ui/badge';
 import { addEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
 import { Switch } from '@/components/ui/switch';
@@ -136,7 +138,7 @@ function ScheduleCalendar({
                 <div className="grid gap-2">
                     {daySchedule.map(slot => (
                         <div key={slot.id} className="p-2 rounded-md bg-primary/10">
-                            <p className="font-semibold text-sm">{slot.subjectName}</p>
+                            <p className="font-semibold text-sm">{slot.subjectName} - {slot.className}</p>
                             <p className="text-xs text-muted-foreground">{slot.time}</p>
                         </div>
                     ))}
@@ -208,7 +210,6 @@ export default function FacultyDashboard() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [syllabusContent, setSyllabusContent] = useState('');
-  const [schedule, setSchedule] = useState<EnrichedSchedule[]>([]);
   const [facultySchedule, setFacultySchedule] = useState<EnrichedSchedule[]>([]);
   
   const [events, setEvents] = useState<Event[]>([]);
@@ -243,23 +244,41 @@ export default function FacultyDashboard() {
               userEvents,
               allSchedule,
               allLeaveRequests,
+              allClasses,
+              allClassrooms,
             ] = await Promise.all([
                 getFaculty(),
                 getSubjects(),
                 getEventsForUser(user.id),
                 getSchedule(),
                 getLeaveRequests(),
+                getClasses(),
+                getClassrooms()
             ]);
             
             const fac = allFaculty.find(f => f.id === user.id);
             if (fac) setCurrentFaculty(fac);
 
-            const taughtSubjectIds = new Set(allSchedule.filter(s => s.facultyId === user.id).map(s => s.subjectId));
-            const facultySchedules = allSchedule.filter(s => s.facultyId === user.id);
+            const classMap = new Map(allClasses.map(c => [c.id, c.name]));
+            const subjectMap = new Map(allSubjects.map(s => [s.id, s]));
+            const classroomMap = new Map(allClassrooms.map(c => [c.id, c.name]));
+            
+            const enrichedFacultySchedule = allSchedule
+                .filter(s => s.facultyId === user.id)
+                .map(s => ({
+                    ...s,
+                    className: classMap.get(s.classId) || 'N/A',
+                    subjectName: subjectMap.get(s.subjectId)?.name || 'N/A',
+                    subjectIsSpecial: subjectMap.get(s.subjectId)?.isSpecial || false,
+                    classroomName: classroomMap.get(s.classroomId) || 'N/A',
+                    classroomType: allClassrooms.find(cr => cr.id === s.classroomId)?.type || 'classroom',
+                    facultyName: fac?.name || 'N/A',
+                }));
+
+            const taughtSubjectIds = new Set(enrichedFacultySchedule.map(s => s.subjectId));
             setSubjects(allSubjects.filter(s => taughtSubjectIds.has(s.id)));
             setEvents(userEvents);
-            setSchedule(allSchedule as EnrichedSchedule[]);
-            setFacultySchedule(facultySchedules as EnrichedSchedule[]);
+            setFacultySchedule(enrichedFacultySchedule);
             setLeaveRequests(allLeaveRequests);
 
             setIsLoading(false);
@@ -372,7 +391,7 @@ export default function FacultyDashboard() {
       setEventDialogOpen(false);
       setEventTitle('');
       setEventReminder(true);
-      await loadData();
+      await loadData(); // Reload all data
     } catch(error) {
        toast({ title: 'Error', description: 'Failed to add reminder.', variant: 'destructive' });
     } finally {
