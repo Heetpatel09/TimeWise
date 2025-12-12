@@ -1,6 +1,8 @@
 
 
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee } from './types';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance } from './types';
+import { format, subDays } from 'date-fns';
+
 
 export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', type: 'theory', semester: 1, syllabus: '{"modules":[{"name":"Basics","topics":["Variables","Data Types"],"weightage":"50%"},{"name":"Control Flow","topics":["If/Else","Loops"],"weightage":"50%"}]}' },
@@ -245,6 +247,50 @@ export const fees: Fee[] = [
     { id: 'FEE009', studentId: 'STU006', semester: 5, feeType: 'transport', amount: 500, dueDate: '2025-08-01', status: 'unpaid' },
     { id: 'FEE010', studentId: 'STU007', semester: 7, feeType: 'tuition', amount: 6500, dueDate: '2026-01-15', status: 'paid' },
 ];
+
+export const attendance: Attendance[] = [
+    // Create a 5-day streak for Aarav Sharma (STU001) ending yesterday
+    ...Array.from({ length: 5 }).map((_, i) => ({
+        id: `ATT_AARAV_${i}`,
+        scheduleId: 'SCH_F1_L7', // A class Aarav is in
+        studentId: 'STU001',
+        date: format(subDays(new Date(), i + 1), 'yyyy-MM-dd'),
+        status: 'present' as 'present',
+        isLocked: false,
+        timestamp: new Date().toISOString()
+    })),
+    // Add one absence to break the streak before that
+    {
+        id: 'ATT_AARAV_ABSENT',
+        scheduleId: 'SCH_F1_L7',
+        studentId: 'STU001',
+        date: format(subDays(new Date(), 6), 'yyyy-MM-dd'),
+        status: 'absent',
+        isLocked: false,
+        timestamp: new Date().toISOString()
+    },
+     // Add some attendance for other students
+    {
+        id: 'ATT_OTHER_1',
+        scheduleId: 'SCH_F1_L7',
+        studentId: 'STU002',
+        date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
+        status: 'present',
+        isLocked: false,
+        timestamp: new Date().toISOString()
+    },
+    {
+        id: 'ATT_OTHER_2',
+        scheduleId: 'SCH004',
+        studentId: 'STU002',
+        date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
+        status: 'absent',
+        isLocked: false,
+        timestamp: new Date().toISOString()
+    }
+];
+
+    
 
     
 

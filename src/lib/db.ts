@@ -16,7 +16,8 @@ import {
   adminUser,
   hostels,
   rooms,
-  fees
+  fees,
+  attendance,
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
@@ -29,7 +30,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 45; // Increment this to force re-initialization
+const schemaVersion = 46; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -287,6 +288,8 @@ function createSchemaAndSeed() {
     const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
     const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertAttendance = db.prepare('INSERT OR IGNORE INTO attendance (id, scheduleId, studentId, date, status, isLocked, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)');
+
 
     db.transaction(() => {
         // Step 1: Insert base data for users and other entities
@@ -325,6 +328,8 @@ function createSchemaAndSeed() {
         hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
         rooms.forEach(r => insertRoom.run(r.id, r.hostelId, r.roomNumber, r.block, r.studentId));
         fees.forEach(f => insertFee.run(f.id, f.studentId, f.semester, f.feeType, f.amount, f.dueDate, f.status));
+        attendance.forEach(a => insertAttendance.run(a.id, a.scheduleId, a.studentId, a.date, a.status, a.isLocked ? 1 : 0, a.timestamp));
+
         
     })();
     console.log('Database initialized and seeded successfully.');
@@ -350,5 +355,7 @@ export { getDb as db };
 
 
 
+
+    
 
     
