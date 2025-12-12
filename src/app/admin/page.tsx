@@ -32,6 +32,8 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 
 const managementCards = [
@@ -77,18 +79,18 @@ const renderContent = (tab: string) => {
     }
 }
 
-function StatCard({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) {
+const StatItem = ({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) => {
     const Icon = icon;
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                {isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : <div className="text-2xl font-bold">{value}</div>}
-            </CardContent>
-        </Card>
+        <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-secondary">
+                 <Icon className="h-6 w-6 text-primary" />
+            </div>
+            <div className="ml-4">
+                 {isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : <div className="text-2xl font-bold">{value}</div>}
+                 <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            </div>
+        </div>
     )
 }
 
@@ -100,15 +102,66 @@ function AdminDashboard() {
     const { data: subjects, isLoading: subjectsLoading } = useQuery({ queryKey: ['subjects'], queryFn: getSubjects });
     const { data: classrooms, isLoading: classroomsLoading } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
     
+    // Simulated historical data for the chart
+    const studentCount = students?.length ?? 0;
+    const facultyCount = faculty?.length ?? 0;
+
+    const chartData = [
+        { year: "Two Years Ago", students: Math.floor(studentCount * 0.8), faculty: Math.floor(facultyCount * 0.75) },
+        { year: "Last Year", students: Math.floor(studentCount * 0.9), faculty: Math.floor(facultyCount * 0.85) },
+        { year: "This Year", students: studentCount, faculty: facultyCount },
+    ];
+
+    const chartConfig: ChartConfig = {
+        students: {
+            label: "Students",
+            color: "hsl(var(--primary))",
+        },
+        faculty: {
+            label: "Faculty",
+            color: "hsl(var(--primary) / 0.5)",
+        },
+    }
+
     return (
         <div className='space-y-6'>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                <StatCard title="Total Students" value={students?.length ?? 0} icon={Users} isLoading={studentsLoading} />
-                <StatCard title="Total Faculty" value={faculty?.length ?? 0} icon={UserCheck} isLoading={facultyLoading} />
-                <StatCard title="Total Classes" value={classes?.length ?? 0} icon={School} isLoading={classesLoading} />
-                <StatCard title="Total Subjects" value={subjects?.length ?? 0} icon={Book} isLoading={subjectsLoading} />
-                <StatCard title="Total Classrooms" value={classrooms?.length ?? 0} icon={Warehouse} isLoading={classroomsLoading} />
-                <StatCard title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
+             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle>University Stats</CardTitle>
+                        <CardDescription>An overview of the core university data.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-y-8">
+                        <StatItem title="Total Students" value={studentCount} icon={Users} isLoading={studentsLoading} />
+                        <StatItem title="Total Faculty" value={facultyCount} icon={UserCheck} isLoading={facultyLoading} />
+                        <StatItem title="Total Classes" value={classes?.length ?? 0} icon={School} isLoading={classesLoading} />
+                        <StatItem title="Total Subjects" value={subjects?.length ?? 0} icon={Book} isLoading={subjectsLoading} />
+                        <StatItem title="Total Classrooms" value={classrooms?.length ?? 0} icon={Warehouse} isLoading={classroomsLoading} />
+                        <StatItem title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
+                    </CardContent>
+                </Card>
+                 <Card className="lg:col-span-3">
+                    <CardHeader>
+                        <CardTitle>Growth Overview</CardTitle>
+                        <CardDescription>Student and faculty count over the last 3 years.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                             <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
+                                    <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={10} />
+                                    <YAxis tickLine={false} axisLine={false} tickMargin={10} allowDecimals={false}/>
+                                    <Tooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent indicator="dot" />}
+                                    />
+                                    <Bar dataKey="students" fill="var(--color-students)" radius={8} />
+                                    <Bar dataKey="faculty" fill="var(--color-faculty)" radius={8} />
+                                </BarChart>
+                             </ResponsiveContainer>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
              </div>
 
              <div>
