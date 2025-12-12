@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
-import { getClasses } from '@/lib/services/classes';
+import { getClasses, addClass } from '@/lib/services/classes';
 import type { Subject, Class } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star, Beaker, BookOpen, Building } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -47,8 +46,10 @@ export default function DepartmentsManager() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isDeptDialogOpen, setDeptDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
+  const [newDepartmentName, setNewDepartmentName] = useState('');
   const { toast } = useToast();
 
   const departments = Array.from(new Set(classes.map(c => c.department)));
@@ -99,6 +100,33 @@ export default function DepartmentsManager() {
     }
   };
 
+  const handleAddDepartment = async () => {
+    if (newDepartmentName.trim()) {
+        if (departments.find(d => d.toLowerCase() === newDepartmentName.trim().toLowerCase())) {
+            toast({ title: "Department Exists", description: "This department name already exists.", variant: "destructive" });
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            // To create a department, we need to create a placeholder class associated with it.
+            // This class can be hidden or managed elsewhere if needed.
+            await addClass({
+                name: `${newDepartmentName.trim()} Placeholder`,
+                semester: 1, // Default semester
+                department: newDepartmentName.trim()
+            });
+            toast({ title: "Department Added", description: `The "${newDepartmentName.trim()}" department has been created.`});
+            await loadData();
+            setDeptDialogOpen(false);
+            setNewDepartmentName('');
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+  }
+
   const handleEdit = (subject: Subject) => {
     setCurrentSubject(subject);
     setDialogOpen(true);
@@ -115,7 +143,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewDialog = (department?: string) => {
-    setCurrentSubject({ isSpecial: false, type: 'Theory', semester: 1, department });
+    setCurrentSubject({ type: 'Theory', semester: 1, department });
     setDialogOpen(true);
   };
 
@@ -125,6 +153,12 @@ export default function DepartmentsManager() {
 
   return (
     <div className="space-y-6">
+        <div className="flex justify-end">
+            <Button onClick={() => setDeptDialogOpen(true)}>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Department
+            </Button>
+        </div>
        {subjectsByDept.map(dept => (
            <Card key={dept.department}>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -266,6 +300,37 @@ export default function DepartmentsManager() {
               Save changes
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeptDialogOpen} onOpenChange={(isOpen) => {
+        if (!isOpen) setNewDepartmentName('');
+        setDeptDialogOpen(isOpen);
+      }}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Add New Department</DialogTitle>
+                <DialogDescription>Create a new department to start adding subjects to it.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="dept-name">Department Name</Label>
+                    <Input 
+                        id="dept-name" 
+                        value={newDepartmentName} 
+                        onChange={(e) => setNewDepartmentName(e.target.value)} 
+                        placeholder="e.g. Mechanical Engineering"
+                        disabled={isSubmitting}
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setDeptDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                <Button onClick={handleAddDepartment} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add Department
+                </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
