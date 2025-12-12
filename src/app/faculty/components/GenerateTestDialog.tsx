@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Wand2 } from 'lucide-react';
-import { getClasses, getSubjects } from '@/lib/services/schedule';
+import { getClasses } from '@/lib/services/classes';
+import { getSubjects } from '@/lib/services/subjects';
 import type { Class, Subject } from '@/lib/types';
 import { generateTestPaper, GenerateTestPaperOutput } from '@/ai/flows/generate-test-paper-flow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
