@@ -272,7 +272,7 @@ function createSchemaAndSeed() {
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
 
     db.transaction(() => {
-        // Step 1: Insert all users (admins, faculty, students)
+        // Step 1: Insert base data
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         faculty.forEach(f => {
             insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0);
@@ -282,7 +282,7 @@ function createSchemaAndSeed() {
             insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
         });
 
-        // Step 2: Now that all users are guaranteed to exist, insert their credentials.
+        // Step 2: Insert credentials for all users
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
         faculty.forEach(f => {
@@ -298,7 +298,7 @@ function createSchemaAndSeed() {
             }
         });
 
-        // Step 3: Insert all other data
+        // Step 3: Insert all other relational data
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
