@@ -22,7 +22,10 @@ export interface Student {
   name: string;
   email: string;
   enrollmentNumber: string;
+  rollNumber: number;
   section: string;
+  batch: number;
+  phone: string;
   category: string;
   classId: string;
   avatar?: string;

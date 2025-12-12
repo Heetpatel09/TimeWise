@@ -53,15 +53,18 @@ const studentNames = [
 
 export const students: Student[] = studentNames.map((name, index) => {
   const classList = classes;
-  const classId = classList[index % classList.length].id;
+  const currentClass = classList[index % classList.length];
   return {
     id: `STU${(index + 1).toString().padStart(3, '0')}`,
     name,
     email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
     enrollmentNumber: `ENRL${new Date().getFullYear()}${(index + 1).toString().padStart(4, '0')}`,
+    rollNumber: index + 1,
     section: (index % 2 === 0) ? 'A' : 'B',
+    batch: (index % 2) + 1,
+    phone: `98765432${(index + 10).toString().padStart(2, '0')}`,
     category: (index % 5 === 0) ? 'Scholarship' : 'General',
-    classId,
+    classId: currentClass.id,
     profileCompleted: 50 + Math.floor(Math.random() * 51),
     sgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
     cgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
@@ -243,3 +246,4 @@ export const fees: Fee[] = [
 ];
 
     
+

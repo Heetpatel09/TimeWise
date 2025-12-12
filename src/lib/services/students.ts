@@ -52,8 +52,8 @@ export async function addStudent(
         cgpa: item.cgpa || 0,
     };
 
-    const stmt = db.prepare('INSERT INTO students (id, name, email, enrollmentNumber, section, category, classId, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.enrollmentNumber, newItem.section, newItem.category, newItem.classId, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa);
+    const stmt = db.prepare('INSERT INTO students (id, name, email, enrollmentNumber, rollNumber, section, batch, phone, category, classId, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.enrollmentNumber, newItem.rollNumber, newItem.section, newItem.batch, newItem.phone, newItem.category, newItem.classId, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -94,8 +94,8 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
         throw new Error("Student not found.");
     }
     
-    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, enrollmentNumber = ?, section = ?, category = ?, classId = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.enrollmentNumber, updatedItem.section, updatedItem.category, updatedItem.classId, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.id);
+    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, enrollmentNumber = ?, rollNumber = ?, section = ?, batch = ?, phone = ?, category = ?, classId = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.enrollmentNumber, updatedItem.rollNumber, updatedItem.section, updatedItem.batch, updatedItem.phone, updatedItem.category, updatedItem.classId, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.id);
     
     if (oldStudent.email !== updatedItem.email) {
          await addCredential({
@@ -122,3 +122,4 @@ export async function deleteStudent(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
