@@ -4,9 +4,12 @@
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { Exam, EnrichedExam } from '@/lib/types';
+import { addNotification } from './notifications';
+import { getStudentsByClass } from './students';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
+    revalidatePath('/faculty', 'layout');
 }
 
 export async function getExams(): Promise<EnrichedExam[]> {
@@ -35,6 +38,17 @@ export async function addExam(item: Omit<Exam, 'id'>) {
     const id = `EXM${Date.now()}`;
     const stmt = db.prepare('INSERT INTO exams (id, subjectId, classId, classroomId, date, time) VALUES (?, ?, ?, ?, ?, ?)');
     stmt.run(id, item.subjectId, item.classId, item.classroomId, item.date, item.time);
+    
+    // Notify students of the class
+    const students = await getStudentsByClass(item.classId);
+    for (const student of students) {
+        await addNotification({
+            userId: student.id,
+            message: `A new exam for ${item.subjectId} has been scheduled on ${item.date}.`,
+            category: 'exam_schedule'
+        });
+    }
+
     revalidateAll();
     const newItem: Exam = { ...item, id };
     return Promise.resolve(newItem);

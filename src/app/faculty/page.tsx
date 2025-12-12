@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BookOpen, MessageSquare, Loader2, Flame, CheckCircle, ClipboardList, Plus } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit } from "lucide-react";
 import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -24,27 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import DailySchedule from './components/DailySchedule';
 import SlotChangeRequestDialog from './components/SlotChangeRequestDialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Todo {
-    id: number;
-    text: string;
-    priority: 'High' | 'Medium' | 'Low';
-    due: string;
-    completed: boolean;
-}
-
-const getPriorityVariant = (priority: string): 'destructive' | 'secondary' | 'outline' => {
-    switch (priority) {
-        case 'High': return 'destructive';
-        case 'Medium': return 'secondary';
-        case 'Low': return 'outline';
-        default: return 'outline';
-    }
-}
-
+import GenerateTestDialog from './components/GenerateTestDialog';
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -60,19 +39,8 @@ export default function FacultyDashboard() {
   const [isLeaveModalOpen, setLeaveModalOpen] = useState(false);
   const [isEventDialogOpen, setEventDialogOpen] = useState(false);
   const [isSlotChangeDialogOpen, setSlotChangeDialogOpen] = useState(false);
+  const [isGenerateTestDialogOpen, setGenerateTestDialogOpen] = useState(false);
   
-  const [todos, setTodos] = useState<Todo[]>([
-    { id: 1, text: "Grade SE COMP A assignments", priority: "High", due: "Today", completed: false },
-    { id: 2, text: "Prepare slides for CS101 lecture", priority: "Medium", due: "Tomorrow", completed: false },
-    { id: 3, text: "Submit research paper draft", priority: "High", due: "2 days", completed: true },
-    { id: 4, text: "Review new curriculum proposal", priority: "Low", due: "Next week", completed: false },
-  ]);
-  const [isTodoDialogOpen, setTodoDialogOpen] = useState(false);
-  const [newTodoText, setNewTodoText] = useState('');
-  const [newTodoPriority, setNewTodoPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
-  const [newTodoDue, setNewTodoDue] = useState('');
-
-
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
   
@@ -181,26 +149,6 @@ export default function FacultyDashboard() {
       }
   }
 
-  const handleAddTodo = () => {
-      if (!newTodoText || !newTodoDue) {
-          toast({ title: "Missing Information", description: "Please provide a task and a due date.", variant: "destructive"});
-          return;
-      }
-      const newTodo: Todo = {
-          id: Date.now(),
-          text: newTodoText,
-          priority: newTodoPriority,
-          due: newTodoDue,
-          completed: false
-      };
-      setTodos(prev => [newTodo, ...prev]);
-      setTodoDialogOpen(false);
-      setNewTodoText('');
-      setNewTodoDue('');
-      setNewTodoPriority('Medium');
-  }
-
-
   if (isLoading || !facultyMember) {
     return (
         <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
@@ -227,33 +175,7 @@ export default function FacultyDashboard() {
                             </CardTitle>
                             <CardDescription>Here's what's on your plate today.</CardDescription>
                         </div>
-                        <Button size="sm" onClick={() => setTodoDialogOpen(true)}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Task
-                        </Button>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {todos.map(todo => (
-                                <div key={todo.id} className="flex items-center gap-4">
-                                    <Checkbox 
-                                        id={`todo-${todo.id}`} 
-                                        checked={todo.completed} 
-                                        onCheckedChange={(checked) => {
-                                            setTodos(currentTodos => currentTodos.map(t => t.id === todo.id ? {...t, completed: !!checked} : t))
-                                        }}
-                                    />
-                                    <div className="flex-grow">
-                                        <Label htmlFor={`todo-${todo.id}`} className={`text-sm ${todo.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                            {todo.text}
-                                        </Label>
-                                        <p className="text-xs text-muted-foreground">Due: {todo.due}</p>
-                                    </div>
-                                    <Badge variant={getPriorityVariant(todo.priority)}>{todo.priority}</Badge>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
                 </Card>
                 <div className="flex-grow">
                      <ScheduleCalendar 
@@ -287,9 +209,9 @@ export default function FacultyDashboard() {
                             <BookOpen className="w-7 h-7" />
                             <span>Syllabus</span>
                         </Button>
-                        <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({title: "Coming Soon!"})}>
-                            <CheckCircle className="w-7 h-7" />
-                            <span>To-do List</span>
+                         <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => setGenerateTestDialogOpen(true)}>
+                            <BrainCircuit className="w-7 h-7" />
+                            <span>Generate Test</span>
                         </Button>
                         <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({title: "Coming Soon!"})}>
                             <ClipboardList className="w-7 h-7" />
@@ -352,43 +274,11 @@ export default function FacultyDashboard() {
             facultySchedule={facultySchedule}
         />
 
-        <Dialog open={isTodoDialogOpen} onOpenChange={setTodoDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add New Task</DialogTitle>
-                    <DialogDescription>Fill in the details for your new to-do item.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="todo-text">Task</Label>
-                        <Input id="todo-text" value={newTodoText} onChange={(e) => setNewTodoText(e.target.value)} placeholder="e.g. Prepare for midterm exams" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="todo-priority">Priority</Label>
-                            <Select value={newTodoPriority} onValueChange={(v: 'High' | 'Medium' | 'Low') => setNewTodoPriority(v)}>
-                                <SelectTrigger id="todo-priority">
-                                    <SelectValue placeholder="Select priority" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="High">High</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="Low">Low</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="todo-due">Due</Label>
-                            <Input id="todo-due" value={newTodoDue} onChange={(e) => setNewTodoDue(e.target.value)} placeholder="e.g. In 3 days" />
-                        </div>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setTodoDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddTodo}>Add Task</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <GenerateTestDialog
+          isOpen={isGenerateTestDialogOpen}
+          onOpenChange={setGenerateTestDialogOpen}
+          facultyId={user?.id || ''}
+        />
     </DashboardLayout>
   );
 }

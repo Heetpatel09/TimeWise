@@ -4,3 +4,4 @@ import '@/ai/flows/resolve-schedule-conflicts-flow.ts';
 import '@/ai/flows/generate-exam-schedule-flow.ts';
 import '@/ai/flows/generate-seating-arrangement-flow.ts';
 import '@/ai/flows/test-api-key-flow.ts';
+import '@/ai/flows/generate-test-paper-flow.ts';
