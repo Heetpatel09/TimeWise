@@ -33,6 +33,7 @@ export interface Student {
   profileCompleted: number;
   sgpa: number;
   cgpa: number;
+  streak: number;
 }
 
 export interface Faculty {
@@ -249,5 +250,7 @@ export interface SyllabusModule {
     topics: string[];
     weightage: string;
 }
+
+    
 
     

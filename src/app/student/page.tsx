@@ -200,7 +200,9 @@ export default function StudentDashboard() {
                                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <CardTitle className="text-2xl">{student.name}</CardTitle>
+                                <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
+                                    Hi, {student.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
+                                </CardTitle>
                                 <CardDescription>{student.email}</CardDescription>
                             </div>
                         </div>
@@ -220,6 +222,19 @@ export default function StudentDashboard() {
                 />
             </div>
             <div className="lg:col-span-1 space-y-6">
+                 <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <Flame className="w-6 h-6 mr-2 text-orange-500"/>
+                            Attendance Streak
+                        </CardTitle>
+                        <CardDescription>For your consistent attendance.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                        <div className="text-6xl font-bold text-orange-500 drop-shadow-md">{student.streak || 0}</div>
+                        <p className="text-muted-foreground mt-2">Consecutive school days attended</p>
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>Quick Actions</CardTitle>
@@ -320,3 +335,5 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
+
+    

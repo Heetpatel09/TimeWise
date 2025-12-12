@@ -68,6 +68,7 @@ export const students: Student[] = studentNames.map((name, index) => {
     profileCompleted: 50 + Math.floor(Math.random() * 51),
     sgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
     cgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
+    streak: Math.floor(Math.random() * 30),
   };
 });
 
@@ -247,3 +248,4 @@ export const fees: Fee[] = [
 
     
 
+    
