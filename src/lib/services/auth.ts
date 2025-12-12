@@ -77,21 +77,27 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
   
 export async function addCredential(credential: {userId: string, email: string, password?: string, role: 'admin' | 'faculty' | 'student', requiresPasswordChange?: boolean}): Promise<void> {
     const db = getDb();
-    
-    const existingForEmail: { userId: string, password?: string, requiresPasswordChange?: number } | undefined = db.prepare('SELECT userId, password, requiresPasswordChange FROM user_credentials WHERE email = ?').get(credential.email) as any;
 
-    const existingForUser: {email: string} | undefined = db.prepare('SELECT email FROM user_credentials WHERE userId = ?').get(credential.userId) as any;
+    const existingForUser: { email: string } | undefined = db.prepare('SELECT email FROM user_credentials WHERE userId = ?').get(credential.userId) as any;
+    const existingForEmail: { userId: string, password?: string, requiresPasswordChange?: number } | undefined = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(credential.email) as any;
 
-    // If the user already has a credential but with a different email, we need to remove the old one.
+    // Case 1: A different user is already using the new email. This shouldn't happen with unique emails.
+    if (existingForEmail && existingForEmail.userId !== credential.userId) {
+        throw new Error(`Email ${credential.email} is already in use by another user.`);
+    }
+
+    // Case 2: The current user is changing their email. We must remove the old credential entry.
     if (existingForUser && existingForUser.email !== credential.email) {
         db.prepare('DELETE FROM user_credentials WHERE email = ?').run(existingForUser.email);
     }
     
+    // Determine the password to use. If a new password is provided, use it. Otherwise, use the existing one.
     const passwordToSet = credential.password || existingForEmail?.password;
     if (!passwordToSet) {
         throw new Error("Cannot create or update credential without a password.");
     }
     
+    // Determine the 'requiresPasswordChange' flag.
     const requiresChange = credential.requiresPasswordChange === undefined 
         ? (existingForEmail?.requiresPasswordChange ? 1 : 0) 
         : (credential.requiresPasswordChange ? 1 : 0);

@@ -29,6 +29,12 @@ export async function addFaculty(
     password?: string
 ) {
     const db = getDb();
+
+    const existing = db.prepare('SELECT id FROM faculty WHERE email = ?').get(item.email);
+    if (existing) {
+        throw new Error('A faculty member with this email already exists.');
+    }
+
     const id = `FAC${Date.now()}`;
     const newItem: Faculty = {
         ...item,
@@ -47,7 +53,7 @@ export async function addFaculty(
       email: newItem.email,
       password: initialPassword,
       role: 'faculty',
-      requiresPasswordChange: true,
+      requiresPasswordChange: !password,
     });
 
     // Generate welcome notification

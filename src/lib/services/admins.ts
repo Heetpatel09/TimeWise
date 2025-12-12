@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -24,6 +25,12 @@ export async function getAdmins(): Promise<Admin[]> {
 
 export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Promise<{ id: string, name: string, email: string, initialPassword?: string }> {
     const db = getDb();
+    
+    const existing = db.prepare('SELECT id FROM admins WHERE email = ?').get(item.email);
+    if (existing) {
+        throw new Error('An admin with this email already exists.');
+    }
+
     const id = `ADM${Date.now()}`;
     const newItem: Admin = {
         ...item,
@@ -42,7 +49,7 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Prom
       email: newItem.email,
       password: initialPassword,
       role: 'admin',
-      requiresPasswordChange: true,
+      requiresPasswordChange: !password, // require change if password was auto-generated
     });
 
     revalidateAll();

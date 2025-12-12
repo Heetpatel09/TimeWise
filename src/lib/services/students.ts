@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -36,6 +37,11 @@ export async function addStudent(
     password?: string
 ) {
     const db = getDb();
+    const existing = db.prepare('SELECT id FROM students WHERE email = ?').get(item.email);
+    if (existing) {
+        throw new Error('A student with this email already exists.');
+    }
+    
     const id = `STU${Date.now()}`;
     const newItem: Student = {
         ...item,
@@ -57,7 +63,7 @@ export async function addStudent(
       email: newItem.email,
       password: initialPassword,
       role: 'student',
-      requiresPasswordChange: true
+      requiresPasswordChange: !password
     });
     
     // Generate welcome notification
@@ -118,5 +124,3 @@ export async function deleteStudent(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    
