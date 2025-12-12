@@ -56,7 +56,6 @@ export async function addStudent(
     const stmt = db.prepare('INSERT INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     stmt.run(id, newItem.name, newItem.email, newItem.classId, newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa);
 
-    // When adding a student via the admin UI, an initial password is required.
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
       userId: newItem.id,
