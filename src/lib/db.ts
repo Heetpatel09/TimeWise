@@ -82,6 +82,7 @@ function createSchemaAndSeed() {
         type TEXT NOT NULL,
         semester INTEGER NOT NULL,
         syllabus TEXT,
+        isSpecial BOOLEAN,
         department TEXT
     );
     CREATE TABLE IF NOT EXISTS classes (
@@ -268,7 +269,7 @@ function createSchemaAndSeed() {
   `);
   
   // Seed the database
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, section, category, classId, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -299,7 +300,7 @@ function createSchemaAndSeed() {
             insertStudent.run(specificStudent.id, specificStudent.name, specificStudent.email, specificStudent.enrollmentNumber, specificStudent.section, specificStudent.category, specificStudent.classId, specificStudent.avatar || null, specificStudent.profileCompleted || 0, specificStudent.sgpa, specificStudent.cgpa);
         }
         
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
 
         // Step 2: Insert credentials for all users
@@ -346,3 +347,4 @@ export { getDb as db };
     
 
     
+
