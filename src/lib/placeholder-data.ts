@@ -100,18 +100,30 @@ export const classrooms: Classroom[] = Array.from({ length: 25 }, (_, i) => {
 });
 
 export const schedule: Schedule[] = [
-  // Monday
-  { id: 'SCH001', classId: 'CLS007', subjectId: 'SUB014', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:30 AM' },
+  // Dr. Alan Turing (FAC001) - 6 lectures, 6 labs
+  // Lectures
+  { id: 'SCH_F1_L1', classId: 'CLS007', subjectId: 'SUB014', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:30 AM' },
+  { id: 'SCH_F1_L2', classId: 'CLS001', subjectId: 'SUB004', facultyId: 'FAC001', classroomId: 'CR016', day: 'Wednesday', time: '11:00 AM - 12:00 PM' },
+  { id: 'SCH_F1_L3', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC001', classroomId: 'CR002', day: 'Thursday', time: '02:00 PM - 03:00 PM' },
+  { id: 'SCH_F1_L4', classId: 'CLS003', subjectId: 'SUB007', facultyId: 'FAC001', classroomId: 'CR003', day: 'Thursday', time: '07:30 AM - 08:30 AM' },
+  { id: 'SCH_F1_L5', classId: 'CLS007', subjectId: 'SUB014', facultyId: 'FAC001', classroomId: 'CR015', day: 'Friday', time: '07:30 AM - 08:30 AM' },
+  { id: 'SCH_F1_L6', classId: 'CLS003', subjectId: 'SUB005', facultyId: 'FAC001', classroomId: 'CR017', day: 'Friday', time: '10:00 AM - 11:00 AM' },
+  // Labs
+  { id: 'SCH_F1_B1', classId: 'CLS002', subjectId: 'SUB002', facultyId: 'FAC001', classroomId: 'CR023', day: 'Friday', time: '08:30 AM - 09:30 AM' },
+  { id: 'SCH_F1_B2', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC001', classroomId: 'CR021', day: 'Monday', time: '10:00 AM - 11:00 AM' },
+  { id: 'SCH_F1_B3', classId: 'CLS004', subjectId: 'SUB006', facultyId: 'FAC001', classroomId: 'CR023', day: 'Monday', time: '01:00 PM - 02:00 PM' },
+  { id: 'SCH_F1_B4', classId: 'CLS006', subjectId: 'SUB010', facultyId: 'FAC001', classroomId: 'CR022', day: 'Thursday', time: '08:30 AM - 09:30 AM' },
+  { id: 'SCH_F1_B5', classId: 'CLS001', subjectId: 'SUB002', facultyId: 'FAC001', classroomId: 'CR024', day: 'Thursday', time: '11:00 AM - 12:00 PM' },
+  { id: 'SCH_F1_B6', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC001', classroomId: 'CR025', day: 'Friday', time: '01:00 PM - 02:00 PM' },
+
+  // Other Faculty Schedule
   { id: 'SCH002', classId: 'CLS005', subjectId: 'SUB009', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '07:30 AM - 08:30 AM' },
   { id: 'SCH003', classId: 'CLS003', subjectId: 'SUB005', facultyId: 'FAC003', classroomId: 'CR003', day: 'Monday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH004', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC004', classroomId: 'CR004', day: 'Monday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH005', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC005', classroomId: 'CR021', day: 'Monday', time: '10:00 AM - 11:00 AM' },
   { id: 'SCH006', classId: 'CLS006', subjectId: 'SUB010', facultyId: 'FAC006', classroomId: 'CR022', day: 'Monday', time: '11:00 AM - 12:00 PM' },
-  { id: 'SCH007', classId: 'CLS004', subjectId: 'SUB006', facultyId: 'FAC007', classroomId: 'CR023', day: 'Monday', time: '01:00 PM - 02:00 PM' },
   { id: 'SCH008', classId: 'CLS002', subjectId: 'SUB002', facultyId: 'FAC008', classroomId: 'CR024', day: 'Monday', time: '02:00 PM - 03:00 PM' },
   { id: 'SCH009', classId: 'CLS009', subjectId: 'SUB017', facultyId: 'FAC012', classroomId: 'CR005', day: 'Monday', time: '10:00 AM - 11:00 AM' },
 
-  // Tuesday
   { id: 'SCH010', classId: 'CLS007', subjectId: 'SUB015', facultyId: 'FAC009', classroomId: 'CR005', day: 'Tuesday', time: '07:30 AM - 08:30 AM' },
   { id: 'SCH011', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC010', classroomId: 'CR006', day: 'Tuesday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH012', classId: 'CLS003', subjectId: 'SUB007', facultyId: 'FAC011', classroomId: 'CR007', day: 'Tuesday', time: '10:00 AM - 11:00 AM' },
@@ -122,37 +134,24 @@ export const schedule: Schedule[] = [
   { id: 'SCH017', classId: 'CLS002', subjectId: 'SUB004', facultyId: 'FAC016', classroomId: 'CR012', day: 'Tuesday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH018', classId: 'CLS010', subjectId: 'SUB019', facultyId: 'FAC017', classroomId: 'CR007', day: 'Tuesday', time: '01:00 PM - 02:00 PM' },
   
-  // Wednesday
   { id: 'SCH019', classId: 'CLS007', subjectId: 'SUB013', facultyId: 'FAC018', classroomId: 'CR013', day: 'Wednesday', time: '07:30 AM - 08:30 AM' },
   { id: 'SCH020', classId: 'CLS005', subjectId: 'SUB012', facultyId: 'FAC019', classroomId: 'CR014', day: 'Wednesday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH021', classId: 'CLS003', subjectId: 'SUB008', facultyId: 'FAC020', classroomId: 'CR015', day: 'Wednesday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH022', classId: 'CLS001', subjectId: 'SUB004', facultyId: 'FAC001', classroomId: 'CR016', day: 'Wednesday', time: '11:00 AM - 12:00 PM' },
   { id: 'SCH023', classId: 'CLS008', subjectId: 'SUB014', facultyId: 'FAC002', classroomId: 'CR017', day: 'Wednesday', time: '01:00 PM - 02:00 PM' },
   { id: 'SCH024', classId: 'CLS006', subjectId: 'SUB009', facultyId: 'FAC003', classroomId: 'CR018', day: 'Wednesday', time: '02:00 PM - 03:00 PM' },
   { id: 'SCH025', classId: 'CLS004', subjectId: 'SUB005', facultyId: 'FAC004', classroomId: 'CR019', day: 'Wednesday', time: '07:30 AM - 08:30 AM' },
   { id: 'SCH026', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC005', classroomId: 'CR020', day: 'Wednesday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH027', classId: 'CLS011', subjectId: 'SUB020', facultyId: 'FAC019', classroomId: 'CR011', day: 'Wednesday', time: '10:00 AM - 11:00 AM' },
 
-  // Thursday
-  { id: 'SCH028', classId: 'CLS007', subjectId: 'SUB016', facultyId: 'FAC006', classroomId: 'CR021', day: 'Thursday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH029', classId: 'CLS005', subjectId: 'SUB010', facultyId: 'FAC007', classroomId: 'CR022', day: 'Thursday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH030', classId: 'CLS003', subjectId: 'SUB006', facultyId: 'FAC008', classroomId: 'CR023', day: 'Thursday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH031', classId: 'CLS001', subjectId: 'SUB002', facultyId: 'FAC009', classroomId: 'CR024', day: 'Thursday', time: '11:00 AM - 12:00 PM' },
   { id: 'SCH032', classId: 'CLS008', subjectId: 'SUB015', facultyId: 'FAC010', classroomId: 'CR001', day: 'Thursday', time: '01:00 PM - 02:00 PM' },
-  { id: 'SCH033', classId: 'CLS006', subjectId: 'SUB011', facultyId: 'FAC011', classroomId: 'CR002', day: 'Thursday', time: '02:00 PM - 03:00 PM' },
-  { id: 'SCH034', classId: 'CLS004', subjectId: 'SUB007', facultyId: 'FAC012', classroomId: 'CR003', day: 'Thursday', time: '07:30 AM - 08:30 AM' },
   { id: 'SCH035', classId: 'CLS002', subjectId: 'SUB003', facultyId: 'FAC013', classroomId: 'CR004', day: 'Thursday', time: '08:30 AM - 09:30 AM' },
   { id: 'SCH036', classId: 'CLS009', subjectId: 'SUB018', facultyId: 'FAC012', classroomId: 'CR006', day: 'Thursday', time: '11:00 AM - 12:00 PM' },
 
-  // Friday
-  { id: 'SCH037', classId: 'CLS007', subjectId: 'SUB014', facultyId: 'FAC014', classroomId: 'CR015', day: 'Friday', time: '07:30 AM - 08:30 AM' },
   { id: 'SCH038', classId: 'CLS005', subjectId: 'SUB009', facultyId: 'FAC015', classroomId: 'CR016', day: 'Friday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH039', classId: 'CLS003', subjectId: 'SUB005', facultyId: 'FAC016', classroomId: 'CR017', day: 'Friday', time: '10:00 AM - 11:00 AM' },
   { id: 'SCH040', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC017', classroomId: 'CR018', day: 'Friday', time: '11:00 AM - 12:00 PM' },
-  { id: 'SCH041', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC018', classroomId: 'CR025', day: 'Friday', time: '01:00 PM - 02:00 PM' },
   { id: 'SCH042', classId: 'CLS006', subjectId: 'SUB010', facultyId: 'FAC019', classroomId: 'CR021', day: 'Friday', time: '02:00 PM - 03:00 PM' },
   { id: 'SCH043', classId: 'CLS004', subjectId: 'SUB006', facultyId: 'FAC020', classroomId: 'CR022', day: 'Friday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH044', classId: 'CLS002', subjectId: 'SUB002', facultyId: 'FAC001', classroomId: 'CR023', day: 'Friday', time: '08:30 AM - 09:30 AM' },
 ];
 
 
