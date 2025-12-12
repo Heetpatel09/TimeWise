@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BookOpen, MessageSquare, Loader2, Flame } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, Loader2, Flame, StickyNote, Bell } from "lucide-react";
 import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,6 @@ export default function FacultyDashboard() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   
   const [isTimetableModalOpen, setTimetableModalOpen] = useState(false);
-  const [isSyllabusModalOpen, setSyllabusModalOpen] = useState(false);
   const [isLeaveModalOpen, setLeaveModalOpen] = useState(false);
   const [isEventDialogOpen, setEventDialogOpen] = useState(false);
   const [isSlotChangeDialogOpen, setSlotChangeDialogOpen] = useState(false);
@@ -111,6 +110,7 @@ export default function FacultyDashboard() {
               const title = dialogAction === 'note' ? `Note: ${leaveReason}` : eventTitle;
               if (!title) {
                   toast({ title: 'Missing Information', description: 'Please provide a title or note.', variant: 'destructive' });
+                  setIsSubmitting(false);
                   return;
               }
                const newEvent = await addEvent({
@@ -125,6 +125,7 @@ export default function FacultyDashboard() {
           } else if (dialogAction === 'leave') {
                if (!leaveStartDate || !leaveEndDate || !leaveReason) {
                     toast({ title: 'Missing Information', description: 'Please fill out all fields.', variant: 'destructive' });
+                    setIsSubmitting(false);
                     return;
                 }
                 const newRequest = await addLeaveRequest({
