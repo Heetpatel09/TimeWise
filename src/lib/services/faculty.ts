@@ -21,11 +21,11 @@ export async function getFaculty(): Promise<Faculty[]> {
   const stmt = db.prepare('SELECT * FROM faculty');
   const results = stmt.all() as any[];
   // Ensure plain objects are returned
-  return JSON.parse(JSON.stringify(results.map(f => ({ ...f, avatar: f.avatar || `https://avatar.vercel.sh/${f.email}.png` }))));
+  return JSON.parse(JSON.stringify(results.map(f => ({ ...f, avatar: f.avatar || `https://avatar.vercel.sh/${f.email}.png`, roles: JSON.parse(f.roles || '[]') }))));
 }
 
 export async function addFaculty(
-    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted'> & { streak?: number, profileCompleted?: number },
+    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted' | 'roles'> & { streak?: number, profileCompleted?: number, roles?: string[] | string },
     password?: string
 ) {
     const db = getDb();
@@ -36,16 +36,25 @@ export async function addFaculty(
     }
 
     const id = `FAC${Date.now()}`;
+    
+    let roles: string[];
+    if (typeof item.roles === 'string') {
+        roles = item.roles.split(',').map(r => r.trim()).filter(Boolean);
+    } else {
+        roles = item.roles || [];
+    }
+
     const newItem: Faculty = {
         ...item,
         id,
+        roles,
         streak: item.streak || 0,
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
-        profileCompleted: item.profileCompleted || 0
+        profileCompleted: item.profileCompleted || 0,
     };
     
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.department, newItem.streak, newItem.avatar, newItem.profileCompleted);
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.department, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -78,26 +87,40 @@ export async function addFaculty(
     return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
 }
 
-export async function updateFaculty(updatedItem: Faculty): Promise<Faculty> {
+export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string }): Promise<Faculty> {
     const db = getDb();
     const oldFaculty = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as Faculty | undefined;
     if (!oldFaculty) {
         throw new Error("Faculty member not found.");
     }
     
-    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, department = ?, streak = ?, avatar = ?, profileCompleted = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.department, updatedItem.streak, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.id);
+    let roles: string[];
+    if (typeof updatedItem.roles === 'string') {
+        roles = updatedItem.roles.split(',').map(r => r.trim()).filter(Boolean);
+    } else {
+        roles = updatedItem.roles || oldFaculty.roles;
+    }
 
-    if (oldFaculty.email !== updatedItem.email) {
+    const mergedItem: Faculty = {
+        ...oldFaculty,
+        ...updatedItem,
+        roles,
+    };
+
+    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, department = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ? WHERE id = ?');
+    stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.id);
+
+    if (oldFaculty.email !== mergedItem.email) {
         await addCredential({
-            userId: updatedItem.id,
-            email: updatedItem.email,
+            userId: mergedItem.id,
+            email: mergedItem.email,
             role: 'faculty',
         });
     }
     
     revalidateAll();
-    const finalFaculty = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id) as Faculty;
+    const finalFaculty: any = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id);
+    finalFaculty.roles = JSON.parse(finalFaculty.roles || '[]');
     return Promise.resolve(finalFaculty);
 }
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -25,13 +26,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function FacultyManager() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
+  const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty> & { roles?: string[] | string }>({});
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
   const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
   const [manualPassword, setManualPassword] = useState('');
@@ -94,7 +96,7 @@ export default function FacultyManager() {
   }
 
   const handleEdit = (fac: Faculty) => {
-    setCurrentFaculty(fac);
+    setCurrentFaculty({...fac, roles: fac.roles.join(', ')});
     setDialogOpen(true);
   };
   
@@ -109,7 +111,7 @@ export default function FacultyManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentFaculty({});
+    setCurrentFaculty({ employmentType: 'full-time' });
     setPasswordOption('auto');
     setManualPassword('');
     setDialogOpen(true);
@@ -132,6 +134,8 @@ export default function FacultyManager() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Code</TableHead>
+              <TableHead>Designation</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Streak</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -152,6 +156,8 @@ export default function FacultyManager() {
                     </div>
                   </div>
                 </TableCell>
+                <TableCell>{fac.code}</TableCell>
+                <TableCell>{fac.designation}</TableCell>
                 <TableCell>{fac.department}</TableCell>
                 <TableCell>{fac.streak}</TableCell>
                 <TableCell className="text-right">
@@ -204,7 +210,7 @@ export default function FacultyManager() {
         }
         setDialogOpen(isOpen);
       }}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
@@ -212,23 +218,50 @@ export default function FacultyManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentFaculty.name ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={currentFaculty.name ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} disabled={isSubmitting}/>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentFaculty.email ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+             <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={currentFaculty.email ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} disabled={isSubmitting}/>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="department" className="text-right">Department</Label>
-              <Input id="department" value={currentFaculty.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Code</Label>
+                <Input id="code" value={currentFaculty.code ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, code: e.target.value })} disabled={isSubmitting}/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="designation">Designation</Label>
+                <Input id="designation" value={currentFaculty.designation ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, designation: e.target.value })} disabled={isSubmitting}/>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Input id="department" value={currentFaculty.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} disabled={isSubmitting}/>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="employmentType">Employment Type</Label>
+                <Select value={currentFaculty.employmentType} onValueChange={(v: Faculty['employmentType']) => setCurrentFaculty({...currentFaculty, employmentType: v})}>
+                    <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="roles">Roles (comma-separated)</Label>
+                <Input id="roles" value={(currentFaculty.roles as any) ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, roles: e.target.value })} disabled={isSubmitting}/>
+              </div>
             </div>
             {!currentFaculty.id && (
               <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                   <Label className="text-right">Password</Label>
-                   <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="col-span-3 flex gap-4">
+                <div className="space-y-2">
+                   <Label>Password</Label>
+                   <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="auto" id="auto-faculty" />
                         <Label htmlFor="auto-faculty">Auto-generate</Label>
@@ -240,9 +273,9 @@ export default function FacultyManager() {
                    </RadioGroup>
                 </div>
                  {passwordOption === 'manual' && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="manual-password-faculty" className="text-right">Set Password</Label>
-                        <div className="col-span-3 relative">
+                    <div className="space-y-2">
+                        <Label htmlFor="manual-password-faculty">Set Password</Label>
+                        <div className="relative">
                             <Input 
                                 id="manual-password-faculty" 
                                 type={showPassword ? "text" : "password"}

@@ -4,7 +4,6 @@ export interface Subject {
   id: string;
   name: string;
   code: string;
-  isSpecial?: boolean;
   type: string;
   semester: number;
   syllabus?: string;
@@ -35,7 +34,11 @@ export interface Faculty {
   id:string;
   name: string;
   email: string;
+  code: string;
   department: string;
+  designation: string;
+  employmentType: 'full-time' | 'part-time' | 'contract';
+  roles: string[];
   streak: number;
   avatar?: string;
   profileCompleted: number;
