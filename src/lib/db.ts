@@ -207,9 +207,11 @@ function createSchemaAndSeed() {
     CREATE TABLE IF NOT EXISTS fees (
       id TEXT PRIMARY KEY,
       studentId TEXT NOT NULL,
+      semester INTEGER NOT NULL,
+      feeType TEXT NOT NULL CHECK(feeType IN ('tuition', 'hostel', 'transport', 'exams', 'fine', 'misc')),
       amount REAL NOT NULL,
       dueDate TEXT NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('paid', 'unpaid')),
+      status TEXT NOT NULL CHECK(status IN ('paid', 'unpaid', 'scholarship')),
       FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS hostels (
@@ -337,5 +339,7 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
 
     

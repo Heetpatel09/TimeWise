@@ -17,13 +17,16 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, parseISO } from 'date-fns';
 
+const feeTypes: Fee['feeType'][] = ['tuition', 'hostel', 'transport', 'exams', 'fine', 'misc'];
+const feeStatuses: Fee['status'][] = ['paid', 'unpaid', 'scholarship'];
+
 export default function FeesManager() {
   const [fees, setFees] = useState<EnrichedFee[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentFee, setCurrentFee] = useState<Partial<Fee>>({ status: 'unpaid' });
+  const [currentFee, setCurrentFee] = useState<Partial<Fee>>({ status: 'unpaid', feeType: 'tuition' });
   const { toast } = useToast();
 
   async function loadData() {
@@ -44,7 +47,7 @@ export default function FeesManager() {
   }, []);
 
   const handleSave = async () => {
-    if (currentFee && currentFee.studentId && currentFee.amount && currentFee.dueDate && currentFee.status) {
+    if (currentFee && currentFee.studentId && currentFee.amount && currentFee.dueDate && currentFee.status && currentFee.feeType && currentFee.semester) {
       setIsSubmitting(true);
       try {
         if (currentFee.id) {
@@ -56,7 +59,7 @@ export default function FeesManager() {
         }
         await loadData();
         setDialogOpen(false);
-        setCurrentFee({ status: 'unpaid' });
+        setCurrentFee({ status: 'unpaid', feeType: 'tuition' });
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -86,9 +89,18 @@ export default function FeesManager() {
   };
 
   const openNewDialog = () => {
-    setCurrentFee({ status: 'unpaid' });
+    setCurrentFee({ status: 'unpaid', feeType: 'tuition' });
     setDialogOpen(true);
   };
+
+  const getStatusVariant = (status: Fee['status']) => {
+    switch (status) {
+      case 'paid': return 'default';
+      case 'unpaid': return 'destructive';
+      case 'scholarship': return 'secondary';
+      default: return 'outline';
+    }
+  }
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -107,7 +119,9 @@ export default function FeesManager() {
           <TableHeader>
             <TableRow>
               <TableHead>Student</TableHead>
-              <TableHead>Class</TableHead>
+              <TableHead>Enrollment No.</TableHead>
+              <TableHead>Semester</TableHead>
+              <TableHead>Fee Type</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Due Date</TableHead>
               <TableHead>Status</TableHead>
@@ -118,23 +132,21 @@ export default function FeesManager() {
             {fees.map((fee) => (
               <TableRow key={fee.id}>
                 <TableCell className="font-medium">{fee.studentName}</TableCell>
-                <TableCell>{fee.className}</TableCell>
+                <TableCell>{fee.studentEnrollmentNumber}</TableCell>
+                <TableCell>{fee.semester}</TableCell>
+                <TableCell className='capitalize'>{fee.feeType}</TableCell>
                 <TableCell>${fee.amount.toFixed(2)}</TableCell>
                 <TableCell>{format(parseISO(fee.dueDate), 'PPP')}</TableCell>
                 <TableCell>
-                  <Badge variant={fee.status === 'paid' ? 'default' : 'destructive'}>{fee.status}</Badge>
+                  <Badge variant={getStatusVariant(fee.status)} className="capitalize">{fee.status}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEdit(fee)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                        </AlertDialogTrigger>
+                        <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem></AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the fee record.</AlertDialogDescription></AlertDialogHeader>
                           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(fee.id)}>Continue</AlertDialogAction></AlertDialogFooter>
@@ -150,7 +162,7 @@ export default function FeesManager() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{currentFee?.id ? 'Edit Fee Record' : 'Add Fee Record'}</DialogTitle>
           </DialogHeader>
@@ -159,8 +171,23 @@ export default function FeesManager() {
               <Label>Student</Label>
               <Select value={currentFee.studentId} onValueChange={(v) => setCurrentFee({ ...currentFee, studentId: v })} disabled={isSubmitting}>
                 <SelectTrigger><SelectValue placeholder="Select a student" /></SelectTrigger>
-                <SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.enrollmentNumber})</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="semester">Semester</Label>
+                  <Input id="semester" type="number" value={currentFee.semester ?? ''} onChange={(e) => setCurrentFee({ ...currentFee, semester: parseInt(e.target.value) || undefined })} disabled={isSubmitting} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fee Type</Label>
+                  <Select value={currentFee.feeType} onValueChange={(v: Fee['feeType']) => setCurrentFee({ ...currentFee, feeType: v })} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        {feeTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="amount">Amount</Label>
@@ -172,11 +199,10 @@ export default function FeesManager() {
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={currentFee.status} onValueChange={(v: 'paid' | 'unpaid') => setCurrentFee({ ...currentFee, status: v })} disabled={isSubmitting}>
+              <Select value={currentFee.status} onValueChange={(v: Fee['status']) => setCurrentFee({ ...currentFee, status: v })} disabled={isSubmitting}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unpaid">Unpaid</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
+                  {feeStatuses.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -193,3 +219,5 @@ export default function FeesManager() {
     </div>
   );
 }
+
+    

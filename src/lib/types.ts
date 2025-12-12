@@ -159,9 +159,11 @@ export interface Event {
 export interface Fee {
     id: string;
     studentId: string;
+    semester: number;
+    feeType: 'tuition' | 'hostel' | 'transport' | 'exams' | 'fine' | 'misc';
     amount: number;
     dueDate: string;
-    status: 'paid' | 'unpaid';
+    status: 'paid' | 'unpaid' | 'scholarship';
 }
 
 export interface Hostel {
@@ -208,7 +210,7 @@ export interface EnrichedAttendance extends Attendance {
 
 export interface EnrichedFee extends Fee {
     studentName: string;
-    className: string;
+    studentEnrollmentNumber: string;
 }
 
 export interface EnrichedRoom extends Room {
@@ -244,3 +246,5 @@ export interface SyllabusModule {
     topics: string[];
     weightage: string;
 }
+
+    
