@@ -1,11 +1,11 @@
 
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -34,6 +34,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 
 const managementCards = [
@@ -101,6 +103,7 @@ function AdminDashboard() {
     const { data: classes, isLoading: classesLoading } = useQuery({ queryKey: ['classes'], queryFn: getClasses });
     const { data: subjects, isLoading: subjectsLoading } = useQuery({ queryKey: ['subjects'], queryFn: getSubjects });
     const { data: classrooms, isLoading: classroomsLoading } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
+    const [isChartOpen, setIsChartOpen] = useState(false);
     
     // Simulated historical data for the chart
     const studentCount = students?.length ?? 0;
@@ -125,44 +128,56 @@ function AdminDashboard() {
 
     return (
         <div className='space-y-6'>
-             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle>University Stats</CardTitle>
-                        <CardDescription>An overview of the core university data.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-y-8">
-                        <StatItem title="Total Students" value={studentCount} icon={Users} isLoading={studentsLoading} />
-                        <StatItem title="Total Faculty" value={facultyCount} icon={UserCheck} isLoading={facultyLoading} />
-                        <StatItem title="Total Classes" value={classes?.length ?? 0} icon={School} isLoading={classesLoading} />
-                        <StatItem title="Total Subjects" value={subjects?.length ?? 0} icon={Book} isLoading={subjectsLoading} />
-                        <StatItem title="Total Classrooms" value={classrooms?.length ?? 0} icon={Warehouse} isLoading={classroomsLoading} />
-                        <StatItem title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
-                    </CardContent>
-                </Card>
-                 <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Growth Overview</CardTitle>
-                        <CardDescription>Student and faculty count over the last 3 years.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
-                                    <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={10} />
-                                    <YAxis tickLine={false} axisLine={false} tickMargin={10} allowDecimals={false}/>
-                                    <Tooltip
-                                        cursor={false}
-                                        content={<ChartTooltipContent indicator="dot" />}
-                                    />
-                                    <Bar dataKey="students" fill="var(--color-students)" radius={8} />
-                                    <Bar dataKey="faculty" fill="var(--color-faculty)" radius={8} />
-                                </BarChart>
-                             </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-             </div>
+            <Collapsible open={isChartOpen} onOpenChange={setIsChartOpen}>
+                 <div className="grid grid-cols-1 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>University Stats</CardTitle>
+                            <CardDescription>An overview of the core university data.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4">
+                            <StatItem title="Total Students" value={studentCount} icon={Users} isLoading={studentsLoading} />
+                            <StatItem title="Total Faculty" value={facultyCount} icon={UserCheck} isLoading={facultyLoading} />
+                            <StatItem title="Total Classes" value={classes?.length ?? 0} icon={School} isLoading={classesLoading} />
+                            <StatItem title="Total Subjects" value={subjects?.length ?? 0} icon={Book} isLoading={subjectsLoading} />
+                            <StatItem title="Total Classrooms" value={classrooms?.length ?? 0} icon={Warehouse} isLoading={classroomsLoading} />
+                            <StatItem title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
+                        </CardContent>
+                        <CardFooter>
+                            <CollapsibleTrigger asChild>
+                                <Button variant="ghost">
+                                    {isChartOpen ? 'Hide' : 'View'} Growth Report
+                                    <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", isChartOpen && "rotate-180")} />
+                                </Button>
+                            </CollapsibleTrigger>
+                        </CardFooter>
+                    </Card>
+                    <CollapsibleContent>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Growth Overview</CardTitle>
+                                <CardDescription>Student and faculty count over the last 3 years.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
+                                            <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={10} />
+                                            <YAxis tickLine={false} axisLine={false} tickMargin={10} allowDecimals={false}/>
+                                            <Tooltip
+                                                cursor={false}
+                                                content={<ChartTooltipContent indicator="dot" />}
+                                            />
+                                            <Bar dataKey="students" fill="var(--color-students)" radius={8} />
+                                            <Bar dataKey="faculty" fill="var(--color-faculty)" radius={8} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </ChartContainer>
+                            </CardContent>
+                        </Card>
+                    </CollapsibleContent>
+                 </div>
+            </Collapsible>
 
              <div>
                 <h2 className="text-2xl font-bold tracking-tight mb-4">Management Sections</h2>
