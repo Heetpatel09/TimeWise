@@ -169,3 +169,5 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     </Dialog>
   );
 }
+
+    

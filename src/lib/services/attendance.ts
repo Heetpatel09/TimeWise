@@ -16,7 +16,8 @@ function revalidateAll() {
 export async function getAttendanceForSlot(scheduleId: string, date: string): Promise<Attendance[]> {
     const db = getDb();
     const stmt = db.prepare('SELECT * FROM attendance WHERE scheduleId = ? AND date = ?');
-    return stmt.all(scheduleId, date) as Attendance[];
+    const results = stmt.all(scheduleId, date) as any[];
+    return results.map(r => ({ ...r, isLocked: !!r.isLocked }));
 }
 
 export async function getStudentAttendance(studentId: string): Promise<EnrichedAttendance[]> {
@@ -47,6 +48,15 @@ export async function getStudentAttendance(studentId: string): Promise<EnrichedA
 export async function upsertAttendance(records: Omit<Attendance, 'id' | 'timestamp' | 'isLocked'>[]): Promise<void> {
     const db = getDb();
     
+    // Check if the attendance slot is still editable (before 7 PM on the lecture day)
+    const now = new Date();
+    const lockTime = new Date(records[0].date);
+    lockTime.setHours(19, 0, 0, 0); // 7:00 PM on the lecture day
+
+    if (now > lockTime) {
+        throw new Error("Attendance can no longer be modified. The lock time was 7:00 PM.");
+    }
+    
     const transaction = db.transaction(() => {
         for (const record of records) {
             const updateStmt = db.prepare(`
@@ -67,6 +77,9 @@ export async function upsertAttendance(records: Omit<Attendance, 'id' | 'timesta
                 if (!existing) {
                     const id = `ATT${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
                     insertStmt.run(id, record.scheduleId, record.studentId, record.date, record.status, timestamp);
+                } else if(existing.isLocked) {
+                    // This case handles if an admin locked it before the 7 PM auto-lock
+                    throw new Error("Attendance is locked by an administrator and cannot be modified.");
                 }
             }
         }
@@ -136,3 +149,5 @@ export async function lockAttendanceSlot(scheduleId: string, date: string): Prom
     db.prepare('UPDATE attendance SET isLocked = 1 WHERE scheduleId = ? AND date = ?').run(scheduleId, date);
     revalidateAll();
 }
+
+    
