@@ -190,9 +190,9 @@ export default function StudentDashboard() {
 
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-                <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <div className="lg:col-span-2 flex flex-col">
+                <Card className="mb-6">
                     <CardHeader>
                         <div className="flex items-center gap-4">
                             <Avatar className="w-16 h-16">
@@ -214,12 +214,14 @@ export default function StudentDashboard() {
                         <InfoItem label="Semester" value={student.semester} />
                     </CardContent>
                 </Card>
-                <ScheduleCalendar 
-                    schedule={dashboardData.schedule}
-                    leaveRequests={dashboardData.leaveRequests}
-                    events={dashboardData.events}
-                    onDayClick={handleDayClick}
-                />
+                <div className="flex-grow">
+                    <ScheduleCalendar 
+                        schedule={dashboardData.schedule}
+                        leaveRequests={dashboardData.leaveRequests}
+                        events={dashboardData.events}
+                        onDayClick={handleDayClick}
+                    />
+                </div>
             </div>
             <div className="lg:col-span-1 space-y-6">
                  <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
@@ -334,5 +336,3 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
-
-    

@@ -112,9 +112,9 @@ function ScheduleCalendar({
       <Popover key={day.toString()}>
         <PopoverTrigger asChild>
           <div
-            className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
+            className={`relative border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
               !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
-            } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
+            }`}
           >
             <div className="flex justify-between items-center">
                 <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
@@ -181,13 +181,13 @@ function ScheduleCalendar({
                 </Button>
             </div>
         </CardHeader>
-        <CardContent className="flex-grow">
+        <CardContent className="flex-grow flex flex-col">
             <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="py-2 border-t">{day}</div>
                 ))}
             </div>
-            <div className="grid grid-cols-7 h-full">
+            <div className="grid grid-cols-7 flex-grow">
                 {daysInMonth.map(renderDayCell)}
             </div>
         </CardContent>
@@ -419,75 +419,73 @@ export default function FacultyDashboard() {
   
   return (
     <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
-       <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                   <ScheduleCalendar
-                    schedule={facultySchedule}
-                    leaveRequests={leaveRequests}
-                    events={events}
-                    onDayClick={handleDayClick}
-                   />
-                </div>
-                 <div className="lg:col-span-1 space-y-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Today's Schedule</CardTitle>
-                             <CardDescription>{format(new Date(), 'PPP')}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {todaysSchedule.length > 0 ? (
-                                <div className="space-y-4">
-                                {todaysSchedule.map(slot => (
-                                    <div key={slot.id} className="flex justify-between items-center p-2 rounded-md bg-muted">
-                                        <div>
-                                            <p className="font-semibold">{slot.subjectName}</p>
-                                            <p className="text-sm text-muted-foreground">{slot.time} - {slot.className}</p>
-                                        </div>
-                                        <Button size="sm" variant="outline" onClick={() => handleTakeAttendance(slot)}>
-                                            <CheckSquare className="h-4 w-4 mr-2" />
-                                            Attendance
-                                        </Button>
-                                    </div>
-                                ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center py-4">No classes scheduled for today.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                        <CardHeader>
-                            <CardTitle>Teaching Streak</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center gap-4">
-                           <Flame className="w-16 h-16 text-orange-500 animation-pulse" />
-                           <div>
-                                <p className="text-4xl font-bold">{currentFaculty?.streak || 0}</p>
-                                <p className="text-sm text-muted-foreground">Day Streak</p>
-                           </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
-                         <CardHeader>
-                            <CardTitle className='flex items-center'><GraduationCap className="mr-2 h-5 w-5" />My Subjects & Syllabus</CardTitle>
-                            <CardDescription>View and edit syllabus for your subjects.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                Browse the subjects you teach and manage their syllabus content.
-                            </p>
-                        </CardContent>
-                        <CardFooter>
-                            <Button onClick={() => setSyllabusDialogOpen(true)}>
-                                <BookOpen className="mr-2 h-4 w-4" />
-                                Manage Syllabus
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <div className="lg:col-span-2 flex flex-col">
+               <ScheduleCalendar
+                schedule={facultySchedule}
+                leaveRequests={leaveRequests}
+                events={events}
+                onDayClick={handleDayClick}
+               />
             </div>
-       </div>
+             <div className="lg:col-span-1 space-y-6">
+                 <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
+                    <CardHeader>
+                        <CardTitle>Teaching Streak</CardTitle>
+                    </CardHeader>
+                     <CardContent className="flex items-center gap-4">
+                       <Flame className="w-16 h-16 text-orange-500 animation-pulse" />
+                       <div>
+                            <p className="text-4xl font-bold">{currentFaculty?.streak || 0}</p>
+                            <p className="text-sm text-muted-foreground">Day Streak</p>
+                       </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Today's Schedule</CardTitle>
+                         <CardDescription>{format(new Date(), 'PPP')}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {todaysSchedule.length > 0 ? (
+                            <div className="space-y-4">
+                            {todaysSchedule.map(slot => (
+                                <div key={slot.id} className="flex justify-between items-center p-2 rounded-md bg-muted">
+                                    <div>
+                                        <p className="font-semibold">{slot.subjectName}</p>
+                                        <p className="text-sm text-muted-foreground">{slot.time} - {slot.className}</p>
+                                    </div>
+                                    <Button size="sm" variant="outline" onClick={() => handleTakeAttendance(slot)}>
+                                        <CheckSquare className="h-4 w-4 mr-2" />
+                                        Attendance
+                                    </Button>
+                                </div>
+                            ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No classes scheduled for today.</p>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-600">
+                     <CardHeader>
+                        <CardTitle className='flex items-center'><GraduationCap className="mr-2 h-5 w-5" />My Subjects & Syllabus</CardTitle>
+                        <CardDescription>View and edit syllabus for your subjects.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                            Browse the subjects you teach and manage their syllabus content.
+                        </p>
+                    </CardContent>
+                    <CardFooter>
+                        <Button onClick={() => setSyllabusDialogOpen(true)}>
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Manage Syllabus
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
 
       <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">

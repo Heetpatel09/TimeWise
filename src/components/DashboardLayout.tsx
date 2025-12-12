@@ -255,7 +255,7 @@ export default function DashboardLayout({
             <UserProfile />
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500">
+        <main className="flex-grow p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500 flex flex-col">
             {children}
         </main>
       </div>
