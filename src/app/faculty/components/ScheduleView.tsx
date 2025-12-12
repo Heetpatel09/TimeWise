@@ -283,6 +283,7 @@ export default function ScheduleView() {
                           <TableHead>Class</TableHead>
                           <TableHead>Subject</TableHead>
                           <TableHead>Classroom</TableHead>
+                          <TableHead>Attendance</TableHead>
                           <TableHead className="text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -294,7 +295,7 @@ export default function ScheduleView() {
                             <TableCell>{slot.time}</TableCell>
                             {slot.isLibrary ? (
                                <>
-                                <TableCell colSpan={3} className="text-muted-foreground">
+                                <TableCell colSpan={4} className="text-muted-foreground">
                                      <div className="flex items-center gap-2">
                                          <Library className="h-4 w-4" />
                                          <span>Library Slot</span>
@@ -308,7 +309,7 @@ export default function ScheduleView() {
                                 </TableCell>
                                </>
                             ) : slot.isBreak ? (
-                                <TableCell colSpan={4} className="text-muted-foreground">
+                                <TableCell colSpan={5} className="text-muted-foreground">
                                     <div className="flex items-center gap-2">
                                         <Coffee className="h-4 w-4" />
                                         <span>Break</span>
@@ -328,13 +329,18 @@ export default function ScheduleView() {
                                     {(slot as EnrichedSchedule).classroomName}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-right space-x-2">
-                                    {isDateToday(new Date()) && isCurrentDay(day) && (
-                                        <Button variant="outline" size="sm" onClick={() => handleTakeAttendance(slot)}>
-                                            <CheckSquare className="h-4 w-4 mr-2" />
-                                            Attendance
-                                        </Button>
-                                    )}
+                                <TableCell>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => handleTakeAttendance(slot)}
+                                        disabled={!isDateToday(new Date()) || !isCurrentDay(day)}
+                                    >
+                                        <CheckSquare className="h-4 w-4 mr-2" />
+                                        Mark Attendance
+                                    </Button>
+                                </TableCell>
+                                <TableCell className="text-right">
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
@@ -463,3 +469,5 @@ export default function ScheduleView() {
     </div>
   );
 }
+
+    
