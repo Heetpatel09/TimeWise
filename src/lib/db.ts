@@ -292,7 +292,7 @@ function createSchemaAndSeed() {
             let requiresChange = 1;
             
             const predefinedPasswords: Record<string, string> = {
-                'alice.johnson@example.com': 'student123',
+                'aarav.sharma@example.com': 'student123',
             };
 
             if (predefinedPasswords[s.email]) {
