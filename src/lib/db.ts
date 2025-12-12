@@ -287,6 +287,33 @@ function createSchemaAndSeed() {
         FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
         UNIQUE(studentId, subjectId, semester, examType)
     );
+    CREATE TABLE IF NOT EXISTS assignments (
+      id TEXT PRIMARY KEY,
+      facultyId TEXT NOT NULL,
+      classId TEXT NOT NULL,
+      subjectId TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      fileUrl TEXT,
+      dueDate TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('assignment', 'lab_manual')),
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (facultyId) REFERENCES faculty(id) ON DELETE CASCADE,
+      FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
+      FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS submissions (
+      id TEXT PRIMARY KEY,
+      assignmentId TEXT NOT NULL,
+      studentId TEXT NOT NULL,
+      fileUrl TEXT NOT NULL,
+      submittedAt TEXT NOT NULL,
+      grade TEXT,
+      remarks TEXT,
+      FOREIGN KEY (assignmentId) REFERENCES assignments(id) ON DELETE CASCADE,
+      FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
+      UNIQUE(assignmentId, studentId)
+    );
   `);
   
   // Seed the database
@@ -383,5 +410,6 @@ export { getDb as db };
     
 
     
+
 
 

@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit, Check, PlusCircle, Flag, Tag, X, Archive, Trash2, MoreVertical, ArchiveRestore, ChevronDown } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit, Check, PlusCircle, Flag, Tag, X, Archive, Trash2, MoreVertical, ArchiveRestore, ChevronDown, FolderKanban } from "lucide-react";
 import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import Link from 'next/link';
 
 interface TodoItem {
   id: string;
@@ -365,17 +367,19 @@ export default function FacultyDashboard() {
                             <Calendar className="w-7 h-7" />
                             <span>My Schedule</span>
                         </Button>
-                        <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({ title: 'Coming Soon!' })}>
-                            <BookOpen className="w-7 h-7" />
-                            <span>Syllabus</span>
+                        <Button variant="outline" className="h-24 flex-col gap-2" asChild>
+                            <Link href="/faculty/assignments">
+                                <ClipboardList className="w-7 h-7" />
+                                <span>Assignments</span>
+                            </Link>
                         </Button>
                          <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => setGenerateTestDialogOpen(true)}>
                             <BrainCircuit className="w-7 h-7" />
                             <span>Generate Test</span>
                         </Button>
                         <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => toast({title: "Coming Soon!"})}>
-                            <ClipboardList className="w-7 h-7" />
-                            <span>Assignments</span>
+                           <BookOpen className="w-7 h-7" />
+                           <span>Syllabus</span>
                         </Button>
                         <Button variant="outline" className="h-24 flex-col gap-2 col-span-2" onClick={() => setSlotChangeDialogOpen(true)}>
                             <MessageSquare className="w-7 h-7" />

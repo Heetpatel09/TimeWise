@@ -265,6 +265,40 @@ export interface SyllabusModule {
     weightage: string;
 }
 
+export interface Assignment {
+  id: string;
+  facultyId: string;
+  classId: string;
+  subjectId: string;
+  title: string;
+  description?: string;
+  fileUrl?: string; // URL to the assignment file
+  dueDate: string;
+  type: 'assignment' | 'lab_manual';
+  createdAt: string;
+}
+
+export interface Submission {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  fileUrl: string; // URL to the submission file
+  submittedAt: string;
+  grade?: string; // e.g., 'A+', 'B', 'C' or marks '85/100'
+  remarks?: string;
+}
+
+export interface EnrichedAssignment extends Assignment {
+  subjectName: string;
+  className: string;
+  facultyName: string;
+  submissionCount: number;
+}
+
+export interface EnrichedSubmission extends Submission {
+  studentName: string;
+  studentEnrollmentNumber: string;
+}
     
 
     

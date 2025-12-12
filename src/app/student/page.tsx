@@ -5,8 +5,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, MessageSquare, Bell, Home, Loader2, Flame, GraduationCap, StickyNote } from "lucide-react";
-import type { Student, Class, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam } from '@/lib/types';
+import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, MessageSquare, Bell, Home, Loader2, Flame, GraduationCap, StickyNote, FolderKanban } from "lucide-react";
+import type { Student, Class, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam, EnrichedAssignment, Submission } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -27,6 +27,9 @@ import FeesDialog from './components/FeesDialog';
 import AttendanceDialog from './components/AttendanceDialog';
 import ExamsDialog from './components/ExamsDialog';
 import HostelDialog from './components/HostelDialog';
+import AssignmentsDialog from './components/AssignmentsDialog';
+import { getAssignmentsForStudent } from '@/lib/services/assignments';
+
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col text-left">
@@ -49,6 +52,7 @@ export default function StudentDashboard() {
     fees: EnrichedFee[];
     exams: EnrichedExam[];
   } | null>(null);
+  const [assignments, setAssignments] = useState<(EnrichedAssignment & { submission: Submission | null })[]>([]);
 
   const [isTimetableModalOpen, setTimetableModalOpen] = useState(false);
   const [isEventDialogOpen, setEventDialogOpen] = useState(false);
@@ -58,6 +62,7 @@ export default function StudentDashboard() {
   const [isAttendanceOpen, setAttendanceOpen] = useState(false);
   const [isExamsOpen, setExamsOpen] = useState(false);
   const [isHostelOpen, setHostelOpen] = useState(false);
+  const [isAssignmentsOpen, setAssignmentsOpen] = useState(false);
 
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -77,8 +82,12 @@ export default function StudentDashboard() {
         if (user) {
             setIsLoading(true);
             try {
-                const data = await getStudentDashboardData(user.id);
+                const [data, assignmentsData] = await Promise.all([
+                    getStudentDashboardData(user.id),
+                    getAssignmentsForStudent(user.id)
+                ]);
                 setDashboardData(data);
+                setAssignments(assignmentsData);
             } catch (error) {
                 toast({ title: 'Error', description: 'Failed to load dashboard data.', variant: 'destructive' });
             } finally {
@@ -172,6 +181,7 @@ export default function StudentDashboard() {
   const features = [
       { title: "Time Table", icon: Calendar, onClick: () => setTimetableModalOpen(true) },
       { title: "Attendance", icon: ClipboardList, onClick: () => setAttendanceOpen(true) },
+      { title: "Assignments", icon: FolderKanban, onClick: () => setAssignmentsOpen(true) },
       { title: "Exam Schedule", icon: BookCheck, onClick: () => setExamsOpen(true) },
       { title: "Results", icon: BarChart3, onClick: () => setResultsOpen(true) },
       { title: "Fees", icon: Wallet, onClick: () => setFeesOpen(true) },
@@ -294,6 +304,7 @@ export default function StudentDashboard() {
           isOpen={isFeesOpen}
           onOpenChange={setFeesOpen}
           fees={dashboardData.fees}
+          studentId={student.id}
         />
          <AttendanceDialog 
           isOpen={isAttendanceOpen}
@@ -310,6 +321,12 @@ export default function StudentDashboard() {
             onOpenChange={setHostelOpen}
             studentId={student.id}
          />
+        <AssignmentsDialog
+          isOpen={isAssignmentsOpen}
+          onOpenChange={setAssignmentsOpen}
+          assignments={assignments}
+          studentId={student.id}
+        />
         
         <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
             <DialogContent>
