@@ -1,5 +1,6 @@
 
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room } from './types';
+
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee } from './types';
 
 export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', type: 'theory', semester: 1, syllabus: '{"modules":[{"name":"Basics","topics":["Variables","Data Types"],"weightage":"50%"},{"name":"Control Flow","topics":["If/Else","Loops"],"weightage":"50%"}]}' },
@@ -227,5 +228,18 @@ students.forEach((student, index) => {
         rooms[index].studentId = student.id;
     }
 });
+
+export const fees: Fee[] = [
+    { id: 'FEE001', studentId: 'STU001', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'paid' },
+    { id: 'FEE002', studentId: 'STU001', semester: 1, feeType: 'hostel', amount: 1200, dueDate: '2024-08-01', status: 'paid' },
+    { id: 'FEE003', studentId: 'STU002', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'unpaid' },
+    { id: 'FEE004', studentId: 'STU003', semester: 3, feeType: 'tuition', amount: 5500, dueDate: '2025-01-15', status: 'paid' },
+    { id: 'FEE005', studentId: 'STU003', semester: 3, feeType: 'exams', amount: 300, dueDate: '2025-01-15', status: 'paid' },
+    { id: 'FEE006', studentId: 'STU004', semester: 3, feeType: 'tuition', amount: 5500, dueDate: '2025-01-15', status: 'unpaid' },
+    { id: 'FEE007', studentId: 'STU005', semester: 5, feeType: 'tuition', amount: 6000, dueDate: '2025-08-01', status: 'scholarship' },
+    { id: 'FEE008', studentId: 'STU006', semester: 5, feeType: 'tuition', amount: 6000, dueDate: '2025-08-01', status: 'paid' },
+    { id: 'FEE009', studentId: 'STU006', semester: 5, feeType: 'transport', amount: 500, dueDate: '2025-08-01', status: 'unpaid' },
+    { id: 'FEE010', studentId: 'STU007', semester: 7, feeType: 'tuition', amount: 6500, dueDate: '2026-01-15', status: 'paid' },
+];
 
     

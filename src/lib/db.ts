@@ -15,7 +15,8 @@ import {
   classrooms,
   adminUser,
   hostels,
-  rooms
+  rooms,
+  fees
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
@@ -280,6 +281,7 @@ function createSchemaAndSeed() {
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
     const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
+    const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
 
     db.transaction(() => {
         // Step 1: Insert base data for users and other entities
@@ -324,6 +326,7 @@ function createSchemaAndSeed() {
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt, n.category || 'general'));
         hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
         rooms.forEach(r => insertRoom.run(r.id, r.hostelId, r.roomNumber, r.block, r.studentId));
+        fees.forEach(f => insertFee.run(f.id, f.studentId, f.semester, f.feeType, f.amount, f.dueDate, f.status));
         
     })();
     console.log('Database initialized and seeded successfully.');
