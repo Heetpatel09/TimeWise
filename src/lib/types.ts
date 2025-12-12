@@ -40,11 +40,27 @@ export interface Faculty {
   profileCompleted: number;
 }
 
+export type Permission = 
+  | 'manage_subjects' 
+  | 'manage_classes' 
+  | 'manage_classrooms'
+  | 'manage_faculty' 
+  | 'manage_students'
+  | 'manage_schedule'
+  | 'manage_requests'
+  | 'manage_exams'
+  | 'manage_attendance'
+  | 'manage_fees'
+  | 'manage_hostels'
+  | 'manage_results';
+
 export interface Admin {
   id: string;
   name: string;
   email: string;
   avatar?: string;
+  role: 'admin' | 'manager';
+  permissions: Permission[];
 }
 
 export interface Classroom {
@@ -219,5 +235,3 @@ export interface SyllabusModule {
     topics: string[];
     weightage: string;
 }
-
-    

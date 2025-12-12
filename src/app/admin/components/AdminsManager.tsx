@@ -7,8 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getAdmins, addAdmin, updateAdmin, deleteAdmin } from '@/lib/services/admins';
-import type { Admin } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff } from 'lucide-react';
+import type { Admin, Permission } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, UserCog, UserCheck, ShieldCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,24 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const ALL_PERMISSIONS: { id: Permission, label: string }[] = [
+    { id: 'manage_subjects', label: 'Manage Subjects' },
+    { id: 'manage_classes', label: 'Manage Classes' },
+    { id: 'manage_classrooms', label: 'Manage Classrooms' },
+    { id: 'manage_faculty', label: 'Manage Faculty' },
+    { id: 'manage_students', label: 'Manage Students' },
+    { id: 'manage_schedule', label: 'Manage Schedule' },
+    { id: 'manage_requests', label: 'Manage Requests' },
+    { id: 'manage_exams', label: 'Manage Exams' },
+    { id: 'manage_attendance', label: 'Manage Attendance' },
+    { id: 'manage_fees', label: 'Manage Fees' },
+    { id: 'manage_hostels', label: 'Manage Hostels' },
+    { id: 'manage_results', label: 'Manage Results' },
+];
 
 export default function AdminsManager() {
   const { user: authUser } = useAuth();
@@ -57,33 +75,55 @@ export default function AdminsManager() {
     loadData();
   }, []);
 
+  const handlePermissionChange = (permission: Permission, checked: boolean) => {
+    setCurrentAdmin(prev => {
+        const newPermissions = prev?.permissions ? [...prev.permissions] : [];
+        if (checked) {
+            if (!newPermissions.includes(permission)) {
+                newPermissions.push(permission);
+            }
+        } else {
+            const index = newPermissions.indexOf(permission);
+            if (index > -1) {
+                newPermissions.splice(index, 1);
+            }
+        }
+        return { ...prev, permissions: newPermissions };
+    });
+  }
+
   const handleSave = async () => {
     if (currentAdmin && currentAdmin.name && currentAdmin.email) {
       if (!currentAdmin.id && passwordOption === 'manual' && !manualPassword) {
-        toast({ title: "Password Required", description: "Please enter a password for the new admin.", variant: "destructive" });
+        toast({ title: "Password Required", description: "Please enter a password for the new user.", variant: "destructive" });
         return;
+      }
+      
+      const adminToSave: Omit<Admin, 'id'> = {
+        name: currentAdmin.name!,
+        email: currentAdmin.email!,
+        avatar: currentAdmin.avatar,
+        role: currentAdmin.role || 'manager',
+        permissions: currentAdmin.role === 'admin' ? ['*'] : currentAdmin.permissions || [],
       }
 
       setIsSubmitting(true);
       try {
         if (currentAdmin.id) {
-          await updateAdmin(currentAdmin as Admin);
-          toast({ title: "Admin Updated", description: "The admin's details have been saved." });
+          await updateAdmin({ ...adminToSave, id: currentAdmin.id });
+          toast({ title: "User Updated", description: "The user's details have been saved." });
         } else {
           const result = await addAdmin(
-            currentAdmin as Omit<Admin, 'id'>, 
+            adminToSave, 
             passwordOption === 'manual' ? manualPassword : undefined
           );
-          toast({ title: "Admin Added", description: "The new admin has been created." });
+          toast({ title: "User Added", description: "The new user has been created." });
           if (result.initialPassword) {
             setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
           }
         }
         await loadData();
         setDialogOpen(false);
-        setCurrentAdmin({});
-        setManualPassword('');
-        setPasswordOption('auto');
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -106,14 +146,14 @@ export default function AdminsManager() {
     try {
       await deleteAdmin(id);
       await loadData();
-      toast({ title: "Admin Deleted", description: "The admin has been removed." });
+      toast({ title: "User Deleted", description: "The user has been removed." });
     } catch (error: any) {
        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     }
   };
   
   const openNewDialog = () => {
-    setCurrentAdmin({});
+    setCurrentAdmin({ role: 'manager', permissions: [] });
     setPasswordOption('auto');
     setManualPassword('');
     setDialogOpen(true);
@@ -128,7 +168,7 @@ export default function AdminsManager() {
       <div className="flex justify-end mb-4">
         <Button onClick={openNewDialog}>
           <PlusCircle className="h-4 w-4 mr-2" />
-          Add Admin
+          Add User
         </Button>
       </div>
       <div className="border rounded-lg">
@@ -137,6 +177,7 @@ export default function AdminsManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -155,6 +196,12 @@ export default function AdminsManager() {
                   </div>
                 </TableCell>
                 <TableCell>{admin.email}</TableCell>
+                <TableCell>
+                  <Badge variant={admin.role === 'admin' ? 'default' : 'secondary'} className='capitalize'>
+                    {admin.role === 'admin' ? <UserCog className='h-3 w-3 mr-1'/> : <UserCheck className='h-3 w-3 mr-1'/>}
+                    {admin.role}
+                  </Badge>
+                </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -183,7 +230,7 @@ export default function AdminsManager() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the admin user.
+                                This action cannot be undone. This will permanently delete the user account.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -209,63 +256,103 @@ export default function AdminsManager() {
         }
         setDialogOpen(isOpen);
       }}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{currentAdmin?.id ? 'Edit Admin' : 'Add Admin'}</DialogTitle>
+            <DialogTitle>{currentAdmin?.id ? 'Edit User' : 'Add User'}</DialogTitle>
             <DialogDescription>
-              {currentAdmin?.id ? 'Update admin details.' : 'Add a new admin.'}
+              {currentAdmin?.id ? 'Update user details and permissions.' : 'Add a new admin or manager.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentAdmin.name ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={currentAdmin.email ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, email: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
-            </div>
-            {!currentAdmin.id && (
-              <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                   <Label className="text-right">Password</Label>
-                   <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="col-span-3 flex gap-4">
+          <div className="grid md:grid-cols-2 gap-8 py-4">
+            <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" value={currentAdmin.name ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, name: e.target.value })} disabled={isSubmitting}/>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" value={currentAdmin.email ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, email: e.target.value })} disabled={isSubmitting}/>
+                </div>
+                 <div className="space-y-2">
+                   <Label>Role</Label>
+                   <RadioGroup value={currentAdmin.role} onValueChange={(v: 'admin' | 'manager') => setCurrentAdmin({...currentAdmin, role: v})} className="flex gap-4 pt-2">
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="auto" id="auto" />
-                        <Label htmlFor="auto">Auto-generate</Label>
+                        <RadioGroupItem value="admin" id="role-admin" />
+                        <Label htmlFor="role-admin">Admin (Full Access)</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="manual" id="manual" />
-                        <Label htmlFor="manual">Manual</Label>
+                        <RadioGroupItem value="manager" id="role-manager" />
+                        <Label htmlFor="role-manager">Manager (Limited Access)</Label>
                       </div>
                    </RadioGroup>
                 </div>
-                 {passwordOption === 'manual' && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="manual-password" className="text-right">Set Password</Label>
-                        <div className="col-span-3 relative">
-                            <Input 
-                                id="manual-password" 
-                                type={showPassword ? "text" : "password"}
-                                value={manualPassword} 
-                                onChange={(e) => setManualPassword(e.target.value)} 
-                                className="pr-10"
-                                disabled={isSubmitting}
-                            />
-                             <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute inset-y-0 right-0 h-full px-3"
-                                onClick={() => setShowPassword(!showPassword)}
-                                >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        </div>
+                {!currentAdmin.id && (
+                  <>
+                    <div className="space-y-2">
+                       <Label>Password</Label>
+                       <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="auto" id="auto" />
+                            <Label htmlFor="auto">Auto-generate</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="manual" id="manual" />
+                            <Label htmlFor="manual">Manual</Label>
+                          </div>
+                       </RadioGroup>
                     </div>
+                     {passwordOption === 'manual' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="manual-password">Set Password</Label>
+                            <div className="relative">
+                                <Input 
+                                    id="manual-password" 
+                                    type={showPassword ? "text" : "password"}
+                                    value={manualPassword} 
+                                    onChange={(e) => setManualPassword(e.target.value)} 
+                                    className="pr-10"
+                                    disabled={isSubmitting}
+                                />
+                                 <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute inset-y-0 right-0 h-full px-3"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                  </>
                 )}
-              </>
-            )}
+            </div>
+            <Card className={currentAdmin.role === 'admin' ? 'bg-muted' : ''}>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ShieldCheck/> Permissions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {currentAdmin.role === 'admin' ? (
+                        <div className="flex flex-col items-center justify-center text-center h-full">
+                            <p className="text-muted-foreground">Admins have full access to all features.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {ALL_PERMISSIONS.map(p => (
+                                <div key={p.id} className="flex flex-row items-center space-x-3 space-y-0">
+                                    <Checkbox 
+                                        id={`perm-${p.id}`} 
+                                        checked={currentAdmin.permissions?.includes(p.id)}
+                                        onCheckedChange={(checked) => handlePermissionChange(p.id, !!checked)}
+                                    />
+                                    <Label htmlFor={`perm-${p.id}`} className="font-normal">{p.label}</Label>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
@@ -280,9 +367,9 @@ export default function AdminsManager() {
       <Dialog open={!!newAdminCredentials} onOpenChange={() => setNewAdminCredentials(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Admin Created</DialogTitle>
+            <DialogTitle>User Created</DialogTitle>
             <DialogDescription>
-              Share the following credentials with the new admin so they can log in. The password is randomly generated for security.
+              Share the following credentials with the new user so they can log in. The password is randomly generated for security.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -305,7 +392,7 @@ export default function AdminsManager() {
                         </div>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground pt-2">The admin will be required to change this password on their first login.</p>
+                  <p className="text-xs text-muted-foreground pt-2">The user will be required to change this password on their first login.</p>
                 </div>
               </AlertDescription>
             </Alert>
@@ -318,7 +405,3 @@ export default function AdminsManager() {
     </div>
   );
 }
-
-    
-
-    

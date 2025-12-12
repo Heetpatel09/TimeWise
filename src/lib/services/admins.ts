@@ -15,7 +15,11 @@ export async function getAdmins(): Promise<Admin[]> {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM admins');
   const results = stmt.all() as any[];
-  return JSON.parse(JSON.stringify(results.map(a => ({ ...a, avatar: a.avatar || `https://avatar.vercel.sh/${a.email}.png` }))));
+  return JSON.parse(JSON.stringify(results.map(a => ({ 
+      ...a,
+      avatar: a.avatar || `https://avatar.vercel.sh/${a.email}.png`,
+      permissions: a.permissions ? JSON.parse(a.permissions) : [],
+    }))));
 }
 
 export async function addAdmin(item: Omit<Admin, 'id'>, password?: string) {
@@ -25,10 +29,12 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string) {
         ...item,
         id,
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
+        role: item.role || 'manager',
+        permissions: item.permissions || [],
     };
     
-    const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar) VALUES (?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.avatar);
+    const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.avatar, newItem.role, JSON.stringify(newItem.permissions));
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -41,7 +47,6 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string) {
 
     revalidateAll();
     
-    // Only return the generated password if it was auto-generated
     return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
 }
 
@@ -52,8 +57,15 @@ export async function updateAdmin(updatedItem: Admin): Promise<Admin> {
         throw new Error("Admin not found.");
     }
     
-    const stmt = db.prepare('UPDATE admins SET name = ?, email = ?, avatar = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.avatar, updatedItem.id);
+    const stmt = db.prepare('UPDATE admins SET name = ?, email = ?, avatar = ?, role = ?, permissions = ? WHERE id = ?');
+    stmt.run(
+        updatedItem.name, 
+        updatedItem.email, 
+        updatedItem.avatar,
+        updatedItem.role,
+        JSON.stringify(updatedItem.permissions || []),
+        updatedItem.id
+    );
 
     if (oldAdmin.email !== updatedItem.email) {
         await addCredential({
@@ -65,7 +77,10 @@ export async function updateAdmin(updatedItem: Admin): Promise<Admin> {
     
     revalidateAll();
     const finalAdmin = db.prepare('SELECT * FROM admins WHERE id = ?').get(updatedItem.id) as Admin;
-    return Promise.resolve(finalAdmin);
+    return Promise.resolve({
+        ...finalAdmin,
+        permissions: finalAdmin.permissions ? JSON.parse(finalAdmin.permissions as any) : []
+    });
 }
 
 export async function deleteAdmin(id: string) {
@@ -82,5 +97,3 @@ export async function deleteAdmin(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    

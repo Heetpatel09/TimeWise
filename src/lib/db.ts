@@ -26,7 +26,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 39; // Increment this to force re-initialization
+const schemaVersion = 40; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -97,7 +97,9 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
-        avatar TEXT
+        avatar TEXT,
+        role TEXT NOT NULL DEFAULT 'admin',
+        permissions TEXT
     );
     CREATE TABLE IF NOT EXISTS faculty (
         id TEXT PRIMARY KEY,
@@ -263,7 +265,7 @@ function createSchemaAndSeed() {
     const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
     const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
     const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
-    const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar) VALUES (?, ?, ?, ?)');
+    const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
 
     db.transaction(() => {
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
@@ -278,7 +280,7 @@ function createSchemaAndSeed() {
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt, n.category || 'general'));
         
-        insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar);
+        insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         
         faculty.forEach(f => {
