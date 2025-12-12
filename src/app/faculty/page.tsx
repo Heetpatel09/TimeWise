@@ -259,7 +259,7 @@ export default function FacultyDashboard() {
             const facultySchedules = allSchedule.filter(s => s.facultyId === user.id);
             setSubjects(allSubjects.filter(s => taughtSubjectIds.has(s.id)));
             setEvents(userEvents);
-            setSchedule(allSchedule);
+            setSchedule(allSchedule as EnrichedSchedule[]);
             setFacultySchedule(facultySchedules as EnrichedSchedule[]);
             setLeaveRequests(allLeaveRequests);
 
