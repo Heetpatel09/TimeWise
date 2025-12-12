@@ -144,7 +144,7 @@ export default function SubjectsManager() {
                 </TableCell>
                 <TableCell>{subject.semester}</TableCell>
                 <TableCell>
-                  {subject.isSpecial && <Badge variant="secondary"><Star className="h-3 w-3 mr-1" />Special</Badge>}
+                  {subject.isSpecial && <Badge variant="secondary" className="text-amber-600 border-amber-500/50"><Star className="h-3 w-3 mr-1" />Special</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -161,7 +161,7 @@ export default function SubjectsManager() {
                       </DropdownMenuItem>
                        <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                             </DropdownMenuItem>
@@ -200,42 +200,41 @@ export default function SubjectsManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={currentSubject.name ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={currentSubject.name ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })} disabled={isSubmitting}/>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="code" className="text-right">Code</Label>
-              <Input id="code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} className="col-span-3" disabled={isSubmitting}/>
+            <div className="space-y-2">
+              <Label htmlFor="code">Code</Label>
+              <Input id="code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} disabled={isSubmitting}/>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="semester" className="text-right">Semester</Label>
-              <Input id="semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} className="col-span-3" disabled={isSubmitting}/>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="semester">Semester</Label>
+                  <Input id="semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Select value={currentSubject?.type} onValueChange={(v: 'theory' | 'lab') => setCurrentSubject({ ...currentSubject, type: v })} disabled={isSubmitting}>
+                    <SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="theory">Theory</SelectItem>
+                        <SelectItem value="lab">Lab</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">Type</Label>
-              <Select value={currentSubject?.type} onValueChange={(v: 'theory' | 'lab') => setCurrentSubject({ ...currentSubject, type: v })} disabled={isSubmitting}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder="Select a type" /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="theory">Theory</SelectItem>
-                    <SelectItem value="lab">Lab</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="syllabus" className="text-right">Syllabus</Label>
+            <div className="space-y-2">
+              <Label htmlFor="syllabus">Syllabus</Label>
                 <Textarea 
                     id="syllabus" 
                     value={currentSubject.syllabus ?? ''} 
                     onChange={(e) => setCurrentSubject({ ...currentSubject, syllabus: e.target.value })} 
-                    className="col-span-3" 
-                    placeholder='Enter as JSON, e.g., {"modules":[{"name":"Module 1","topics":["Topic A"],"weightage":"50%"}]}'
+                    placeholder='e.g., {"modules":[{"name":"Module 1","topics":["Topic A"],"weightage":"50%"}]}'
                     disabled={isSubmitting}
                 />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="special" className="text-right">Special</Label>
-               <div className="col-span-3 flex items-center space-x-2">
+            <div className="flex items-center space-x-2 pt-2">
                  <Switch
                     id="special"
                     checked={currentSubject.isSpecial || false}
@@ -243,7 +242,6 @@ export default function SubjectsManager() {
                     disabled={isSubmitting}
                 />
                 <Label htmlFor="special" className="text-sm text-muted-foreground">This is a fixed, non-reschedulable subject.</Label>
-              </div>
             </div>
           </div>
           <DialogFooter>
