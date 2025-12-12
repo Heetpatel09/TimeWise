@@ -78,20 +78,23 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
 export async function addCredential(credential: {userId: string, email: string, password?: string, role: 'admin' | 'faculty' | 'student', requiresPasswordChange?: boolean}): Promise<void> {
     const db = getDb();
 
+    // Find any existing credential for the userId to check for email changes.
     const existingForUser: { email: string } | undefined = db.prepare('SELECT email FROM user_credentials WHERE userId = ?').get(credential.userId) as any;
-    const existingForEmail: { userId: string, password?: string, requiresPasswordChange?: number } | undefined = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(credential.email) as any;
 
-    // Case 1: A different user is already using the new email. This shouldn't happen with unique emails.
+    // Find any existing credential for the new email.
+    const existingForEmail: { userId: string, password?: string, requiresPasswordChange?: number } | undefined = db.prepare('SELECT * FROM user_credentials WHERE email = ?').get(credential.email) as any;
+    
+    // If the new email is already taken by a *different* user, throw an error.
     if (existingForEmail && existingForEmail.userId !== credential.userId) {
         throw new Error(`Email ${credential.email} is already in use by another user.`);
     }
 
-    // Case 2: The current user is changing their email. We must remove the old credential entry.
+    // If the user is changing their email, we must delete the old credential entry.
     if (existingForUser && existingForUser.email !== credential.email) {
         db.prepare('DELETE FROM user_credentials WHERE email = ?').run(existingForUser.email);
     }
     
-    // Determine the password to use. If a new password is provided, use it. Otherwise, use the existing one.
+    // Determine the final password. Use new one if provided, otherwise fall back to existing.
     const passwordToSet = credential.password || existingForEmail?.password;
     if (!passwordToSet) {
         throw new Error("Cannot create or update credential without a password.");

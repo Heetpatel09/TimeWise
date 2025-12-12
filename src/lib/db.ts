@@ -266,13 +266,13 @@ function createSchemaAndSeed() {
     const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
     const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertUser = db.prepare('INSERT OR IGNORE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
+    const insertUser = db.prepare('INSERT OR REPLACE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
     const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
 
     db.transaction(() => {
-        // Must insert users before credentials
+        // Step 1: Insert all users (admins, faculty, students)
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         faculty.forEach(f => {
             insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0);
@@ -282,21 +282,23 @@ function createSchemaAndSeed() {
             insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa);
         });
 
-        // Now insert credentials
+        // Step 2: Now that all users are guaranteed to exist, insert their credentials.
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
+        
         faculty.forEach(f => {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
+        
         students.forEach(s => {
-             // Hardcode password for aarav.sharma@example.com
             if (s.email === 'aarav.sharma@example.com') {
                 insertUser.run(s.email, s.id, 'student123', 'student', 0);
             } else {
-                insertUser.run(s.email, s.id, randomBytes(8).toString('hex'), 'student', 1);
+                const randomPassword = randomBytes(8).toString('hex');
+                insertUser.run(s.email, s.id, randomPassword, 'student', 1);
             }
         });
 
-        // Insert other data
+        // Step 3: Insert all other data
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
@@ -321,7 +323,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    
-
-    
