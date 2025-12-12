@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, GraduationCap, Bell, StickyNote, UserCheck } from "lucide-react";
+import { Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, GraduationCap, Bell, StickyNote, UserCheck, PencilRuler } from "lucide-react";
 import type { Faculty as FacultyType, Notification, Subject, SyllabusModule, LeaveRequest, Event, EnrichedSchedule, Class } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -242,7 +243,7 @@ export default function FacultyDashboard() {
   const features = [
       { title: "My Weekly Schedule", icon: CalendarIcon, onClick: () => setTimetableModalOpen(true) },
       { title: "Manage Syllabus", icon: BookOpen, onClick: () => setSyllabusDialogOpen(true) },
-      { title: "Request Leave", icon: Send, onClick: () => { handleDayClick(new Date(), 'leave')} },
+      { title: "Slot Change Request", icon: PencilRuler, onClick: () => { toast({ title: 'Coming Soon', description: 'This feature is under development.'}) } },
   ];
 
   if (isLoading) {
