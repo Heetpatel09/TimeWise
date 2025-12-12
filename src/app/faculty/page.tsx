@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { format, parseISO } from 'date-fns';
 import { ScheduleCalendar } from './components/ScheduleCalendar';
 import TimetableView from './components/TimetableView';
+import DailySchedule from './components/DailySchedule';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col text-left">
@@ -311,6 +312,7 @@ export default function FacultyDashboard() {
                         ))}
                     </CardContent>
                 </Card>
+                 <DailySchedule schedule={facultySchedule} />
             </div>
         </div>
 
