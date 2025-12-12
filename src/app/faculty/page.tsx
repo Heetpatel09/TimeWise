@@ -20,6 +20,7 @@ import { getSubjects, updateSubject } from '@/lib/services/subjects';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getSchedule } from '@/lib/services/schedule';
+import { Badge } from '@/components/ui/badge';
 
 
 export default function FacultyDashboard() {
