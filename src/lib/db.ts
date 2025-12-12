@@ -290,13 +290,12 @@ function createSchemaAndSeed() {
         });
         
         students.forEach(s => {
-            if (s.email === 'aarav.sharma@example.com') {
-                insertUser.run(s.email, s.id, 'student123', 'student', 0);
-            } else {
-                const randomPassword = randomBytes(8).toString('hex');
-                insertUser.run(s.email, s.id, randomPassword, 'student', 1);
-            }
+            const randomPassword = randomBytes(8).toString('hex');
+            insertUser.run(s.email, s.id, randomPassword, 'student', 1);
         });
+        
+        // Step 2.1: Explicitly set the password for the one student we need for testing
+        insertUser.run('aarav.sharma@example.com', 'STU001', 'student123', 'student', 0);
 
         // Step 3: Insert all other relational data
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
