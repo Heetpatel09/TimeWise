@@ -142,7 +142,7 @@ export default function ClassroomsManager() {
                 <TableCell>{cls.capacity}</TableCell>
                 <TableCell>
                   <Badge variant={getStatusVariant(cls.maintenanceStatus)} className="capitalize">
-                    {cls.maintenanceStatus.replace('_', ' ')}
+                    {(cls.maintenanceStatus || '').replace('_', ' ')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

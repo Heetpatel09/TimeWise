@@ -13,7 +13,11 @@ export async function getClassrooms(): Promise<Classroom[]> {
   const db = getDb();
   try {
     const stmt = db.prepare('SELECT * FROM classrooms');
-    return stmt.all() as Classroom[];
+    const results = stmt.all() as any[];
+    return results.map(c => ({
+        ...c,
+        maintenanceStatus: c.maintenanceStatus || 'available'
+    }));
   } catch (error) {
     console.error("Failed to get classrooms", error)
     return [];
