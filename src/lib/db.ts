@@ -78,7 +78,6 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         code TEXT NOT NULL,
-        isSpecial BOOLEAN NOT NULL DEFAULT 0,
         type TEXT NOT NULL,
         semester INTEGER NOT NULL,
         syllabus TEXT,
@@ -257,7 +256,7 @@ function createSchemaAndSeed() {
   `);
   
   // Seed the database
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, classId, streak, avatar, profileCompleted, sgpa, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, department, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -277,14 +276,13 @@ function createSchemaAndSeed() {
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.department, f.streak, f.avatar || null, f.profileCompleted || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => insertStudent.run(s.id, s.name, s.email, s.classId, s.streak, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa));
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.isSpecial ? 1 : 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type));
 
         // Step 2: Insert credentials for all users
         // Set specific passwords first
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
-        insertUser.run('aarav.sharma@example.com', 'STU001', 'student123', 'student', 0);
-
+        
         // Set default passwords for other users
         faculty.forEach(f => {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
@@ -297,6 +295,9 @@ function createSchemaAndSeed() {
                 insertUser.run(s.email, s.id, randomPassword, 'student', 1);
             }
         });
+        // Explicitly set the sample student password AFTER all others are set
+        insertUser.run('aarav.sharma@example.com', 'STU001', 'student123', 'student', 0);
+
 
         // Step 3: Insert all other relational data
         schedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
@@ -320,3 +321,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
