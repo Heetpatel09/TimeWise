@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
@@ -12,7 +12,6 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getHostels } from '@/lib/services/hostels';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -20,26 +19,61 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
+const SectionCard = ({ title, icon: Icon, children }: { title: string, icon: React.ElementType, children: React.ReactNode }) => (
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+                <Icon className="h-5 w-5" />
+                {title}
+            </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {children}
+        </CardContent>
+    </Card>
+);
 
-const managementCards = [
-  { href: "/admin/departments", title: "Departments", icon: Building, description: "Manage departments and subjects." },
-  { href: "/admin/classrooms", title: "Classrooms", icon: Warehouse, description: "Manage rooms and labs." },
-  { href: "/admin/admins", title: "Admins", icon: UserCog, description: "Manage administrator users." },
-  { href: "/admin/faculty", title: "Faculty", icon: UserCheck, description: "Handle faculty profiles." },
-  { href: "/admin/students", title: "Students", icon: Users, description: "Administer student records." },
-  { href: "/admin/schedule", title: "Schedule", icon: Calendar, description: "Create and view timetables." },
-  { href: "/admin/exams", title: "Exams", icon: FileText, description: "Manage exam timetables." },
-  { href: "/admin/attendance", title: "Attendance", icon: CheckSquare, description: "Review and lock attendance." },
-  { href: "/admin/fees", title: "Fees", icon: DollarSign, description: "Handle student fee payments." },
-  { href: "/admin/hostels", title: "Hostels", icon: Home, description: "Manage hostel room assignments." },
-  { href: "/admin/results", title: "Results", icon: BarChart3, description: "Upload and manage results." },
-  { href: "/admin/leaderboards", title: "Leaderboards", icon: Trophy, description: "View top performers." },
-  { href: "/admin/hall-of-fame", title: "Hall of Fame", icon: Award, description: "Celebrate top achievers." },
-  { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail, description: "Approve or reject leave." },
-  { href: "/admin/schedule-requests", title: "Schedule Changes", icon: PencilRuler, description: "Review schedule change requests." },
-  { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare, description: "Review new slot requests from faculty." },
-  { href: "/admin/api-test", title: "API Key Test", icon: KeyRound, description: "Verify your Gemini API key." },
+const ManagementLink = ({ href, title, icon: Icon }: { href: string, title: string, icon: React.ElementType }) => (
+    <Link href={href} passHref>
+        <div className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent hover:text-accent-foreground">
+            <div className="rounded-lg bg-secondary p-2 group-hover:bg-primary group-hover:text-primary-foreground">
+                <Icon className="h-5 w-5" />
+            </div>
+            <span className="font-semibold">{title}</span>
+            <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        </div>
+    </Link>
+);
+
+const academicLinks = [
+  { href: "/admin/schedule", title: "Schedule", icon: Calendar },
+  { href: "/admin/exams", title: "Exams", icon: FileText },
+  { href: "/admin/attendance", title: "Attendance", icon: CheckSquare },
+  { href: "/admin/results", title: "Results", icon: BarChart3 },
 ];
+
+const coreDataLinks = [
+  { href: "/admin/students", title: "Students", icon: Users },
+  { href: "/admin/faculty", title: "Faculty", icon: UserCheck },
+  { href: "/admin/departments", title: "Departments", icon: Building },
+  { href: "/admin/classrooms", title: "Classrooms", icon: Warehouse },
+];
+
+const adminLinks = [
+  { href: "/admin/fees", title: "Fees", icon: Banknote },
+  { href: "/admin/hostels", title: "Hostels", icon: Home },
+  { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail },
+  { href: "/admin/schedule-requests", title: "Schedule Changes", icon: PencilRuler },
+  { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare },
+];
+
+const systemLinks = [
+  { href: "/admin/admins", title: "Admins", icon: ShieldCheck },
+  { href: "/admin/leaderboards", title: "Leaderboards", icon: Trophy },
+  { href: "/admin/hall-of-fame", title: "Hall of Fame", icon: Award },
+  { href: "/admin/api-test", title: "API Key Test", icon: KeyRound },
+];
+
 
 const StatItem = ({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) => {
     const Icon = icon;
@@ -146,31 +180,19 @@ function AdminDashboard() {
                  </div>
             </Collapsible>
 
-             <div>
-                <h2 className="text-2xl font-bold tracking-tight mb-4">Management Sections</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {managementCards.map((card) => {
-                        const Icon = card.icon;
-                        return (
-                            <Link key={card.href} href={card.href} passHref>
-                                <Card className="group hover:border-primary/80 hover:shadow-lg transition-all duration-300 h-full flex flex-col hover:-translate-y-1">
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-lg font-semibold">{card.title}</CardTitle>
-                                        <Icon className="h-6 w-6 text-muted-foreground" />
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <p className="text-sm text-muted-foreground mt-1">{card.description}</p>
-                                    </CardContent>
-                                    <CardFooter>
-                                        <div className="text-sm font-medium text-primary flex items-center group-hover:gap-2 transition-all duration-300">
-                                            Go to section <ArrowRight className="h-4 w-4 transform translate-x-0 group-hover:translate-x-1 transition-transform" />
-                                        </div>
-                                    </CardFooter>
-                                </Card>
-                            </Link>
-                        );
-                    })}
-                </div>
+             <div className="space-y-6">
+                <SectionCard title="Academics" icon={Dumbbell}>
+                    {academicLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                </SectionCard>
+                <SectionCard title="Core Data" icon={School}>
+                    {coreDataLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                </SectionCard>
+                <SectionCard title="Administration & Requests" icon={Workflow}>
+                    {adminLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                </SectionCard>
+                <SectionCard title="System & Engagement" icon={Trophy}>
+                    {systemLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                </SectionCard>
              </div>
         </div>
     )
