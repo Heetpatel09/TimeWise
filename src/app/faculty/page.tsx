@@ -181,13 +181,13 @@ function ScheduleCalendar({
                 </Button>
             </div>
         </CardHeader>
-        <CardContent className="flex-grow flex flex-col">
+        <CardContent className="flex-grow flex flex-col p-0 sm:p-6 sm:pt-0">
             <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="py-2 border-t">{day}</div>
                 ))}
             </div>
-            <div className="grid grid-cols-7 flex-grow">
+            <div className="grid grid-cols-7 flex-grow h-full">
                 {daysInMonth.map(renderDayCell)}
             </div>
         </CardContent>
@@ -430,13 +430,10 @@ export default function FacultyDashboard() {
             </div>
              <div className="lg:col-span-1 space-y-6">
                  <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                    <CardHeader>
-                        <CardTitle>Teaching Streak</CardTitle>
-                    </CardHeader>
-                     <CardContent className="flex items-center gap-4">
-                       <Flame className="w-16 h-16 text-orange-500 animation-pulse" />
+                    <CardContent className="flex items-center gap-4 p-6">
+                       <Flame className="w-10 h-10 text-orange-500 animation-pulse" />
                        <div>
-                            <p className="text-4xl font-bold">{currentFaculty?.streak || 0}</p>
+                            <p className="text-2xl font-bold">{currentFaculty?.streak || 0}</p>
                             <p className="text-sm text-muted-foreground">Day Streak</p>
                        </div>
                     </CardContent>

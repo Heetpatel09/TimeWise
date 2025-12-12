@@ -93,9 +93,9 @@ export function ScheduleCalendar({
       <Popover key={day.toString()}>
         <PopoverTrigger asChild>
           <div
-            className={`border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
+            className={`relative border-t border-r border-gray-200 dark:border-gray-700 p-2 flex flex-col cursor-pointer transition-colors hover:bg-accent/50 ${
               !isCurrentMonth ? 'bg-muted/30' : 'bg-background'
-            } min-h-[10rem] md:min-h-[8rem] lg:min-h-[10rem]`}
+            }`}
           >
             <div className="flex justify-between items-center">
                 <time dateTime={dayStr} className={`text-sm font-medium ${isCurrentToday ? 'bg-primary text-primary-foreground rounded-full flex items-center justify-center h-6 w-6' : ''}`}>
@@ -162,13 +162,13 @@ export function ScheduleCalendar({
                 </Button>
             </div>
         </CardHeader>
-        <CardContent className="flex-grow">
+        <CardContent className="flex-grow flex flex-col p-0 sm:p-6 sm:pt-0">
             <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-r border-gray-200 dark:border-gray-700">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="py-2 border-t">{day}</div>
                 ))}
             </div>
-            <div className="grid grid-cols-7 h-full">
+            <div className="grid grid-cols-7 flex-grow h-full">
                 {daysInMonth.map(renderDayCell)}
             </div>
         </CardContent>

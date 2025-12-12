@@ -190,7 +190,7 @@ export default function StudentDashboard() {
 
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
             <div className="lg:col-span-2 flex flex-col">
                 <Card className="mb-6">
                     <CardHeader>
@@ -225,13 +225,10 @@ export default function StudentDashboard() {
             </div>
             <div className="lg:col-span-1 space-y-6">
                  <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                    <CardHeader>
-                        <CardTitle>Attendance Streak</CardTitle>
-                    </CardHeader>
-                     <CardContent className="flex items-center gap-4">
-                       <Flame className="w-16 h-16 text-orange-500 animation-pulse" />
+                     <CardContent className="flex items-center gap-4 p-6">
+                       <Flame className="w-10 h-10 text-orange-500 animation-pulse" />
                        <div>
-                            <p className="text-4xl font-bold">{student.streak || 0}</p>
+                            <p className="text-2xl font-bold">{student.streak || 0}</p>
                             <p className="text-sm text-muted-foreground">Day Streak</p>
                        </div>
                     </CardContent>

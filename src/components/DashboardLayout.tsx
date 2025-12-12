@@ -234,7 +234,7 @@ export default function DashboardLayout({
   }
 
   return (
-      <div className="flex flex-col min-h-screen bg-background/90 backdrop-blur-sm">
+      <div className="flex flex-col h-screen bg-background/90 backdrop-blur-sm">
         <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card shadow-sm">
           <div className="flex items-center gap-4">
              <TimeWiseLogo />
@@ -255,7 +255,7 @@ export default function DashboardLayout({
             <UserProfile />
           </div>
         </header>
-        <main className="flex-grow p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500 flex flex-col">
+        <main className="flex-grow p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500 flex flex-col overflow-y-auto">
             {children}
         </main>
       </div>
