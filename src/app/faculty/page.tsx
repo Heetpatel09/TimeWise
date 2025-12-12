@@ -4,8 +4,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import ScheduleView from "./components/ScheduleView";
-import { Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, GraduationCap, Bell, StickyNote, CalendarDays, ChevronLeft, ChevronRight, Dot } from "lucide-react";
+import { Flame, Loader2, Calendar as CalendarIcon, Send, BookOpen, GraduationCap, Bell, StickyNote, CalendarDays, ChevronLeft, ChevronRight, CheckSquare } from "lucide-react";
 import type { Faculty as FacultyType, Notification, Subject, SyllabusModule, EnrichedSchedule, LeaveRequest, Event } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,7 @@ import { holidays } from '@/lib/holidays';
 import { Switch } from '@/components/ui/switch';
 import { addEvent, deleteEvent, getEventsForUser, checkForEventReminders } from '@/lib/services/events';
 import { getNotificationsForUser } from '@/lib/services/notifications';
+import AttendanceDialog from './components/AttendanceDialog';
 
 function getDatesInRange(startDate: Date, endDate: Date) {
   const dates = [];
@@ -221,6 +221,9 @@ export default function FacultyDashboard() {
   const [reminderTime, setReminderTime] = useState('09:00');
   const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
 
+  const [isAttendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [selectedSlotForAttendance, setSelectedSlotForAttendance] = useState<EnrichedSchedule | null>(null);
+
   const parseSyllabus = (syllabusString?: string): SyllabusModule[] => {
     if (!syllabusString) return [];
     try {
@@ -378,6 +381,17 @@ export default function FacultyDashboard() {
     }
   }
 
+  const handleTakeAttendance = (slot: EnrichedSchedule) => {
+    setSelectedSlotForAttendance(slot);
+    setAttendanceDialogOpen(true);
+  };
+
+  const todaysClasses = useMemo(() => {
+    const todayName = format(new Date(), 'EEEE');
+    return schedule.filter(slot => slot.day === todayName);
+  }, [schedule]);
+
+
   if (isLoading) {
     return <DashboardLayout pageTitle="Faculty Dashboard" role="faculty">
       <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>
@@ -394,6 +408,32 @@ export default function FacultyDashboard() {
        <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
+                   <Card>
+                      <CardHeader>
+                        <CardTitle>Today's Classes</CardTitle>
+                        <CardDescription>View and mark attendance for your classes scheduled today.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {todaysClasses.length > 0 ? (
+                          <div className="space-y-4">
+                            {todaysClasses.map(slot => (
+                              <div key={slot.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                <div>
+                                  <p className="font-semibold">{slot.subjectName} ({slot.className})</p>
+                                  <p className="text-sm text-muted-foreground">{slot.time} - {slot.classroomName}</p>
+                                </div>
+                                <Button size="sm" variant="outline" onClick={() => handleTakeAttendance(slot)}>
+                                  <CheckSquare className="mr-2 h-4 w-4" />
+                                  Mark Attendance
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-muted-foreground py-4">No classes scheduled for today.</p>
+                        )}
+                      </CardContent>
+                   </Card>
                    <Card className="h-full flex flex-col">
                         <CardHeader>
                             <CardTitle className="flex items-center">
@@ -442,15 +482,6 @@ export default function FacultyDashboard() {
                                 Manage Syllabus
                             </Button>
                         </CardFooter>
-                    </Card>
-                    <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-500">
-                         <CardHeader>
-                            <CardTitle>Schedule</CardTitle>
-                            <CardDescription>View your weekly schedule and take attendance.</CardDescription>
-                        </CardHeader>
-                         <CardContent>
-                            <ScheduleView />
-                        </CardContent>
                     </Card>
                 </div>
             </div>
@@ -666,6 +697,17 @@ export default function FacultyDashboard() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {isAttendanceDialogOpen && selectedSlotForAttendance && (
+        <AttendanceDialog
+          slot={selectedSlotForAttendance}
+          date={new Date()}
+          isOpen={isAttendanceDialogOpen}
+          onOpenChange={setAttendanceDialogOpen}
+        />
+      )}
     </DashboardLayout>
   );
 }
+
+    
