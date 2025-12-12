@@ -119,6 +119,7 @@ export interface LeaveRequest {
   endDate: string;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
+  type: 'academic' | 'hostel';
 }
 
 export interface ScheduleChangeRequest {
@@ -181,7 +182,18 @@ export interface Room {
     hostelId: string;
     roomNumber: string;
     block: string | null;
+    floor: number;
     studentId: string | null;
+}
+
+export interface GatePass {
+    id: string;
+    studentId: string;
+    requestDate: string;
+    departureDate: string;
+    arrivalDate: string;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface Exam {

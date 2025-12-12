@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -25,6 +26,7 @@ import ResultsDialog from './components/ResultsDialog';
 import FeesDialog from './components/FeesDialog';
 import AttendanceDialog from './components/AttendanceDialog';
 import ExamsDialog from './components/ExamsDialog';
+import HostelDialog from './components/HostelDialog';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col text-left">
@@ -55,6 +57,7 @@ export default function StudentDashboard() {
   const [isFeesOpen, setFeesOpen] = useState(false);
   const [isAttendanceOpen, setAttendanceOpen] = useState(false);
   const [isExamsOpen, setExamsOpen] = useState(false);
+  const [isHostelOpen, setHostelOpen] = useState(false);
 
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -146,6 +149,7 @@ export default function StudentDashboard() {
         startDate: leaveStartDate,
         endDate: leaveEndDate,
         reason: reason,
+        type: 'academic',
       });
       setDashboardData(prev => prev ? ({ ...prev, leaveRequests: [...prev.leaveRequests, newRequest] }) : null);
       toast({ title: `${dialogAction === 'note' ? 'Note' : 'Leave Request'} Sent` });
@@ -171,7 +175,7 @@ export default function StudentDashboard() {
       { title: "Exam Schedule", icon: BookCheck, onClick: () => setExamsOpen(true) },
       { title: "Results", icon: BarChart3, onClick: () => setResultsOpen(true) },
       { title: "Fees", icon: Wallet, onClick: () => setFeesOpen(true) },
-      { title: "Hostel Details", icon: Home, onClick: handleComingSoon, comingSoon: true },
+      { title: "Hostel Details", icon: Home, onClick: () => setHostelOpen(true) },
   ];
 
   if (isLoading || !dashboardData) {
@@ -242,7 +246,6 @@ export default function StudentDashboard() {
                              <Card key={feature.title} className="group relative flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer" onClick={feature.onClick}>
                                 <feature.icon className="w-8 h-8 mb-2 text-primary" />
                                 <h3 className="font-semibold text-xs">{feature.title}</h3>
-                                {feature.comingSoon && <div className="absolute top-1 right-1 bg-yellow-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">SOON</div>}
                             </Card>
                         ))}
                     </CardContent>
@@ -302,6 +305,11 @@ export default function StudentDashboard() {
           onOpenChange={setExamsOpen}
           exams={dashboardData.exams}
         />
+         <HostelDialog
+            isOpen={isHostelOpen}
+            onOpenChange={setHostelOpen}
+            studentId={student.id}
+         />
         
         <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
             <DialogContent>

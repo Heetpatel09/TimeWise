@@ -1,7 +1,7 @@
 
 
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result } from './types';
-import { format, subDays } from 'date-fns';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result, GatePass } from './types';
+import { format, subDays, addDays } from 'date-fns';
 
 
 export const subjects: Subject[] = [
@@ -171,10 +171,11 @@ export const schedule: Schedule[] = [
 
 
 export const leaveRequests: LeaveRequest[] = [
-  { id: 'LR001', requesterId: 'FAC002', requesterName: 'Dr. Ada Lovelace', requesterRole: 'faculty', startDate: '2024-08-01', endDate: '2024-08-05', reason: 'Family wedding.', status: 'pending' },
-  { id: 'LR002', requesterId: 'FAC003', requesterName: 'Dr. Grace Hopper', requesterRole: 'faculty', startDate: '2024-08-10', endDate: '2024-08-12', reason: 'Attending a conference.', status: 'pending' },
-  { id: 'LR003', requesterId: 'FAC001', requesterName: 'Dr. Alan Turing', requesterRole: 'faculty', startDate: '2024-07-20', endDate: '2024-07-21', reason: 'Personal reasons.', status: 'approved' },
-  { id: 'LR004', requesterId: 'STU001', requesterName: 'Aarav Sharma', requesterRole: 'student', startDate: '2024-08-02', endDate: '2024-08-03', reason: 'Medical appointment.', status: 'pending' },
+  { id: 'LR001', requesterId: 'FAC002', requesterName: 'Dr. Ada Lovelace', requesterRole: 'faculty', startDate: '2024-08-01', endDate: '2024-08-05', reason: 'Family wedding.', status: 'pending', type: 'academic' },
+  { id: 'LR002', requesterId: 'FAC003', requesterName: 'Dr. Grace Hopper', requesterRole: 'faculty', startDate: '2024-08-10', endDate: '2024-08-12', reason: 'Attending a conference.', status: 'pending', type: 'academic' },
+  { id: 'LR003', requesterId: 'FAC001', requesterName: 'Dr. Alan Turing', requesterRole: 'faculty', startDate: '2024-07-20', endDate: '2024-07-21', reason: 'Personal reasons.', status: 'approved', type: 'academic' },
+  { id: 'LR004', requesterId: 'STU001', requesterName: 'Aarav Sharma', requesterRole: 'student', startDate: '2024-08-02', endDate: '2024-08-03', reason: 'Medical appointment.', status: 'pending', type: 'academic' },
+  { id: 'LR005', requesterId: 'STU001', requesterName: 'Aarav Sharma', requesterRole: 'student', startDate: format(addDays(new Date(), 5), 'yyyy-MM-dd'), endDate: format(addDays(new Date(), 7), 'yyyy-MM-dd'), reason: 'Going home for a family function.', status: 'pending', type: 'hostel' },
 ];
 
 export const scheduleChangeRequests: ScheduleChangeRequest[] = [
@@ -199,18 +200,11 @@ export const hostels: Hostel[] = [
     { id: 'HOS001', name: 'Jupiter Hall', blocks: 'A,B' },
     { id: 'HOS002', name: 'Orion House', blocks: 'A,B,C' },
     { id: 'HOS003', name: 'Phoenix Enclave', blocks: 'A' },
-    { id: 'HOS004', name: 'Sirius Residence', blocks: 'A,B' },
-    { id: 'HOS005', name: 'Nova Tower', blocks: 'A,B,C' },
-    { id: 'HOS006', name: 'Galaxy Apartments', blocks: 'A' },
-    { id: 'HOS007', name: 'Cosmos Quarters', blocks: 'A,B' },
-    { id: 'HOS008', name: 'Apollo Building', blocks: 'A' },
-    { id: 'HOS009', name: 'Pegasus Place', blocks: 'A,B' },
-    { id: 'HOS010', name: 'Andromeda Complex', blocks: 'A,B,C' },
 ];
 
 export const rooms: Room[] = [];
-
 let roomCounter = 1;
+let floorCounter = 1;
 hostels.forEach(hostel => {
     const blocks = hostel.blocks.split(',');
     blocks.forEach(block => {
@@ -218,34 +212,30 @@ hostels.forEach(hostel => {
             const room: Room = {
                 id: `ROOM${roomCounter.toString().padStart(3, '0')}`,
                 hostelId: hostel.id,
-                roomNumber: `${block}${i.toString().padStart(2, '0')}`,
+                roomNumber: `${block}${floorCounter}0${i}`,
                 block: block,
                 studentId: null,
+                floor: floorCounter,
             };
             rooms.push(room);
             roomCounter++;
         }
+        floorCounter++;
+        if (floorCounter > 4) floorCounter = 1; // Max 4 floors
     });
 });
 
-// Allocate students to rooms
-students.forEach((student, index) => {
-    if (index < rooms.length) {
-        rooms[index].studentId = student.id;
-    }
-});
+// Assign Aarav Sharma to a room
+const aaravIndex = students.findIndex(s => s.id === 'STU001');
+if (aaravIndex !== -1) {
+    rooms[0].studentId = students[aaravIndex].id;
+}
+
 
 export const fees: Fee[] = [
     { id: 'FEE001', studentId: 'STU001', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'paid' },
     { id: 'FEE002', studentId: 'STU001', semester: 1, feeType: 'hostel', amount: 1200, dueDate: '2024-08-01', status: 'paid' },
     { id: 'FEE003', studentId: 'STU002', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'unpaid' },
-    { id: 'FEE004', studentId: 'STU003', semester: 3, feeType: 'tuition', amount: 5500, dueDate: '2025-01-15', status: 'paid' },
-    { id: 'FEE005', studentId: 'STU003', semester: 3, feeType: 'exams', amount: 300, dueDate: '2025-01-15', status: 'paid' },
-    { id: 'FEE006', studentId: 'STU004', semester: 3, feeType: 'tuition', amount: 5500, dueDate: '2025-01-15', status: 'unpaid' },
-    { id: 'FEE007', studentId: 'STU005', semester: 5, feeType: 'tuition', amount: 6000, dueDate: '2025-08-01', status: 'scholarship' },
-    { id: 'FEE008', studentId: 'STU006', semester: 5, feeType: 'tuition', amount: 6000, dueDate: '2025-08-01', status: 'paid' },
-    { id: 'FEE009', studentId: 'STU006', semester: 5, feeType: 'transport', amount: 500, dueDate: '2025-08-01', status: 'unpaid' },
-    { id: 'FEE010', studentId: 'STU007', semester: 7, feeType: 'tuition', amount: 6500, dueDate: '2026-01-15', status: 'paid' },
 ];
 
 export const attendance: Attendance[] = [
@@ -308,8 +298,14 @@ export const results: Result[] = [
     { id: 'RES012', studentId: 'STU005', subjectId: 'SUB009', semester: 5, examType: 'external', marks: null, totalMarks: null, grade: 'B' },
 ];
 
-    
+export const gatePasses: GatePass[] = [
+    { id: 'GP001', studentId: 'STU001', requestDate: format(subDays(new Date(), 10), 'yyyy-MM-dd'), departureDate: format(subDays(new Date(), 9), 'yyyy-MM-dd'), arrivalDate: format(subDays(new Date(), 8), 'yyyy-MM-dd'), reason: 'Weekend trip home', status: 'approved' },
+    { id: 'GP002', studentId: 'STU001', requestDate: format(subDays(new Date(), 2), 'yyyy-MM-dd'), departureDate: format(subDays(new Date(), 1), 'yyyy-MM-dd'), arrivalDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), reason: 'Medical emergency', status: 'pending' },
+];
 
     
 
     
+
+    
+
