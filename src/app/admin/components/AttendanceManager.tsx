@@ -33,25 +33,25 @@ function AttendanceStats({ records }: { records: EnrichedAttendance[] }) {
     const present = records.filter(r => r.status === 'present').length;
     const absent = records.filter(r => r.status === 'absent').length;
     const disputed = records.filter(r => r.status === 'disputed').length;
-    const percentage = (present / total) * 100;
+    const percentage = total > 0 ? (present / total) * 100 : 0;
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="p-2 rounded-lg bg-secondary">
-                <p className="text-2xl font-bold">{percentage.toFixed(0)}%</p>
-                <p className="text-xs text-muted-foreground">Present</p>
+            <div className="p-4 rounded-lg bg-secondary">
+                <p className="text-3xl font-bold">{percentage.toFixed(0)}%</p>
+                <p className="text-sm text-muted-foreground">Present</p>
             </div>
-             <div className="p-2 rounded-lg bg-secondary">
-                <p className="text-2xl font-bold text-green-600">{present}</p>
-                <p className="text-xs text-muted-foreground">Present</p>
+             <div className="p-4 rounded-lg bg-secondary">
+                <p className="text-3xl font-bold text-green-600">{present}</p>
+                <p className="text-sm text-muted-foreground">Present</p>
             </div>
-             <div className="p-2 rounded-lg bg-secondary">
-                <p className="text-2xl font-bold text-red-600">{absent}</p>
-                <p className="text-xs text-muted-foreground">Absent</p>
+             <div className="p-4 rounded-lg bg-secondary">
+                <p className="text-3xl font-bold text-red-600">{absent}</p>
+                <p className="text-sm text-muted-foreground">Absent</p>
             </div>
-             <div className="p-2 rounded-lg bg-secondary">
-                <p className="text-2xl font-bold text-yellow-600">{disputed}</p>
-                <p className="text-xs text-muted-foreground">Disputed</p>
+             <div className="p-4 rounded-lg bg-secondary">
+                <p className="text-3xl font-bold text-yellow-600">{disputed}</p>
+                <p className="text-sm text-muted-foreground">Disputed</p>
             </div>
         </div>
     )
