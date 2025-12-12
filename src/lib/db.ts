@@ -18,6 +18,7 @@ import {
   rooms,
   fees,
   attendance,
+  results,
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
@@ -30,7 +31,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 46; // Increment this to force re-initialization
+const schemaVersion = 47; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -289,6 +290,7 @@ function createSchemaAndSeed() {
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
     const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertAttendance = db.prepare('INSERT OR IGNORE INTO attendance (id, scheduleId, studentId, date, status, isLocked, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertResult = db.prepare('INSERT OR IGNORE INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade, examType) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
 
     db.transaction(() => {
@@ -297,7 +299,11 @@ function createSchemaAndSeed() {
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
-            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
+            if(s.email === 'aarav.sharma@example.com') {
+                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, 'CLS001', s.avatar || null, s.profileCompleted || 0, 8.5, 8.2, s.streak || 0);
+            } else {
+                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
+            }
         });
         
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
@@ -329,6 +335,7 @@ function createSchemaAndSeed() {
         rooms.forEach(r => insertRoom.run(r.id, r.hostelId, r.roomNumber, r.block, r.studentId));
         fees.forEach(f => insertFee.run(f.id, f.studentId, f.semester, f.feeType, f.amount, f.dueDate, f.status));
         attendance.forEach(a => insertAttendance.run(a.id, a.scheduleId, a.studentId, a.date, a.status, a.isLocked ? 1 : 0, a.timestamp));
+        results.forEach(r => insertResult.run(r.id, r.studentId, r.subjectId, r.semester, r.marks, r.totalMarks, r.grade, r.examType));
 
         
     })();

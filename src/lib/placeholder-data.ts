@@ -1,6 +1,6 @@
 
 
-import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance } from './types';
+import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result } from './types';
 import { format, subDays } from 'date-fns';
 
 
@@ -288,6 +288,24 @@ export const attendance: Attendance[] = [
         isLocked: false,
         timestamp: new Date().toISOString()
     }
+];
+
+export const results: Result[] = [
+    // Semester 1 results for Aarav Sharma (STU001)
+    { id: 'RES001', studentId: 'STU001', subjectId: 'SUB001', semester: 1, examType: 'internal', marks: 85, totalMarks: 100, grade: 'A' },
+    { id: 'RES002', studentId: 'STU001', subjectId: 'SUB001', semester: 1, examType: 'external', marks: null, totalMarks: null, grade: 'A' },
+    { id: 'RES003', studentId: 'STU001', subjectId: 'SUB002', semester: 1, examType: 'internal', marks: 92, totalMarks: 100, grade: 'O' },
+    { id: 'RES004', studentId: 'STU001', subjectId: 'SUB002', semester: 1, examType: 'external', marks: null, totalMarks: null, grade: 'O' },
+    { id: 'RES005', studentId: 'STU001', subjectId: 'SUB003', semester: 1, examType: 'internal', marks: 78, totalMarks: 100, grade: 'B' },
+    { id: 'RES006', studentId: 'STU001', subjectId: 'SUB003', semester: 1, examType: 'external', marks: null, totalMarks: null, grade: 'A' },
+    { id: 'RES007', studentId: 'STU001', subjectId: 'SUB004', semester: 1, examType: 'internal', marks: 88, totalMarks: 100, grade: 'A' },
+    { id: 'RES008', studentId: 'STU001', subjectId: 'SUB004', semester: 1, examType: 'external', marks: null, totalMarks: null, grade: 'A' },
+
+    // Other student results for different semesters
+    { id: 'RES009', studentId: 'STU003', subjectId: 'SUB005', semester: 3, examType: 'internal', marks: 90, totalMarks: 100, grade: 'O' },
+    { id: 'RES010', studentId: 'STU003', subjectId: 'SUB005', semester: 3, examType: 'external', marks: null, totalMarks: null, grade: 'O' },
+    { id: 'RES011', studentId: 'STU005', subjectId: 'SUB009', semester: 5, examType: 'internal', marks: 75, totalMarks: 100, grade: 'B' },
+    { id: 'RES012', studentId: 'STU005', subjectId: 'SUB009', semester: 5, examType: 'external', marks: null, totalMarks: null, grade: 'B' },
 ];
 
     
