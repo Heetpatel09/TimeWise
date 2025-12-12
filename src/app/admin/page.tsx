@@ -105,25 +105,24 @@ function AdminDashboard() {
     const { data: classrooms, isLoading: classroomsLoading } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
     const [isChartOpen, setIsChartOpen] = useState(false);
     
-    // Simulated historical data for the chart
     const studentCount = students?.length ?? 0;
     const facultyCount = faculty?.length ?? 0;
+    const classCount = classes?.length ?? 0;
+    const subjectCount = subjects?.length ?? 0;
+    const classroomCount = classrooms?.length ?? 0;
 
     const chartData = [
-        { year: "Two Years Ago", students: Math.floor(studentCount * 0.8), faculty: Math.floor(facultyCount * 0.75) },
-        { year: "Last Year", students: Math.floor(studentCount * 0.9), faculty: Math.floor(facultyCount * 0.85) },
-        { year: "This Year", students: studentCount, faculty: facultyCount },
+        { year: "Two Years Ago", students: Math.floor(studentCount * 0.8), faculty: Math.floor(facultyCount * 0.75), classes: Math.floor(classCount * 0.8), subjects: Math.floor(subjectCount * 0.85), classrooms: Math.floor(classroomCount * 0.7) },
+        { year: "Last Year", students: Math.floor(studentCount * 0.9), faculty: Math.floor(facultyCount * 0.85), classes: Math.floor(classCount * 0.9), subjects: Math.floor(subjectCount * 0.9), classrooms: Math.floor(classroomCount * 0.85) },
+        { year: "This Year", students: studentCount, faculty: facultyCount, classes: classCount, subjects: subjectCount, classrooms: classroomCount },
     ];
 
     const chartConfig: ChartConfig = {
-        students: {
-            label: "Students",
-            color: "hsl(var(--primary))",
-        },
-        faculty: {
-            label: "Faculty",
-            color: "hsl(var(--primary) / 0.5)",
-        },
+        students: { label: "Students", color: "hsl(var(--chart-1))" },
+        faculty: { label: "Faculty", color: "hsl(var(--chart-2))" },
+        classes: { label: "Classes", color: "hsl(var(--chart-3))" },
+        subjects: { label: "Subjects", color: "hsl(var(--chart-4))" },
+        classrooms: { label: "Classrooms", color: "hsl(var(--chart-5))" },
     }
 
     return (
@@ -138,9 +137,9 @@ function AdminDashboard() {
                         <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4">
                             <StatItem title="Total Students" value={studentCount} icon={Users} isLoading={studentsLoading} />
                             <StatItem title="Total Faculty" value={facultyCount} icon={UserCheck} isLoading={facultyLoading} />
-                            <StatItem title="Total Classes" value={classes?.length ?? 0} icon={School} isLoading={classesLoading} />
-                            <StatItem title="Total Subjects" value={subjects?.length ?? 0} icon={Book} isLoading={subjectsLoading} />
-                            <StatItem title="Total Classrooms" value={classrooms?.length ?? 0} icon={Warehouse} isLoading={classroomsLoading} />
+                            <StatItem title="Total Classes" value={classCount} icon={School} isLoading={classesLoading} />
+                            <StatItem title="Total Subjects" value={subjectCount} icon={Book} isLoading={subjectsLoading} />
+                            <StatItem title="Total Classrooms" value={classroomCount} icon={Warehouse} isLoading={classroomsLoading} />
                             <StatItem title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
                         </CardContent>
                         <CardFooter>
@@ -156,7 +155,7 @@ function AdminDashboard() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Growth Overview</CardTitle>
-                                <CardDescription>Student and faculty count over the last 3 years.</CardDescription>
+                                <CardDescription>Key metrics over the last 3 years.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
@@ -168,8 +167,11 @@ function AdminDashboard() {
                                                 cursor={false}
                                                 content={<ChartTooltipContent indicator="dot" />}
                                             />
-                                            <Bar dataKey="students" fill="var(--color-students)" radius={8} />
-                                            <Bar dataKey="faculty" fill="var(--color-faculty)" radius={8} />
+                                            <Bar dataKey="students" fill="var(--color-students)" radius={4} />
+                                            <Bar dataKey="faculty" fill="var(--color-faculty)" radius={4} />
+                                            <Bar dataKey="classes" fill="var(--color-classes)" radius={4} />
+                                            <Bar dataKey="subjects" fill="var(--color-subjects)" radius={4} />
+                                            <Bar dataKey="classrooms" fill="var(--color-classrooms)" radius={4} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </ChartContainer>
@@ -229,3 +231,5 @@ export default function AdminPage() {
         </DashboardLayout>
     );
 }
+
+    
