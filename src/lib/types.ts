@@ -1,5 +1,4 @@
 
-
 export interface Subject {
   id: string;
   name: string;
@@ -8,6 +7,7 @@ export interface Subject {
   type: 'theory' | 'lab';
   semester: number;
   syllabus?: string;
+  department?: string;
 }
 
 export interface Class {
@@ -235,5 +235,3 @@ export interface SyllabusModule {
     topics: string[];
     weightage: string;
 }
-
-    

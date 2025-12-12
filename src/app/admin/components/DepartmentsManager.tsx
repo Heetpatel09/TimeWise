@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
 import { getClasses } from '@/lib/services/classes';
 import type { Subject, Class } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star, Beaker, BookOpen } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star, Beaker, BookOpen, Building } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
@@ -41,8 +41,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function SubjectsManager() {
+export default function DepartmentsManager() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +54,11 @@ export default function SubjectsManager() {
 
   const departments = Array.from(new Set(classes.map(c => c.department)));
 
+  const subjectsByDept = departments.map(dept => ({
+      department: dept,
+      subjects: subjects.filter(s => s.department === dept)
+  }));
+
   async function loadData() {
     setIsLoading(true);
     try {
@@ -60,7 +66,7 @@ export default function SubjectsManager() {
       setSubjects(subjectData);
       setClasses(classData);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to load subjects.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to load department data.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -76,21 +82,21 @@ export default function SubjectsManager() {
       try {
         if (currentSubject.id) {
           await updateSubject(currentSubject as Subject);
-          toast({ title: "Subject Updated", description: "The subject details have been saved." });
+          toast({ title: "Subject Updated" });
         } else {
           await addSubject(currentSubject as Omit<Subject, 'id'>);
-          toast({ title: "Subject Added", description: "The new subject has been added." });
+          toast({ title: "Subject Added" });
         }
         await loadData();
         setDialogOpen(false);
         setCurrentSubject({});
       } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+        toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
     } else {
-        toast({ title: "Department is required", description: "Please select a department for the subject.", variant: "destructive"})
+      toast({ title: "Department is required", description: "Please select a department for the subject.", variant: "destructive" });
     }
   };
 
@@ -103,14 +109,14 @@ export default function SubjectsManager() {
     try {
       await deleteSubject(id);
       await loadData();
-      toast({ title: "Subject Deleted", description: "The subject has been removed." });
+      toast({ title: "Subject Deleted" });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
   
-  const openNewDialog = () => {
-    setCurrentSubject({ isSpecial: false, type: 'theory', semester: 1 });
+  const openNewDialog = (department?: string) => {
+    setCurrentSubject({ isSpecial: false, type: 'theory', semester: 1, department });
     setDialogOpen(true);
   };
 
@@ -119,83 +125,94 @@ export default function SubjectsManager() {
   }
 
   return (
-    <div>
-      <div className="flex justify-end mb-4">
-        <Button onClick={openNewDialog}>
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Add Subject
-        </Button>
-      </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Semester</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Special</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {subjects.map((subject) => (
-              <TableRow key={subject.id}>
-                <TableCell className="font-medium">{subject.name}</TableCell>
-                <TableCell>{subject.code}</TableCell>
-                <TableCell className='capitalize'>
-                    <Badge variant={subject.type === 'lab' ? 'secondary' : 'outline'} className="gap-1">
-                        {subject.type === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
-                        {subject.type}
-                    </Badge>
-                </TableCell>
-                <TableCell>{subject.semester}</TableCell>
-                <TableCell>{subject.department}</TableCell>
-                <TableCell>
-                  {subject.isSpecial && <Badge variant="secondary" className="text-amber-600 border-amber-500/50"><Star className="h-3 w-3 mr-1" />Special</Badge>}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(subject)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                       <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the subject and any associated schedule slots.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(subject.id)}>Continue</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+    <div className="space-y-6">
+       {subjectsByDept.map(dept => (
+           <Card key={dept.department}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div className='space-y-1.5'>
+                        <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" />{dept.department}</CardTitle>
+                    </div>
+                    <Button onClick={() => openNewDialog(dept.department)}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Add Subject
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <div className="border rounded-lg">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Code</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Semester</TableHead>
+                              <TableHead>Special</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {dept.subjects.length > 0 ? dept.subjects.map((subject) => (
+                              <TableRow key={subject.id}>
+                                <TableCell className="font-medium">{subject.name}</TableCell>
+                                <TableCell>{subject.code}</TableCell>
+                                <TableCell className='capitalize'>
+                                    <Badge variant={subject.type === 'lab' ? 'secondary' : 'outline'} className="gap-1">
+                                        {subject.type === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                                        {subject.type}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>{subject.semester}</TableCell>
+                                <TableCell>
+                                  {subject.isSpecial && <Badge variant="secondary" className="text-amber-600 border-amber-500/50"><Star className="h-3 w-3 mr-1" />Special</Badge>}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Open menu</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEdit(subject)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                       <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete the subject and any associated schedule slots.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(subject.id)}>Continue</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground">No subjects found for this department.</TableCell>
+                                </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+           </Card>
+       ))}
 
       <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
         if (!isOpen) setCurrentSubject({});

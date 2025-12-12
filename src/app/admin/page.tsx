@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, LayoutGrid, Mail, PencilRuler, Trophy, Award, Warehouse, ArrowLeft, PlusSquare, Sparkles, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SubjectsManager from './components/SubjectsManager';
 import ClassesManager from './components/ClassesManager';
@@ -24,6 +24,7 @@ import HostelsManager from './components/HostelsManager';
 import ExamsManager from './components/ExamsManager';
 import AttendanceManager from './components/AttendanceManager';
 import ResultsManager from './components/ResultsManager';
+import DepartmentsManager from './components/DepartmentsManager';
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
 import { getSchedule } from '@/lib/services/schedule';
@@ -40,6 +41,7 @@ import { cn } from '@/lib/utils';
 
 
 const managementCards = [
+  { tab: "departments", title: "Departments", icon: Building, description: "Manage departments and subjects." },
   { tab: "subjects", title: "Subjects", icon: Book, description: "Manage all course subjects." },
   { tab: "classes", title: "Classes", icon: School, description: "Organize classes and semesters." },
   { tab: "classrooms", title: "Classrooms", icon: Warehouse, description: "Manage rooms and labs." },
@@ -61,6 +63,7 @@ const managementCards = [
 
 const renderContent = (tab: string) => {
     switch (tab) {
+        case 'departments': return <DepartmentsManager />;
         case 'subjects': return <SubjectsManager />;
         case 'classes': return <ClassesManager />;
         case 'classrooms': return <ClassroomsManager />;
