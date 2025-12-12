@@ -32,7 +32,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 50; // Increment this to force re-initialization
+const schemaVersion = 54; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -222,6 +222,8 @@ function createSchemaAndSeed() {
       amount REAL NOT NULL,
       dueDate TEXT NOT NULL,
       status TEXT NOT NULL CHECK(status IN ('paid', 'unpaid', 'scholarship')),
+      transactionId TEXT,
+      paymentDate TEXT,
       FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS hostels (
@@ -301,7 +303,7 @@ function createSchemaAndSeed() {
     const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
     const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId, floor) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status, transactionId, paymentDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertAttendance = db.prepare('INSERT OR IGNORE INTO attendance (id, scheduleId, studentId, date, status, isLocked, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertResult = db.prepare('INSERT OR IGNORE INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade, examType) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertGatePass = db.prepare('INSERT OR IGNORE INTO gate_passes (id, studentId, requestDate, departureDate, arrivalDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -347,7 +349,7 @@ function createSchemaAndSeed() {
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt, n.category || 'general'));
         hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
         rooms.forEach(r => insertRoom.run(r.id, r.hostelId, r.roomNumber, r.block, r.studentId, r.floor));
-        fees.forEach(f => insertFee.run(f.id, f.studentId, f.semester, f.feeType, f.amount, f.dueDate, f.status));
+        fees.forEach(f => insertFee.run(f.id, f.studentId, f.semester, f.feeType, f.amount, f.dueDate, f.status, f.transactionId, f.paymentDate));
         attendance.forEach(a => insertAttendance.run(a.id, a.scheduleId, a.studentId, a.date, a.status, a.isLocked ? 1 : 0, a.timestamp));
         results.forEach(r => insertResult.run(r.id, r.studentId, r.subjectId, r.semester, r.marks, r.totalMarks, r.grade, r.examType));
         gatePasses.forEach(gp => insertGatePass.run(gp.id, gp.studentId, gp.requestDate, gp.departureDate, gp.arrivalDate, gp.reason, gp.status));
@@ -381,4 +383,5 @@ export { getDb as db };
     
 
     
+
 

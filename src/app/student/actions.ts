@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db as getDb } from '@/lib/db';
@@ -192,4 +193,75 @@ export async function exportResultsToPDF(
         console.error('PDF generation failed:', error);
         return { error: error.message || 'Failed to generate PDF.' };
     }
+}
+
+
+export async function exportFeeReceiptToPDF(
+    fee: EnrichedFee,
+): Promise<{ pdf?: string, error?: string }> {
+     try {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(22);
+        doc.text("Fee Receipt", 105, 20, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text("TimeWise University", 105, 28, { align: 'center' });
+        
+        // Receipt Info
+        doc.setFontSize(10);
+        doc.text(`Receipt No: ${fee.transactionId}`, 14, 40);
+        doc.text(`Payment Date: ${fee.paymentDate ? new Date(fee.paymentDate).toLocaleDateString() : 'N/A'}`, 170, 40, { align: 'right' });
+        
+        doc.line(14, 45, 196, 45); // separator
+
+        // Student Details
+        doc.setFontSize(12);
+        doc.text("Student Details", 14, 55);
+        doc.setFontSize(10);
+        (doc as any).autoTable({
+            body: [
+                ['Name', fee.studentName],
+                ['Enrollment No.', fee.studentEnrollmentNumber],
+                ['Semester', fee.semester.toString()],
+            ],
+            startY: 60,
+            theme: 'plain',
+            styles: { fontSize: 10 },
+        });
+
+        // Payment Details
+        const finalY = (doc as any).lastAutoTable.finalY;
+        doc.setFontSize(12);
+        doc.text("Payment Details", 14, finalY + 15);
+        (doc as any).autoTable({
+            head: [['Description', 'Amount']],
+            body: [
+                [`${fee.feeType.charAt(0).toUpperCase() + fee.feeType.slice(1)} Fee`, `$${fee.amount.toFixed(2)}`],
+            ],
+            startY: finalY + 20,
+            theme: 'striped',
+            headStyles: { fillColor: [41, 128, 185] },
+        });
+        
+        // Total
+        const finalY2 = (doc as any).lastAutoTable.finalY;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Total Paid:', 140, finalY2 + 10);
+        doc.text(`$${fee.amount.toFixed(2)}`, 196, finalY2 + 10, { align: 'right' });
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'italic');
+        doc.text("This is a computer-generated receipt and does not require a signature.", 105, 280, { align: 'center' });
+
+
+        const pdfOutput = doc.output('datauristring');
+        return { pdf: pdfOutput.split(',')[1] };
+
+     } catch (error: any) {
+        console.error('PDF generation failed:', error);
+        return { error: error.message || 'Failed to generate PDF.' };
+     }
 }

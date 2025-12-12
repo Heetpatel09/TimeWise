@@ -169,6 +169,8 @@ export interface Fee {
     amount: number;
     dueDate: string;
     status: 'paid' | 'unpaid' | 'scholarship';
+    transactionId?: string;
+    paymentDate?: string;
 }
 
 export interface Hostel {
