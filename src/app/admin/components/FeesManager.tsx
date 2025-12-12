@@ -146,7 +146,7 @@ export default function FeesManager() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEdit(fee)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
                       <AlertDialog>
-                        <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem></AlertDialogTrigger>
+                        <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem></AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the fee record.</AlertDialogDescription></AlertDialogHeader>
                           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(fee.id)}>Continue</AlertDialogAction></AlertDialogFooter>
@@ -219,5 +219,3 @@ export default function FeesManager() {
     </div>
   );
 }
-
-    
