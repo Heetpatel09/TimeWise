@@ -102,7 +102,7 @@ function AdminDashboard() {
     
     return (
         <div className='space-y-6'>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <StatCard title="Total Students" value={students?.length ?? 0} icon={Users} isLoading={studentsLoading} />
                 <StatCard title="Total Faculty" value={faculty?.length ?? 0} icon={UserCheck} isLoading={facultyLoading} />
                 <StatCard title="Total Classes" value={classes?.length ?? 0} icon={School} isLoading={classesLoading} />
@@ -110,23 +110,32 @@ function AdminDashboard() {
                 <StatCard title="Total Classrooms" value={classrooms?.length ?? 0} icon={Warehouse} isLoading={classroomsLoading} />
                 <StatCard title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
              </div>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Management Sections</CardTitle>
-                    <CardDescription>Select a category to manage.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {managementCards.map((card) => (
-                    <Link key={card.tab} href={`?tab=${card.tab}`} passHref>
-                        <div className="p-4 border rounded-lg hover:shadow-lg hover:bg-accent transition-all cursor-pointer">
-                            <card.icon className="h-6 w-6 mb-2 text-primary" />
-                            <h3 className="font-semibold">{card.title}</h3>
-                            <p className="text-sm text-muted-foreground">{card.description}</p>
-                        </div>
-                    </Link>
-                ))}
-                </CardContent>
-             </Card>
+
+             <div>
+                <h2 className="text-2xl font-bold tracking-tight mb-4">Management Sections</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {managementCards.map((card) => {
+                        const Icon = card.icon;
+                        return (
+                            <Link key={card.tab} href={`?tab=${card.tab}`} passHref>
+                                <Card className="group hover:bg-primary/5 hover:border-primary transition-all duration-300 h-full flex flex-col">
+                                    <CardHeader>
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                                <Icon className="h-6 w-6 text-primary" />
+                                            </div>
+                                            <CardTitle className="text-lg">{card.title}</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        <p className="text-sm text-muted-foreground">{card.description}</p>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        );
+                    })}
+                </div>
+             </div>
         </div>
     )
 }
