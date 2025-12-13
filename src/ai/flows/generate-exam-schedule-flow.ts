@@ -6,7 +6,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 
 // Input Schemas
@@ -60,7 +59,7 @@ const scheduleGenerationPrompt = ai.definePrompt({
   name: 'examScheduleGenerationPrompt',
   input: { schema: GenerateExamScheduleInputSchema },
   output: { schema: GenerateExamScheduleOutputSchema },
-  model: googleAI.model('gemini-1.5-flash'),
+  model: ai.model('googleai/gemini-1.5-flash'),
   prompt: `You are an expert university exam administrator. Your task is to create a conflict-free exam schedule for multiple semesters.
 
 Follow these rules precisely:

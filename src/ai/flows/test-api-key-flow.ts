@@ -7,7 +7,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
 
 export async function testApiKey(): Promise<{ success: boolean; message: string }> {
   return testApiKeyFlow();
@@ -22,7 +21,7 @@ const testApiKeyFlow = ai.defineFlow(
   async () => {
     try {
       const { text } = await ai.generate({
-        model: googleAI.model('gemini-1.5-flash'),
+        model: ai.model('googleai/gemini-1.5-flash'),
         prompt: 'Say "Hello"',
         config: {
           // Use a very low temperature for a predictable, low-cost response
