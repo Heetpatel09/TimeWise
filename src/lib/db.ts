@@ -342,11 +342,9 @@ function createSchemaAndSeed() {
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
-            if(s.email === 'aarav.sharma@example.com') {
-                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, 'CLS003', s.avatar || null, s.profileCompleted || 0, 8.5, 8.2, s.streak || 0);
-            } else {
-                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
-            }
+            const classList = classes.filter(c => schedule.some(sch => sch.classId === c.id));
+            const currentClass = classList[s.rollNumber % classList.length];
+            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, currentClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
         });
         
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
@@ -412,6 +410,7 @@ export { getDb as db };
     
 
     
+
 
 
 
