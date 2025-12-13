@@ -35,17 +35,17 @@ export async function getStudentDashboardData(studentId: string) {
         WHERE sch.classId = ?
     `).all(student.classId) as EnrichedSchedule[];
     
-    const events: Event[] = db.prepare('SELECT * FROM events WHERE userId = ?').all(studentId) as Event[];
-    const leaveRequests: LeaveRequest[] = db.prepare('SELECT * FROM leave_requests WHERE requesterId = ?').all(studentId) as LeaveRequest[];
+    const events: Event[] = db.prepare('SELECT * FROM events WHERE userId = ?').all(student.id) as Event[];
+    const leaveRequests: LeaveRequest[] = db.prepare('SELECT * FROM leave_requests WHERE requesterId = ?').all(student.id) as LeaveRequest[];
     
     const results: EnrichedResult[] = (db.prepare(`
         SELECT r.*, s.name as subjectName, s.code as subjectCode 
         FROM results r JOIN subjects s ON r.subjectId = s.id WHERE r.studentId = ?
-    `).all(studentId) as any[]).map(r => ({ ...r, studentName: student.name }));
+    `).all(student.id) as any[]).map(r => ({ ...r, studentName: student.name }));
     
     const fees: EnrichedFee[] = (db.prepare(`
         SELECT * FROM fees WHERE studentId = ?
-    `).all(studentId) as any[]).map(f => ({ ...f, studentName: student.name, studentEnrollmentNumber: student.enrollmentNumber }));
+    `).all(student.id) as any[]).map(f => ({ ...f, studentName: student.name, studentEnrollmentNumber: student.enrollmentNumber }));
     
     const exams: EnrichedExam[] = (db.prepare(`
         SELECT e.*, s.name as subjectName, c.name as className, cr.name as classroomName
