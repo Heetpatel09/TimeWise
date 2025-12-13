@@ -91,16 +91,16 @@ export async function getLeaderboardData(filter: 'student' | 'faculty', departme
 
     if (filter === 'student') {
         query = `
-            SELECT s.id, s.name, s.avatar, s.points, s.department
+            SELECT s.id, s.name, s.avatar, s.points, c.department
             FROM students s 
             JOIN classes c ON s.classId = c.id
         `;
         const whereClauses = [];
-        if (department) {
+        if (department && department !== 'all') {
             whereClauses.push('c.department = ?');
             params.push(department);
         }
-        if (batch) {
+        if (batch && batch !== 'all') {
             whereClauses.push('s.batch = ?');
             params.push(batch);
         }
@@ -110,7 +110,7 @@ export async function getLeaderboardData(filter: 'student' | 'faculty', departme
         query += ' ORDER BY s.points DESC';
     } else { // faculty
         query = 'SELECT id, name, avatar, points, department FROM faculty';
-        if (department) {
+        if (department && department !== 'all') {
             query += ' WHERE department = ?';
             params.push(department);
         }
