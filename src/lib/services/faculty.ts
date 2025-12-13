@@ -25,7 +25,7 @@ export async function getFaculty(): Promise<Faculty[]> {
 }
 
 export async function addFaculty(
-    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted' | 'roles'> & { streak?: number, profileCompleted?: number, roles?: string[] | string },
+    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted' | 'roles' | 'points'> & { streak?: number, profileCompleted?: number, roles?: string[] | string, points?: number },
     password?: string
 ) {
     const db = getDb();
@@ -51,10 +51,11 @@ export async function addFaculty(
         streak: item.streak || 0,
         avatar: item.avatar || `https://avatar.vercel.sh/${item.email}.png`,
         profileCompleted: item.profileCompleted || 0,
+        points: item.points || 0,
     };
     
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.department, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted);
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.department, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.points);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -107,8 +108,8 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
         roles,
     };
 
-    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, department = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ? WHERE id = ?');
-    stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.id);
+    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, department = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ? WHERE id = ?');
+    stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.id);
 
     if (oldFaculty.email !== mergedItem.email) {
         await addCredential({
@@ -142,3 +143,4 @@ export async function deleteFaculty(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+

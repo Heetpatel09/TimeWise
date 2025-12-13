@@ -20,6 +20,8 @@ import {
   attendance,
   results,
   gatePasses,
+  badges,
+  userBadges,
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
@@ -121,7 +123,8 @@ function createSchemaAndSeed() {
         roles TEXT,
         streak INTEGER NOT NULL,
         avatar TEXT,
-        profileCompleted INTEGER NOT NULL DEFAULT 0
+        profileCompleted INTEGER NOT NULL DEFAULT 0,
+        points INTEGER NOT NULL DEFAULT 0
     );
      CREATE TABLE IF NOT EXISTS students (
         id TEXT PRIMARY KEY,
@@ -139,6 +142,7 @@ function createSchemaAndSeed() {
         sgpa REAL NOT NULL DEFAULT 0,
         cgpa REAL NOT NULL DEFAULT 0,
         streak INTEGER NOT NULL DEFAULT 0,
+        points INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS schedule (
@@ -314,13 +318,29 @@ function createSchemaAndSeed() {
       FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE SET NULL,
       UNIQUE(assignmentId, studentId)
     );
+    CREATE TABLE IF NOT EXISTS badges (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      icon TEXT NOT NULL,
+      rarity TEXT NOT NULL CHECK(rarity IN ('Common', 'Rare', 'Epic')),
+      category TEXT NOT NULL,
+      points INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS user_badges (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      badgeId TEXT NOT NULL,
+      earnedAt TEXT NOT NULL,
+      FOREIGN KEY (badgeId) REFERENCES badges(id) ON DELETE CASCADE
+    );
   `);
   
   // Seed the database
     const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
-    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, section, batch, phone, category, classId, avatar, profileCompleted, sgpa, cgpa, streak) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, section, batch, phone, category, classId, avatar, profileCompleted, sgpa, cgpa, streak, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
     const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -334,17 +354,18 @@ function createSchemaAndSeed() {
     const insertAttendance = db.prepare('INSERT OR IGNORE INTO attendance (id, scheduleId, studentId, date, status, isLocked, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertResult = db.prepare('INSERT OR IGNORE INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade, examType) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertGatePass = db.prepare('INSERT OR IGNORE INTO gate_passes (id, studentId, requestDate, departureDate, arrivalDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
-
+    const insertBadge = db.prepare('INSERT OR IGNORE INTO badges (id, name, description, icon, rarity, category, points) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertUserBadge = db.prepare('INSERT OR IGNORE INTO user_badges (id, userId, badgeId, earnedAt) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
         // Step 1: Insert base data for users and other entities
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
-        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0));
+        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
             const scheduledClasses = classes.filter(c => schedule.some(sch => sch.classId === c.id));
             const assignedClass = scheduledClasses.length > 0 ? scheduledClasses[s.rollNumber % scheduledClasses.length] : classes[0];
-            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, assignedClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
+            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, assignedClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0);
         });
         
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
@@ -380,7 +401,8 @@ function createSchemaAndSeed() {
         attendance.forEach(a => insertAttendance.run(a.id, a.scheduleId, a.studentId, a.date, a.status, a.isLocked ? 1 : 0, a.timestamp));
         results.forEach(r => insertResult.run(r.id, r.studentId, r.subjectId, r.semester, r.marks, r.totalMarks, r.grade, r.examType));
         gatePasses.forEach(gp => insertGatePass.run(gp.id, gp.studentId, gp.requestDate, gp.departureDate, gp.arrivalDate, gp.reason, gp.status));
-
+        badges.forEach(b => insertBadge.run(b.id, b.name, b.description, b.icon, b.rarity, b.category, b.points));
+        userBadges.forEach(ub => insertUserBadge.run(ub.id, ub.userId, ub.badgeId, ub.earnedAt));
         
     })();
     console.log('Database initialized and seeded successfully.');

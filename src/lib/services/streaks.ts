@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -81,4 +82,40 @@ export async function updateAllStreaks() {
 
     revalidateAll();
     return Promise.resolve({ success: true });
+}
+
+export async function getLeaderboardData(filter: 'student' | 'faculty', department?: string, batch?: string) {
+    const db = getDb();
+    let query;
+    const params: (string | number)[] = [];
+
+    if (filter === 'student') {
+        query = `
+            SELECT s.id, s.name, s.avatar, s.points, s.department
+            FROM students s 
+            JOIN classes c ON s.classId = c.id
+        `;
+        const whereClauses = [];
+        if (department) {
+            whereClauses.push('c.department = ?');
+            params.push(department);
+        }
+        if (batch) {
+            whereClauses.push('s.batch = ?');
+            params.push(batch);
+        }
+        if (whereClauses.length > 0) {
+            query += ' WHERE ' + whereClauses.join(' AND ');
+        }
+        query += ' ORDER BY s.points DESC';
+    } else { // faculty
+        query = 'SELECT id, name, avatar, points, department FROM faculty';
+        if (department) {
+            query += ' WHERE department = ?';
+            params.push(department);
+        }
+        query += ' ORDER BY points DESC';
+    }
+
+    return db.prepare(query).all(...params);
 }

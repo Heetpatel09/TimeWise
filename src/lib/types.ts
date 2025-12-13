@@ -35,6 +35,7 @@ export interface Student {
   sgpa: number;
   cgpa: number;
   streak: number;
+  points: number;
 }
 
 export interface Faculty {
@@ -49,6 +50,7 @@ export interface Faculty {
   streak: number;
   avatar?: string;
   profileCompleted: number;
+  points: number;
 }
 
 export type Permission = 
@@ -56,7 +58,7 @@ export type Permission =
   | 'manage_classes' 
   | 'manage_classrooms'
   | 'manage_faculty' 
-  | 'manage_students'
+  | 'manage_students' 
   | 'manage_schedule'
   | 'manage_requests'
   | 'manage_exams'
@@ -301,4 +303,24 @@ export interface EnrichedSubmission extends Submission {
   studentEnrollmentNumber: string;
 }
 
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: 'Common' | 'Rare' | 'Epic';
+  category: 'Academic' | 'Attendance' | 'Engagement';
+  points: number;
+}
+
+export interface UserBadge {
+  id: string;
+  userId: string;
+  badgeId: string;
+  earnedAt: string;
+}
+
+export interface EnrichedUserBadge extends UserBadge {
+  badge: Badge;
+}
     
