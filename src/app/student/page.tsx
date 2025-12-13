@@ -5,8 +5,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, Home, Loader2, Flame, FolderKanban } from "lucide-react";
-import type { Student, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam, EnrichedAssignment, Submission } from '@/lib/types';
+import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, Home, Loader2, Flame, FolderKanban, ShieldCheck, Zap, Gem } from "lucide-react";
+import type { Student, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam, EnrichedAssignment, Submission, EnrichedAttendance } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -29,6 +29,7 @@ import HostelDialog from './components/HostelDialog';
 import AssignmentsDialog from './components/AssignmentsDialog';
 import { getAssignmentsForStudent } from '@/lib/services/assignments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import BadgeCard from './components/BadgeCard';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col">
@@ -50,6 +51,7 @@ export default function StudentDashboard() {
     results: EnrichedResult[];
     fees: EnrichedFee[];
     exams: EnrichedExam[];
+    attendance: EnrichedAttendance[];
   } | null>(null);
   const [assignments, setAssignments] = useState<(EnrichedAssignment & { submission: Submission | null })[]>([]);
 
@@ -96,7 +98,7 @@ export default function StudentDashboard() {
     }
     loadData();
   }, [user, toast]);
-
+  
   const todaysSchedule = useMemo(() => {
     if (!dashboardData) return [];
     return dashboardData.schedule.filter(s => s.day === format(new Date(), 'EEEE'));
@@ -196,6 +198,30 @@ export default function StudentDashboard() {
       { title: "Hostel Details", icon: Home, onClick: () => setHostelOpen(true) },
   ];
 
+  const earnedBadges = useMemo(() => {
+    if (!dashboardData) return [];
+    const { student, attendance } = dashboardData;
+    const badges = [];
+
+    // CGPA Badges
+    if (student.cgpa >= 9.5) badges.push({ title: 'Titan Scholar', icon: Gem, description: 'CGPA of 9.5 or higher' });
+    else if (student.cgpa >= 9.0) badges.push({ title: 'Oracle', icon: Gem, description: 'CGPA of 9.0 or higher' });
+    else if (student.cgpa >= 8.0) badges.push({ title: 'Prodigy', icon: Gem, description: 'CGPA of 8.0 or higher' });
+
+    // Attendance Badges
+    const totalAttendance = attendance.length;
+    const presentAttendance = attendance.filter(a => a.status === 'present').length;
+    const attendancePercentage = totalAttendance > 0 ? (presentAttendance / totalAttendance) * 100 : 0;
+    if (attendancePercentage >= 95) badges.push({ title: 'Vanguard', icon: ShieldCheck, description: '95% or higher attendance' });
+    else if (attendancePercentage >= 85) badges.push({ title: 'Sentinel', icon: ShieldCheck, description: '85% or higher attendance' });
+
+    // Streak Badges
+    if (student.streak >= 30) badges.push({ title: 'Everflame', icon: Zap, description: '30+ day streak' });
+    else if (student.streak >= 15) badges.push({ title: 'Trailblazer', icon: Zap, description: '15+ day streak' });
+    
+    return badges;
+  }, [dashboardData]);
+
   if (isLoading || !dashboardData) {
     return (
         <DashboardLayout pageTitle="Student Dashboard" role="student">
@@ -247,14 +273,25 @@ export default function StudentDashboard() {
                         <InfoItem label="Roll No" value={student.rollNumber} />
                     </CardContent>
                 </Card>
-                <div className="flex-grow animate-in fade-in-0 duration-500 delay-200">
-                    <ScheduleCalendar 
-                        schedule={dashboardData.schedule}
-                        leaveRequests={dashboardData.leaveRequests}
-                        events={dashboardData.events}
-                        onDayClick={handleDayClick}
-                    />
-                </div>
+                
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Academic Achievements</CardTitle>
+                        <CardDescription>Your earned badges and accomplishments.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {earnedBadges.length > 0 ? (
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {earnedBadges.map(badge => (
+                                    <BadgeCard key={badge.title} {...badge} />
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-center text-muted-foreground py-4">No badges earned yet. Keep up the good work!</p>
+                        )}
+                    </CardContent>
+                </Card>
+
             </div>
             <div className="lg:col-span-1 space-y-6 animate-in fade-in-0 slide-in-from-left-8 duration-500 delay-300">
                  <Card>
@@ -375,5 +412,3 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
-
-    
