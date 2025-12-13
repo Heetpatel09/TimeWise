@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, Home, Loader2, Flame, FolderKanban, ShieldCheck, Zap, Gem } from "lucide-react";
+import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, Home, Loader2, Flame, FolderKanban, ShieldCheck, Zap, Gem, Trophy } from "lucide-react";
 import type { Student, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam, EnrichedAssignment, Submission, EnrichedAttendance } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -194,6 +193,7 @@ export default function StudentDashboard() {
       { title: "Time Table", icon: Calendar, onClick: () => setTimetableModalOpen(true) },
       { title: "Attendance", icon: ClipboardList, onClick: () => setAttendanceOpen(true) },
       { title: "Assignments", icon: FolderKanban, onClick: () => setAssignmentsOpen(true) },
+      { title: "Leaderboards", icon: Trophy, onClick: () => setLeaderboardOpen(true) },
       { title: "Exam Schedule", icon: BookCheck, onClick: () => setExamsOpen(true) },
       { title: "Results", icon: BarChart3, onClick: () => setResultsOpen(true) },
       { title: "Fees", icon: Wallet, onClick: () => setFeesOpen(true) },
@@ -255,10 +255,7 @@ export default function StudentDashboard() {
                                     <CardDescription>{student.email}</CardDescription>
                                 </div>
                             </div>
-                            <div 
-                                className="flex items-center gap-4 p-3 rounded-lg bg-secondary/70 hover:bg-secondary transition-colors cursor-pointer"
-                                onClick={() => setLeaderboardOpen(true)}
-                            >
+                            <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/70">
                                 {earnedBadges.slice(0, 3).map(badge => (
                                      <BadgeCard key={badge.title} {...badge} />
                                 ))}
@@ -414,3 +411,5 @@ export default function StudentDashboard() {
     </DashboardLayout>
   );
 }
+
+    
