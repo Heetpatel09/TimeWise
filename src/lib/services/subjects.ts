@@ -15,7 +15,7 @@ export async function getSubjects(): Promise<Subject[]> {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM subjects');
   const results = stmt.all() as any[];
-  return results.map(s => ({ ...s, isSpecial: !!s.isSpecial }));
+  return JSON.parse(JSON.stringify(results.map(s => ({ ...s, isSpecial: !!s.isSpecial }))));
 }
 
 export async function addSubject(item: Omit<Subject, 'id'>) {
