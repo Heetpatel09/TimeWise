@@ -59,7 +59,7 @@ const scheduleGenerationPrompt = ai.definePrompt({
   name: 'examScheduleGenerationPrompt',
   input: { schema: GenerateExamScheduleInputSchema },
   output: { schema: GenerateExamScheduleOutputSchema },
-  model: ai.model('googleai/gemini-1.5-flash'),
+  model: 'googleai/gemini-1.5-flash',
   prompt: `You are an expert university exam administrator. Your task is to create a conflict-free exam schedule for multiple semesters.
 
 Follow these rules precisely:

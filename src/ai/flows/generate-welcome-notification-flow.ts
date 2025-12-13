@@ -33,7 +33,7 @@ const welcomePrompt = ai.definePrompt({
     name: 'welcomePrompt',
     input: { schema: WelcomeNotificationInputSchema },
     output: { schema: WelcomeNotificationOutputSchema },
-    model: ai.model('googleai/gemini-1.5-flash'),
+    model: 'googleai/gemini-1.5-flash',
     prompt: `You are a helpful university administrative assistant. Your task is to generate a short, friendly, and welcoming notification message for a new user who has just been added to the university portal.
 
 User's Name: {{{name}}}

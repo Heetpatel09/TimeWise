@@ -39,7 +39,7 @@ const testPaperGenerationPrompt = ai.definePrompt({
   name: 'testPaperGenerationPrompt',
   input: { schema: GenerateTestPaperInputSchema },
   output: { schema: GenerateTestPaperOutputSchema },
-  model: ai.model('googleai/gemini-1.5-flash'),
+  model: 'googleai/gemini-1.5-flash',
   prompt: `You are an expert educator and exam creator for a university. Your task is to generate a weekly test paper with 5 questions.
 
 The test is for the subject: **{{{subjectName}}}** for the class **{{{className}}}**.
