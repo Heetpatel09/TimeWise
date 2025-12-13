@@ -58,8 +58,8 @@ export async function getStudentDashboardData(studentId: string) {
 
     return { 
         student, 
-        schedule,
-        events,
+        schedule: schedule.map(s => ({...s, subjectIsSpecial: !!s.subjectIsSpecial})),
+        events: events.map(e => ({...e, reminder: !!e.reminder})),
         leaveRequests,
         results,
         fees,
