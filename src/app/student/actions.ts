@@ -4,10 +4,6 @@
 
 import { db as getDb } from '@/lib/db';
 import type { Student, EnrichedSchedule, Subject, EnrichedResult, Event, LeaveRequest, Fee, EnrichedFee, Exam, EnrichedExam } from '@/lib/types';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { getStudentAttendance } from '@/lib/services/attendance';
-
 
 export async function getStudentDashboardData(studentId: string) {
     const db = getDb();
@@ -22,7 +18,7 @@ export async function getStudentDashboardData(studentId: string) {
         throw new Error('Student not found');
     }
 
-    const schedule: EnrichedSchedule[] = db.prepare(`
+    const schedule: EnrichedSchedule[] = (db.prepare(`
         SELECT 
             sch.id, sch.classId, sch.subjectId, sch.facultyId, sch.classroomId, sch.day, sch.time,
             sub.name as subjectName, sub.isSpecial as subjectIsSpecial,
@@ -33,9 +29,9 @@ export async function getStudentDashboardData(studentId: string) {
         JOIN classes cls ON sch.classId = cls.id
         JOIN classrooms crm ON sch.classroomId = crm.id
         WHERE sch.classId = ?
-    `).all(student.classId) as EnrichedSchedule[];
+    `).all(student.classId) as any[]).map(s => ({...s, subjectIsSpecial: !!s.subjectIsSpecial }));
     
-    const events: Event[] = db.prepare('SELECT * FROM events WHERE userId = ?').all(student.id) as Event[];
+    const events: Event[] = (db.prepare('SELECT * FROM events WHERE userId = ?').all(student.id) as any[]).map(e => ({...e, reminder: !!e.reminder}));
     const leaveRequests: LeaveRequest[] = db.prepare('SELECT * FROM leave_requests WHERE requesterId = ?').all(student.id) as LeaveRequest[];
     
     const results: EnrichedResult[] = (db.prepare(`
@@ -58,8 +54,8 @@ export async function getStudentDashboardData(studentId: string) {
 
     return { 
         student, 
-        schedule: schedule.map(s => ({...s, subjectIsSpecial: !!s.subjectIsSpecial})),
-        events: events.map(e => ({...e, reminder: !!e.reminder})),
+        schedule,
+        events,
         leaveRequests,
         results,
         fees,
@@ -81,7 +77,7 @@ export async function getTimetableDataForStudent(studentId: string) {
         throw new Error('Student not found');
     }
 
-    const schedule: EnrichedSchedule[] = db.prepare(`
+    const schedule: EnrichedSchedule[] = (db.prepare(`
         SELECT 
             sch.id,
             sch.classId,
@@ -102,14 +98,9 @@ export async function getTimetableDataForStudent(studentId: string) {
         JOIN classes cls ON sch.classId = cls.id
         JOIN classrooms crm ON sch.classroomId = crm.id
         WHERE sch.classId = ?
-    `).all(student.classId) as EnrichedSchedule[];
+    `).all(student.classId) as any[]).map(s => ({...s, subjectIsSpecial: !!s.subjectIsSpecial}));
 
-    const enrichedSchedule = schedule.map(s => ({
-        ...s,
-        subjectIsSpecial: !!s.subjectIsSpecial
-    }));
-
-    return { student, schedule: enrichedSchedule };
+    return { student, schedule };
 }
 
 export async function getSubjectsForStudent(studentId: string): Promise<Subject[]> {
@@ -135,7 +126,9 @@ export async function exportResultsToPDF(
     semester: number
 ): Promise<{ pdf?: string, error?: string }> {
     try {
-        const doc = new jsPDF();
+        const doc = new (await import('jspdf')).default();
+        (await import('jspdf-autotable')).default;
+
         doc.text(`Result for ${student.name} - Semester ${semester}`, 14, 16);
         doc.text(`Class: ${student.className}`, 14, 22);
         doc.text(`CGPA: ${student.cgpa.toFixed(2)} | SGPA: ${student.sgpa.toFixed(2)}`, 14, 28);
@@ -200,7 +193,8 @@ export async function exportFeeReceiptToPDF(
     fee: EnrichedFee,
 ): Promise<{ pdf?: string, error?: string }> {
      try {
-        const doc = new jsPDF();
+        const doc = new (await import('jspdf')).default();
+        (await import('jspdf-autotable')).default;
 
         // Header
         doc.setFontSize(22);
@@ -266,3 +260,4 @@ export async function exportFeeReceiptToPDF(
      }
 }
 
+    

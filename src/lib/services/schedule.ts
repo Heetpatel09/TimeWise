@@ -37,10 +37,7 @@ export async function getSchedule(): Promise<Schedule[]> {
   const stmt = db.prepare('SELECT * FROM schedule');
   const results = stmt.all() as any[];
   // Ensure plain objects are returned and booleans are correct
-  return JSON.parse(JSON.stringify(results.map(s => ({
-    ...s,
-    subjectIsSpecial: !!s.subjectIsSpecial
-  }))));
+  return JSON.parse(JSON.stringify(results));
 }
 
 export async function addSchedule(item: Omit<Schedule, 'id'>) {
@@ -187,3 +184,5 @@ export async function approveAndReassign(notifications: Omit<Notification, 'id' 
     transaction();
     revalidateAll();
 }
+
+    

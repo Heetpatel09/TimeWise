@@ -311,7 +311,7 @@ function createSchemaAndSeed() {
       grade TEXT,
       remarks TEXT,
       FOREIGN KEY (assignmentId) REFERENCES assignments(id) ON DELETE CASCADE,
-      FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
+      FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE SET NULL,
       UNIQUE(assignmentId, studentId)
     );
   `);
@@ -342,9 +342,9 @@ function createSchemaAndSeed() {
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
-            const classList = classes.filter(c => schedule.some(sch => sch.classId === c.id));
-            const currentClass = classList[s.rollNumber % classList.length];
-            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, currentClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
+            const scheduledClasses = classes.filter(c => schedule.some(sch => sch.classId === c.id));
+            const assignedClass = scheduledClasses.length > 0 ? scheduledClasses[s.rollNumber % scheduledClasses.length] : classes[0];
+            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, assignedClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
         });
         
         subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
@@ -398,21 +398,3 @@ const getDb = () => {
 export { getDb as db };
 
     
-
-    
-
-
-
-
-
-
-
-    
-
-    
-
-
-
-
-
-

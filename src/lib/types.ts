@@ -300,7 +300,5 @@ export interface EnrichedSubmission extends Submission {
   studentName: string;
   studentEnrollmentNumber: string;
 }
-    
 
     
-

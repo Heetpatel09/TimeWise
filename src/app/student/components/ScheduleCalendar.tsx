@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from "react";
@@ -153,9 +154,9 @@ export function ScheduleCalendar({
   };
 
   return (
-     <Card className="h-full flex flex-col">
+     <Card className="h-full flex flex-col shadow-lg border-primary/10">
         <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-bold">{format(currentMonth, 'MMMM yyyy')}</CardTitle>
+            <CardTitle className="text-2xl font-bold font-headline">{format(currentMonth, 'MMMM yyyy')}</CardTitle>
             <div className="flex gap-2">
                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                     <ChevronLeft className="h-4 w-4" />
@@ -166,7 +167,7 @@ export function ScheduleCalendar({
             </div>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col p-0">
-            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-t">
+            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b border-t border-border">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="py-2">{day}</div>
                 ))}
@@ -178,3 +179,5 @@ export function ScheduleCalendar({
     </Card>
   )
 }
+
+    

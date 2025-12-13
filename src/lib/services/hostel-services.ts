@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -62,3 +63,5 @@ export async function getStudentHostelLeaveRequests(studentId: string): Promise<
     const stmt = db.prepare("SELECT * FROM leave_requests WHERE requesterId = ? AND type = 'hostel' ORDER BY startDate DESC");
     return stmt.all(studentId) as LeaveRequest[];
 }
+
+    

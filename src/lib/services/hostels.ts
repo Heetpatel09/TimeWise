@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -56,6 +57,7 @@ export async function getRooms(): Promise<EnrichedRoom[]> {
         r.roomNumber,
         r.block,
         r.studentId,
+        r.floor,
         s.name as studentName,
         h.name as hostelName
     FROM rooms r
@@ -68,8 +70,8 @@ export async function getRooms(): Promise<EnrichedRoom[]> {
 export async function addRoom(item: Omit<Room, 'id'>) {
     const db = getDb();
     const id = `ROOM${Date.now()}`;
-    const stmt = db.prepare('INSERT INTO rooms (id, hostelId, roomNumber, block, studentId) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(id, item.hostelId, item.roomNumber, item.block, item.studentId);
+    const stmt = db.prepare('INSERT INTO rooms (id, hostelId, roomNumber, block, studentId, floor) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, item.hostelId, item.roomNumber, item.block, item.studentId, item.floor);
     revalidateAll();
     const newItem: Room = { ...item, id };
     return Promise.resolve(newItem);
@@ -77,8 +79,8 @@ export async function addRoom(item: Omit<Room, 'id'>) {
 
 export async function updateRoom(updatedItem: Room) {
     const db = getDb();
-    const stmt = db.prepare('UPDATE rooms SET hostelId = ?, roomNumber = ?, block = ?, studentId = ? WHERE id = ?');
-    stmt.run(updatedItem.hostelId, updatedItem.roomNumber, updatedItem.block, updatedItem.studentId, updatedItem.id);
+    const stmt = db.prepare('UPDATE rooms SET hostelId = ?, roomNumber = ?, block = ?, studentId = ?, floor = ? WHERE id = ?');
+    stmt.run(updatedItem.hostelId, updatedItem.roomNumber, updatedItem.block, updatedItem.studentId, updatedItem.floor, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
@@ -90,3 +92,5 @@ export async function deleteRoom(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+    

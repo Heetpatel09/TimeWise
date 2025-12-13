@@ -13,8 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import TimetableView from './components/TimetableView';
 import { useToast } from '@/hooks/use-toast';
 import { getStudentDashboardData } from './actions';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format, isToday } from 'date-fns';
+import { format } from 'date-fns';
 import { ScheduleCalendar } from './components/ScheduleCalendar';
 import { addLeaveRequest } from '@/lib/services/leave';
 import { addEvent } from '@/lib/services/events';
@@ -29,6 +28,7 @@ import ExamsDialog from './components/ExamsDialog';
 import HostelDialog from './components/HostelDialog';
 import AssignmentsDialog from './components/AssignmentsDialog';
 import { getAssignmentsForStudent } from '@/lib/services/assignments';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col">
@@ -113,6 +113,7 @@ export default function StudentDashboard() {
     } else {
         setLeaveStartDate(dateStr);
         setLeaveEndDate(dateStr);
+        setLeaveReason('');
         setLeaveDialogOpen(true);
     }
   };
@@ -215,39 +216,38 @@ export default function StudentDashboard() {
     <DashboardLayout pageTitle="Student Dashboard" role="student">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
             <div className="lg:col-span-2 flex flex-col space-y-6">
-                 <Card className="mb-6">
+                <Card className="mb-6 animate-in fade-in-0 duration-500">
                     <CardHeader>
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                             <div className="flex items-center gap-4">
                                 <Avatar className="w-16 h-16 border-2 border-primary">
                                     <AvatarImage src={student.avatar} alt={student.name} />
                                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
+                                    <CardTitle className="text-2xl">
                                         {student.name}
                                     </CardTitle>
                                     <CardDescription>{student.email}</CardDescription>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4 text-right">
-                                <Flame className="w-10 h-10 text-orange-500" />
-                                <div>
-                                     <p className="text-2xl font-bold">{student.streak || 0}</p>
-                                     <p className="text-sm text-muted-foreground">Day Streak</p>
-                                </div>
+                            <div className="flex items-center gap-4 text-right p-3 rounded-lg bg-secondary">
+                               <Flame className="w-8 h-8 text-orange-500 animation-pulse" />
+                               <div>
+                                    <p className="text-2xl font-bold">{student.streak || 0}</p>
+                                    <p className="text-sm text-muted-foreground">Day Streak</p>
+                               </div>
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4">
+                     <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
                         <InfoItem label="Enrollment No." value={student.enrollmentNumber} />
                         <InfoItem label="Department" value={student.department} />
                         <InfoItem label="Class" value={student.className} />
-                        <InfoItem label="Semester" value={student.semester} />
                         <InfoItem label="Roll No" value={student.rollNumber} />
                     </CardContent>
                 </Card>
-                <div className="flex-grow">
+                <div className="flex-grow animate-in fade-in-0 duration-500 delay-200">
                     <ScheduleCalendar 
                         schedule={dashboardData.schedule}
                         leaveRequests={dashboardData.leaveRequests}
@@ -256,14 +256,14 @@ export default function StudentDashboard() {
                     />
                 </div>
             </div>
-            <div className="lg:col-span-1 space-y-6">
-                <Card>
+            <div className="lg:col-span-1 space-y-6 animate-in fade-in-0 slide-in-from-left-8 duration-500 delay-300">
+                 <Card>
                     <CardHeader>
                         <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
                         {features.map((feature) => (
-                             <Card key={feature.title} className="group relative flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer" onClick={feature.onClick}>
+                             <Card key={feature.title} className="group relative flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer bg-secondary/50 hover:bg-secondary" onClick={feature.onClick}>
                                 <feature.icon className="w-8 h-8 mb-2 text-primary" />
                                 <h3 className="font-semibold text-xs">{feature.title}</h3>
                             </Card>
@@ -282,6 +282,7 @@ export default function StudentDashboard() {
                                 <div key={slot.id} className="flex justify-between items-center p-2 rounded-md bg-muted">
                                     <div>
                                         <p className="font-semibold text-sm">{slot.subjectName}</p>
+
                                         <p className="text-xs text-muted-foreground">{slot.time} - {slot.facultyName}</p>
                                     </div>
                                 </div>
@@ -375,3 +376,4 @@ export default function StudentDashboard() {
   );
 }
 
+    
