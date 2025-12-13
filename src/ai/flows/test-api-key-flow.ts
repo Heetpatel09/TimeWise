@@ -21,7 +21,6 @@ const testApiKeyFlow = ai.defineFlow(
   async () => {
     try {
       const { text } = await ai.generate({
-        model: googleAI.model('gemini-1.5-pro-latest'),
         prompt: 'Say "Hello"',
         config: {
           // Use a very low temperature for a predictable, low-cost response

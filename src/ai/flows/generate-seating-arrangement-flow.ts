@@ -51,7 +51,6 @@ const seatingArrangementPrompt = ai.definePrompt({
   name: 'seatingArrangementPrompt',
   input: { schema: GenerateSeatingArrangementInputSchema },
   output: { schema: GenerateSeatingArrangementOutputSchema },
-  model: googleAI.model('gemini-1.5-pro'),
   prompt: `You are an expert exam supervisor. Your task is to create a simple, sequential seating arrangement for an upcoming exam.
 
 Here is the information for the exam:
