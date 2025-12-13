@@ -8,6 +8,7 @@ export interface Subject {
   semester: number;
   syllabus?: string;
   department?: string;
+  isSpecial?: boolean;
 }
 
 export interface Class {
@@ -302,3 +303,4 @@ export interface EnrichedSubmission extends Submission {
     
 
     
+
