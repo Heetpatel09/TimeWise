@@ -370,7 +370,7 @@ export default function StudentDashboard() {
           assignments={assignments}
           studentId={student.id}
         />
-         {isLeaderboardOpen && (
+        {isLeaderboardOpen && (
             <LeaderboardDialog
                 isOpen={isLeaderboardOpen}
                 onOpenChange={setLeaderboardOpen}
