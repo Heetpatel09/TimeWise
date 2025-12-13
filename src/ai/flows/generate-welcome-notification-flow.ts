@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
 const WelcomeNotificationInputSchema = z.object({
   name: z.string().describe("The name of the new user."),
@@ -33,6 +34,7 @@ const welcomePrompt = ai.definePrompt({
     name: 'welcomePrompt',
     input: { schema: WelcomeNotificationInputSchema },
     output: { schema: WelcomeNotificationOutputSchema },
+    model: googleAI.model('gemini-1.5-flash'),
     prompt: `You are a helpful university administrative assistant. Your task is to generate a short, friendly, and welcoming notification message for a new user who has just been added to the university portal.
 
 User's Name: {{{name}}}
