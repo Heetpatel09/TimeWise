@@ -83,6 +83,35 @@ export async function getStudentDashboardData(studentId: string) {
     };
 }
 
+export async function getClassLeaderboard(classId: string) {
+    const db = getDb();
+    const studentsInClass: Student[] = db.prepare('SELECT id, name, cgpa, avatar FROM students WHERE classId = ?').all(classId) as any[];
+
+    const allAttendance: { studentId: string, status: 'present' | 'absent' }[] = db.prepare(`
+        SELECT studentId, status 
+        FROM attendance 
+        WHERE studentId IN (SELECT id FROM students WHERE classId = ?)
+    `).all(classId) as any[];
+
+    const attendanceStats = studentsInClass.map(student => {
+        const studentRecords = allAttendance.filter(rec => rec.studentId === student.id);
+        const presentCount = studentRecords.filter(rec => rec.status === 'present').length;
+        const totalCount = studentRecords.length;
+        const percentage = totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
+        return {
+            id: student.id,
+            name: student.name,
+            avatar: student.avatar,
+            attendancePercentage: percentage,
+        };
+    });
+
+    const cgpaLeaderboard = [...studentsInClass].sort((a, b) => b.cgpa - a.cgpa);
+    const attendanceLeaderboard = attendanceStats.sort((a, b) => b.attendancePercentage - a.attendancePercentage);
+    
+    return { cgpaLeaderboard, attendanceLeaderboard };
+}
+
 
 export async function getTimetableDataForStudent(studentId: string) {
     const db = getDb();

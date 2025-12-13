@@ -30,6 +30,7 @@ import AssignmentsDialog from './components/AssignmentsDialog';
 import { getAssignmentsForStudent } from '@/lib/services/assignments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BadgeCard from './components/BadgeCard';
+import LeaderboardDialog from './components/LeaderboardDialog';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col">
@@ -64,6 +65,7 @@ export default function StudentDashboard() {
   const [isExamsOpen, setExamsOpen] = useState(false);
   const [isHostelOpen, setHostelOpen] = useState(false);
   const [isAssignmentsOpen, setAssignmentsOpen] = useState(false);
+  const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
@@ -214,10 +216,6 @@ export default function StudentDashboard() {
     const attendancePercentage = totalAttendance > 0 ? (presentAttendance / totalAttendance) * 100 : 0;
     if (attendancePercentage >= 95) badges.push({ title: 'Vanguard', icon: ShieldCheck, description: '95% or higher attendance' });
     else if (attendancePercentage >= 85) badges.push({ title: 'Sentinel', icon: ShieldCheck, description: '85% or higher attendance' });
-
-    // Streak Badges
-    if (student.streak >= 30) badges.push({ title: 'Everflame', icon: Zap, description: '30+ day streak' });
-    else if (student.streak >= 15) badges.push({ title: 'Trailblazer', icon: Zap, description: '15+ day streak' });
     
     return badges;
   }, [dashboardData]);
@@ -257,11 +255,14 @@ export default function StudentDashboard() {
                                     <CardDescription>{student.email}</CardDescription>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4">
+                            <div 
+                                className="flex items-center gap-4 p-3 rounded-lg bg-secondary/70 hover:bg-secondary transition-colors cursor-pointer"
+                                onClick={() => setLeaderboardOpen(true)}
+                            >
                                 {earnedBadges.slice(0, 3).map(badge => (
                                      <BadgeCard key={badge.title} {...badge} />
                                 ))}
-                                <div className="flex items-center gap-4 text-right p-3 rounded-lg bg-secondary">
+                                <div className="flex items-center gap-4 text-right pl-4 border-l">
                                    <Flame className="w-8 h-8 text-orange-500 animation-pulse" />
                                    <div>
                                         <p className="text-2xl font-bold">{student.streak || 0}</p>
@@ -369,6 +370,13 @@ export default function StudentDashboard() {
           assignments={assignments}
           studentId={student.id}
         />
+         {isLeaderboardOpen && (
+            <LeaderboardDialog
+                isOpen={isLeaderboardOpen}
+                onOpenChange={setLeaderboardOpen}
+                student={student}
+            />
+        )}
         
         <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
             <DialogContent>
