@@ -35,9 +35,12 @@ function checkForConflict(item: Omit<Schedule, 'id'>, existingId?: string) {
 export async function getSchedule(): Promise<Schedule[]> {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM schedule');
-  const results = stmt.all() as Schedule[];
-  // Ensure plain objects are returned
-  return JSON.parse(JSON.stringify(results));
+  const results = stmt.all() as any[];
+  // Ensure plain objects are returned and booleans are correct
+  return JSON.parse(JSON.stringify(results.map(s => ({
+    ...s,
+    subjectIsSpecial: !!s.subjectIsSpecial
+  }))));
 }
 
 export async function addSchedule(item: Omit<Schedule, 'id'>) {

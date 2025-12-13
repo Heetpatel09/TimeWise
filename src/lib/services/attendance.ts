@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -149,5 +150,3 @@ export async function lockAttendanceSlot(scheduleId: string, date: string): Prom
     db.prepare('UPDATE attendance SET isLocked = 1 WHERE scheduleId = ? AND date = ?').run(scheduleId, date);
     revalidateAll();
 }
-
-    
