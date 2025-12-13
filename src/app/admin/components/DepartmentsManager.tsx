@@ -50,6 +50,7 @@ export default function DepartmentsManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
   const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
   const { toast } = useToast();
 
   const departments = Array.from(new Set(classes.map(c => c.department)));
@@ -57,7 +58,7 @@ export default function DepartmentsManager() {
   const subjectsByDept = departments.map(dept => ({
       department: dept,
       subjects: subjects.filter(s => s.department === dept)
-  }));
+  })).filter(d => selectedDepartment === 'all' || d.department === selectedDepartment);
 
   async function loadData() {
     setIsLoading(true);
@@ -108,8 +109,6 @@ export default function DepartmentsManager() {
         }
         setIsSubmitting(true);
         try {
-            // To create a department, we need to create a placeholder class associated with it.
-            // This class can be hidden or managed elsewhere if needed.
             await addClass({
                 name: `${newDepartmentName.trim()} Placeholder`,
                 semester: 1, // Default semester
@@ -143,7 +142,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewDialog = (department?: string) => {
-    setCurrentSubject({ type: 'Theory', semester: 1, department });
+    setCurrentSubject({ type: 'Theory', semester: 1, department: department || (selectedDepartment !== 'all' ? selectedDepartment : undefined) });
     setDialogOpen(true);
   };
 
@@ -153,11 +152,23 @@ export default function DepartmentsManager() {
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-end">
-            <Button onClick={() => setDeptDialogOpen(true)}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Department
-            </Button>
+        <div className="flex justify-between items-center">
+            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="w-[280px]">
+                    <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+            </Select>
+
+            <div className="flex gap-2">
+                <Button onClick={() => setDeptDialogOpen(true)}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Department
+                </Button>
+            </div>
         </div>
        {subjectsByDept.map(dept => (
            <Card key={dept.department}>
