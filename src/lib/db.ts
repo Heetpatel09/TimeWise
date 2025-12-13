@@ -343,7 +343,7 @@ function createSchemaAndSeed() {
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
             if(s.email === 'aarav.sharma@example.com') {
-                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, 'CLS001', s.avatar || null, s.profileCompleted || 0, 8.5, 8.2, s.streak || 0);
+                insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, 'CLS003', s.avatar || null, s.profileCompleted || 0, 8.5, 8.2, s.streak || 0);
             } else {
                 insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0);
             }
@@ -359,8 +359,10 @@ function createSchemaAndSeed() {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
         
+        const staticStudentEmails = ['aarav.sharma@example.com', 'vihaan.gupta@example.com', 'saanvi.sharma@example.com'];
+        
         students.forEach(s => {
-            if (s.email === 'aarav.sharma@example.com') {
+            if (staticStudentEmails.includes(s.email)) {
               insertUser.run(s.email, s.id, 'student123', 'student', 0);
             } else {
               const randomPassword = randomBytes(8).toString('hex');
@@ -410,6 +412,7 @@ export { getDb as db };
     
 
     
+
 
 
 
