@@ -57,7 +57,7 @@ export async function getStudentDashboardData(studentId: string) {
     `).all(student.classId) as any[]);
 
     return { 
-        student: { ...student, className: student.className }, 
+        student, 
         schedule,
         events,
         leaveRequests,

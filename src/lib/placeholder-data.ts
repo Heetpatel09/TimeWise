@@ -55,7 +55,13 @@ const studentNames = [
 
 export const students: Student[] = studentNames.map((name, index) => {
   const classList = classes;
-  const currentClass = classList[index % classList.length];
+  let currentClass = classList[index % classList.length];
+  
+  if (name === "Aarav Sharma") {
+      // Correcting Aarav's class to match a class with a valid schedule.
+      currentClass = classes.find(c => c.id === 'CLS003') || currentClass;
+  }
+
   return {
     id: `STU${(index + 1).toString().padStart(3, '0')}`,
     name,
@@ -308,4 +314,3 @@ export const gatePasses: GatePass[] = [
     
 
     
-
