@@ -265,3 +265,4 @@ export async function exportFeeReceiptToPDF(
         return { error: error.message || 'Failed to generate PDF.' };
      }
 }
+

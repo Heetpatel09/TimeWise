@@ -5,8 +5,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, MessageSquare, Bell, Home, Loader2, Flame, GraduationCap, StickyNote, FolderKanban } from "lucide-react";
-import type { Student, Class, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam, EnrichedAssignment, Submission } from '@/lib/types';
+import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, Home, Loader2, Flame, FolderKanban } from "lucide-react";
+import type { Student, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam, EnrichedAssignment, Submission } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -30,9 +30,8 @@ import HostelDialog from './components/HostelDialog';
 import AssignmentsDialog from './components/AssignmentsDialog';
 import { getAssignmentsForStudent } from '@/lib/services/assignments';
 
-
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
-    <div className="flex flex-col text-left">
+    <div className="flex flex-col">
         <span className="text-xs text-muted-foreground">{label}</span>
         <span className="font-semibold text-sm">{value}</span>
     </div>
@@ -64,7 +63,6 @@ export default function StudentDashboard() {
   const [isHostelOpen, setHostelOpen] = useState(false);
   const [isAssignmentsOpen, setAssignmentsOpen] = useState(false);
 
-
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogAction, setDialogAction] = useState<'reminder' | 'leave' | 'note' | null>(null);
   
@@ -89,6 +87,7 @@ export default function StudentDashboard() {
                 setDashboardData(data);
                 setAssignments(assignmentsData);
             } catch (error) {
+                console.error("Failed to load dashboard data:", error);
                 toast({ title: 'Error', description: 'Failed to load dashboard data.', variant: 'destructive' });
             } finally {
                 setIsLoading(false);
@@ -107,7 +106,9 @@ export default function StudentDashboard() {
     setSelectedDate(date);
     setDialogAction(action);
     const dateStr = format(date, 'yyyy-MM-dd');
-    if (action === 'reminder') {
+    if (action === 'reminder' || action === 'note') {
+        setEventTitle('');
+        setLeaveReason('');
         setEventDialogOpen(true);
     } else {
         setLeaveStartDate(dateStr);
@@ -117,32 +118,46 @@ export default function StudentDashboard() {
   };
 
   const handleEventSubmit = async () => {
-    if (!user || !selectedDate || !eventTitle) {
-      toast({ title: 'Missing Information', description: 'Please provide a title.', variant: 'destructive' });
-      return;
+    if (!user || !selectedDate) return;
+
+    let title;
+    if (dialogAction === 'reminder') {
+        if (!eventTitle) {
+            toast({ title: 'Missing Information', description: 'Please provide a title.', variant: 'destructive' });
+            return;
+        }
+        title = eventTitle;
+    } else { // note
+         if (!leaveReason) {
+            toast({ title: 'Missing Information', description: 'Please provide a note.', variant: 'destructive' });
+            return;
+        }
+        title = `Note: ${leaveReason}`;
     }
+
     setIsSubmitting(true);
     try {
       const newEvent = await addEvent({
         userId: user.id,
         date: format(selectedDate, 'yyyy-MM-dd'),
-        title: eventTitle,
-        reminder: eventReminder,
-        reminderTime: eventReminder ? reminderTime : undefined
+        title: title,
+        reminder: dialogAction === 'reminder' ? eventReminder : false,
+        reminderTime: dialogAction === 'reminder' && eventReminder ? reminderTime : undefined
       });
       setDashboardData(prev => prev ? ({ ...prev, events: [...prev.events, newEvent] }) : null);
-      toast({ title: 'Reminder Added' });
+      toast({ title: dialogAction === 'note' ? 'Note Added' : 'Reminder Added' });
       setEventDialogOpen(false);
       setEventTitle('');
-    } catch(error) {
-       toast({ title: 'Error', description: 'Failed to add reminder.', variant: 'destructive' });
+      setLeaveReason('');
+    } catch(error: any) {
+       toast({ title: 'Error', description: error.message || 'Failed to add event.', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   const handleLeaveSubmit = async () => {
-    if ((dialogAction === 'leave' && (!leaveStartDate || !leaveEndDate)) || !leaveReason) {
+    if ((!leaveStartDate || !leaveEndDate) || !leaveReason) {
       toast({ title: 'Missing Information', description: 'Please fill out all required fields.', variant: 'destructive'});
       return;
     }
@@ -150,33 +165,25 @@ export default function StudentDashboard() {
 
     setIsSubmitting(true);
     try {
-      const reason = dialogAction === 'note' ? `Note: ${leaveReason}` : leaveReason;
       const newRequest = await addLeaveRequest({
         requesterId: user.id,
         requesterName: dashboardData.student.name,
         requesterRole: 'student',
         startDate: leaveStartDate,
         endDate: leaveEndDate,
-        reason: reason,
+        reason: leaveReason,
         type: 'academic',
       });
       setDashboardData(prev => prev ? ({ ...prev, leaveRequests: [...prev.leaveRequests, newRequest] }) : null);
-      toast({ title: `${dialogAction === 'note' ? 'Note' : 'Leave Request'} Sent` });
+      toast({ title: 'Leave Request Sent' });
       setLeaveDialogOpen(false);
       setLeaveReason('');
-    } catch (error) {
-      toast({ title: 'Error', description: `Failed to submit ${dialogAction}.`, variant: 'destructive' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || `Failed to submit leave request.`, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const handleComingSoon = () => {
-    toast({
-        title: 'Coming Soon!',
-        description: 'This feature is under development.',
-    });
-  }
 
   const features = [
       { title: "Time Table", icon: Calendar, onClick: () => setTimetableModalOpen(true) },
@@ -200,32 +207,44 @@ export default function StudentDashboard() {
   const leaveDialogTitle = dialogAction === 'leave' ? 'Request Leave of Absence' : 'Add a Note for Admin';
   const leaveDialogDescription = dialogAction === 'leave' 
     ? 'Please fill out the form below to submit your leave request.'
-    : 'Add a note for the administration regarding this day.';
+    : `Add a note for ${selectedDate ? format(selectedDate, 'PPP') : 'the selected date'}. This will be visible to you and the admin.`;
+  const eventDialogTitle = dialogAction === 'reminder' ? 'Add Reminder' : 'Add a Personal Note';
+  const eventDialogDescription = `For ${selectedDate ? format(selectedDate, 'PPP') : ''}`;
 
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
-            <div className="lg:col-span-2 flex flex-col">
-                <Card className="mb-6">
+            <div className="lg:col-span-2 flex flex-col space-y-6">
+                 <Card className="mb-6">
                     <CardHeader>
-                        <div className="flex items-center gap-4">
-                            <Avatar className="w-16 h-16">
-                                <AvatarImage src={student.avatar} alt={student.name} />
-                                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
-                                    Hi, {student.name.split(' ')[0]} <span className="inline-block animate-wave">👋</span>
-                                </CardTitle>
-                                <CardDescription>{student.email}</CardDescription>
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="w-16 h-16 border-2 border-primary">
+                                    <AvatarImage src={student.avatar} alt={student.name} />
+                                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <CardTitle className="text-2xl animate-in fade-in-0 duration-500">
+                                        {student.name}
+                                    </CardTitle>
+                                    <CardDescription>{student.email}</CardDescription>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-right">
+                                <Flame className="w-10 h-10 text-orange-500" />
+                                <div>
+                                     <p className="text-2xl font-bold">{student.streak || 0}</p>
+                                     <p className="text-sm text-muted-foreground">Day Streak</p>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4">
                         <InfoItem label="Enrollment No." value={student.enrollmentNumber} />
                         <InfoItem label="Department" value={student.department} />
                         <InfoItem label="Class" value={student.className} />
                         <InfoItem label="Semester" value={student.semester} />
+                        <InfoItem label="Roll No" value={student.rollNumber} />
                     </CardContent>
                 </Card>
                 <div className="flex-grow">
@@ -238,15 +257,6 @@ export default function StudentDashboard() {
                 </div>
             </div>
             <div className="lg:col-span-1 space-y-6">
-                 <Card className="animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-300">
-                     <CardContent className="flex items-center gap-4 p-6">
-                       <Flame className="w-10 h-10 text-orange-500 animation-pulse" />
-                       <div>
-                            <p className="text-2xl font-bold">{student.streak || 0}</p>
-                            <p className="text-sm text-muted-foreground">Day Streak</p>
-                       </div>
-                    </CardContent>
-                </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>Quick Actions</CardTitle>
@@ -346,15 +356,22 @@ export default function StudentDashboard() {
 
         <Dialog open={isEventDialogOpen} onOpenChange={setEventDialogOpen}>
             <DialogContent>
-                <DialogHeader><DialogTitle>Add Reminder</DialogTitle><DialogDescription>For {selectedDate ? format(selectedDate, 'PPP') : ''}</DialogDescription></DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="space-y-2"><Label htmlFor="event-title">Title</Label><Input id="event-title" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} placeholder="e.g. Project Deadline" disabled={isSubmitting}/></div>
-                    <div className="flex items-center space-x-2"><Switch id="reminder" checked={eventReminder} onCheckedChange={setEventReminder} disabled={isSubmitting}/><Label htmlFor="reminder">Set Reminder Time</Label></div>
-                    {eventReminder && <div className="space-y-2"><Label htmlFor="reminder-time">Time</Label><Input id="reminder-time" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} disabled={isSubmitting}/></div>}
-                </div>
+                <DialogHeader><DialogTitle>{eventDialogTitle}</DialogTitle><DialogDescription>{eventDialogDescription}</DialogDescription></DialogHeader>
+                 {dialogAction === 'reminder' ? (
+                     <div className="grid gap-4 py-4">
+                        <div className="space-y-2"><Label htmlFor="event-title">Title</Label><Input id="event-title" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} placeholder="e.g. Project Deadline" disabled={isSubmitting}/></div>
+                        <div className="flex items-center space-x-2"><Switch id="reminder" checked={eventReminder} onCheckedChange={setEventReminder} disabled={isSubmitting}/><Label htmlFor="reminder">Set Reminder Time</Label></div>
+                        {eventReminder && <div className="space-y-2"><Label htmlFor="reminder-time">Time</Label><Input id="reminder-time" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} disabled={isSubmitting}/></div>}
+                    </div>
+                 ) : (
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2"><Label htmlFor="reason-note">Note</Label><Textarea id="reason-note" placeholder="Add a note for yourself..." value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} disabled={isSubmitting}/></div>
+                    </div>
+                 )}
                 <DialogFooter><Button variant="outline" onClick={() => setEventDialogOpen(false)}>Cancel</Button><Button onClick={handleEventSubmit} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Save</Button></DialogFooter>
             </DialogContent>
         </Dialog>
     </DashboardLayout>
   );
 }
+

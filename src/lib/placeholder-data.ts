@@ -1,5 +1,4 @@
 
-
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result, GatePass } from './types';
 import { format, subDays, addDays } from 'date-fns';
 
@@ -55,12 +54,7 @@ const studentNames = [
 
 export const students: Student[] = studentNames.map((name, index) => {
   const classList = classes;
-  let currentClass = classList[index % classList.length];
-  
-  if (name === "Aarav Sharma") {
-      // Correcting Aarav's class to match a class with a valid schedule.
-      currentClass = classes.find(c => c.id === 'CLS003') || currentClass;
-  }
+  const currentClass = classList[index % classList.length];
 
   return {
     id: `STU${(index + 1).toString().padStart(3, '0')}`,
@@ -117,64 +111,41 @@ export const classrooms: Classroom[] = Array.from({ length: 25 }, (_, i) => {
     };
 });
 
-export const schedule: Schedule[] = [
-  // Dr. Alan Turing (FAC001) - More lectures on Monday
-  { id: 'SCH_F1_L1', classId: 'CLS007', subjectId: 'SUB014', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH_F1_L7', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR005', day: 'Monday', time: '08:30 AM - 09:30 AM' }, // New
-  { id: 'SCH_F1_B2', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC001', classroomId: 'CR021', day: 'Monday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH_F1_B3', classId: 'CLS004', subjectId: 'SUB006', facultyId: 'FAC001', classroomId: 'CR023', day: 'Monday', time: '01:00 PM - 02:00 PM' },
-  { id: 'SCH_F1_L8', classId: 'CLS005', subjectId: 'SUB009', facultyId: 'FAC001', classroomId: 'CR010', day: 'Monday', time: '02:00 PM - 03:00 PM' }, // New
+// A more robust schedule generation
+const tempSchedule: Omit<Schedule, 'id'>[] = [];
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const timeSlots = ['07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM', '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'];
+const facultyCopy = [...faculty];
+const classroomsCopy = [...classrooms];
 
-  // Rest of Dr. Turing's schedule
-  { id: 'SCH_F1_L2', classId: 'CLS001', subjectId: 'SUB004', facultyId: 'FAC001', classroomId: 'CR016', day: 'Wednesday', time: '11:00 AM - 12:00 PM' },
-  { id: 'SCH_F1_L3', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC001', classroomId: 'CR002', day: 'Thursday', time: '02:00 PM - 03:00 PM' },
-  { id: 'SCH_F1_L4', classId: 'CLS003', subjectId: 'SUB007', facultyId: 'FAC001', classroomId: 'CR003', day: 'Thursday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH_F1_L5', classId: 'CLS007', subjectId: 'SUB014', facultyId: 'FAC001', classroomId: 'CR015', day: 'Friday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH_F1_L6', classId: 'CLS003', subjectId: 'SUB005', facultyId: 'FAC001', classroomId: 'CR017', day: 'Friday', time: '10:00 AM - 11:00 AM' },
-  // Labs
-  { id: 'SCH_F1_B1', classId: 'CLS002', subjectId: 'SUB002', facultyId: 'FAC001', classroomId: 'CR023', day: 'Friday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH_F1_B4', classId: 'CLS006', subjectId: 'SUB010', facultyId: 'FAC001', classroomId: 'CR022', day: 'Thursday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH_F1_B5', classId: 'CLS001', subjectId: 'SUB002', facultyId: 'FAC001', classroomId: 'CR024', day: 'Thursday', time: '11:00 AM - 12:00 PM' },
-  { id: 'SCH_F1_B6', classId: 'CLS008', subjectId: 'SUB016', facultyId: 'FAC001', classroomId: 'CR025', day: 'Friday', time: '01:00 PM - 02:00 PM' },
+classes.forEach(c => {
+    const classSubjects = subjects.filter(s => s.semester === c.semester);
+    daysOfWeek.forEach(day => {
+        const dailySlots = [...timeSlots];
+        for(let i=0; i<4; i++) { // Assign ~4 lectures a day
+            if (dailySlots.length === 0 || classSubjects.length === 0 || facultyCopy.length === 0 || classroomsCopy.length === 0) break;
 
-  // Other Faculty Schedule
-  { id: 'SCH002', classId: 'CLS005', subjectId: 'SUB009', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH003', classId: 'CLS003', subjectId: 'SUB005', facultyId: 'FAC003', classroomId: 'CR003', day: 'Monday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH004', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC004', classroomId: 'CR004', day: 'Monday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH006', classId: 'CLS006', subjectId: 'SUB010', facultyId: 'FAC006', classroomId: 'CR022', day: 'Monday', time: '11:00 AM - 12:00 PM' },
-  { id: 'SCH008', classId: 'CLS002', subjectId: 'SUB002', facultyId: 'FAC008', classroomId: 'CR024', day: 'Monday', time: '02:00 PM - 03:00 PM' },
-  { id: 'SCH009', classId: 'CLS009', subjectId: 'SUB017', facultyId: 'FAC012', classroomId: 'CR005', day: 'Monday', time: '10:00 AM - 11:00 AM' },
-
-  { id: 'SCH010', classId: 'CLS007', subjectId: 'SUB015', facultyId: 'FAC009', classroomId: 'CR005', day: 'Tuesday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH011', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC010', classroomId: 'CR006', day: 'Tuesday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH012', classId: 'CLS003', subjectId: 'SUB007', facultyId: 'FAC011', classroomId: 'CR007', day: 'Tuesday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH013', classId: 'CLS001', subjectId: 'SUB003', facultyId: 'FAC012', classroomId: 'CR008', day: 'Tuesday', time: '11:00 AM - 12:00 PM' },
-  { id: 'SCH014', classId: 'CLS008', subjectId: 'SUB013', facultyId: 'FAC013', classroomId: 'CR009', day: 'Tuesday', time: '01:00 PM - 02:00 PM' },
-  { id: 'SCH015', classId: 'CLS006', subjectId: 'SUB012', facultyId: 'FAC014', classroomId: 'CR010', day: 'Tuesday', time: '02:00 PM - 03:00 PM' },
-  { id: 'SCH016', classId: 'CLS004', subjectId: 'SUB008', facultyId: 'FAC015', classroomId: 'CR011', day: 'Tuesday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH017', classId: 'CLS002', subjectId: 'SUB004', facultyId: 'FAC016', classroomId: 'CR012', day: 'Tuesday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH018', classId: 'CLS010', subjectId: 'SUB019', facultyId: 'FAC017', classroomId: 'CR007', day: 'Tuesday', time: '01:00 PM - 02:00 PM' },
-  
-  { id: 'SCH019', classId: 'CLS007', subjectId: 'SUB013', facultyId: 'FAC018', classroomId: 'CR013', day: 'Wednesday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH020', classId: 'CLS005', subjectId: 'SUB012', facultyId: 'FAC019', classroomId: 'CR014', day: 'Wednesday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH021', classId: 'CLS003', subjectId: 'SUB008', facultyId: 'FAC020', classroomId: 'CR015', day: 'Wednesday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH023', classId: 'CLS008', subjectId: 'SUB014', facultyId: 'FAC002', classroomId: 'CR017', day: 'Wednesday', time: '01:00 PM - 02:00 PM' },
-  { id: 'SCH024', classId: 'CLS006', subjectId: 'SUB009', facultyId: 'FAC003', classroomId: 'CR018', day: 'Wednesday', time: '02:00 PM - 03:00 PM' },
-  { id: 'SCH025', classId: 'CLS004', subjectId: 'SUB005', facultyId: 'FAC004', classroomId: 'CR019', day: 'Wednesday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH026', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC005', classroomId: 'CR020', day: 'Wednesday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH027', classId: 'CLS011', subjectId: 'SUB020', facultyId: 'FAC019', classroomId: 'CR011', day: 'Wednesday', time: '10:00 AM - 11:00 AM' },
-
-  { id: 'SCH030', classId: 'CLS003', subjectId: 'SUB006', facultyId: 'FAC008', classroomId: 'CR023', day: 'Thursday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH032', classId: 'CLS008', subjectId: 'SUB015', facultyId: 'FAC010', classroomId: 'CR001', day: 'Thursday', time: '01:00 PM - 02:00 PM' },
-  { id: 'SCH035', classId: 'CLS002', subjectId: 'SUB003', facultyId: 'FAC013', classroomId: 'CR004', day: 'Thursday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH036', classId: 'CLS009', subjectId: 'SUB018', facultyId: 'FAC012', classroomId: 'CR006', day: 'Thursday', time: '11:00 AM - 12:00 PM' },
-
-  { id: 'SCH038', classId: 'CLS005', subjectId: 'SUB009', facultyId: 'FAC015', classroomId: 'CR016', day: 'Friday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH040', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC017', classroomId: 'CR018', day: 'Friday', time: '11:00 AM - 12:00 PM' },
-  { id: 'SCH042', classId: 'CLS006', subjectId: 'SUB010', facultyId: 'FAC019', classroomId: 'CR021', day: 'Friday', time: '02:00 PM - 03:00 PM' },
-  { id: 'SCH043', classId: 'CLS004', subjectId: 'SUB006', facultyId: 'FAC020', classroomId: 'CR022', day: 'Friday', time: '07:30 AM - 08:30 AM' },
-];
-
+            const time = dailySlots.splice(Math.floor(Math.random() * dailySlots.length), 1)[0];
+            const subject = classSubjects[Math.floor(Math.random() * classSubjects.length)];
+            const fac = facultyCopy[Math.floor(Math.random() * facultyCopy.length)];
+            const room = classroomsCopy.find(r => (subject.type === 'lab' ? r.type === 'lab' : r.type === 'classroom')) || classroomsCopy[0];
+            
+            // Basic conflict check
+            const conflict = tempSchedule.find(s => s.day === day && s.time === time && (s.facultyId === fac.id || s.classroomId === room.id));
+            if (!conflict) {
+                 tempSchedule.push({
+                    classId: c.id,
+                    subjectId: subject.id,
+                    facultyId: fac.id,
+                    classroomId: room.id,
+                    day: day as Schedule['day'],
+                    time: time
+                });
+            }
+        }
+    });
+});
+export const schedule: Schedule[] = tempSchedule.map((s, i) => ({ ...s, id: `SCH${(i + 1).toString().padStart(3, '0')}` }));
 
 export const leaveRequests: LeaveRequest[] = [
   { id: 'LR001', requesterId: 'FAC002', requesterName: 'Dr. Ada Lovelace', requesterRole: 'faculty', startDate: '2024-08-01', endDate: '2024-08-05', reason: 'Family wedding.', status: 'pending', type: 'academic' },
@@ -185,9 +156,7 @@ export const leaveRequests: LeaveRequest[] = [
 ];
 
 export const scheduleChangeRequests: ScheduleChangeRequest[] = [
-    { id: 'SCR001', scheduleId: 'SCH_F1_L1', facultyId: 'FAC001', reason: 'Need to swap this class with my afternoon slot.', status: 'pending' },
-    { id: 'SCR002', scheduleId: 'SCH003', facultyId: 'FAC003', reason: 'Lab equipment is unavailable.', status: 'pending' },
-    { id: 'SCR003', scheduleId: 'SCH012', facultyId: 'FAC011', reason: 'Requesting to move to Room 102.', status: 'pending', requestedClassroomId: 'CR002' },
+    { id: 'SCR001', scheduleId: 'SCH001', facultyId: 'FAC001', reason: 'Need to swap this class with my afternoon slot.', status: 'pending' },
 ];
 
 export const notifications: Notification[] = [
@@ -248,7 +217,7 @@ export const attendance: Attendance[] = [
     // Create a 5-day streak for Aarav Sharma (STU001) ending yesterday
     ...Array.from({ length: 5 }).map((_, i) => ({
         id: `ATT_AARAV_${i}`,
-        scheduleId: 'SCH_F1_L7', // A class Aarav is in
+        scheduleId: 'SCH003', // A class Aarav is in
         studentId: 'STU001',
         date: format(subDays(new Date(), i + 1), 'yyyy-MM-dd'),
         status: 'present' as 'present',
@@ -258,7 +227,7 @@ export const attendance: Attendance[] = [
     // Add one absence to break the streak before that
     {
         id: 'ATT_AARAV_ABSENT',
-        scheduleId: 'SCH_F1_L7',
+        scheduleId: 'SCH003',
         studentId: 'STU001',
         date: format(subDays(new Date(), 6), 'yyyy-MM-dd'),
         status: 'absent',
@@ -268,7 +237,7 @@ export const attendance: Attendance[] = [
      // Add some attendance for other students
     {
         id: 'ATT_OTHER_1',
-        scheduleId: 'SCH_F1_L7',
+        scheduleId: 'SCH003',
         studentId: 'STU002',
         date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
         status: 'present',
@@ -314,3 +283,4 @@ export const gatePasses: GatePass[] = [
     
 
     
+
