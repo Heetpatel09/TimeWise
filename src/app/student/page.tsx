@@ -261,13 +261,13 @@ export default function StudentDashboard() {
                                 {earnedBadges.slice(0, 3).map(badge => (
                                      <BadgeCard key={badge.title} {...badge} />
                                 ))}
-                            </div>
-                             <div className="flex items-center gap-4 text-right p-3 rounded-lg bg-secondary">
-                               <Flame className="w-8 h-8 text-orange-500 animation-pulse" />
-                               <div>
-                                    <p className="text-2xl font-bold">{student.streak || 0}</p>
-                                    <p className="text-sm text-muted-foreground">Day Streak</p>
-                               </div>
+                                <div className="flex items-center gap-4 text-right p-3 rounded-lg bg-secondary">
+                                   <Flame className="w-8 h-8 text-orange-500 animation-pulse" />
+                                   <div>
+                                        <p className="text-2xl font-bold">{student.streak || 0}</p>
+                                        <p className="text-sm text-muted-foreground">Day Streak</p>
+                                   </div>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
