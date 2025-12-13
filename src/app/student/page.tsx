@@ -244,7 +244,7 @@ export default function StudentDashboard() {
             <div className="lg:col-span-2 flex flex-col space-y-6">
                 <Card className="mb-6 animate-in fade-in-0 duration-500">
                     <CardHeader>
-                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                              <div className="flex items-center gap-4">
                                 <Avatar className="w-16 h-16 border-2 border-primary">
                                     <AvatarImage src={student.avatar} alt={student.name} />
@@ -257,7 +257,12 @@ export default function StudentDashboard() {
                                     <CardDescription>{student.email}</CardDescription>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4 text-right p-3 rounded-lg bg-secondary">
+                            <div className="flex items-center gap-4">
+                                {earnedBadges.slice(0, 3).map(badge => (
+                                     <BadgeCard key={badge.title} {...badge} />
+                                ))}
+                            </div>
+                             <div className="flex items-center gap-4 text-right p-3 rounded-lg bg-secondary">
                                <Flame className="w-8 h-8 text-orange-500 animation-pulse" />
                                <div>
                                     <p className="text-2xl font-bold">{student.streak || 0}</p>
@@ -274,23 +279,12 @@ export default function StudentDashboard() {
                     </CardContent>
                 </Card>
                 
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Academic Achievements</CardTitle>
-                        <CardDescription>Your earned badges and accomplishments.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {earnedBadges.length > 0 ? (
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {earnedBadges.map(badge => (
-                                    <BadgeCard key={badge.title} {...badge} />
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-center text-muted-foreground py-4">No badges earned yet. Keep up the good work!</p>
-                        )}
-                    </CardContent>
-                </Card>
+                <ScheduleCalendar 
+                    schedule={dashboardData.schedule}
+                    leaveRequests={dashboardData.leaveRequests}
+                    events={dashboardData.events}
+                    onDayClick={handleDayClick}
+                />
 
             </div>
             <div className="lg:col-span-1 space-y-6 animate-in fade-in-0 slide-in-from-left-8 duration-500 delay-300">
