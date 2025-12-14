@@ -2,16 +2,9 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import type { WelcomeNotificationInput } from '@/lib/types';
+import { WelcomeNotificationInputSchema } from '@/lib/types';
 
-export const WelcomeNotificationInputSchema = z.object({
-  name: z.string(),
-  role: z.enum(['student', 'faculty']),
-  context: z.string().describe('The class or department the user is joining.'),
-});
-
-export type WelcomeNotificationInput = z.infer<
-  typeof WelcomeNotificationInputSchema
->;
 
 const generateWelcomeNotification = ai.defineFlow(
   {

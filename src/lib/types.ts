@@ -1,4 +1,15 @@
 
+import { z } from 'zod';
+
+export const WelcomeNotificationInputSchema = z.object({
+  name: z.string(),
+  role: z.enum(['student', 'faculty']),
+  context: z.string().describe('The class or department the user is joining.'),
+});
+
+export type WelcomeNotificationInput = z.infer<
+  typeof WelcomeNotificationInputSchema
+>;
 
 export interface Subject {
   id: string;
