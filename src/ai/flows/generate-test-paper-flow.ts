@@ -29,7 +29,7 @@ For all questions, provide the correct answer.
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-1.5-flash-preview-001',
+      model: 'googleai/gemini-1.5-flash',
       output: {
         schema: GenerateTestPaperOutputSchema,
       },
