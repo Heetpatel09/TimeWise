@@ -9,7 +9,6 @@
  */
 
 import {configureGenkit} from 'genkit';
-import {generateExamScheduleFlow} from './flows/generate-exam-schedule-flow';
 import {generateTestPaperFlow} from './flows/generate-test-paper-flow';
 import {generateWelcomeNotificationFlow} from './flows/generate-welcome-notification-flow';
 import {testApiKeyFlow} from './flows/test-api-key-flow';
@@ -27,7 +26,6 @@ configureGenkit({
 });
 
 export const flows = [
-  generateExamScheduleFlow,
   generateTestPaperFlow,
   generateWelcomeNotificationFlow,
   testApiKeyFlow,

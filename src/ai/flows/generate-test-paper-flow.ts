@@ -5,34 +5,10 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { GenerateTestPaperInputSchema, GenerateTestPaperOutputSchema, type GenerateTestPaperInput, type GenerateTestPaperOutput } from '@/lib/types';
 
-const TestPaperQuestionSchema = z.object({
-  questionText: z.string(),
-  answer: z.string(),
-  options: z.array(z.string()).optional(),
-});
 
-export const GenerateTestPaperInputSchema = z.object({
-  subjectName: z.string().describe('The name of the subject.'),
-  className: z.string().describe('The name of the class.'),
-  topics: z.array(z.string()).describe('A list of topics to be covered.'),
-  paperStyle: z
-    .enum(['multiple_choice', 'short_answer', 'mixed'])
-    .describe('The style of the test paper.'),
-});
-export type GenerateTestPaperInput = z.infer<
-  typeof GenerateTestPaperInputSchema
->;
-
-export const GenerateTestPaperOutputSchema = z.object({
-  questions: z.array(TestPaperQuestionSchema),
-});
-export type GenerateTestPaperOutput = z.infer<
-  typeof GenerateTestPaperOutputSchema
->;
-
-export const generateTestPaperFlow = ai.defineFlow(
+const generateTestPaper = ai.defineFlow(
   {
     name: 'generateTestPaperFlow',
     inputSchema: GenerateTestPaperInputSchema,
@@ -65,3 +41,8 @@ For all questions, provide the correct answer.
     return llmResponse.output!;
   }
 );
+
+
+export async function generateTestPaperFlow(input: GenerateTestPaperInput): Promise<GenerateTestPaperOutput> {
+    return generateTestPaper(input);
+}
