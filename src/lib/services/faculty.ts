@@ -75,7 +75,7 @@ export async function addFaculty(
         // });
         await addNotification({
             userId: newItem.id,
-            message: `Welcome, ${newItem.name}! Your account for the ${newItem.department} department has been created.`,
+            message: `Welcome, ${newItem.name}! Your account has been created for the ${newItem.department} department.`,
             category: 'general',
         });
     } catch (e: any) {

@@ -25,6 +25,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+type GenerateExamScheduleOutput = any;
+type GenerateSeatingArrangementOutput = any;
+
 const EXAM_TIME_SLOTS = ['10:00 AM - 01:00 PM', '02:00 PM - 05:00 PM'];
 
 export default function ExamsManager() {
@@ -40,10 +43,10 @@ export default function ExamsManager() {
   const { toast } = useToast();
 
   const [isAiDialogOpen, setAiDialogOpen] = useState(false);
-  const [aiGeneratedSchedule, setAiGeneratedSchedule] = useState<any | null>(null);
+  const [aiGeneratedSchedule, setAiGeneratedSchedule] = useState<GenerateExamScheduleOutput | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSeatingPlanOpen, setSeatingPlanOpen] = useState(false);
-  const [seatingPlan, setSeatingPlan] = useState<any | null>(null);
+  const [seatingPlan, setSeatingPlan] = useState<GenerateSeatingArrangementOutput | null>(null);
   const [selectedExamForSeating, setSelectedExamForSeating] = useState<EnrichedExam | null>(null);
   const [isGeneratingSeating, setIsGeneratingSeating] = useState(false);
 
@@ -118,8 +121,8 @@ export default function ExamsManager() {
     setIsGenerating(true);
     toast({
         variant: 'destructive',
-        title: 'AI Feature Disabled',
-        description: 'The AI features are temporarily disabled due to an installation issue.',
+        title: 'AI Features Disabled',
+        description: 'The AI features are currently disabled due to an installation issue.',
     });
     setIsGenerating(false);
     // try {
@@ -157,8 +160,8 @@ export default function ExamsManager() {
     setIsGeneratingSeating(true);
     toast({
         variant: 'destructive',
-        title: 'AI Feature Disabled',
-        description: 'The AI features are temporarily disabled due to an installation issue.',
+        title: 'AI Features Disabled',
+        description: 'The AI features are currently disabled due to an installation issue.',
     });
     setIsGeneratingSeating(false);
     // try {

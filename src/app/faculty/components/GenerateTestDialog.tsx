@@ -18,6 +18,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { addExam } from '@/lib/services/exams';
 import { format } from 'date-fns';
 
+type GenerateTestPaperOutput = any;
+
 interface GenerateTestDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -36,7 +38,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [generatedPaper, setGeneratedPaper] = useState<any | null>(null);
+  const [generatedPaper, setGeneratedPaper] = useState<GenerateTestPaperOutput | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -65,8 +67,8 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
     setIsGenerating(true);
     toast({
         variant: 'destructive',
-        title: 'AI Feature Disabled',
-        description: 'The AI features are temporarily disabled due to an installation issue.',
+        title: 'AI Features Disabled',
+        description: 'The AI features are currently disabled due to an installation issue.',
     });
     setIsGenerating(false);
     

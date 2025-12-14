@@ -32,7 +32,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -49,6 +49,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
+
+type ResolveConflictsOutput = any;
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -97,7 +99,7 @@ export default function ScheduleManager() {
   const [isResolvingWithAI, setIsResolvingWithAI] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
-  const [aiResolution, setAiResolution] = useState<any | null>(null);
+  const [aiResolution, setAiResolution] = useState<ResolveConflictsOutput | null>(null);
   
   const { toast } = useToast();
 
@@ -224,29 +226,29 @@ export default function ScheduleManager() {
       setIsResolvingWithAI(true);
       toast({
         variant: 'destructive',
-        title: 'AI Feature Disabled',
-        description: 'The AI features are temporarily disabled due to an installation issue.',
+        title: 'AI Features Disabled',
+        description: 'The AI features are currently disabled due to an installation issue.',
       });
       setIsResolvingWithAI(false);
-      // try {
-      //   const resolution = await resolveScheduleConflicts({
-      //     schedule: schedule.map(s => ({
-      //       ...s,
-      //       className: getRelationInfo(s.classId, 'class')?.name || 'N/A',
-      //       facultyName: getRelationInfo(s.facultyId, 'faculty')?.name || 'N/A',
-      //       subjectName: getRelationInfo(s.subjectId, 'subject')?.name || 'N/A',
-      //       classroomName: getRelationInfo(s.classroomId, 'classroom')?.name || 'N/A',
-      //     })),
-      //     conflicts,
-      //     faculty,
-      //     classrooms,
-      //     students,
-      //   });
-      //   setAiResolution(resolution);
-      // } catch (error: any) {
-      //   toast({ title: 'AI Resolution Failed', description: error.message, variant: 'destructive' });
-      // }
-      // setIsResolvingWithAI(false);
+    //   try {
+    //     const resolution = await resolveScheduleConflicts({
+    //       schedule: schedule.map(s => ({
+    //         ...s,
+    //         className: getRelationInfo(s.classId, 'class')?.name || 'N/A',
+    //         facultyName: getRelationInfo(s.facultyId, 'faculty')?.name || 'N/A',
+    //         subjectName: getRelationInfo(s.subjectId, 'subject')?.name || 'N/A',
+    //         classroomName: getRelationInfo(s.classroomId, 'classroom')?.name || 'N/A',
+    //       })),
+    //       conflicts,
+    //       faculty,
+    //       classrooms,
+    //       students,
+    //     });
+    //     setAiResolution(resolution);
+    //   } catch (error: any) {
+    //     toast({ title: 'AI Resolution Failed', description: error.message, variant: 'destructive' });
+    //   }
+    //   setIsResolvingWithAI(false);
   }
 
   const handleApproveAIChanges = async () => {

@@ -19,10 +19,9 @@ export default function ApiTestPage() {
         setIsSuccess(null);
         toast({
             variant: 'destructive',
-            title: 'AI Feature Disabled',
-            description: 'The AI features are temporarily disabled due to an installation issue.',
+            title: 'AI Features Disabled',
+            description: 'The AI features are currently disabled due to an installation issue.',
         });
-        setIsSuccess(false);
         setIsLoading(false);
         // try {
         //     const result = await testApiKey();

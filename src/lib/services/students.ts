@@ -77,7 +77,7 @@ export async function addStudent(
         // });
         await addNotification({
             userId: newItem.id,
-            message: `Welcome, ${newItem.name}! You have been enrolled in ${className}.`,
+            message: `Welcome, ${newItem.name}! You have been added to ${className}.`,
             category: 'general'
         });
     } catch (e: any) {
