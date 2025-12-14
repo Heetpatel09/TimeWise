@@ -45,10 +45,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
+// import { resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
+
+type ResolveConflictsOutput = any;
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -222,24 +224,25 @@ export default function ScheduleManager() {
   
   const handleResolveWithAI = async () => {
       setIsResolvingWithAI(true);
-      toast({ title: "AI is at work!", description: "Resolving schedule conflicts. This may take a moment..." });
-      try {
-          const result = await resolveScheduleConflicts({
-              schedule,
-              classInfo: classes.map(c => ({ id: c.id, name: c.name })),
-              subjectInfo: subjects.map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type })),
-              facultyInfo: faculty.map(f => ({ id: f.id, name: f.name })),
-              classroomInfo: classrooms.map(cr => ({ id: cr.id, name: cr.name })),
-              timeSlots: LECTURE_TIME_SLOTS,
-          });
+      toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+      setIsResolvingWithAI(false);
+    //   try {
+    //       const result = await resolveScheduleConflicts({
+    //           schedule,
+    //           classInfo: classes.map(c => ({ id: c.id, name: c.name })),
+    //           subjectInfo: subjects.map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type })),
+    //           facultyInfo: faculty.map(f => ({ id: f.id, name: f.name })),
+    //           classroomInfo: classrooms.map(cr => ({ id: cr.id, name: cr.name })),
+    //           timeSlots: LECTURE_TIME_SLOTS,
+    //       });
           
-          setAiResolution(result);
+    //       setAiResolution(result);
 
-      } catch (error: any) {
-          toast({ title: 'AI Resolution Failed', description: error.message || "The AI could not resolve the conflicts. Please try resolving them manually.", variant: "destructive" });
-      } finally {
-          setIsResolvingWithAI(false);
-      }
+    //   } catch (error: any) {
+    //       toast({ title: 'AI Resolution Failed', description: error.message || "The AI could not resolve the conflicts. Please try resolving them manually.", variant: "destructive" });
+    //   } finally {
+    //       setIsResolvingWithAI(false);
+    //   }
   }
 
   const handleApproveAIChanges = async () => {
@@ -528,7 +531,7 @@ export default function ScheduleManager() {
                         <CardTitle className='text-base'>Notifications to be Sent</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        {aiResolution?.notifications.map((notif, index) => {
+                        {aiResolution?.notifications.map((notif: Notification, index: number) => {
                             const user = notif.userId ? getRelationInfo(notif.userId, 'faculty') : null;
                             const targetClass = notif.classId ? getRelationInfo(notif.classId, 'class') : null;
                             const studentRecipients = students.filter(s => s.classId === notif.classId);

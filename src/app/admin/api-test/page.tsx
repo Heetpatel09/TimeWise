@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { testApiKey } from '@/ai/flows/test-api-key-flow';
+// import { testApiKey } from '@/ai/flows/test-api-key-flow';
 import { Loader2, CheckCircle, AlertTriangle, KeyRound, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
@@ -16,21 +16,27 @@ export default function ApiTestPage() {
 
     const handleTest = async () => {
         setIsLoading(true);
-        try {
-            const result = await testApiKey();
-            toast({
-                title: <div className="flex items-center gap-2"><CheckCircle className="text-green-500" /> Success!</div>,
-                description: result.message,
-            });
-        } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: <div className="flex items-center gap-2"><AlertTriangle /> API Key Test Failed</div>,
-                description: error.message || 'An unknown error occurred.',
-            });
-        } finally {
-            setIsLoading(false);
-        }
+        toast({
+            variant: 'destructive',
+            title: 'AI Feature Disabled',
+            description: 'The AI features are currently disabled by the administrator.',
+        });
+        setIsLoading(false);
+        // try {
+        //     const result = await testApiKey();
+        //     toast({
+        //         title: <div className="flex items-center gap-2"><CheckCircle className="text-green-500" /> Success!</div>,
+        //         description: result.message,
+        //     });
+        // } catch (error: any) {
+        //     toast({
+        //         variant: 'destructive',
+        //         title: <div className="flex items-center gap-2"><AlertTriangle /> API Key Test Failed</div>,
+        //         description: error.message || 'An unknown error occurred.',
+        //     });
+        // } finally {
+        //     setIsLoading(false);
+        // }
     }
 
     return (
@@ -49,15 +55,15 @@ export default function ApiTestPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Alert>
+                    <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>How it works</AlertTitle>
+                        <AlertTitle>AI Features Disabled</AlertTitle>
                         <AlertDescription>
-                            This test will make a simple, low-cost API call to the Gemini model. A success message means your key is valid. An error message will indicate a problem with your key or configuration.
+                            All AI features, including this API key test, are currently disabled.
                         </AlertDescription>
                     </Alert>
                     <div className="mt-6 flex justify-center">
-                         <Button onClick={handleTest} disabled={isLoading} size="lg">
+                         <Button onClick={handleTest} disabled={true} size="lg">
                             {isLoading ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (

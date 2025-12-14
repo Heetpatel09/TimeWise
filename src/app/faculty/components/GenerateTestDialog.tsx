@@ -12,11 +12,13 @@ import { Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import type { Class, Subject } from '@/lib/types';
-import { generateTestPaper, GenerateTestPaperOutput } from '@/ai/flows/generate-test-paper-flow';
+// import { generateTestPaper, GenerateTestPaperOutput } from '@/ai/flows/generate-test-paper-flow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { addExam } from '@/lib/services/exams';
 import { format } from 'date-fns';
+
+type GenerateTestPaperOutput = any;
 
 interface GenerateTestDialogProps {
   isOpen: boolean;
@@ -63,22 +65,23 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
       return;
     }
     setIsGenerating(true);
-    setGeneratedPaper(null);
-    try {
-      const subjectName = subjects.find(s => s.id === selectedSubjectId)?.name || '';
-      const className = classes.find(c => c.id === selectedClassId)?.name || '';
-      const result = await generateTestPaper({
-        subjectName,
-        className,
-        topics: topics.split('\n'),
-        paperStyle,
-      });
-      setGeneratedPaper(result);
-    } catch (error: any) {
-      toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
-    } finally {
-      setIsGenerating(false);
-    }
+    toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+    setIsGenerating(false);
+    // try {
+    //   const subjectName = subjects.find(s => s.id === selectedSubjectId)?.name || '';
+    //   const className = classes.find(c => c.id === selectedClassId)?.name || '';
+    //   const result = await generateTestPaper({
+    //     subjectName,
+    //     className,
+    //     topics: topics.split('\n'),
+    //     paperStyle,
+    //   });
+    //   setGeneratedPaper(result);
+    // } catch (error: any) {
+    //   toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
+    // } finally {
+    //   setIsGenerating(false);
+    // }
   };
 
   const handlePublish = async () => {
@@ -150,7 +153,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
         ) : (
             <ScrollArea className="h-96 my-4 border rounded-md p-4">
                 <div className="space-y-6">
-                    {generatedPaper.questions.map((q, index) => (
+                    {generatedPaper.questions.map((q: any, index: number) => (
                         <Card key={index}>
                             <CardHeader>
                                 <CardTitle className="text-base">Question {index + 1}</CardTitle>
@@ -159,7 +162,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
                                 <p>{q.questionText}</p>
                                 {q.options && (
                                     <ul className="space-y-2 list-disc pl-5">
-                                        {q.options.map((opt, i) => <li key={i}>{opt}</li>)}
+                                        {q.options.map((opt: string, i: number) => <li key={i}>{opt}</li>)}
                                     </ul>
                                 )}
                                 <p className="font-semibold text-primary">Answer: <span className="font-normal text-foreground">{q.answer}</span></p>

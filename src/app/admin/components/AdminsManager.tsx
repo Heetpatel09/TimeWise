@@ -113,14 +113,16 @@ export default function AdminsManager() {
           await updateAdmin({ ...adminToSave, id: currentAdmin.id });
           toast({ title: "User Updated", description: "The user's details have been saved." });
         } else {
-          const result = await addAdmin(
-            adminToSave, 
-            passwordOption === 'manual' ? manualPassword : undefined
-          );
-          toast({ title: "User Added", description: "The new user has been created." });
-          if (result.initialPassword) {
-            setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
-          }
+          // const result = await addAdmin(
+          //   adminToSave, 
+          //   passwordOption === 'manual' ? manualPassword : undefined
+          // );
+          // toast({ title: "User Added", description: "The new user has been created." });
+          // if (result.initialPassword) {
+          //   setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
+          // }
+          toast({ title: "AI Feature Disabled", description: "Adding users with AI-generated notifications is currently disabled.", variant: "destructive" });
+
         }
         await loadData();
         setDialogOpen(false);

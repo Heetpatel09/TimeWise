@@ -18,13 +18,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, parseISO } from 'date-fns';
-import { generateExamSchedule, GenerateExamScheduleOutput } from '@/ai/flows/generate-exam-schedule-flow';
-import { generateSeatingArrangement, GenerateSeatingArrangementOutput } from '@/ai/flows/generate-seating-arrangement-flow';
+// import { generateExamSchedule, GenerateExamScheduleOutput } from '@/ai/flows/generate-exam-schedule-flow';
+// import { generateSeatingArrangement, GenerateSeatingArrangementOutput } from '@/ai/flows/generate-seating-arrangement-flow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+type GenerateExamScheduleOutput = any;
+type GenerateSeatingArrangementOutput = any;
 
 const EXAM_TIME_SLOTS = ['10:00 AM - 01:00 PM', '02:00 PM - 05:00 PM'];
 
@@ -117,22 +119,23 @@ export default function ExamsManager() {
   
   const handleGenerateSchedule = async () => {
     setIsGenerating(true);
-    toast({ title: "AI is thinking...", description: "Generating an optimized exam schedule." });
-    try {
-        const result = await generateExamSchedule({
-            subjects: subjects.map(s => ({ id: s.id, name: s.name, semester: s.semester })),
-            classes: classes.map(c => ({ id: c.id, name: c.name, semester: c.semester })),
-            classrooms: classrooms.filter(cr => cr.type === 'classroom').map(cr => ({ id: cr.id, name: cr.name })),
-            startDate: format(new Date(), 'yyyy-MM-dd'),
-            endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-            timeSlots: EXAM_TIME_SLOTS
-        });
-        setAiGeneratedSchedule(result);
-    } catch (error: any) {
-        toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
-    } finally {
-        setIsGenerating(false);
-    }
+    toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+    setIsGenerating(false);
+    // try {
+    //     const result = await generateExamSchedule({
+    //         subjects: subjects.map(s => ({ id: s.id, name: s.name, semester: s.semester })),
+    //         classes: classes.map(c => ({ id: c.id, name: c.name, semester: c.semester })),
+    //         classrooms: classrooms.filter(cr => cr.type === 'classroom').map(cr => ({ id: cr.id, name: cr.name })),
+    //         startDate: format(new Date(), 'yyyy-MM-dd'),
+    //         endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    //         timeSlots: EXAM_TIME_SLOTS
+    //     });
+    //     setAiGeneratedSchedule(result);
+    // } catch (error: any) {
+    //     toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
+    // } finally {
+    //     setIsGenerating(false);
+    // }
   };
 
   const handleApplyAiSchedule = async () => {
@@ -154,19 +157,21 @@ export default function ExamsManager() {
   const handleGenerateSeating = async (exam: EnrichedExam) => {
     setSelectedExamForSeating(exam);
     setIsGeneratingSeating(true);
-    try {
-      const examStudents = students.filter(s => s.classId === exam.classId);
-      const result = await generateSeatingArrangement({
-        exam: exam,
-        students: examStudents.map(s => ({ id: s.id, name: s.name }))
-      });
-      setSeatingPlan(result);
-      setSeatingPlanOpen(true);
-    } catch (error: any) {
-       toast({ title: "AI Failed", description: "Could not generate seating plan.", variant: "destructive" });
-    } finally {
-        setIsGeneratingSeating(false);
-    }
+    toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+    setIsGeneratingSeating(false);
+    // try {
+    //   const examStudents = students.filter(s => s.classId === exam.classId);
+    //   const result = await generateSeatingArrangement({
+    //     exam: exam,
+    //     students: examStudents.map(s => ({ id: s.id, name: s.name }))
+    //   });
+    //   setSeatingPlan(result);
+    //   setSeatingPlanOpen(true);
+    // } catch (error: any) {
+    //    toast({ title: "AI Failed", description: "Could not generate seating plan.", variant: "destructive" });
+    // } finally {
+    //     setIsGeneratingSeating(false);
+    // }
   }
 
   const downloadSeatingPlan = () => {
@@ -177,8 +182,8 @@ export default function ExamsManager() {
     doc.text(`Date: ${format(parseISO(selectedExamForSeating.date), 'PPP')} at ${selectedExamForSeating.time}`, 14, 28);
     
     const tableData = seatingPlan.seatingArrangement
-        .sort((a,b) => a.seatNumber - b.seatNumber)
-        .map(s => [s.seatNumber, s.studentName, s.studentId]);
+        .sort((a:any,b:any) => a.seatNumber - b.seatNumber)
+        .map((s:any) => [s.seatNumber, s.studentName, s.studentId]);
 
     (doc as any).autoTable({
         head: [['Seat No.', 'Student Name', 'Student ID']],
@@ -336,7 +341,7 @@ export default function ExamsManager() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {aiGeneratedSchedule.generatedSchedule.map((exam, i) => (
+                                {aiGeneratedSchedule.generatedSchedule.map((exam: any, i: number) => (
                                     <TableRow key={i}>
                                         <TableCell>{format(parseISO(exam.date), 'PPP')}</TableCell>
                                         <TableCell>{exam.time}</TableCell>
@@ -391,7 +396,7 @@ export default function ExamsManager() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {seatingPlan?.seatingArrangement.sort((a,b) => a.seatNumber - b.seatNumber).map(seat => (
+                        {seatingPlan?.seatingArrangement.sort((a:any,b:any) => a.seatNumber - b.seatNumber).map((seat:any) => (
                             <TableRow key={seat.studentId}>
                                 <TableCell className="font-bold">{seat.seatNumber}</TableCell>
                                 <TableCell>{seat.studentName}</TableCell>

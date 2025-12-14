@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { Student } from '@/lib/types';
 import { addCredential } from './auth';
-import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
+// import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
 import { getClasses } from './classes';
 import { randomBytes } from 'crypto';
@@ -67,22 +67,22 @@ export async function addStudent(
     });
     
     // Generate welcome notification
-    try {
-        const classes = await getClasses();
-        const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
-        const notificationResult = await generateWelcomeNotification({
-            name: newItem.name,
-            role: 'student',
-            context: className
-        });
-        await addNotification({
-            userId: newItem.id,
-            message: notificationResult.message,
-            category: 'general'
-        });
-    } catch (e: any) {
-        console.error("Failed to generate welcome notification for student:", e.message);
-    }
+    // try {
+    //     const classes = await getClasses();
+    //     const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
+    //     const notificationResult = await generateWelcomeNotification({
+    //         name: newItem.name,
+    //         role: 'student',
+    //         context: className
+    //     });
+    //     await addNotification({
+    //         userId: newItem.id,
+    //         message: notificationResult.message,
+    //         category: 'general'
+    //     });
+    // } catch (e: any) {
+    //     console.error("Failed to generate welcome notification for student:", e.message);
+    // }
 
     revalidateAll();
     return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });
