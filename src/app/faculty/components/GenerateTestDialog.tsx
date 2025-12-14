@@ -112,7 +112,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
         <DialogHeader>
           <DialogTitle>Generate Weekly Test with AI</DialogTitle>
           <DialogDescription>
-            Create a test by specifying the topics and paper style. The AI will handle the rest.
+            Create a test by specifying the topics and paper style. The AI will handle the rest. This feature is currently disabled.
           </DialogDescription>
         </DialogHeader>
 
@@ -185,7 +185,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
             ) : (
                 <>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleGenerate} disabled={isGenerating}>
+                    <Button onClick={handleGenerate} disabled={isGenerating || true}>
                         {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
                         Generate
                     </Button>

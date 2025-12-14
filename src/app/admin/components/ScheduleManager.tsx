@@ -317,7 +317,7 @@ export default function ScheduleManager() {
                 {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
                 Download PDF
             </Button>
-             <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI}>
+             <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI || true}>
                 {isResolvingWithAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                 Resolve Conflicts
             </Button>

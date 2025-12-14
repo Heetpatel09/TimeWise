@@ -50,12 +50,12 @@ export default function ApiTestPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><KeyRound /> Test Gemini API Key</CardTitle>
                     <CardDescription>
-                        Click the button below to verify that your Gemini API key is configured correctly and working.
+                        Click the button below to verify that your Gemini API key is configured correctly and working. This feature is currently disabled.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="mt-6 flex justify-center">
-                         <Button onClick={handleTest} disabled={isLoading} size="lg">
+                         <Button onClick={handleTest} disabled={isLoading || true} size="lg">
                             {isLoading ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (

@@ -200,7 +200,7 @@ export default function ExamsManager() {
   return (
     <div>
       <div className="flex justify-end gap-2 mb-4">
-        <Button variant="outline" onClick={() => { setAiGeneratedSchedule(null); setAiDialogOpen(true); }}>
+        <Button variant="outline" onClick={() => { setAiGeneratedSchedule(null); setAiDialogOpen(true); }} disabled>
             <Sparkles className="h-4 w-4 mr-2" />
             Generate with AI
         </Button>
@@ -236,7 +236,7 @@ export default function ExamsManager() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEdit(exam)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleGenerateSeating(exam)} disabled={isGeneratingSeating || !exam.classroomId}>
+                      <DropdownMenuItem onClick={() => handleGenerateSeating(exam)} disabled={isGeneratingSeating || !exam.classroomId || true}>
                         {isGeneratingSeating && selectedExamForSeating?.id === exam.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                         Seating Plan
                       </DropdownMenuItem>
@@ -314,7 +314,7 @@ export default function ExamsManager() {
             <DialogHeader>
                 <DialogTitle>Generate Exam Schedule with AI</DialogTitle>
                 <DialogDescription>
-                    Let AI create an optimized, conflict-free exam schedule for you.
+                    Let AI create an optimized, conflict-free exam schedule for you. This feature is currently disabled.
                 </DialogDescription>
             </DialogHeader>
             
@@ -368,7 +368,7 @@ export default function ExamsManager() {
                       Apply Schedule
                     </Button>
                 ) : (
-                    <Button onClick={handleGenerateSchedule} disabled={isGenerating}>
+                    <Button onClick={handleGenerateSchedule} disabled={isGenerating || true}>
                         {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Generate
                     </Button>
