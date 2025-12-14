@@ -9,10 +9,12 @@
  */
 
 import {configureGenkit} from 'genkit';
+import {generateExamScheduleFlow} from './flows/generate-exam-schedule-flow';
 import {generateTestPaperFlow} from './flows/generate-test-paper-flow';
 import {generateWelcomeNotificationFlow} from './flows/generate-welcome-notification-flow';
 import {testApiKeyFlow} from './flows/test-api-key-flow';
 import {googleAI} from '@genkit-ai/google-genai';
+import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts-flow';
 
 configureGenkit({
   plugins: [
@@ -25,7 +27,9 @@ configureGenkit({
 });
 
 export const flows = [
+  generateExamScheduleFlow,
   generateTestPaperFlow,
   generateWelcomeNotificationFlow,
   testApiKeyFlow,
+  resolveScheduleConflictsFlow,
 ];

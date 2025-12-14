@@ -1,0 +1,100 @@
+
+'use server';
+/**
+ * @fileOverview A Genkit flow for resolving schedule conflicts.
+ */
+
+import {ai} from '@/ai/genkit';
+import {z} from 'zod';
+import type { Schedule, Faculty, Classroom, Student, Notification } from '@/lib/types';
+
+const ScheduleConflictSchema = z.object({
+    type: z.enum(['faculty', 'classroom', 'class']),
+    message: z.string(),
+});
+
+const ScheduleSlotSchema = z.object({
+  id: z.string(),
+  classId: z.string(),
+  className: z.string(),
+  subjectId: z.string(),
+  subjectName: z.string(),
+  facultyId: z.string(),
+  facultyName: z.string(),
+  classroomId: z.string(),
+  classroomName: z.string(),
+  day: z.string(),
+  time: z.string(),
+});
+
+export const ResolveConflictsInputSchema = z.object({
+  schedule: z.array(ScheduleSlotSchema),
+  conflicts: z.record(z.array(ScheduleConflictSchema)),
+  faculty: z.array(z.object({ id: z.string(), name: z.string(), department: z.string() })),
+  classrooms: z.array(z.object({ id: z.string(), name: z.string(), type: z.string(), capacity: z.number() })),
+  students: z.array(z.object({ id: z.string(), name: z.string(), classId: z.string() })),
+});
+export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
+
+const NotificationSchema = z.object({
+    userId: z.string().optional(),
+    classId: z.string().optional(),
+    message: z.string(),
+    category: z.enum(['requests', 'exam_schedule', 'general', 'feedback_forms']),
+});
+
+export const ResolveConflictsOutputSchema = z.object({
+  summary: z.string().describe("A brief summary of the changes made to resolve the conflicts."),
+  resolvedSchedule: z.array(ScheduleSlotSchema),
+  notifications: z.array(NotificationSchema).describe("Notifications to be sent to affected faculty or students."),
+});
+export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema>;
+
+export const resolveScheduleConflictsFlow = ai.defineFlow(
+  {
+    name: 'resolveScheduleConflictsFlow',
+    inputSchema: ResolveConflictsInputSchema,
+    outputSchema: ResolveConflictsOutputSchema,
+  },
+  async (input) => {
+    const prompt = `
+        You are a university timetable administrator. You have been given a schedule with several conflicts and a list of available resources. Your task is to resolve these conflicts by re-assigning faculty or classrooms to create a valid schedule.
+
+        Current Schedule (with conflicts):
+        ${JSON.stringify(input.schedule, null, 2)}
+
+        Detected Conflicts:
+        ${JSON.stringify(input.conflicts, null, 2)}
+        
+        Available Resources:
+        - Faculty: ${JSON.stringify(input.faculty, null, 2)}
+        - Classrooms: ${JSON.stringify(input.classrooms, null, 2)}
+
+        Instructions:
+        1. Analyze the conflicts. The most common conflicts are double-bookings for faculty or classrooms at the same time slot.
+        2. Modify the schedule to resolve all conflicts. You can only change the 'facultyId', 'facultyName', 'classroomId', and 'classroomName' for a conflicting slot. DO NOT change the day, time, class, or subject.
+        3. For a given conflicting slot, find an available faculty member or classroom for that specific day and time. A resource is available if they are not part of any other schedule entry at that exact day and time.
+        4. When re-assigning, prefer faculty from the same department if possible.
+        5. The output 'resolvedSchedule' must contain the ENTIRE schedule, including both the modified and unmodified slots. It must be a complete and valid schedule.
+        6. Create a concise 'summary' of the changes you made. For example: "Resolved 2 conflicts. Re-assigned Dr. Smith's class to Room 102 and moved Dr. Jones's lecture to Prof. Davis."
+        7. For each change, create a 'notification' object. 
+           - If a faculty member's class is moved, the notification should be for that 'userId'.
+           - If a whole class's classroom is changed, the notification should be for that 'classId'.
+           - The message should be clear and informative, e.g., "Your CS101 class on Monday at 10:00 AM has been moved to Room 102."
+    `;
+
+    const llmResponse = await ai.generate({
+      prompt: prompt,
+      model: 'googleai/gemini-1.5-flash-preview',
+      output: {
+        schema: ResolveConflictsOutputSchema,
+      },
+      config: {
+        temperature: 0.3,
+      },
+    });
+
+    return llmResponse.output!;
+  }
+);
+    
