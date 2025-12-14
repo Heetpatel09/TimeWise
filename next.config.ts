@@ -69,9 +69,6 @@ const nextConfig: NextConfig = {
   serverActions: {
     bodySizeLimit: '4.5mb',
   },
-  env: {
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  },
 };
 
 export default nextConfig;
