@@ -119,7 +119,7 @@ export default function ExamsManager() {
   
   const handleGenerateSchedule = async () => {
     setIsGenerating(true);
-    toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+    toast({ title: "AI Disabled", description: "AI features are currently disabled.", variant: "destructive"});
     setIsGenerating(false);
     // try {
     //     const result = await generateExamSchedule({
@@ -157,7 +157,7 @@ export default function ExamsManager() {
   const handleGenerateSeating = async (exam: EnrichedExam) => {
     setSelectedExamForSeating(exam);
     setIsGeneratingSeating(true);
-    toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+    toast({ title: "AI Disabled", description: "AI features are currently disabled.", variant: "destructive"});
     setIsGeneratingSeating(false);
     // try {
     //   const examStudents = students.filter(s => s.classId === exam.classId);

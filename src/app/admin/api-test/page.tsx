@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle, AlertTriangle, KeyRound, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ApiTestPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -18,8 +17,8 @@ export default function ApiTestPage() {
         setIsLoading(true);
         toast({
             variant: 'destructive',
-            title: 'AI Feature Disabled',
-            description: 'The AI features are currently disabled by the administrator.',
+            title: <div className="flex items-center gap-2"><AlertTriangle /> AI Feature Disabled</div>,
+            description: 'AI features are currently disabled due to installation issues.',
         });
         setIsLoading(false);
         // try {
@@ -55,15 +54,8 @@ export default function ApiTestPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>AI Features Disabled</AlertTitle>
-                        <AlertDescription>
-                            All AI features, including this API key test, are currently disabled.
-                        </AlertDescription>
-                    </Alert>
                     <div className="mt-6 flex justify-center">
-                         <Button onClick={handleTest} disabled={true} size="lg">
+                         <Button onClick={handleTest} disabled={isLoading} size="lg">
                             {isLoading ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (

@@ -68,15 +68,14 @@ export default function FacultyManager() {
           await updateFaculty(currentFaculty as Faculty);
           toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
         } else {
-          // const result = await addFaculty(
-          //   currentFaculty as Omit<Faculty, 'id'>,
-          //   passwordOption === 'manual' ? manualPassword : undefined
-          // );
-          // toast({ title: "Faculty Added", description: "The new faculty member has been created." });
-          // if (result.initialPassword) {
-          //   setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
-          // }
-          toast({ title: "AI Feature Disabled", description: "Adding users with AI-generated notifications is currently disabled.", variant: "destructive" });
+          const result = await addFaculty(
+            currentFaculty as Omit<Faculty, 'id'>,
+            passwordOption === 'manual' ? manualPassword : undefined
+          );
+          toast({ title: "Faculty Added", description: "The new faculty member has been created." });
+          if (result.initialPassword) {
+            setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
+          }
         }
         await loadData();
         setDialogOpen(false);

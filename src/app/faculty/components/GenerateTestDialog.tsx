@@ -65,7 +65,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
       return;
     }
     setIsGenerating(true);
-    toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+    toast({ title: "AI Disabled", description: "AI features are currently disabled.", variant: "destructive"});
     setIsGenerating(false);
     // try {
     //   const subjectName = subjects.find(s => s.id === selectedSubjectId)?.name || '';

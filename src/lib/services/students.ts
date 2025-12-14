@@ -67,22 +67,23 @@ export async function addStudent(
     });
     
     // Generate welcome notification
-    // try {
-    //     const classes = await getClasses();
-    //     const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
-    //     const notificationResult = await generateWelcomeNotification({
-    //         name: newItem.name,
-    //         role: 'student',
-    //         context: className
-    //     });
-    //     await addNotification({
-    //         userId: newItem.id,
-    //         message: notificationResult.message,
-    //         category: 'general'
-    //     });
-    // } catch (e: any) {
-    //     console.error("Failed to generate welcome notification for student:", e.message);
-    // }
+    try {
+        const classes = await getClasses();
+        const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
+        // const notificationResult = await generateWelcomeNotification({
+        //     name: newItem.name,
+        //     role: 'student',
+        //     context: className
+        // });
+        await addNotification({
+            userId: newItem.id,
+            // message: notificationResult.message,
+            message: `Welcome to the portal, ${newItem.name}! We're excited to have you join ${className}.`,
+            category: 'general'
+        });
+    } catch (e: any) {
+        console.error("Failed to generate welcome notification for student:", e.message);
+    }
 
     revalidateAll();
     return Promise.resolve({ ...newItem, initialPassword: password ? undefined : initialPassword });

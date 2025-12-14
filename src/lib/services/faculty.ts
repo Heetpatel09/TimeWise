@@ -67,21 +67,22 @@ export async function addFaculty(
     });
 
     // Generate welcome notification
-    // try {
-    //     const notificationResult = await generateWelcomeNotification({
-    //         name: newItem.name,
-    //         role: 'faculty',
-    //         context: newItem.department
-    //     });
-    //     await addNotification({
-    //         userId: newItem.id,
-    //         message: notificationResult.message,
-    //         category: 'general',
-    //     });
-    // } catch (e: any) {
-    //     console.error("Failed to generate welcome notification for faculty:", e.message);
-    //     // Don't block user creation if notification fails
-    // }
+    try {
+        // const notificationResult = await generateWelcomeNotification({
+        //     name: newItem.name,
+        //     role: 'faculty',
+        //     context: newItem.department
+        // });
+        await addNotification({
+            userId: newItem.id,
+            // message: notificationResult.message,
+            message: `Welcome aboard, ${newItem.name}! We're thrilled to have you with the ${newItem.department} department.`,
+            category: 'general',
+        });
+    } catch (e: any) {
+        console.error("Failed to generate welcome notification for faculty:", e.message);
+        // Don't block user creation if notification fails
+    }
 
 
     revalidateAll();

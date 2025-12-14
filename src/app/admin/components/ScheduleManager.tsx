@@ -224,13 +224,13 @@ export default function ScheduleManager() {
   
   const handleResolveWithAI = async () => {
       setIsResolvingWithAI(true);
-      toast({ title: "AI Feature Disabled", description: "This feature is currently turned off.", variant: "destructive" });
+      toast({ title: "AI Disabled", description: "AI features are currently disabled.", variant: "destructive"});
       setIsResolvingWithAI(false);
     //   try {
     //       const result = await resolveScheduleConflicts({
     //           schedule,
     //           classInfo: classes.map(c => ({ id: c.id, name: c.name })),
-    //           subjectInfo: subjects.map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type })),
+    //           subjectInfo: subjects.map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type as 'theory' | 'lab' })),
     //           facultyInfo: faculty.map(f => ({ id: f.id, name: f.name })),
     //           classroomInfo: classrooms.map(cr => ({ id: cr.id, name: cr.name })),
     //           timeSlots: LECTURE_TIME_SLOTS,
@@ -272,7 +272,7 @@ export default function ScheduleManager() {
             throw new Error(error);
         }
 
-        const blob = new Blob([new Uint8Array(atob(pdf).split('').map(char => char.charCodeAt(0)))], { type: 'application/pdf' });
+        const blob = new Blob([new Uint8Array(atob(pdf!).split('').map(char => char.charCodeAt(0)))], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = 'master_schedule.pdf';

@@ -95,15 +95,14 @@ export default function StudentsManager() {
           await updateStudent(currentStudent as Student);
           toast({ title: "Student Updated", description: "The student's details have been saved." });
         } else {
-          // const result = await addStudent(
-          //   currentStudent as Omit<Student, 'id'>,
-          //   passwordOption === 'manual' ? manualPassword : undefined
-          //   );
-          // toast({ title: "Student Added", description: "The new student has been added." });
-          // if (result.initialPassword) {
-          //   setNewStudentCredentials({ email: result.email, initialPassword: result.initialPassword });
-          // }
-           toast({ title: "AI Feature Disabled", description: "Adding users with AI-generated notifications is currently disabled.", variant: "destructive" });
+          const result = await addStudent(
+            currentStudent as Omit<Student, 'id'>,
+            passwordOption === 'manual' ? manualPassword : undefined
+            );
+          toast({ title: "Student Added", description: "The new student has been added." });
+          if (result.initialPassword) {
+            setNewStudentCredentials({ email: result.email, initialPassword: result.initialPassword });
+          }
         }
         await loadData();
         setDialogOpen(false);
