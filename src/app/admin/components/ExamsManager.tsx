@@ -25,9 +25,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-type GenerateExamScheduleOutput = any;
-type GenerateSeatingArrangementOutput = any;
-
 const EXAM_TIME_SLOTS = ['10:00 AM - 01:00 PM', '02:00 PM - 05:00 PM'];
 
 export default function ExamsManager() {
@@ -43,10 +40,10 @@ export default function ExamsManager() {
   const { toast } = useToast();
 
   const [isAiDialogOpen, setAiDialogOpen] = useState(false);
-  const [aiGeneratedSchedule, setAiGeneratedSchedule] = useState<GenerateExamScheduleOutput | null>(null);
+  const [aiGeneratedSchedule, setAiGeneratedSchedule] = useState<any | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSeatingPlanOpen, setSeatingPlanOpen] = useState(false);
-  const [seatingPlan, setSeatingPlan] = useState<GenerateSeatingArrangementOutput | null>(null);
+  const [seatingPlan, setSeatingPlan] = useState<any | null>(null);
   const [selectedExamForSeating, setSelectedExamForSeating] = useState<EnrichedExam | null>(null);
   const [isGeneratingSeating, setIsGeneratingSeating] = useState(false);
 
@@ -119,23 +116,24 @@ export default function ExamsManager() {
   
   const handleGenerateSchedule = async () => {
     setIsGenerating(true);
-    toast({ title: "AI Disabled", description: "AI features are currently disabled.", variant: "destructive"});
+    toast({
+        variant: 'destructive',
+        title: 'AI Feature Disabled',
+        description: 'The AI features are temporarily disabled due to an installation issue.',
+    });
     setIsGenerating(false);
     // try {
-    //     const result = await generateExamSchedule({
-    //         subjects: subjects.map(s => ({ id: s.id, name: s.name, semester: s.semester })),
-    //         classes: classes.map(c => ({ id: c.id, name: c.name, semester: c.semester })),
-    //         classrooms: classrooms.filter(cr => cr.type === 'classroom').map(cr => ({ id: cr.id, name: cr.name })),
-    //         startDate: format(new Date(), 'yyyy-MM-dd'),
-    //         endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-    //         timeSlots: EXAM_TIME_SLOTS
-    //     });
-    //     setAiGeneratedSchedule(result);
-    // } catch (error: any) {
-    //     toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
-    // } finally {
-    //     setIsGenerating(false);
+    //   const result = await generateExamSchedule({
+    //     subjects,
+    //     classes,
+    //     classrooms,
+    //     examTimeSlots: EXAM_TIME_SLOTS
+    //   });
+    //   setAiGeneratedSchedule(result);
+    // } catch(e: any) {
+    //   toast({ title: "AI Generation Failed", description: e.message || "Could not generate schedule.", variant: "destructive"});
     // }
+    // setIsGenerating(false);
   };
 
   const handleApplyAiSchedule = async () => {
@@ -157,18 +155,23 @@ export default function ExamsManager() {
   const handleGenerateSeating = async (exam: EnrichedExam) => {
     setSelectedExamForSeating(exam);
     setIsGeneratingSeating(true);
-    toast({ title: "AI Disabled", description: "AI features are currently disabled.", variant: "destructive"});
+    toast({
+        variant: 'destructive',
+        title: 'AI Feature Disabled',
+        description: 'The AI features are temporarily disabled due to an installation issue.',
+    });
     setIsGeneratingSeating(false);
     // try {
-    //   const examStudents = students.filter(s => s.classId === exam.classId);
-    //   const result = await generateSeatingArrangement({
-    //     exam: exam,
-    //     students: examStudents.map(s => ({ id: s.id, name: s.name }))
-    //   });
-    //   setSeatingPlan(result);
-    //   setSeatingPlanOpen(true);
+    //     const classStudents = students.filter(s => s.classId === exam.classId);
+    //     const classroom = classrooms.find(c => c.id === exam.classroomId);
+    //     if (!classroom) {
+    //         throw new Error("Classroom details not found for this exam.");
+    //     }
+    //     const result = await generateSeatingArrangement({ students: classStudents, classroom });
+    //     setSeatingPlan(result);
+    //     setSeatingPlanOpen(true);
     // } catch (error: any) {
-    //    toast({ title: "AI Failed", description: "Could not generate seating plan.", variant: "destructive" });
+    //      toast({ title: "AI Seating Plan Failed", description: error.message || "Could not generate seating arrangement.", variant: "destructive"});
     // } finally {
     //     setIsGeneratingSeating(false);
     // }
@@ -200,7 +203,7 @@ export default function ExamsManager() {
   return (
     <div>
       <div className="flex justify-end gap-2 mb-4">
-        <Button variant="outline" onClick={() => { setAiGeneratedSchedule(null); setAiDialogOpen(true); }} disabled>
+        <Button variant="outline" onClick={() => { setAiGeneratedSchedule(null); setAiDialogOpen(true); }}>
             <Sparkles className="h-4 w-4 mr-2" />
             Generate with AI
         </Button>
@@ -236,7 +239,7 @@ export default function ExamsManager() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEdit(exam)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleGenerateSeating(exam)} disabled={isGeneratingSeating || !exam.classroomId || true}>
+                      <DropdownMenuItem onClick={() => handleGenerateSeating(exam)} disabled={isGeneratingSeating || !exam.classroomId}>
                         {isGeneratingSeating && selectedExamForSeating?.id === exam.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                         Seating Plan
                       </DropdownMenuItem>
@@ -314,7 +317,7 @@ export default function ExamsManager() {
             <DialogHeader>
                 <DialogTitle>Generate Exam Schedule with AI</DialogTitle>
                 <DialogDescription>
-                    Let AI create an optimized, conflict-free exam schedule for you. This feature is currently disabled.
+                    Let AI create an optimized, conflict-free exam schedule for you.
                 </DialogDescription>
             </DialogHeader>
             
@@ -341,7 +344,7 @@ export default function ExamsManager() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {aiGeneratedSchedule.generatedSchedule.map((exam: any, i: number) => (
+                                {aiGeneratedSchedule.generatedSchedule.map((exam:any, i:number) => (
                                     <TableRow key={i}>
                                         <TableCell>{format(parseISO(exam.date), 'PPP')}</TableCell>
                                         <TableCell>{exam.time}</TableCell>
@@ -368,7 +371,7 @@ export default function ExamsManager() {
                       Apply Schedule
                     </Button>
                 ) : (
-                    <Button onClick={handleGenerateSchedule} disabled={isGenerating || true}>
+                    <Button onClick={handleGenerateSchedule} disabled={isGenerating}>
                         {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Generate
                     </Button>

@@ -12,7 +12,7 @@ import { Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import type { Class, Subject } from '@/lib/types';
-import { generateTestPaper, GenerateTestPaperOutput } from '@/ai/flows/generate-test-paper-flow';
+// import { generateTestPaper, GenerateTestPaperOutput } from '@/ai/flows/generate-test-paper-flow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { addExam } from '@/lib/services/exams';
@@ -36,7 +36,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [generatedPaper, setGeneratedPaper] = useState<GenerateTestPaperOutput | null>(null);
+  const [generatedPaper, setGeneratedPaper] = useState<any | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -63,22 +63,28 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
       return;
     }
     setIsGenerating(true);
+    toast({
+        variant: 'destructive',
+        title: 'AI Feature Disabled',
+        description: 'The AI features are temporarily disabled due to an installation issue.',
+    });
+    setIsGenerating(false);
     
-    try {
-      const subjectName = subjects.find(s => s.id === selectedSubjectId)?.name || '';
-      const className = classes.find(c => c.id === selectedClassId)?.name || '';
-      const result = await generateTestPaper({
-        subjectName,
-        className,
-        topics: topics.split('\n'),
-        paperStyle,
-      });
-      setGeneratedPaper(result);
-    } catch (error: any) {
-      toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
-    } finally {
-      setIsGenerating(false);
-    }
+    // try {
+    //   const subjectName = subjects.find(s => s.id === selectedSubjectId)?.name || '';
+    //   const className = classes.find(c => c.id === selectedClassId)?.name || '';
+    //   const result = await generateTestPaper({
+    //     subjectName,
+    //     className,
+    //     topics: topics.split('\n'),
+    //     paperStyle,
+    //   });
+    //   setGeneratedPaper(result);
+    // } catch (error: any) {
+    //   toast({ title: "AI Generation Failed", description: error.message, variant: "destructive" });
+    // } finally {
+    //   setIsGenerating(false);
+    // }
   };
 
   const handlePublish = async () => {

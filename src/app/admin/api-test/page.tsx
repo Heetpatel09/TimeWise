@@ -11,27 +11,36 @@ import Link from 'next/link';
 
 export default function ApiTestPage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
     const { toast } = useToast();
 
     const handleTest = async () => {
         setIsLoading(true);
+        setIsSuccess(null);
         toast({
             variant: 'destructive',
-            title: <div className="flex items-center gap-2"><AlertTriangle /> AI Feature Disabled</div>,
-            description: 'AI features are currently disabled due to installation issues.',
+            title: 'AI Feature Disabled',
+            description: 'The AI features are temporarily disabled due to an installation issue.',
         });
+        setIsSuccess(false);
         setIsLoading(false);
         // try {
         //     const result = await testApiKey();
-        //     toast({
-        //         title: <div className="flex items-center gap-2"><CheckCircle className="text-green-500" /> Success!</div>,
-        //         description: result.message,
-        //     });
+        //     if (result.success) {
+        //         setIsSuccess(true);
+        //         toast({
+        //             title: <div className="flex items-center gap-2"><CheckCircle /> API Key is Working!</div>,
+        //             description: 'Successfully connected to the Gemini API.',
+        //         });
+        //     } else {
+        //         throw new Error(result.error || 'Unknown error');
+        //     }
         // } catch (error: any) {
+        //     setIsSuccess(false);
         //     toast({
         //         variant: 'destructive',
         //         title: <div className="flex items-center gap-2"><AlertTriangle /> API Key Test Failed</div>,
-        //         description: error.message || 'An unknown error occurred.',
+        //         description: error.message || 'Could not connect to the Gemini API. Please check your key and environment variables.',
         //     });
         // } finally {
         //     setIsLoading(false);
@@ -50,12 +59,12 @@ export default function ApiTestPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><KeyRound /> Test Gemini API Key</CardTitle>
                     <CardDescription>
-                        Click the button below to verify that your Gemini API key is configured correctly and working. This feature is currently disabled.
+                        Click the button below to verify that your Gemini API key is configured correctly and working.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="mt-6 flex justify-center">
-                         <Button onClick={handleTest} disabled={isLoading || true} size="lg">
+                         <Button onClick={handleTest} disabled={isLoading} size="lg">
                             {isLoading ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (

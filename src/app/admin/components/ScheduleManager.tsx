@@ -50,8 +50,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
 
-type ResolveConflictsOutput = any;
-
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
         const [timePart, modifier] = time.split(' ');
@@ -99,7 +97,7 @@ export default function ScheduleManager() {
   const [isResolvingWithAI, setIsResolvingWithAI] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
-  const [aiResolution, setAiResolution] = useState<ResolveConflictsOutput | null>(null);
+  const [aiResolution, setAiResolution] = useState<any | null>(null);
   
   const { toast } = useToast();
 
@@ -224,25 +222,31 @@ export default function ScheduleManager() {
   
   const handleResolveWithAI = async () => {
       setIsResolvingWithAI(true);
-      toast({ title: "AI Disabled", description: "AI features are currently disabled.", variant: "destructive"});
+      toast({
+        variant: 'destructive',
+        title: 'AI Feature Disabled',
+        description: 'The AI features are temporarily disabled due to an installation issue.',
+      });
       setIsResolvingWithAI(false);
-    //   try {
-    //       const result = await resolveScheduleConflicts({
-    //           schedule,
-    //           classInfo: classes.map(c => ({ id: c.id, name: c.name })),
-    //           subjectInfo: subjects.map(s => ({ id: s.id, name: s.name, isSpecial: s.isSpecial || false, type: s.type as 'theory' | 'lab' })),
-    //           facultyInfo: faculty.map(f => ({ id: f.id, name: f.name })),
-    //           classroomInfo: classrooms.map(cr => ({ id: cr.id, name: cr.name })),
-    //           timeSlots: LECTURE_TIME_SLOTS,
-    //       });
-          
-    //       setAiResolution(result);
-
-    //   } catch (error: any) {
-    //       toast({ title: 'AI Resolution Failed', description: error.message || "The AI could not resolve the conflicts. Please try resolving them manually.", variant: "destructive" });
-    //   } finally {
-    //       setIsResolvingWithAI(false);
-    //   }
+      // try {
+      //   const resolution = await resolveScheduleConflicts({
+      //     schedule: schedule.map(s => ({
+      //       ...s,
+      //       className: getRelationInfo(s.classId, 'class')?.name || 'N/A',
+      //       facultyName: getRelationInfo(s.facultyId, 'faculty')?.name || 'N/A',
+      //       subjectName: getRelationInfo(s.subjectId, 'subject')?.name || 'N/A',
+      //       classroomName: getRelationInfo(s.classroomId, 'classroom')?.name || 'N/A',
+      //     })),
+      //     conflicts,
+      //     faculty,
+      //     classrooms,
+      //     students,
+      //   });
+      //   setAiResolution(resolution);
+      // } catch (error: any) {
+      //   toast({ title: 'AI Resolution Failed', description: error.message, variant: 'destructive' });
+      // }
+      // setIsResolvingWithAI(false);
   }
 
   const handleApproveAIChanges = async () => {
@@ -317,7 +321,7 @@ export default function ScheduleManager() {
                 {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
                 Download PDF
             </Button>
-             <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI || true}>
+             <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI}>
                 {isResolvingWithAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                 Resolve Conflicts
             </Button>
