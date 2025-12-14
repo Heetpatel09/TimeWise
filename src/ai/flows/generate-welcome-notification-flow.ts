@@ -1,4 +1,3 @@
-
 'use server';
 
 import {ai} from '@/ai/genkit';
@@ -14,7 +13,7 @@ export type WelcomeNotificationInput = z.infer<
   typeof WelcomeNotificationInputSchema
 >;
 
-export const generateWelcomeNotificationFlow = ai.defineFlow(
+const generateWelcomeNotification = ai.defineFlow(
   {
     name: 'generateWelcomeNotificationFlow',
     inputSchema: WelcomeNotificationInputSchema,
@@ -34,3 +33,7 @@ export const generateWelcomeNotificationFlow = ai.defineFlow(
     return llmResponse.text;
   }
 );
+
+export async function generateWelcomeNotificationFlow(input: WelcomeNotificationInput): Promise<string> {
+    return generateWelcomeNotification(input);
+}
