@@ -45,12 +45,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-// import { resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
+import { resolveScheduleConflictsFlow as resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
-
-type ResolveConflictsOutput = any;
 
 function sortTime(a: string, b: string) {
     const toDate = (time: string) => {
@@ -213,7 +211,7 @@ export default function ScheduleManager() {
         toast({ title: 'Slot Deleted', description: 'The schedule slot has been removed.' });
         loadAllData();
      } catch (error: any) {
-        toast({ title: 'Error', description: error.message || 'Failed to delete slot.', variant: 'destructive' });
+        toast({ title: 'Error', description: error.message || 'Failed to delete slot.', variant: "destructive" });
      }
   };
 
@@ -224,31 +222,25 @@ export default function ScheduleManager() {
   
   const handleResolveWithAI = async () => {
       setIsResolvingWithAI(true);
-      toast({
-        variant: 'destructive',
-        title: 'AI Features Disabled',
-        description: 'The AI features are currently disabled due to an installation issue.',
-      });
+      try {
+        const resolution = await resolveScheduleConflicts({
+          schedule: schedule.map(s => ({
+            ...s,
+            className: getRelationInfo(s.classId, 'class')?.name || 'N/A',
+            facultyName: getRelationInfo(s.facultyId, 'faculty')?.name || 'N/A',
+            subjectName: getRelationInfo(s.subjectId, 'subject')?.name || 'N/A',
+            classroomName: getRelationInfo(s.classroomId, 'classroom')?.name || 'N/A',
+          })),
+          conflicts,
+          faculty,
+          classrooms,
+          students,
+        });
+        setAiResolution(resolution);
+      } catch (error: any) {
+        toast({ title: 'AI Resolution Failed', description: error.message, variant: 'destructive' });
+      }
       setIsResolvingWithAI(false);
-    //   try {
-    //     const resolution = await resolveScheduleConflicts({
-    //       schedule: schedule.map(s => ({
-    //         ...s,
-    //         className: getRelationInfo(s.classId, 'class')?.name || 'N/A',
-    //         facultyName: getRelationInfo(s.facultyId, 'faculty')?.name || 'N/A',
-    //         subjectName: getRelationInfo(s.subjectId, 'subject')?.name || 'N/A',
-    //         classroomName: getRelationInfo(s.classroomId, 'classroom')?.name || 'N/A',
-    //       })),
-    //       conflicts,
-    //       faculty,
-    //       classrooms,
-    //       students,
-    //     });
-    //     setAiResolution(resolution);
-    //   } catch (error: any) {
-    //     toast({ title: 'AI Resolution Failed', description: error.message, variant: 'destructive' });
-    //   }
-    //   setIsResolvingWithAI(false);
   }
 
   const handleApproveAIChanges = async () => {

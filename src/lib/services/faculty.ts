@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { Faculty } from '@/lib/types';
 import { addCredential } from './auth';
-// import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
+import { generateWelcomeNotificationFlow as generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
 import { randomBytes } from 'crypto';
 
@@ -68,14 +68,14 @@ export async function addFaculty(
 
     // Generate welcome notification
     try {
-        // const notificationResult = await generateWelcomeNotification({
-        //     name: newItem.name,
-        //     role: 'faculty',
-        //     context: newItem.department
-        // });
+        const notificationResult = await generateWelcomeNotification({
+            name: newItem.name,
+            role: 'faculty',
+            context: newItem.department
+        });
         await addNotification({
             userId: newItem.id,
-            message: `Welcome, ${newItem.name}! Your account has been created for the ${newItem.department} department.`,
+            message: notificationResult,
             category: 'general',
         });
     } catch (e: any) {

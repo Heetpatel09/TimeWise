@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
 import type { Student } from '@/lib/types';
 import { addCredential } from './auth';
-// import { generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
+import { generateWelcomeNotificationFlow as generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
 import { getClasses } from './classes';
 import { randomBytes } from 'crypto';
@@ -70,14 +70,14 @@ export async function addStudent(
     try {
         const classes = await getClasses();
         const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
-        // const notificationResult = await generateWelcomeNotification({
-        //     name: newItem.name,
-        //     role: 'student',
-        //     context: className
-        // });
+        const notificationResult = await generateWelcomeNotification({
+            name: newItem.name,
+            role: 'student',
+            context: className
+        });
         await addNotification({
             userId: newItem.id,
-            message: `Welcome, ${newItem.name}! You have been added to ${className}.`,
+            message: notificationResult,
             category: 'general'
         });
     } catch (e: any) {

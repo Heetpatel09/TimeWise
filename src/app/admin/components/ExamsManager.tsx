@@ -18,15 +18,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, parseISO } from 'date-fns';
-// import { generateExamSchedule, GenerateExamScheduleOutput } from '@/ai/flows/generate-exam-schedule-flow';
-// import { generateSeatingArrangement, GenerateSeatingArrangementOutput } from '@/ai/flows/generate-seating-arrangement-flow';
+import { generateExamScheduleFlow as generateExamSchedule, GenerateExamScheduleOutput } from '@/ai/flows/generate-exam-schedule-flow';
+import { generateSeatingArrangementFlow as generateSeatingArrangement, GenerateSeatingArrangementOutput } from '@/ai/flows/generate-seating-arrangement-flow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-
-type GenerateExamScheduleOutput = any;
-type GenerateSeatingArrangementOutput = any;
 
 const EXAM_TIME_SLOTS = ['10:00 AM - 01:00 PM', '02:00 PM - 05:00 PM'];
 
@@ -119,24 +116,18 @@ export default function ExamsManager() {
   
   const handleGenerateSchedule = async () => {
     setIsGenerating(true);
-    toast({
-        variant: 'destructive',
-        title: 'AI Features Disabled',
-        description: 'The AI features are currently disabled due to an installation issue.',
-    });
+    try {
+      const result = await generateExamSchedule({
+        subjects,
+        classes,
+        classrooms,
+        examTimeSlots: EXAM_TIME_SLOTS
+      });
+      setAiGeneratedSchedule(result);
+    } catch(e: any) {
+      toast({ title: "AI Generation Failed", description: e.message || "Could not generate schedule.", variant: "destructive"});
+    }
     setIsGenerating(false);
-    // try {
-    //   const result = await generateExamSchedule({
-    //     subjects,
-    //     classes,
-    //     classrooms,
-    //     examTimeSlots: EXAM_TIME_SLOTS
-    //   });
-    //   setAiGeneratedSchedule(result);
-    // } catch(e: any) {
-    //   toast({ title: "AI Generation Failed", description: e.message || "Could not generate schedule.", variant: "destructive"});
-    // }
-    // setIsGenerating(false);
   };
 
   const handleApplyAiSchedule = async () => {
@@ -158,26 +149,20 @@ export default function ExamsManager() {
   const handleGenerateSeating = async (exam: EnrichedExam) => {
     setSelectedExamForSeating(exam);
     setIsGeneratingSeating(true);
-    toast({
-        variant: 'destructive',
-        title: 'AI Features Disabled',
-        description: 'The AI features are currently disabled due to an installation issue.',
-    });
-    setIsGeneratingSeating(false);
-    // try {
-    //     const classStudents = students.filter(s => s.classId === exam.classId);
-    //     const classroom = classrooms.find(c => c.id === exam.classroomId);
-    //     if (!classroom) {
-    //         throw new Error("Classroom details not found for this exam.");
-    //     }
-    //     const result = await generateSeatingArrangement({ students: classStudents, classroom });
-    //     setSeatingPlan(result);
-    //     setSeatingPlanOpen(true);
-    // } catch (error: any) {
-    //      toast({ title: "AI Seating Plan Failed", description: error.message || "Could not generate seating arrangement.", variant: "destructive"});
-    // } finally {
-    //     setIsGeneratingSeating(false);
-    // }
+    try {
+        const classStudents = students.filter(s => s.classId === exam.classId);
+        const classroom = classrooms.find(c => c.id === exam.classroomId);
+        if (!classroom) {
+            throw new Error("Classroom details not found for this exam.");
+        }
+        const result = await generateSeatingArrangement({ students: classStudents, classroom });
+        setSeatingPlan(result);
+        setSeatingPlanOpen(true);
+    } catch (error: any) {
+         toast({ title: "AI Seating Plan Failed", description: error.message || "Could not generate seating arrangement.", variant: "destructive"});
+    } finally {
+        setIsGeneratingSeating(false);
+    }
   }
 
   const downloadSeatingPlan = () => {
