@@ -1,9 +1,8 @@
 'use server';
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
-import type { WelcomeNotificationInput } from '@/lib/types';
-import { WelcomeNotificationInputSchema } from '@/lib/types';
+import { WelcomeNotificationInputSchema, type WelcomeNotificationInput } from '@/lib/types';
+import { z } from 'zod';
 
 
 const generateWelcomeNotification = ai.defineFlow(
@@ -17,7 +16,7 @@ const generateWelcomeNotification = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt,
-      model: 'googleai/gemini-1.5-flash-preview',
+      model: 'googleai/gemini-1.5-flash-preview-001',
       config: {
         temperature: 0.7,
       },
