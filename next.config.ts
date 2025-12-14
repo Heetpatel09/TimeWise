@@ -61,6 +61,14 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  devIndicators: {
+    allowedDevOrigins: [
+        '*.cluster-a6zx3cwnb5hnuwbgyxmofxpkfe.cloudworkstations.dev',
+    ],
+  },
+  serverActions: {
+    bodySizeLimit: '4.5mb',
+  },
   env: {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   },
