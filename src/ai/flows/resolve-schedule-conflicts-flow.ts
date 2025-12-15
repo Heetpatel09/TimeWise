@@ -42,7 +42,7 @@ const resolveConflictsFlow = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-1.5-flash',
+      model: 'googleai/gemini-1.5-flash-preview-001',
       output: {
         schema: ResolveConflictsOutputSchema,
       },
