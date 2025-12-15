@@ -24,12 +24,12 @@ export default function RootLayout({
       <body className="font-body antialiased h-full flex flex-col" suppressHydrationWarning>
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://picsum.photos/seed/blue-abstract/1920/1080"
+            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background.jpeg"
             alt="Abstract background"
             fill
             style={{ objectFit: 'cover', opacity: 1 }}
             priority
-            data-ai-hint="abstract blue gradient"
+            data-ai-hint="abstract purple gradient"
           />
         </div>
         <Providers>
