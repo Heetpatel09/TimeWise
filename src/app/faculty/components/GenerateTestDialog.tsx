@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,11 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
-import type { Class, Subject, GenerateTestPaperOutput } from '@/lib/types';
+import { getClassrooms } from '@/lib/services/classrooms';
+import type { Class, Subject, GenerateTestPaperOutput, Classroom } from '@/lib/types';
 import { generateTestPaperFlow as generateTestPaper } from '@/ai/flows/generate-test-paper-flow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { addExam } from '@/lib/services/exams';
+import { addExam, saveGeneratedTest } from '@/lib/services/exams';
 import { format } from 'date-fns';
 
 interface GenerateTestDialogProps {
@@ -28,6 +30,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
   const { toast } = useToast();
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
@@ -41,9 +44,10 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
   useEffect(() => {
     async function loadData() {
       if (isOpen) {
-        const [classData, subjectData] = await Promise.all([getClasses(), getSubjects()]);
+        const [classData, subjectData, classroomData] = await Promise.all([getClasses(), getSubjects(), getClassrooms()]);
         setClasses(classData);
         setSubjects(subjectData);
+        setClassrooms(classroomData);
       }
     }
     loadData();
@@ -85,14 +89,22 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
       if (!generatedPaper || !selectedClassId || !selectedSubjectId) return;
       setIsPublishing(true);
       try {
-        // Here you would typically save the generated questions to a 'tests' or 'assignments' table.
-        // For this demo, we'll create an "exam" entry to show it on student dashboards.
+        const testId = await saveGeneratedTest(selectedSubjectId, selectedClassId, facultyId, generatedPaper);
+        
+        const firstAvailableClassroom = classrooms.find(c => c.type === 'classroom');
+        if (!firstAvailableClassroom) {
+            throw new Error("No available classrooms to schedule the test.");
+        }
+
         await addExam({
             subjectId: selectedSubjectId,
             classId: selectedClassId,
+            classroomId: firstAvailableClassroom.id,
             date: format(new Date(), 'yyyy-MM-dd'),
-            time: 'AI Generated Test' // Placeholder time
+            time: 'AI Generated Test',
+            testId: testId,
         });
+
         toast({ title: "Test Published!", description: "The test is now available for students." });
         onOpenChange(false);
         resetForm();
@@ -193,5 +205,7 @@ export default function GenerateTestDialog({ isOpen, onOpenChange, facultyId }: 
     </Dialog>
   );
 }
+
+    
 
     

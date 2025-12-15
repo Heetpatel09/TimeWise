@@ -34,7 +34,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 56; // Increment this to force re-initialization
+const schemaVersion = 57; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -255,6 +255,17 @@ function createSchemaAndSeed() {
       status TEXT NOT NULL DEFAULT 'pending',
       FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
     );
+     CREATE TABLE IF NOT EXISTS generated_tests (
+        id TEXT PRIMARY KEY,
+        subjectId TEXT NOT NULL,
+        classId TEXT NOT NULL,
+        facultyId TEXT NOT NULL,
+        questions TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        FOREIGN KEY (subjectId) REFERENCES subjects(id),
+        FOREIGN KEY (classId) REFERENCES classes(id),
+        FOREIGN KEY (facultyId) REFERENCES faculty(id)
+    );
     CREATE TABLE IF NOT EXISTS exams (
       id TEXT PRIMARY KEY,
       subjectId TEXT NOT NULL,
@@ -262,9 +273,11 @@ function createSchemaAndSeed() {
       classroomId TEXT,
       date TEXT NOT NULL,
       time TEXT NOT NULL,
+      testId TEXT,
       FOREIGN KEY (subjectId) REFERENCES subjects(id) ON DELETE CASCADE,
       FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE,
-      FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE SET NULL
+      FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE SET NULL,
+      FOREIGN KEY (testId) REFERENCES generated_tests(id) ON DELETE SET NULL
     );
     CREATE TABLE IF NOT EXISTS attendance (
         id TEXT PRIMARY KEY,
@@ -418,5 +431,7 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
 
     

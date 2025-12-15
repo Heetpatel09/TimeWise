@@ -1,15 +1,17 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Exam, EnrichedExam } from '@/lib/types';
+import type { Exam, EnrichedExam, GenerateTestPaperOutput } from '@/lib/types';
 import { addNotification } from './notifications';
 import { getStudentsByClass } from './students';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');
     revalidatePath('/faculty', 'layout');
+    revalidatePath('/student', 'layout');
 }
 
 export async function getExams(): Promise<EnrichedExam[]> {
@@ -36,15 +38,16 @@ export async function getExams(): Promise<EnrichedExam[]> {
 export async function addExam(item: Omit<Exam, 'id'>) {
     const db = getDb();
     const id = `EXM${Date.now()}`;
-    const stmt = db.prepare('INSERT INTO exams (id, subjectId, classId, classroomId, date, time) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, item.subjectId, item.classId, item.classroomId, item.date, item.time);
+    const stmt = db.prepare('INSERT INTO exams (id, subjectId, classId, classroomId, date, time, testId) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, item.subjectId, item.classId, item.classroomId, item.date, item.time, item.testId);
     
     // Notify students of the class
     const students = await getStudentsByClass(item.classId);
+    const subject = db.prepare('SELECT name FROM subjects WHERE id = ?').get(item.subjectId) as {name: string};
     for (const student of students) {
         await addNotification({
             userId: student.id,
-            message: `A new exam for ${item.subjectId} has been scheduled on ${item.date}.`,
+            message: `A new exam for ${subject.name} has been scheduled on ${item.date}.`,
             category: 'exam_schedule'
         });
     }
@@ -86,3 +89,20 @@ export async function replaceExams(exams: Exam[]) {
     revalidateAll();
     return Promise.resolve({ success: true });
 }
+
+export async function saveGeneratedTest(
+    subjectId: string,
+    classId: string,
+    facultyId: string,
+    paper: GenerateTestPaperOutput
+): Promise<string> {
+    const db = getDb();
+    const id = `TEST${Date.now()}`;
+    const createdAt = new Date().toISOString();
+    const stmt = db.prepare('INSERT INTO generated_tests (id, subjectId, classId, facultyId, questions, createdAt) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, subjectId, classId, facultyId, JSON.stringify(paper.questions), createdAt);
+    revalidateAll();
+    return Promise.resolve(id);
+}
+
+    
