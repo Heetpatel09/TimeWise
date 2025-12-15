@@ -17,9 +17,7 @@ import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts
 
 configureGenkit({
   plugins: [
-    googleAI({
-      apiVersion: 'v1beta',
-    }),
+    googleAI(),
   ],
   logLevel: 'debug',
   enableTracingAndMetrics: true,
@@ -31,5 +29,3 @@ export const flows = [
   testApiKeyFlow,
   resolveScheduleConflictsFlow,
 ];
-
-    
