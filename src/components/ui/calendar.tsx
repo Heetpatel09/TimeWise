@@ -61,12 +61,12 @@ function Calendar({
         IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
         Dropdown: (props: DropdownProps) => {
-          const { fromYear, fromMonth, fromDate, toYear, toMonth, toDate } = props;
+          const { fromYear, fromMonth, fromDate, toYear, toMonth, toDate, ...otherProps } = props;
           const {
             name,
             onChange,
             value
-          } = props.value ? props : {
+          } = "value" in otherProps ? otherProps : {
             name: '',
             onChange: () => {},
             value: 0

@@ -4,11 +4,11 @@
  */
 
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/google-genai';
+import {GoogleGenAI} from '@google/genai';
 
 export const ai = genkit({
   plugins: [
-    googleAI({
+    GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
     }),
   ],
