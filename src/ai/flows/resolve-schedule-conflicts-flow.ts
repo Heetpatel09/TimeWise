@@ -7,7 +7,7 @@
 import {ai} from '@/ai/genkit';
 import { ResolveConflictsInputSchema, ResolveConflictsOutputSchema, type ResolveConflictsInput, type ResolveConflictsOutput } from '@/lib/types';
 
-const resolveConflictsFlow = ai.defineFlow(
+const resolveConflicts = ai.defineFlow(
   {
     name: 'resolveScheduleConflictsFlow',
     inputSchema: ResolveConflictsInputSchema,
@@ -42,7 +42,7 @@ const resolveConflictsFlow = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-1.5-flash',
+      model: 'gemini-1.5-flash',
       output: {
         schema: ResolveConflictsOutputSchema,
       },
@@ -56,5 +56,5 @@ const resolveConflictsFlow = ai.defineFlow(
 );
     
 export async function resolveScheduleConflictsFlow(input: ResolveConflictsInput): Promise<ResolveConflictsOutput> {
-    return resolveConflictsFlow(input);
+    return resolveConflicts(input);
 }

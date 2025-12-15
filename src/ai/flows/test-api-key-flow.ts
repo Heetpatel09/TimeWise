@@ -7,7 +7,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
-export const testApiKeyFlow = ai.defineFlow(
+export const testApiKey = ai.defineFlow(
   {
     name: 'testApiKeyFlow',
     inputSchema: z.void(),
@@ -20,7 +20,7 @@ export const testApiKeyFlow = ai.defineFlow(
     try {
       const llmResponse = await ai.generate({
         prompt: 'Give me a two-word "hello world" response.',
-        model: 'googleai/gemini-1.5-flash',
+        model: 'gemini-1.5-flash',
         config: {
           temperature: 0.5,
         },
@@ -51,3 +51,7 @@ export const testApiKeyFlow = ai.defineFlow(
     }
   }
 );
+
+export async function testApiKeyFlow(): Promise<{success: boolean, error?: string}> {
+  return testApiKey();
+}
