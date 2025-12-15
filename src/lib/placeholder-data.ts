@@ -215,26 +215,16 @@ export const fees: Fee[] = [
 ];
 
 export const attendance: Attendance[] = [
-    // Create a 50-day streak for Aarav Sharma (STU001) ending yesterday
-    ...Array.from({ length: 50 }).map((_, i) => ({
+    // Create 100 days of attendance for Aarav Sharma (STU001)
+    ...Array.from({ length: 100 }).map((_, i) => ({
         id: `ATT_AARAV_${i}`,
-        scheduleId: 'SCH003', // A class Aarav is in
+        scheduleId: schedule.find(s => s.classId === students.find(st => st.id === 'STU001')?.classId)?.id || 'SCH003',
         studentId: 'STU001',
         date: format(subDays(new Date(), i + 1), 'yyyy-MM-dd'),
-        status: 'present' as 'present',
+        status: (i % 7 === 0) ? 'absent' : 'present' as 'present' | 'absent', // Absent once a week
         isLocked: false,
         timestamp: new Date().toISOString()
     })),
-    // Add one absence to break the streak before that
-    {
-        id: 'ATT_AARAV_ABSENT',
-        scheduleId: 'SCH003',
-        studentId: 'STU001',
-        date: format(subDays(new Date(), 51), 'yyyy-MM-dd'),
-        status: 'absent',
-        isLocked: false,
-        timestamp: new Date().toISOString()
-    },
      // Add some attendance for other students
     {
         id: 'ATT_OTHER_1',
@@ -299,3 +289,4 @@ export const userBadges: UserBadge[] = [
 ];
 
     
+
