@@ -6,6 +6,7 @@
 
 import {ai} from '@/ai/genkit';
 import { GenerateTestPaperInputSchema, GenerateTestPaperOutputSchema, type GenerateTestPaperInput, type GenerateTestPaperOutput } from '@/lib/types';
+import { googleAI } from '@genkit-ai/google-genai';
 
 
 const generateTestPaper = ai.defineFlow(
@@ -29,7 +30,7 @@ For all questions, provide the correct answer.
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'gemini-pro',
+      model: googleAI.model('gemini-pro'),
       output: {
         schema: GenerateTestPaperOutputSchema,
       },

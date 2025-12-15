@@ -6,6 +6,7 @@
 
 import {ai} from '@/ai/genkit';
 import { GenerateExamScheduleInputSchema, GenerateExamScheduleOutputSchema, type GenerateExamScheduleInput, type GenerateExamScheduleOutput } from '@/lib/types';
+import { googleAI } from '@genkit-ai/google-genai';
 
 
 const generateExamSchedule = ai.defineFlow(
@@ -41,7 +42,7 @@ const generateExamSchedule = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'gemini-pro',
+      model: googleAI.model('gemini-pro'),
       output: {
         schema: GenerateExamScheduleOutputSchema,
       },

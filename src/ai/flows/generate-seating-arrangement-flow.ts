@@ -6,6 +6,7 @@
 
 import {ai} from '@/ai/genkit';
 import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, type GenerateSeatingArrangementInput, type GenerateSeatingArrangementOutput } from '@/lib/types';
+import { googleAI } from '@genkit-ai/google-genai';
 
 
 const generateSeatingArrangement = ai.defineFlow(
@@ -30,7 +31,7 @@ const generateSeatingArrangement = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'gemini-pro',
+      model: googleAI.model('gemini-pro'),
       output: {
         schema: GenerateSeatingArrangementOutputSchema,
       },

@@ -4,6 +4,7 @@
 import {ai} from '@/ai/genkit';
 import { WelcomeNotificationInputSchema, type WelcomeNotificationInput } from '@/lib/types';
 import { z } from 'zod';
+import { googleAI } from '@genkit-ai/google-genai';
 
 
 const generateWelcomeNotification = ai.defineFlow(
@@ -17,7 +18,7 @@ const generateWelcomeNotification = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt,
-      model: 'gemini-pro',
+      model: googleAI.model('gemini-pro'),
       config: {
         temperature: 0.7,
       },

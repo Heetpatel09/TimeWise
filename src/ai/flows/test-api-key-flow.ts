@@ -5,6 +5,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import {z} from 'zod';
 
 export const testApiKey = ai.defineFlow(
@@ -20,7 +21,7 @@ export const testApiKey = ai.defineFlow(
     try {
       const llmResponse = await ai.generate({
         prompt: 'Give me a two-word "hello world" response.',
-        model: 'gemini-pro',
+        model: googleAI.model('gemini-pro'),
         config: {
           temperature: 0.5,
         },

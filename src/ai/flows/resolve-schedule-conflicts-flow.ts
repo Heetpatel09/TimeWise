@@ -6,6 +6,7 @@
 
 import {ai} from '@/ai/genkit';
 import { ResolveConflictsInputSchema, ResolveConflictsOutputSchema, type ResolveConflictsInput, type ResolveConflictsOutput } from '@/lib/types';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const resolveConflicts = ai.defineFlow(
   {
@@ -42,7 +43,7 @@ const resolveConflicts = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'gemini-pro',
+      model: googleAI.model('gemini-pro'),
       output: {
         schema: ResolveConflictsOutputSchema,
       },
