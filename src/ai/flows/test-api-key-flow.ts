@@ -20,7 +20,7 @@ export const testApiKey = ai.defineFlow(
     try {
       const llmResponse = await ai.generate({
         prompt: 'Give me a two-word "hello world" response.',
-        model: 'gemini-pro',
+        model: 'googleai/gemini-1.0-pro',
         config: {
           temperature: 0.5,
         },
