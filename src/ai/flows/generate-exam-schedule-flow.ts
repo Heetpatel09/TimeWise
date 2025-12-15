@@ -41,7 +41,7 @@ const generateExamSchedule = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-2.0-flash',
+      model: 'googleai/gemini-pro',
       output: {
         schema: GenerateExamScheduleOutputSchema,
       },
