@@ -24,7 +24,7 @@ export default function RootLayout({
       <body className="font-body antialiased h-full flex flex-col" suppressHydrationWarning>
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://picsum.photos/seed/background/1920/1080"
+            src="https://picsum.photos/seed/timewise-background/1920/1080"
             alt="Abstract background"
             fill
             style={{ objectFit: 'cover', opacity: 1 }}
