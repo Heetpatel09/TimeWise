@@ -22,6 +22,7 @@ configureGenkit({
     googleAI({
       // The API key is defined in the main `genkit.ts` file,
       // so we don't need to specify it here.
+      apiVersion: 'v1beta',
     }),
   ],
   logLevel: 'debug',
