@@ -67,7 +67,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    instrumentationHook: true,
+    
   },
   webpack: (config) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
