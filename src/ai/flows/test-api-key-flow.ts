@@ -30,20 +30,22 @@ export const testApiKey = ai.defineFlow(
       if (responseText && responseText.trim() !== '') {
         return {success: true};
       } else {
-        return {success: false, error: 'Received an empty response.'};
+        return {success: false, error: 'Received an empty response from the API.'};
       }
     } catch (e: any) {
-      console.error(e);
-      // Clean up the error message to be more user-friendly
+      console.error('API Key Test Error:', e);
       let errorMessage = 'An unknown error occurred.';
       if (e.message) {
-        if (e.message.includes('API key not valid')) {
+        if (e.message.includes('API key not valid') || (e.cause as any)?.code?.includes('PERMISSION_DENIED')) {
           errorMessage =
-            'Authentication failed. Please check if your API key is correct and has the required permissions.';
-        } else if (e.message.includes('429')) {
+            'Authentication failed. Please check if your API key is correct and has the required permissions for the Gemini API.';
+        } else if (e.message.includes('429') || e.message.includes('resource has been exhausted')) {
           errorMessage =
-            'API rate limit exceeded. Please wait and try again later.';
-        } else {
+            'API rate limit exceeded. Please wait and try again later, or check your billing status.';
+        } else if (e.message.toLowerCase().includes('model not found')) {
+           errorMessage = `The model 'gemini-pro' was not found. This is often an authentication issue. Please verify your API key and ensure it is enabled for the 'Generative Language API'.`;
+        }
+         else {
           errorMessage = e.message;
         }
       }
