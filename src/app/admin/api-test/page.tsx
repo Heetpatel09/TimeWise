@@ -4,10 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { testApiKeyFlow as testApiKey } from '@/ai/flows/test-api-key-flow';
-import { Loader2, CheckCircle, AlertTriangle, KeyRound, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, KeyRound, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export default function ApiTestPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -57,30 +56,15 @@ export default function ApiTestPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><KeyRound /> Test Gemini API Key</CardTitle>
                     <CardDescription>
-                        This tool helps diagnose connection issues with the Google AI services.
+                        This tool helps diagnose connection issues with the Google AI services. Click the button below to verify your API key and configuration.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Action Required to Fix AI Features</AlertTitle>
-                        <AlertDescription>
-                            The "404 Not Found" error indicates the **Vertex AI API** is likely not enabled for your Google Cloud project. Please click the button below to go to the Google Cloud Console and enable it.
-                        </AlertDescription>
-                         <div className="mt-4">
-                             <a href="https://console.cloud.google.com/apis/library/vertexai.googleapis.com" target="_blank" rel="noopener noreferrer">
-                                <Button>
-                                    <ExternalLink className="mr-2 h-4 w-4" /> Enable Vertex AI API
-                                </Button>
-                            </a>
-                        </div>
-                    </Alert>
-
                      <Card className="bg-muted/50">
                         <CardHeader>
                             <CardTitle className="text-lg">Connection Test</CardTitle>
                              <CardDescription>
-                                After enabling the API, click the button below to verify the connection.
+                                Click the button below to verify the connection.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

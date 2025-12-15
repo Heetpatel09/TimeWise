@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, AlertTriangle } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
@@ -18,7 +18,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const SectionCard = ({ title, icon: Icon, children }: { title: string, icon: React.ElementType, children: React.ReactNode }) => (
     <Card>
@@ -125,14 +124,6 @@ function AdminDashboard() {
 
     return (
         <div className='space-y-6'>
-             <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>AI Features Disabled</AlertTitle>
-                <AlertDescription>
-                    The AI features are currently not working due to an API configuration issue. Please visit the API Test page to resolve it.
-                    <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/admin/api-test">Go to API Test Page <ArrowRight className="h-4 w-4 ml-1" /></Link></Button>
-                </AlertDescription>
-            </Alert>
             <Collapsible open={isChartOpen} onOpenChange={setIsChartOpen}>
                  <div className="grid grid-cols-1 gap-6">
                     <Card>
