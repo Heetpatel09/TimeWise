@@ -2,19 +2,9 @@
  * @fileoverview This file is the entry point for Genkit flows in production.
  */
 
-import { genkit } from 'genkit';
-import { googleAI }from '@genkit-ai/googleai';
+import { ai } from '@/ai/genkit';
 import { nextHandler } from '@genkit-ai/next';
 import { flows } from '@/ai/dev';
 
-genkit({
-  plugins: [
-    googleAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    }),
-  ],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
-});
-
-export const POST = nextHandler();
+// This export is necessary for Genkit to discover and serve the flows.
+export const POST = nextHandler({ flows });

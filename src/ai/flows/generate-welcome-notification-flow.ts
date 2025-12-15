@@ -1,7 +1,7 @@
 
 'use server';
 
-import {ai} from '@/ai/dev';
+import {ai} from '@/ai/genkit';
 import { WelcomeNotificationInputSchema, type WelcomeNotificationInput } from '@/lib/types';
 import { z } from 'zod';
 

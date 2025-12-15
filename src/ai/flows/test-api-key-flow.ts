@@ -4,7 +4,7 @@
  * @fileoverview A simple flow to test the API key.
  */
 
-import {ai} from '@/ai/dev';
+import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
 export const testApiKey = ai.defineFlow(

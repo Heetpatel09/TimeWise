@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for generating an exam schedule.
  */
 
-import {ai} from '@/ai/dev';
+import {ai} from '@/ai/genkit';
 import { GenerateExamScheduleInputSchema, GenerateExamScheduleOutputSchema, type GenerateExamScheduleInput, type GenerateExamScheduleOutput } from '@/lib/types';
 
 

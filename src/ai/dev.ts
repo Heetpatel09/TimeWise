@@ -8,8 +8,7 @@
  * This file will be removed when the app is deployed to production.
  */
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { ai } from './genkit';
 import { generateTestPaperFlow } from './flows/generate-test-paper-flow';
 import { generateWelcomeNotificationFlow } from './flows/generate-welcome-notification-flow';
 import { testApiKeyFlow } from './flows/test-api-key-flow';
@@ -17,16 +16,6 @@ import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts
 import { generateExamScheduleFlow } from './flows/generate-exam-schedule-flow';
 import { generateSeatingArrangementFlow } from './flows/generate-seating-arrangement-flow';
 
-export const ai = genkit({
-  plugins: [
-    googleAI({
-      apiVersion: 'v1beta',
-      apiKey: process.env.GEMINI_API_KEY,
-    }),
-  ],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
-});
 
 export const flows = [
   generateTestPaperFlow,

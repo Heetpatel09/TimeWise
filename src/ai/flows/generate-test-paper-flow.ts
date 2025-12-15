@@ -4,7 +4,7 @@
  * @fileoverview A Genkit flow for generating test papers.
  */
 
-import {ai} from '@/ai/dev';
+import {ai} from '@/ai/genkit';
 import { GenerateTestPaperInputSchema, GenerateTestPaperOutputSchema, type GenerateTestPaperInput, type GenerateTestPaperOutput } from '@/lib/types';
 
 
