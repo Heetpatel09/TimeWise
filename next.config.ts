@@ -68,10 +68,6 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     
-  },
-  webpack: (config) => {
-    config.externals.push('pino-pretty', 'lokijs', 'encoding');
-    return config
   }
 };
 
