@@ -66,6 +66,13 @@ const nextConfig: NextConfig = {
         '*.cluster-a6zx3cwnb5hnuwbgyxmofxpkfe.cloudworkstations.dev',
     ],
   },
+  experimental: {
+    instrumentationHook: true,
+  },
+  webpack: (config) => {
+    config.externals.push('pino-pretty', 'lokijs', 'encoding');
+    return config
+  }
 };
 
 export default nextConfig;
