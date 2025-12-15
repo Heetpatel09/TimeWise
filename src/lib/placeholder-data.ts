@@ -214,41 +214,62 @@ export const fees: Fee[] = [
     { id: 'FEE003', studentId: 'STU002', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'unpaid' },
 ];
 
-export const attendance: Attendance[] = [
-    // Create 100 days of attendance for Aarav Sharma (STU001)
-    ...Array.from({ length: 100 }).map((_, i) => {
-        const classId = students.find(st => st.id === 'STU001')?.classId;
-        const scheduleId = schedule.find(s => s.classId === classId)?.id || 'SCH001';
-        return {
-            id: `ATT_AARAV_${i}`,
-            scheduleId,
-            studentId: 'STU001',
-            date: format(subDays(new Date(), i + 1), 'yyyy-MM-dd'),
-            status: (i % 7 === 0) ? 'absent' : 'present' as 'present' | 'absent', // Absent once a week
+export const attendance: Attendance[] = [];
+
+// Generate attendance for Aarav Sharma (STU001)
+const aaravStudent = students.find(s => s.id === 'STU001');
+if (aaravStudent) {
+    const aaravClassId = aaravStudent.classId;
+    const aaravSchedule = schedule.filter(s => s.classId === aaravClassId);
+    
+    if (aaravSchedule.length > 0) {
+        for (let i = 0; i < 100; i++) {
+            const date = subDays(new Date(), i);
+            const dayName = format(date, 'EEEE');
+            const daySchedule = aaravSchedule.filter(s => s.day === dayName);
+            
+            daySchedule.forEach(slot => {
+                 attendance.push({
+                    id: `ATT_AARAV_${slot.id}_${i}`,
+                    scheduleId: slot.id,
+                    studentId: 'STU001',
+                    date: format(date, 'yyyy-MM-dd'),
+                    status: (i % 7 === 0) ? 'absent' : 'present', // Absent once a week
+                    isLocked: false,
+                    timestamp: date.toISOString()
+                });
+            });
+        }
+    }
+}
+
+// Add some attendance for other students
+const otherStudent = students.find(s => s.id === 'STU002');
+if (otherStudent) {
+    const otherClassId = otherStudent.classId;
+    const otherSchedule = schedule.filter(s => s.classId === otherClassId);
+    if(otherSchedule.length > 2) {
+        attendance.push({
+            id: 'ATT_OTHER_1',
+            scheduleId: otherSchedule[0].id,
+            studentId: 'STU002',
+            date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
+            status: 'present',
             isLocked: false,
             timestamp: new Date().toISOString()
-        };
-    }),
-     // Add some attendance for other students
-    {
-        id: 'ATT_OTHER_1',
-        scheduleId: 'SCH003',
-        studentId: 'STU002',
-        date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
-        status: 'present',
-        isLocked: false,
-        timestamp: new Date().toISOString()
-    },
-    {
-        id: 'ATT_OTHER_2',
-        scheduleId: 'SCH004',
-        studentId: 'STU002',
-        date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
-        status: 'absent',
-        isLocked: false,
-        timestamp: new Date().toISOString()
+        });
+        attendance.push({
+            id: 'ATT_OTHER_2',
+            scheduleId: otherSchedule[1].id,
+            studentId: 'STU002',
+            date: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
+            status: 'absent',
+            isLocked: false,
+            timestamp: new Date().toISOString()
+        });
     }
-];
+}
+
 
 export const results: Result[] = [
     // Semester 1 results for Aarav Sharma (STU001)
@@ -293,6 +314,7 @@ export const userBadges: UserBadge[] = [
 ];
 
     
+
 
 
 
