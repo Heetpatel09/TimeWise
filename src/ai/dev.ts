@@ -14,6 +14,8 @@ import {generateWelcomeNotificationFlow} from './flows/generate-welcome-notifica
 import {testApiKeyFlow} from './flows/test-api-key-flow';
 import {googleAI} from '@genkit-ai/google-genai';
 import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts-flow';
+import { generateExamScheduleFlow } from './flows/generate-exam-schedule-flow';
+import { generateSeatingArrangementFlow } from './flows/generate-seating-arrangement-flow';
 
 configureGenkit({
   plugins: [
@@ -28,4 +30,6 @@ export const flows = [
   generateWelcomeNotificationFlow,
   testApiKeyFlow,
   resolveScheduleConflictsFlow,
+  generateExamScheduleFlow,
+  generateSeatingArrangementFlow,
 ];
