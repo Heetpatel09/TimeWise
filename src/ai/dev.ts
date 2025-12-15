@@ -9,7 +9,7 @@
  */
 
 import { configureGenkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 import { generateTestPaperFlow } from './flows/generate-test-paper-flow';
 import { generateWelcomeNotificationFlow } from './flows/generate-welcome-notification-flow';
 import { testApiKeyFlow } from './flows/test-api-key-flow';
@@ -20,6 +20,7 @@ import { generateSeatingArrangementFlow } from './flows/generate-seating-arrange
 configureGenkit({
   plugins: [
     googleAI({
+      apiVersion: 'v1beta',
       apiKey: process.env.GEMINI_API_KEY,
     }),
   ],
