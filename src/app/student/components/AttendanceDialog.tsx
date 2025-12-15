@@ -150,7 +150,7 @@ export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: At
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>My Attendance</DialogTitle>
           <DialogDescription>
@@ -176,7 +176,7 @@ export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: At
                     <TableHeader>
                         <TableRow>
                             <TableHead>Date</TableHead>
-                            <TableHead>Subject</TableHead>
+                            <TableHead>Slot</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -185,7 +185,10 @@ export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: At
                         {attendanceRecords.map(record => (
                         <TableRow key={record.id}>
                             <TableCell>{format(parseISO(record.date), 'PPP')}</TableCell>
-                            <TableCell>{record.subjectName}</TableCell>
+                            <TableCell>
+                                <div className="font-medium">{record.subjectName}</div>
+                                <div className="text-sm text-muted-foreground">{record.time} - {record.facultyName}</div>
+                            </TableCell>
                             <TableCell>
                             <Badge variant={getStatusVariant(record.status)}>{record.status}</Badge>
                             </TableCell>
