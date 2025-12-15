@@ -78,6 +78,40 @@ export const ResolveConflictsOutputSchema = z.object({
 });
 export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema>;
 
+export const GenerateExamScheduleInputSchema = z.object({
+  subjects: z.array(z.any()),
+  classes: z.array(z.any()),
+  classrooms: z.array(z.any()),
+  examTimeSlots: z.array(z.string()),
+});
+export type GenerateExamScheduleInput = z.infer<typeof GenerateExamScheduleInputSchema>;
+
+export const GenerateExamScheduleOutputSchema = z.object({
+  summary: z.string(),
+  generatedSchedule: z.array(z.object({
+    subjectId: z.string(),
+    classId: z.string(),
+    date: z.string(),
+    time: z.string(),
+    classroomId: z.string(),
+  })),
+});
+export type GenerateExamScheduleOutput = z.infer<typeof GenerateExamScheduleOutputSchema>;
+
+export const GenerateSeatingArrangementInputSchema = z.object({
+  classroom: z.any(),
+  students: z.array(z.any()),
+});
+export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
+
+export const GenerateSeatingArrangementOutputSchema = z.object({
+  seatingArrangement: z.array(z.object({
+    seatNumber: z.number(),
+    studentId: z.string(),
+    studentName: z.string(),
+  })),
+});
+export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
 
 export interface Subject {
   id: string;
@@ -287,6 +321,7 @@ export interface Exam {
     classroomId?: string;
     date: string;
     time: string;
+    testId?: string;
 }
 
 export interface Attendance {
