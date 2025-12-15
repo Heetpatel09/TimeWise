@@ -8,18 +8,21 @@
  * This file will be removed when the app is deployed to production.
  */
 
-import {configureGenkit} from 'genkit';
-import {generateTestPaperFlow} from './flows/generate-test-paper-flow';
-import {generateWelcomeNotificationFlow} from './flows/generate-welcome-notification-flow';
-import {testApiKeyFlow} from './flows/test-api-key-flow';
-import {googleAI} from '@genkit-ai/google-genai';
+import { configureGenkit } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+import { generateTestPaperFlow } from './flows/generate-test-paper-flow';
+import { generateWelcomeNotificationFlow } from './flows/generate-welcome-notification-flow';
+import { testApiKeyFlow } from './flows/test-api-key-flow';
 import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts-flow';
 import { generateExamScheduleFlow } from './flows/generate-exam-schedule-flow';
 import { generateSeatingArrangementFlow } from './flows/generate-seating-arrangement-flow';
 
 configureGenkit({
   plugins: [
-    googleAI(),
+    googleAI({
+      // The API key is defined in the main `genkit.ts` file,
+      // so we don't need to specify it here.
+    }),
   ],
   logLevel: 'debug',
   enableTracingAndMetrics: true,
