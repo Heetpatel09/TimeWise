@@ -20,8 +20,9 @@ import { generateSeatingArrangementFlow } from './flows/generate-seating-arrange
 configureGenkit({
   plugins: [
     googleAI({
-      // The API key is defined in the main `genkit.ts` file,
-      // so we don't need to specify it here.
+      models: {
+        apiKey: process.env.GEMINI_API_KEY,
+      }
     }),
   ],
   logLevel: 'debug',
