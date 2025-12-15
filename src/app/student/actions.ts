@@ -4,6 +4,7 @@
 
 import { db as getDb } from '@/lib/db';
 import type { Student, EnrichedSchedule, Subject, EnrichedResult, Event, LeaveRequest, Fee, EnrichedFee, Exam, EnrichedExam, EnrichedAttendance } from '@/lib/types';
+import { getStudentAttendance } from '@/lib/services/attendance';
 
 export async function getStudentDashboardData(studentId: string) {
     const db = getDb();
@@ -52,24 +53,7 @@ export async function getStudentDashboardData(studentId: string) {
         WHERE e.classId = ?
     `).all(student.classId) as any[]);
 
-    const attendance: EnrichedAttendance[] = (db.prepare(`
-        SELECT 
-            a.*,
-            s.name as studentName,
-            sch.day,
-            sch.time,
-            sub.name as subjectName,
-            c.name as className,
-            f.name as facultyName
-        FROM attendance a
-        JOIN students s ON a.studentId = s.id
-        JOIN schedule sch ON a.scheduleId = sch.id
-        JOIN subjects sub ON sch.subjectId = sub.id
-        JOIN classes c ON sch.classId = c.id
-        JOIN faculty f ON sch.facultyId = f.id
-        WHERE a.studentId = ? 
-        ORDER BY a.date DESC, a.timestamp DESC
-    `).all(studentId) as any[]).map(r => ({ ...r, isLocked: !!r.isLocked }));
+    const attendance = await getStudentAttendance(studentId);
 
     return { 
         student, 

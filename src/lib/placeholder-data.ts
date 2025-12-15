@@ -216,15 +216,19 @@ export const fees: Fee[] = [
 
 export const attendance: Attendance[] = [
     // Create 100 days of attendance for Aarav Sharma (STU001)
-    ...Array.from({ length: 100 }).map((_, i) => ({
-        id: `ATT_AARAV_${i}`,
-        scheduleId: schedule.find(s => s.classId === students.find(st => st.id === 'STU001')?.classId)?.id || 'SCH003',
-        studentId: 'STU001',
-        date: format(subDays(new Date(), i + 1), 'yyyy-MM-dd'),
-        status: (i % 7 === 0) ? 'absent' : 'present' as 'present' | 'absent', // Absent once a week
-        isLocked: false,
-        timestamp: new Date().toISOString()
-    })),
+    ...Array.from({ length: 100 }).map((_, i) => {
+        const classId = students.find(st => st.id === 'STU001')?.classId;
+        const scheduleId = schedule.find(s => s.classId === classId)?.id || 'SCH001';
+        return {
+            id: `ATT_AARAV_${i}`,
+            scheduleId,
+            studentId: 'STU001',
+            date: format(subDays(new Date(), i + 1), 'yyyy-MM-dd'),
+            status: (i % 7 === 0) ? 'absent' : 'present' as 'present' | 'absent', // Absent once a week
+            isLocked: false,
+            timestamp: new Date().toISOString()
+        };
+    }),
      // Add some attendance for other students
     {
         id: 'ATT_OTHER_1',
@@ -289,5 +293,6 @@ export const userBadges: UserBadge[] = [
 ];
 
     
+
 
 
