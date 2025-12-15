@@ -5,52 +5,9 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
-import type { Schedule, Faculty, Classroom, Student, Notification } from '@/lib/types';
+import { ResolveConflictsInputSchema, ResolveConflictsOutputSchema, type ResolveConflictsInput, type ResolveConflictsOutput } from '@/lib/types';
 
-const ScheduleConflictSchema = z.object({
-    type: z.enum(['faculty', 'classroom', 'class']),
-    message: z.string(),
-});
-
-const ScheduleSlotSchema = z.object({
-  id: z.string(),
-  classId: z.string(),
-  className: z.string(),
-  subjectId: z.string(),
-  subjectName: z.string(),
-  facultyId: z.string(),
-  facultyName: z.string(),
-  classroomId: z.string(),
-  classroomName: z.string(),
-  day: z.string(),
-  time: z.string(),
-});
-
-export const ResolveConflictsInputSchema = z.object({
-  schedule: z.array(ScheduleSlotSchema),
-  conflicts: z.record(z.array(ScheduleConflictSchema)),
-  faculty: z.array(z.object({ id: z.string(), name: z.string(), department: z.string() })),
-  classrooms: z.array(z.object({ id: z.string(), name: z.string(), type: z.string(), capacity: z.number() })),
-  students: z.array(z.object({ id: z.string(), name: z.string(), classId: z.string() })),
-});
-export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
-
-const NotificationSchema = z.object({
-    userId: z.string().optional(),
-    classId: z.string().optional(),
-    message: z.string(),
-    category: z.enum(['requests', 'exam_schedule', 'general', 'feedback_forms']),
-});
-
-export const ResolveConflictsOutputSchema = z.object({
-  summary: z.string().describe("A brief summary of the changes made to resolve the conflicts."),
-  resolvedSchedule: z.array(ScheduleSlotSchema),
-  notifications: z.array(NotificationSchema).describe("Notifications to be sent to affected faculty or students."),
-});
-export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema>;
-
-export const resolveScheduleConflictsFlow = ai.defineFlow(
+const resolveConflictsFlow = ai.defineFlow(
   {
     name: 'resolveScheduleConflictsFlow',
     inputSchema: ResolveConflictsInputSchema,
@@ -97,4 +54,9 @@ export const resolveScheduleConflictsFlow = ai.defineFlow(
     return llmResponse.output!;
   }
 );
+    
+export async function resolveScheduleConflictsFlow(input: ResolveConflictsInput): Promise<ResolveConflictsOutput> {
+    return resolveConflictsFlow(input);
+}
+
     

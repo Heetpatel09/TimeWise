@@ -36,6 +36,48 @@ export type GenerateTestPaperOutput = z.infer<
   typeof GenerateTestPaperOutputSchema
 >;
 
+const ScheduleConflictSchema = z.object({
+    type: z.enum(['faculty', 'classroom', 'class']),
+    message: z.string(),
+});
+
+const ScheduleSlotSchema = z.object({
+  id: z.string(),
+  classId: z.string(),
+  className: z.string(),
+  subjectId: z.string(),
+  subjectName: z.string(),
+  facultyId: z.string(),
+  facultyName: z.string(),
+  classroomId: z.string(),
+  classroomName: z.string(),
+  day: z.string(),
+  time: z.string(),
+});
+
+export const ResolveConflictsInputSchema = z.object({
+  schedule: z.array(ScheduleSlotSchema),
+  conflicts: z.record(z.array(ScheduleConflictSchema)),
+  faculty: z.array(z.object({ id: z.string(), name: z.string(), department: z.string() })),
+  classrooms: z.array(z.object({ id: z.string(), name: z.string(), type: z.string(), capacity: z.number() })),
+  students: z.array(z.object({ id: z.string(), name: z.string(), classId: z.string() })),
+});
+export type ResolveConflictsInput = z.infer<typeof ResolveConflictsInputSchema>;
+
+const NotificationSchema = z.object({
+    userId: z.string().optional(),
+    classId: z.string().optional(),
+    message: z.string(),
+    category: z.enum(['requests', 'exam_schedule', 'general', 'feedback_forms']),
+});
+
+export const ResolveConflictsOutputSchema = z.object({
+  summary: z.string().describe("A brief summary of the changes made to resolve the conflicts."),
+  resolvedSchedule: z.array(ScheduleSlotSchema),
+  notifications: z.array(NotificationSchema).describe("Notifications to be sent to affected faculty or students."),
+});
+export type ResolveConflictsOutput = z.infer<typeof ResolveConflictsOutputSchema>;
+
 
 export interface Subject {
   id: string;
@@ -360,4 +402,6 @@ export interface UserBadge {
 export interface EnrichedUserBadge extends UserBadge {
   badge: Badge;
 }
+    
+
     

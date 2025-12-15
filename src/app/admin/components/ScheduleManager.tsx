@@ -26,7 +26,7 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getStudents } from '@/lib/services/students';
-import type { Schedule, Class, Subject, Faculty, Classroom, Notification, Student } from '@/lib/types';
+import type { Schedule, Class, Subject, Faculty, Classroom, Notification, Student, ResolveConflictsOutput } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -45,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { resolveScheduleConflictsFlow as resolveScheduleConflicts, ResolveConflictsOutput } from '@/ai/flows/resolve-schedule-conflicts-flow';
+import { resolveScheduleConflictsFlow as resolveScheduleConflicts } from '@/ai/flows/resolve-schedule-conflicts-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
@@ -563,3 +563,5 @@ export default function ScheduleManager() {
     </TooltipProvider>
   );
 }
+
+    
