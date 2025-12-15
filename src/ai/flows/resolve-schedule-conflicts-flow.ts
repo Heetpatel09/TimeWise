@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for resolving schedule conflicts.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai} from '@/ai/dev';
 import { ResolveConflictsInputSchema, ResolveConflictsOutputSchema, type ResolveConflictsInput, type ResolveConflictsOutput } from '@/lib/types';
 
 const resolveConflicts = ai.defineFlow(

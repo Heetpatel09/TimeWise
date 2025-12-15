@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for generating an exam seating arrangement.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai} from '@/ai/dev';
 import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, type GenerateSeatingArrangementInput, type GenerateSeatingArrangementOutput } from '@/lib/types';
 
 
