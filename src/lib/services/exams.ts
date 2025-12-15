@@ -24,6 +24,7 @@ export async function getExams(): Promise<EnrichedExam[]> {
         e.classroomId,
         e.date,
         e.time,
+        e.testId,
         s.name as subjectName,
         c.name as className,
         cr.name as classroomName
@@ -35,27 +36,44 @@ export async function getExams(): Promise<EnrichedExam[]> {
   return stmt.all() as EnrichedExam[];
 }
 
-export async function addExam(item: Omit<Exam, 'id'>) {
+export async function addExam(item: Omit<Exam, 'id'>): Promise<Exam> {
     const db = getDb();
-    const id = `EXM${Date.now()}`;
-    const stmt = db.prepare('INSERT INTO exams (id, subjectId, classId, classroomId, date, time, testId) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, item.subjectId, item.classId, item.classroomId, item.date, item.time, item.testId);
-    
-    // Notify students of the class
-    const students = await getStudentsByClass(item.classId);
-    const subject = db.prepare('SELECT name FROM subjects WHERE id = ?').get(item.subjectId) as {name: string};
-    for (const student of students) {
-        await addNotification({
-            userId: student.id,
-            message: `A new exam for ${subject.name} has been scheduled on ${item.date}.`,
-            category: 'exam_schedule'
-        });
-    }
 
-    revalidateAll();
-    const newItem: Exam = { ...item, id };
-    return Promise.resolve(newItem);
+    // Check if an exam with this testId already exists
+    const existingExam: Exam | undefined = item.testId 
+        ? db.prepare('SELECT * FROM exams WHERE testId = ?').get(item.testId) as any
+        : undefined;
+
+    if (existingExam) {
+        // Update existing exam
+        const updatedItem = { ...existingExam, ...item };
+        const stmt = db.prepare('UPDATE exams SET subjectId = ?, classId = ?, classroomId = ?, date = ?, time = ? WHERE id = ?');
+        stmt.run(updatedItem.subjectId, updatedItem.classId, updatedItem.classroomId, updatedItem.date, updatedItem.time, updatedItem.id);
+        revalidateAll();
+        return Promise.resolve(updatedItem);
+    } else {
+        // Insert new exam
+        const id = `EXM${Date.now()}`;
+        const stmt = db.prepare('INSERT INTO exams (id, subjectId, classId, classroomId, date, time, testId) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        stmt.run(id, item.subjectId, item.classId, item.classroomId, item.date, item.time, item.testId);
+        
+        // Notify students of the class
+        const students = await getStudentsByClass(item.classId);
+        const subject = db.prepare('SELECT name FROM subjects WHERE id = ?').get(item.subjectId) as {name: string};
+        for (const student of students) {
+            await addNotification({
+                userId: student.id,
+                message: `A new exam for ${subject.name} has been scheduled on ${item.date}.`,
+                category: 'exam_schedule'
+            });
+        }
+
+        revalidateAll();
+        const newItem: Exam = { ...item, id };
+        return Promise.resolve(newItem);
+    }
 }
+
 
 export async function updateExam(updatedItem: Exam) {
     const db = getDb();
