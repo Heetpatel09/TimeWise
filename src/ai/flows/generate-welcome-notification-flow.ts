@@ -17,7 +17,7 @@ const generateWelcomeNotification = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt,
-      model: 'googleai/gemini-2.0-flash-001',
+      model: 'googleai/gemini-pro',
       config: {
         temperature: 0.7,
       },
