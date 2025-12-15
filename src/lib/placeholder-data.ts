@@ -70,7 +70,7 @@ export const students: Student[] = studentNames.map((name, index) => {
     profileCompleted: 50 + Math.floor(Math.random() * 51),
     sgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
     cgpa: parseFloat((7 + Math.random() * 3).toFixed(2)),
-    streak: name === 'Aarav Sharma' ? 50 : Math.floor(Math.random() * 30),
+    streak: name === 'Aarav Sharma' ? 75 : Math.floor(Math.random() * 30),
     points: Math.floor(Math.random() * 5000)
   };
 });
@@ -215,8 +215,8 @@ export const fees: Fee[] = [
 ];
 
 export const attendance: Attendance[] = [
-    // Create a 50-day streak for Aarav Sharma (STU001) ending yesterday
-    ...Array.from({ length: 50 }).map((_, i) => ({
+    // Create a 75-day streak for Aarav Sharma (STU001) ending yesterday
+    ...Array.from({ length: 75 }).map((_, i) => ({
         id: `ATT_AARAV_${i}`,
         scheduleId: 'SCH003', // A class Aarav is in
         studentId: 'STU001',
@@ -230,7 +230,7 @@ export const attendance: Attendance[] = [
         id: 'ATT_AARAV_ABSENT',
         scheduleId: 'SCH003',
         studentId: 'STU001',
-        date: format(subDays(new Date(), 51), 'yyyy-MM-dd'),
+        date: format(subDays(new Date(), 76), 'yyyy-MM-dd'),
         status: 'absent',
         isLocked: false,
         timestamp: new Date().toISOString()
@@ -297,3 +297,4 @@ export const userBadges: UserBadge[] = [
     { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() },
     { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
+
