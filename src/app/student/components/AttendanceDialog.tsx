@@ -1,11 +1,12 @@
 
+
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EnrichedAttendance } from '@/lib/types';
-import { getStudentAttendance } from '@/lib/services/attendance';
+import { getStudentAttendance, disputeAttendance } from '@/lib/services/attendance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, HelpCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
@@ -14,6 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import React, { useState, useMemo } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface AttendanceDialogProps {
   isOpen: boolean;
@@ -118,11 +120,23 @@ function AttendanceCalculator({ records }: { records: EnrichedAttendance[] }) {
 }
 
 export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: AttendanceDialogProps) {
-
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: attendanceRecords, isLoading } = useQuery<EnrichedAttendance[]>({
     queryKey: ['studentAttendance', studentId],
     queryFn: () => getStudentAttendance(studentId),
     enabled: !!studentId,
+  });
+
+  const disputeMutation = useMutation({
+    mutationFn: (attendanceId: string) => disputeAttendance(attendanceId, studentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['studentAttendance', studentId] });
+      toast({ title: 'Concern Raised', description: 'Your attendance concern has been sent to the faculty for review.' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
   });
 
   const getStatusVariant = (status: 'present' | 'absent' | 'disputed') => {
@@ -164,7 +178,7 @@ export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: At
                             <TableHead>Date</TableHead>
                             <TableHead>Subject</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Faculty</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -175,7 +189,19 @@ export default function AttendanceDialog({ isOpen, onOpenChange, studentId }: At
                             <TableCell>
                             <Badge variant={getStatusVariant(record.status)}>{record.status}</Badge>
                             </TableCell>
-                            <TableCell>{record.facultyName}</TableCell>
+                            <TableCell className="text-right">
+                               {record.status === 'absent' && !record.isLocked && (
+                                   <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => disputeMutation.mutate(record.id)}
+                                    disabled={disputeMutation.isPending && disputeMutation.variables === record.id}
+                                   >
+                                       {disputeMutation.isPending && disputeMutation.variables === record.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <HelpCircle className="h-4 w-4 mr-2"/>}
+                                       Raise Concern
+                                   </Button>
+                               )}
+                            </TableCell>
                         </TableRow>
                         ))}
                     </TableBody>

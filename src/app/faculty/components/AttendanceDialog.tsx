@@ -1,10 +1,11 @@
 
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getStudentsByClass } from '@/lib/services/students';
 import { getAttendanceForSlot, upsertAttendance } from '@/lib/services/attendance';
@@ -13,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface AttendanceDialogProps {
   slot: EnrichedSchedule | null;
@@ -38,21 +41,21 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     enabled: !!slot,
   });
 
-  const [attendance, setAttendance] = useState<Record<string, 'present' | 'absent'>>({});
+  const [attendance, setAttendance] = useState<Record<string, 'present' | 'absent' | 'disputed'>>({});
 
   useEffect(() => {
     if (students && existingAttendance) {
       const initialAttendance = students.reduce((acc, student) => {
         const record = existingAttendance.find(a => a.studentId === student.id);
-        acc[student.id] = record?.status === 'absent' ? 'absent' : 'present';
+        acc[student.id] = record?.status || 'present';
         return acc;
-      }, {} as Record<string, 'present' | 'absent'>);
+      }, {} as Record<string, 'present' | 'absent' | 'disputed'>);
       setAttendance(initialAttendance);
     } else if (students) {
       const initialAttendance = students.reduce((acc, student) => {
         acc[student.id] = 'present';
         return acc;
-      }, {} as Record<string, 'present' | 'absent'>);
+      }, {} as Record<string, 'present' | 'absent' | 'disputed'>);
       setAttendance(initialAttendance);
     }
   }, [students, existingAttendance]);
@@ -71,7 +74,9 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
 
   const handleSave = () => {
     if (!slot) return;
-    const records = Object.entries(attendance).map(([studentId, status]) => ({
+    const records = Object.entries(attendance)
+        .filter(([studentId, status]) => status !== 'disputed') // Don't save over a student's dispute
+        .map(([studentId, status]) => ({
       scheduleId: slot.id,
       studentId,
       date: dateString,
@@ -86,16 +91,19 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
 
   const handleSelectAll = (checked: boolean | string) => {
     if (students) {
-        const newAttendance = students.reduce((acc, student) => {
-            acc[student.id] = checked ? 'present' : 'absent';
-            return acc;
-        }, {} as Record<string, 'present' | 'absent'>);
+        const newAttendance = { ...attendance };
+        students.forEach(student => {
+            if (newAttendance[student.id] !== 'disputed') {
+                newAttendance[student.id] = checked ? 'present' : 'absent';
+            }
+        });
         setAttendance(newAttendance);
     }
   }
 
-  const allPresent = students ? students.every(s => attendance[s.id] === 'present') : false;
+  const allPresent = students ? students.every(s => attendance[s.id] === 'present' || attendance[s.id] === 'disputed') : false;
   const isLoading = studentsLoading || attendanceLoading;
+  const disputedCount = Object.values(attendance).filter(s => s === 'disputed').length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -111,7 +119,16 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="max-h-[60vh] overflow-y-auto">
+          <div className="max-h-[60vh] overflow-y-auto space-y-4">
+            {disputedCount > 0 && (
+                <Alert>
+                    <AlertTriangle className="h-4 w-4"/>
+                    <AlertTitle>{disputedCount} Disputed Record(s)</AlertTitle>
+                    <AlertDescription>
+                        A student has disputed their 'absent' mark. Please verify and update their status.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
@@ -128,29 +145,37 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
               </TableHeader>
               <TableBody>
                 {students?.map(student => (
-                  <TableRow key={student.id}>
+                  <TableRow key={student.id} className={attendance[student.id] === 'disputed' ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}>
                     <TableCell>
                         <Checkbox 
                             checked={attendance[student.id] === 'present'}
                             onCheckedChange={(checked) => handleStatusChange(student.id, checked ? 'present' : 'absent')}
+                            disabled={attendance[student.id] === 'disputed'}
                         />
                     </TableCell>
                     <TableCell>{student.name}</TableCell>
                     <TableCell className="text-right">
-                       <RadioGroup 
-                         value={attendance[student.id] || 'present'}
-                         onValueChange={(value: 'present' | 'absent') => handleStatusChange(student.id, value)}
-                         className="justify-end"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="present" id={`present-${student.id}`} />
-                            <Label htmlFor={`present-${student.id}`}>Present</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="absent" id={`absent-${student.id}`} />
-                            <Label htmlFor={`absent-${student.id}`}>Absent</Label>
-                          </div>
-                        </RadioGroup>
+                       {attendance[student.id] === 'disputed' ? (
+                           <Badge variant="secondary" className="bg-yellow-400 text-yellow-900">
+                               <HelpCircle className="h-3 w-3 mr-1" />
+                               Disputed
+                           </Badge>
+                       ) : (
+                           <RadioGroup 
+                             value={attendance[student.id] || 'present'}
+                             onValueChange={(value: 'present' | 'absent') => handleStatusChange(student.id, value)}
+                             className="justify-end"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="present" id={`present-${student.id}`} />
+                                <Label htmlFor={`present-${student.id}`}>Present</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="absent" id={`absent-${student.id}`} />
+                                <Label htmlFor={`absent-${student.id}`}>Absent</Label>
+                              </div>
+                            </RadioGroup>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -169,5 +194,3 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     </Dialog>
   );
 }
-
-    
