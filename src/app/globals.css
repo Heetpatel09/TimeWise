@@ -70,12 +70,9 @@
     --chart-4: 262 54% 87%;
     --chart-5: 240 3.7% 15.9%;
   }
-}
 
-@layer base {
   body {
     @apply bg-background text-foreground;
-    background-image: /home/user/studio/Background.jpeg;
   }
 }
 
