@@ -24,12 +24,12 @@ export default function RootLayout({
       <body className="font-body antialiased h-full flex flex-col" suppressHydrationWarning>
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background.jpeg"
-            alt="Abstract background"
+            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background-new.jpeg"
+            alt="Abstract background with clock and calendar icons"
             fill
             style={{ objectFit: 'cover', opacity: 1 }}
             priority
-            data-ai-hint="abstract purple gradient"
+            data-ai-hint="abstract purple gradient icons"
           />
         </div>
         <Providers>
