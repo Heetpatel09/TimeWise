@@ -74,7 +74,7 @@
 
 @layer base {
   body {
-    background-color: transparent;
+    @apply bg-background text-foreground;
   }
 }
 

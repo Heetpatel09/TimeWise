@@ -34,6 +34,7 @@ import type { Notification } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser, markNotificationAsRead } from '@/lib/services/notifications';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import Image from 'next/image';
 
 
 type Role = 'admin' | 'faculty' | 'student';
@@ -217,47 +218,80 @@ export default function DashboardLayout({
   
   if (!isClient || isLoading || !user) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="relative flex flex-col h-screen">
+         <div className="fixed inset-0 z-[-1]">
+          <Image
+            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background.jpeg"
+            alt="Abstract background"
+            fill
+            style={{ objectFit: 'cover' }}
+            priority
+          />
+        </div>
+        <div className="flex items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 animate-spin" />
         </div>
+      </div>
     )
   }
 
   if (user.role !== role) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <div className="relative flex flex-col h-screen">
+        <div className="fixed inset-0 z-[-1]">
+          <Image
+            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background.jpeg"
+            alt="Abstract background"
+            fill
+            style={{ objectFit: 'cover' }}
+            priority
+          />
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm">
             <h1 className='text-2xl font-bold'>Access Denied</h1>
             <p className='text-muted-foreground'>You do not have permission to view this page.</p>
             <Button onClick={() => router.push('/')} className="mt-4">Go to Login</Button>
         </div>
+      </div>
     )
   }
 
   return (
-      <div className="flex flex-col h-screen bg-background/90 backdrop-blur-sm">
-        <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card shadow-sm">
-          <div className="flex items-center gap-4">
-             <TimeWiseLogo />
-          </div>
-          
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <Link href={`/${role}`} className="hidden md:block">
-              <h1 className="text-xl font-semibold font-headline hover:text-primary transition-colors">{pageTitle}</h1>
-            </Link>
-          </div>
+      <div className="relative flex flex-col h-screen">
+         <div className="fixed inset-0 z-[-1]">
+          <Image
+            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background.jpeg"
+            alt="Abstract background"
+            fill
+            style={{ objectFit: 'cover' }}
+            priority
+          />
+        </div>
+        <div className='relative flex flex-col h-screen bg-background/80 backdrop-blur-sm'>
+          <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card/80 shadow-sm">
+            <div className="flex items-center gap-4">
+              <TimeWiseLogo />
+            </div>
+            
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <Link href={`/${role}`} className="hidden md:block">
+                <h1 className="text-xl font-semibold font-headline hover:text-primary transition-colors">{pageTitle}</h1>
+              </Link>
+            </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Badge variant="outline" className="hidden sm:flex items-center text-sm">
-                {getRoleIcon()}
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-            </Badge>
-            <NotificationsBell />
-            <UserProfile />
-          </div>
-        </header>
-        <main className="flex-grow p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500 flex flex-col overflow-y-auto">
-            {children}
-        </main>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Badge variant="outline" className="hidden sm:flex items-center text-sm">
+                  {getRoleIcon()}
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+              </Badge>
+              <NotificationsBell />
+              <UserProfile />
+            </div>
+          </header>
+          <main className="flex-grow p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500 flex flex-col overflow-y-auto">
+              {children}
+          </main>
+        </div>
       </div>
   );
 }
