@@ -43,11 +43,12 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Prom
     stmt.run(id, newItem.name, newItem.email, newItem.avatar, newItem.role, JSON.stringify(newItem.permissions));
 
     const initialPassword = password || randomBytes(8).toString('hex');
+    
     await addCredential({
       userId: newItem.id,
       email: newItem.email,
       password: initialPassword,
-      role: 'admin', // ALWAYS use 'admin' for the credential table role to ensure lookup in the 'admins' table.
+      role: 'admin', // The credential role is always 'admin' to look up in the 'admins' table
       requiresPasswordChange: !password, // require change if password was auto-generated
     });
 
@@ -110,3 +111,5 @@ export async function deleteAdmin(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+    

@@ -170,6 +170,16 @@ export const adminUser = {
   role: 'admin',
   avatar: 'https://avatar.vercel.sh/admin.png'
 };
+export const managerUser = {
+  id: 'manager-user',
+  name: 'Manager',
+  email: 'manager@timewise.app',
+  password: 'manager123',
+  role: 'manager',
+  avatar: 'https://avatar.vercel.sh/manager.png',
+  permissions: ['manage_students', 'manage_schedule']
+};
+
 
 export const hostels: Hostel[] = [
     { id: 'HOS001', name: 'Jupiter Hall', blocks: 'A,B' },
@@ -319,3 +329,6 @@ export const userBadges: UserBadge[] = [
 
 
 
+
+
+    

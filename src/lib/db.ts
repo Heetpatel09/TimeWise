@@ -13,6 +13,7 @@ import {
   notifications,
   classrooms,
   adminUser,
+  managerUser,
   hostels,
   rooms,
   fees,
@@ -372,6 +373,7 @@ function createSchemaAndSeed() {
     db.transaction(() => {
         // Step 1: Insert base data for users and other entities
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
+        insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions));
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
@@ -385,6 +387,7 @@ function createSchemaAndSeed() {
 
         // Step 2: Insert credentials for all users
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
+        insertUser.run(managerUser.email, managerUser.id, managerUser.password, 'admin', 0);
         
         faculty.forEach(f => {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
@@ -430,3 +433,5 @@ const getDb = () => {
 }
 
 export { getDb as db };
+
+    
