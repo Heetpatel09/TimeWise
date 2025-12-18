@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db as getDb } from '@/lib/db';
@@ -60,9 +61,6 @@ export async function login(email: string, password: string): Promise<User> {
       // This is the key fix: correctly assign the specific role and parse permissions
       (user as Admin).role = adminDetails.role;
       (user as Admin).permissions = adminDetails.permissions ? JSON.parse(adminDetails.permissions as any) : [];
-    } else {
-        // For faculty and student, we can assign a default role matching their base role
-        (user as any).role = credentialEntry.role;
     }
     
     return user;
@@ -108,7 +106,10 @@ export async function addCredential(credential: {userId: string, email: string, 
     // Determine the final password. Use new one if provided, otherwise fall back to existing.
     const passwordToSet = credential.password || existingForEmail?.password;
     if (!passwordToSet) {
-        console.warn(`Attempting to add/update credential for ${credential.email} without a password. This may fail if no password exists.`);
+       // This can happen if it's a new user with an auto-generated password that wasn't passed.
+       // However, the addAdmin/addStudent functions should always pass one.
+       // We'll throw an error for safety.
+       throw new Error(`Password not found for user ${credential.email}. A password must be provided for new users.`);
     }
     
     // Determine the 'requiresPasswordChange' flag.
