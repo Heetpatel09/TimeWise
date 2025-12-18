@@ -182,12 +182,12 @@ export default function Home() {
     <>
       <div className="fixed inset-0 z-[-1]">
         <Image
-          src="https://storage.googleapis.com/studio-webapp-assets/bafybeicvvbrirxdsorvscajce3r2vpzxdh6gh5z2sxv5s5c3m6y6u27m6i/background.jpeg"
+          src="https://storage.googleapis.com/studio-webapp-assets/bafybeif3uht3ulqaij6j25jmkj2b2getv3p2amwone3v666yq5h3hfd2ve/background.jpeg"
           alt="Abstract background"
           fill
-          style={{ objectFit: 'cover' }}
+          style={{ objectFit: 'cover', opacity: 1 }}
           priority
-          data-ai-hint="purple background icons"
+          data-ai-hint="clock calendar icons"
         />
       </div>
       <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden bg-background/80 backdrop-blur-sm">
