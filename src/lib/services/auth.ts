@@ -50,15 +50,19 @@ export async function login(email: string, password: string): Promise<User> {
         name: details.name,
         email: details.email,
         avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
-        role: credentialEntry.role,
+        role: credentialEntry.role, // Base role
         requiresPasswordChange: !!credentialEntry.requiresPasswordChange,
     };
 
-    // If the user is an admin, embed the specific admin/manager role and permissions
+    // If the user is an admin/manager, embed the specific role and permissions
     if (credentialEntry.role === 'admin') {
       const adminDetails: Admin = details as Admin;
+      // This is the key fix: correctly assign the specific role and parse permissions
       (user as Admin).role = adminDetails.role;
       (user as Admin).permissions = adminDetails.permissions ? JSON.parse(adminDetails.permissions as any) : [];
+    } else {
+        // For faculty and student, we can assign a default role matching their base role
+        (user as any).role = credentialEntry.role;
     }
     
     return user;
@@ -76,7 +80,7 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
     
     const user: User = {
         ...updatedAdmin,
-        role: 'admin',
+        role: updatedAdmin.role,
         permissions: updatedAdmin.permissions
     };
     return Promise.resolve(user);

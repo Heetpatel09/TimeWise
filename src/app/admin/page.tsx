@@ -120,12 +120,14 @@ function AdminDashboard() {
     const { user } = useAuth();
     
     const hasPermission = (permission: Permission) => {
-        if (!user || user.role === 'student' || user.role === 'faculty') return false;
+        if (!user) return false;
         
-        const adminDetails = user as Admin; 
-        
-        if (!adminDetails.permissions) return false;
-        
+        // This is the key change to correctly check permissions for admins/managers
+        const adminDetails = user as Admin;
+        if (!adminDetails.permissions || !Array.isArray(adminDetails.permissions)) {
+             return false;
+        }
+
         return adminDetails.permissions.includes('*') || adminDetails.permissions.includes(permission);
     }
 
