@@ -74,7 +74,12 @@
 
 @layer base {
   body {
-    background-image:"/home/user/studio/Background.jpeg";
+    height: 100vh;
+    width: 100%;
+    /* Removed background-image properties to prevent override */
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
   }
 }
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -20,17 +21,20 @@ import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
+import './globals.css';
 
-const TimeWiseLogo = () => (
-  <div className="flex items-center justify-center gap-2 md:gap-4">
-    <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0">
+function TimeWiseLogo() {
+  return (
+    <div className="flex items-center justify-center gap-2 md:gap-4">
+      <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0">
         <BrainCircuit className="w-full h-full text-primary animation-pulse" />
+      </div>
+      <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-foreground">
+        TimeWise
+      </h1>
     </div>
-    <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-foreground">
-      TimeWise
-    </h1>
-  </div>
-);
+  );
+}
 
 const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => void }) => {
   const [email, setEmail] = useState('');
@@ -178,7 +182,7 @@ export default function Home() {
     <>
       <div className="fixed inset-0 z-[-1]">
         <Image
-          src="https://storage.googleapis.com/studio-webapp-assets/bafybeifkwao5lcnm5apxpep4tlgorej24ce2j2s4phx2d6w6w5kmnj5mqa/background.jpeg"
+          src="https://storage.googleapis.com/studio-webapp-assets/bafybeicvvbrirxdsorvscajce3r2vpzxdh6gh5z2sxv5s5c3m6y6u27m6i/background.jpeg"
           alt="Abstract background"
           fill
           style={{ objectFit: 'cover' }}
@@ -186,7 +190,7 @@ export default function Home() {
           data-ai-hint="purple background icons"
         />
       </div>
-      <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
+      <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden bg-background/80 backdrop-blur-sm">
         <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             <TimeWiseLogo />
