@@ -51,14 +51,13 @@ export async function login(email: string, password: string): Promise<User> {
         name: details.name,
         email: details.email,
         avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
-        role: credentialEntry.role, // Base role
+        role: credentialEntry.role, // This sets the base role (e.g., 'admin' for both admin/manager)
         requiresPasswordChange: !!credentialEntry.requiresPasswordChange,
     };
 
-    // If the user is an admin/manager, embed the specific role and permissions
+    // If the user is from the 'admins' table, correctly fetch their specific role (admin/manager) and permissions
     if (credentialEntry.role === 'admin') {
       const adminDetails: Admin = details as Admin;
-      // This is the key fix: correctly assign the specific role and parse permissions
       (user as Admin).role = adminDetails.role;
       (user as Admin).permissions = adminDetails.permissions ? JSON.parse(adminDetails.permissions as any) : [];
     }
