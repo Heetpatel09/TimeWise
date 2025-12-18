@@ -12,7 +12,7 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getHostels } from '@/lib/services/hostels';
 import { useQuery } from '@tanstack/react-query';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -195,7 +195,7 @@ function AdminDashboard() {
                                         <BarChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
                                             <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={10} />
                                             <YAxis tickLine={false} axisLine={false} tickMargin={10} allowDecimals={false}/>
-                                            <Tooltip
+                                            <RechartsTooltip
                                                 cursor={false}
                                                 content={<ChartTooltipContent indicator="dot" />}
                                             />
