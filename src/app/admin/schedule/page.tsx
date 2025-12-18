@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function SchedulePage() {
     return (
-        <DashboardLayout pageTitle="Admin / Schedule" role="admin">
+        <DashboardLayout pageTitle="Admin / Master Schedule" role="admin">
             <Button asChild variant="outline" size="sm" className="mb-4">
                 <Link href="/admin">
                     <ArrowLeft className="mr-2 h-4 w-4" />

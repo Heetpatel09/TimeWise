@@ -120,6 +120,7 @@ export const GenerateTimetableInputSchema = z.object({
   subjects: z.array(z.any()),
   faculty: z.array(z.any()),
   classrooms: z.array(z.any()),
+  existingSchedule: z.array(z.any()).optional().describe("The existing schedule for all other classes to avoid conflicts."),
 });
 export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema>;
 
@@ -463,4 +464,5 @@ export interface EnrichedUserBadge extends UserBadge {
     
 
     
+
 

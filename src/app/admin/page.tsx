@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, Bot } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
@@ -46,7 +46,8 @@ const ManagementLink = ({ href, title, icon: Icon }: { href: string, title: stri
 );
 
 const academicLinks = [
-  { href: "/admin/schedule", title: "Schedule", icon: Calendar },
+  { href: "/admin/schedule", title: "Master Schedule", icon: Calendar },
+  { href: "/admin/timetable/generate", title: "Timetable Generator", icon: Bot },
   { href: "/admin/exams", title: "Exams", icon: FileText },
   { href: "/admin/attendance", title: "Attendance", icon: CheckSquare },
   { href: "/admin/results", title: "Results", icon: BarChart3 },

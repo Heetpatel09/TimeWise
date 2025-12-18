@@ -16,35 +16,44 @@ const generateTimetable = ai.defineFlow(
     outputSchema: GenerateTimetableOutputSchema,
   },
   async (input) => {
+    // Determine if we are generating for a single class or all classes
+    const isSingleClass = input.classes.length === 1;
+    
     const prompt = `
-        You are TimeWise, an AI-powered automatic timetable generation engine. Your job is to generate a weekly timetable for multiple class sections using the provided data.
+        You are TimeWise, an AI-powered automatic timetable generation engine. Your job is to generate a weekly timetable.
+
+        ${isSingleClass ? 
+        `You are generating a schedule for ONE specific class: ${input.classes[0].name}. You MUST NOT alter the existing schedule for other classes. The new slots for ${input.classes[0].name} must be conflict-free with the provided existing schedule.` :
+        `You are generating a weekly timetable for ALL provided class sections.`
+        }
 
         CORE CONSTRAINTS (HARD RULES):
-        1. No faculty member can be assigned to more than one class in the same time slot.
-        2. No classroom can be used by more than one section in the same time slot.
-        3. Every subject must be scheduled for exactly the required number of hours per week.
-        4. A faculty member’s maximum weekly workload must never be exceeded.
+        1. No faculty member can be assigned to more than one class in the same time slot. This applies to both the new schedule and the existing one.
+        2. No classroom can be used by more than one section in the same time slot, including conflicts with the existing schedule.
+        3. For the class(es) you are generating for, every subject must be scheduled for exactly the required number of hours per week.
+        4. A faculty member’s maximum weekly workload must never be exceeded (consider their load from the existing schedule as well).
         5. Each class section can have only one subject in a single time slot.
 
         OPTIMIZATION FEATURES (SOFT RULES):
-        6. Distribute subject hours evenly across the week (avoid repeating the same subject multiple times in one day if possible).
-        7. Avoid idle gaps in a section’s timetable unless unavoidable.
-        8. Balance faculty schedules so their workload is spread across days.
+        6. Distribute subject hours evenly across the week.
+        7. Avoid idle gaps in a section’s timetable.
+        8. Balance faculty schedules.
         9. Prefer morning slots for theory subjects.
 
         INPUT DATA:
         - Working Days: ${JSON.stringify(input.days)}
         - Time Slots per day: ${JSON.stringify(input.timeSlots)}
-        - Classes/Sections: ${JSON.stringify(input.classes)}
+        - Class(es) to schedule for: ${JSON.stringify(input.classes)}
         - Available Classrooms: ${JSON.stringify(input.classrooms)}
         - Faculty Details: ${JSON.stringify(input.faculty)}
         - Subject Requirements per class: ${JSON.stringify(input.subjects)}
+        ${isSingleClass && input.existingSchedule ? `- Existing Schedule (for conflict checking): ${JSON.stringify(input.existingSchedule)}` : ''}
 
         OUTPUT FORMAT:
-        - Generate a single, unified schedule containing all slots for all classes.
+        - Generate a schedule containing all required slots for the specified class(es).
         - The 'generatedSchedule' array MUST contain objects with 'classId', 'subjectId', 'facultyId', 'classroomId', 'day', and 'time'.
         - Ensure the final output has ZERO conflicts based on the hard rules.
-        - Provide a concise 'summary' of the generated timetable (e.g., "Generated a schedule for 8 classes with 240 total slots, ensuring all constraints are met.").
+        - Provide a concise 'summary' of the generated timetable (e.g., "Generated schedule for SE COMP A with 20 slots, ensuring no conflicts with the existing university timetable.").
 
         FAILURE HANDLING:
         - If it is impossible to generate a valid timetable, clearly explain the reason for the failure in the 'summary' field and leave the 'generatedSchedule' array empty.
