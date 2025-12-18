@@ -72,8 +72,8 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
   const getPlaceholder = () => {
     switch (role) {
         case 'admin': return 'admin@timewise.app';
-        case 'faculty': return 'turing@example.com';
-        case 'student': return 'alice@example.com';
+        case 'faculty': return 'faculty@timewise.app';
+        case 'student': return 'student@timewise.app';
     }
   }
 

@@ -76,7 +76,7 @@
   body {
     height: 100vh;
     width: 100%;
-    background-image: none !important;
+    background-image: url('/home/user/studio/Background.jpeg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;

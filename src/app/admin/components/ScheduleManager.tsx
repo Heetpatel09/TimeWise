@@ -26,8 +26,8 @@ import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getStudents } from '@/lib/services/students';
-import type { Schedule, Class, Subject, Faculty, Classroom, Notification, Student, ResolveConflictsOutput } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles } from 'lucide-react';
+import type { Schedule, Class, Subject, Faculty, Classroom, Notification, Student, ResolveConflictsOutput, GenerateTimetableOutput } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles, Wand2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +46,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { resolveScheduleConflictsFlow as resolveScheduleConflicts } from '@/ai/flows/resolve-schedule-conflicts-flow';
+import { generateTimetableFlow as generateTimetable } from '@/ai/flows/generate-timetable-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
@@ -77,6 +78,7 @@ const ALL_TIME_SLOTS = [
 ];
 
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:30') && !t.includes('12:00'));
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 interface Conflict {
   type: 'faculty' | 'classroom' | 'class';
@@ -98,6 +100,10 @@ export default function ScheduleManager() {
   const [isExporting, setIsExporting] = useState(false);
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
   const [aiResolution, setAiResolution] = useState<ResolveConflictsOutput | null>(null);
+  const [isGenerateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedSchedule, setGeneratedSchedule] = useState<GenerateTimetableOutput | null>(null);
+
   
   const { toast } = useToast();
 
@@ -262,6 +268,41 @@ export default function ScheduleManager() {
     }
   }
 
+  const handleGenerateTimetable = async () => {
+    setIsGenerating(true);
+    try {
+      const result = await generateTimetable({
+        days: DAYS,
+        timeSlots: LECTURE_TIME_SLOTS,
+        classes,
+        subjects,
+        faculty,
+        classrooms,
+      });
+      setGeneratedSchedule(result);
+    } catch(e: any) {
+      toast({ title: "AI Generation Failed", description: e.message || "Could not generate schedule.", variant: "destructive"});
+    }
+    setIsGenerating(false);
+  };
+
+   const handleApplyGeneratedSchedule = async () => {
+      if (!generatedSchedule) return;
+      setIsGenerating(true); // Re-use the loading state
+      try {
+        await replaceSchedule(generatedSchedule.generatedSchedule as Schedule[]);
+        await loadAllData();
+        toast({ title: "Schedule Applied!", description: "The AI-generated timetable is now active." });
+        setGenerateDialogOpen(false);
+        setGeneratedSchedule(null);
+      } catch (error: any) {
+        toast({ title: "Error", description: "Failed to apply AI schedule.", variant: "destructive" });
+      } finally {
+        setIsGenerating(false);
+      }
+  };
+
+
   const exportPDF = async () => {
     setIsExporting(true);
     try {
@@ -283,10 +324,8 @@ export default function ScheduleManager() {
         setIsExporting(false);
     }
   }
-
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   
-  const scheduleByDay = days.map(day => ({
+  const scheduleByDay = DAYS.map(day => ({
     day,
     slots: schedule.filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time)),
   }));
@@ -311,6 +350,10 @@ export default function ScheduleManager() {
     <TooltipProvider>
       <div className="flex justify-between items-center mb-4">
         <div className='flex gap-2'>
+            <Button onClick={() => { setGeneratedSchedule(null); setGenerateDialogOpen(true); }} variant="outline">
+                <Wand2 className="h-4 w-4 mr-2" />
+                Generate with AI
+            </Button>
             <Button onClick={exportPDF} variant="outline" disabled={isExporting}>
                 {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
                 Download PDF
@@ -460,7 +503,7 @@ export default function ScheduleManager() {
               <Label className="text-right">Day</Label>
               <Select value={currentSlot?.day} onValueChange={(v) => setCurrentSlot({ ...currentSlot, day: v as any })}>
                 <SelectTrigger className="col-span-3"><SelectValue placeholder="Select Day" /></SelectTrigger>
-                <SelectContent>{days.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                <SelectContent>{DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -560,6 +603,77 @@ export default function ScheduleManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <Dialog open={isGenerateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>Generate Weekly Timetable with AI</DialogTitle>
+                <DialogDescription>
+                    Let the TimeWise engine create an optimized, conflict-free schedule for all classes.
+                </DialogDescription>
+            </DialogHeader>
+            
+            {isGenerating ? (
+                <div className="flex flex-col items-center justify-center h-72 gap-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    <p className="text-muted-foreground">AI is generating the schedule, this may take a moment...</p>
+                </div>
+            ) : generatedSchedule ? (
+                <div className="space-y-4">
+                    <Card>
+                        <CardHeader><CardTitle className="text-lg">AI Summary</CardTitle></CardHeader>
+                        <CardContent><p className="text-sm text-muted-foreground">{generatedSchedule.summary}</p></CardContent>
+                    </Card>
+                    <ScrollArea className="h-80 border rounded-md p-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Day</TableHead>
+                                    <TableHead>Time</TableHead>
+                                    <TableHead>Class</TableHead>
+                                    <TableHead>Subject</TableHead>
+                                    <TableHead>Faculty</TableHead>
+                                    <TableHead>Classroom</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {generatedSchedule.generatedSchedule.map((slot:any, i:number) => (
+                                    <TableRow key={i}>
+                                        <TableCell>{slot.day}</TableCell>
+                                        <TableCell>{slot.time}</TableCell>
+                                        <TableCell>{getRelationInfo(slot.classId, 'class')?.name}</TableCell>
+                                        <TableCell>{getRelationInfo(slot.subjectId, 'subject')?.name}</TableCell>
+                                        <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name}</TableCell>
+                                        <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </div>
+            ) : (
+                <div className="py-8 text-center">
+                    <p className="text-muted-foreground mb-4">Click below to start the AI generation process. This will replace the entire existing schedule.</p>
+                </div>
+            )}
+            
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setGenerateDialogOpen(false)} disabled={isGenerating}>Cancel</Button>
+                {generatedSchedule ? (
+                    <Button onClick={handleApplyGeneratedSchedule} disabled={isGenerating}>
+                      {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Apply Schedule
+                    </Button>
+                ) : (
+                    <Button onClick={handleGenerateTimetable} disabled={isGenerating}>
+                        {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Generate New Timetable
+                    </Button>
+                )}
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </TooltipProvider>
   );
 }

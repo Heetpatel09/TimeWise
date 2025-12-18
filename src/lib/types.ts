@@ -113,6 +113,29 @@ export const GenerateSeatingArrangementOutputSchema = z.object({
 });
 export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
 
+export const GenerateTimetableInputSchema = z.object({
+  days: z.array(z.string()),
+  timeSlots: z.array(z.string()),
+  classes: z.array(z.any()),
+  subjects: z.array(z.any()),
+  faculty: z.array(z.any()),
+  classrooms: z.array(z.any()),
+});
+export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema>;
+
+export const GenerateTimetableOutputSchema = z.object({
+  summary: z.string(),
+  generatedSchedule: z.array(z.object({
+    classId: z.string(),
+    subjectId: z.string(),
+    facultyId: z.string(),
+    classroomId: z.string(),
+    day: z.string(),
+    time: z.string(),
+  })),
+});
+export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
+
 export interface Subject {
   id: string;
   name: string;
@@ -440,3 +463,4 @@ export interface EnrichedUserBadge extends UserBadge {
     
 
     
+

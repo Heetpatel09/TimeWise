@@ -15,6 +15,7 @@ import { testApiKeyFlow } from './flows/test-api-key-flow';
 import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts-flow';
 import { generateExamScheduleFlow } from './flows/generate-exam-schedule-flow';
 import { generateSeatingArrangementFlow } from './flows/generate-seating-arrangement-flow';
+import { generateTimetableFlow } from './flows/generate-timetable-flow';
 
 
 export const flows = [
@@ -24,4 +25,5 @@ export const flows = [
   resolveScheduleConflictsFlow,
   generateExamScheduleFlow,
   generateSeatingArrangementFlow,
+  generateTimetableFlow,
 ];
