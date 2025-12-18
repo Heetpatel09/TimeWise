@@ -120,9 +120,8 @@ function AdminDashboard() {
     const { user } = useAuth();
     
     const hasPermission = (permission: Permission) => {
-        if (!user || user.role !== 'admin') return false;
+        if (!user || user.role === 'student' || user.role === 'faculty') return false;
         
-        // The user object from AuthContext now holds the nested admin details
         const adminDetails = user as Admin; 
         
         if (!adminDetails.permissions) return false;
