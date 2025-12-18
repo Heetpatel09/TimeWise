@@ -179,7 +179,7 @@ export interface Faculty {
   id:string;
   name: string;
   email: string;
-  code: string;
+  code: string; // Used as Staff ID
   department: string;
   designation: string;
   employmentType: 'full-time' | 'part-time' | 'contract';
@@ -188,6 +188,10 @@ export interface Faculty {
   avatar?: string;
   profileCompleted: number;
   points: number;
+  allottedSections: string[];
+  allottedSubjects: string[];
+  maxWeeklyHours?: number;
+  designatedYear?: number;
 }
 
 export type Permission = 

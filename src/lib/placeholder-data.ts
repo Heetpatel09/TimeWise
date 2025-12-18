@@ -76,26 +76,26 @@ export const students: Student[] = studentNames.map((name, index) => {
 
 
 export const faculty: Faculty[] = [
-  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: 'TNG01', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['HOD'], streak: 45, profileCompleted: 90, points: 5200 },
-  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: 'LCE02', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 8, profileCompleted: 80, points: 2100 },
-  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: 'HPR03', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['Lab Incharge'], streak: 15, profileCompleted: 85, points: 3400 },
-  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: 'NMN04', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 50, points: 500 },
-  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', code: 'KNH05', designation: 'Lecturer', employmentType: 'contract', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 60, points: 800 },
-  { id: 'FAC006', name: 'Dr. Abhinav Gupta', email: 'abhinav@example.com', code: 'GPT06', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 25, profileCompleted: 95, points: 4500 },
-  { id: 'FAC007', name: 'Prof. Sheldon Cooper', email: 'cooper@example.com', code: 'CPR07', designation: 'Professor', employmentType: 'full-time', department: 'Physics', roles: [], streak: 3, profileCompleted: 70, points: 1200 },
-  { id: 'FAC008', name: 'Prof. Minerva McGonagall', email: 'mcgonagall@example.com', code: 'MGL08', designation: 'Professor', employmentType: 'full-time', department: 'Transfiguration', roles: ['HOD'], streak: 50, profileCompleted: 100, points: 6000 },
-  { id: 'FAC009', name: 'Prof. Walter White', email: 'white@example.com', code: 'WHT09', designation: 'Lecturer', employmentType: 'contract', department: 'Chemistry', roles: [], streak: 1, profileCompleted: 40, points: 200 },
-  { id: 'FAC010', name: 'Prof. Indiana Jones', email: 'jones@example.com', code: 'JNS10', designation: 'Professor', employmentType: 'full-time', department: 'Archaeology', roles: [], streak: 12, profileCompleted: 75, points: 2800 },
-  { id: 'FAC011', name: 'Dr. Marie Curie', email: 'curie@example.com', code: 'CRE11', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 33, profileCompleted: 100, points: 4800 },
-  { id: 'FAC012', name: 'Dr. Nikola Tesla', email: 'tesla@example.com', code: 'TSL12', designation: 'Professor', employmentType: 'full-time', department: 'Electronics Engineering', roles: ['HOD'], streak: 40, profileCompleted: 90, points: 5500 },
-  { id: 'FAC013', name: 'Dr. Isaac Newton', email: 'newton@example.com', code: 'NTN13', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 20, profileCompleted: 88, points: 3900 },
-  { id: 'FAC014', name: 'Dr. Albert Einstein', email: 'einstein@example.com', code: 'EST14', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 18, profileCompleted: 92, points: 3600 },
-  { id: 'FAC015', name: 'Dr. Rosalind Franklin', email: 'franklin@example.com', code: 'FRN15', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 22, profileCompleted: 95, points: 4100 },
-  { id: 'FAC016', name: 'Dr. Stephen Hawking', email: 'hawking@example.com', code: 'HWK16', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 30, profileCompleted: 98, points: 4700 },
-  { id: 'FAC017', name: 'Prof. Charles Xavier', email: 'xavier@example.com', code: 'XVR17', designation: 'Professor', employmentType: 'full-time', department: 'Electronics Engineering', roles: [], streak: 10, profileCompleted: 80, points: 2500 },
-  { id: 'FAC018', name: 'Prof. Albus Dumbledore', email: 'dumbledore@example.com', code: 'DDR18', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 55, profileCompleted: 100, points: 6500 },
-  { id: 'FAC019', name: 'Prof. Severus Snape', email: 'snape@example.com', code: 'SNP19', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Electronics Engineering', roles: [], streak: 5, profileCompleted: 65, points: 1500 },
-  { id: 'FAC020', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: 'KTG20', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 14, profileCompleted: 85, points: 3200 },
+  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: 'TNG01', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['HOD'], streak: 45, profileCompleted: 90, points: 5200, allottedSections: ['CLS001', 'CLS003'], allottedSubjects: ['SUB001', 'SUB005'], maxWeeklyHours: 20, designatedYear: 1 },
+  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: 'LCE02', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 8, profileCompleted: 80, points: 2100, allottedSections: ['CLS002'], allottedSubjects: ['SUB001'], maxWeeklyHours: 18, designatedYear: 1 },
+  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: 'HPR03', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['Lab Incharge'], streak: 15, profileCompleted: 85, points: 3400, allottedSections: ['CLS001', 'CLS002'], allottedSubjects: ['SUB002'], maxWeeklyHours: 22, designatedYear: 1 },
+  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: 'NMN04', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 50, points: 500, allottedSections: ['CLS005'], allottedSubjects: ['SUB011'], maxWeeklyHours: 10, designatedYear: 3 },
+  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', code: 'KNH05', designation: 'Lecturer', employmentType: 'contract', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 60, points: 800, allottedSections: ['CLS003'], allottedSubjects: ['SUB005'], maxWeeklyHours: 15, designatedYear: 2 },
+  { id: 'FAC006', name: 'Dr. Abhinav Gupta', email: 'abhinav@example.com', code: 'GPT06', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 25, profileCompleted: 95, points: 4500, allottedSections: ['CLS007'], allottedSubjects: ['SUB013'], maxWeeklyHours: 20, designatedYear: 4 },
+  { id: 'FAC007', name: 'Prof. Sheldon Cooper', email: 'cooper@example.com', code: 'CPR07', designation: 'Professor', employmentType: 'full-time', department: 'Physics', roles: [], streak: 3, profileCompleted: 70, points: 1200, allottedSections: [], allottedSubjects: [], maxWeeklyHours: 18, designatedYear: 1 },
+  { id: 'FAC008', name: 'Prof. Minerva McGonagall', email: 'mcgonagall@example.com', code: 'MGL08', designation: 'Professor', employmentType: 'full-time', department: 'Transfiguration', roles: ['HOD'], streak: 50, profileCompleted: 100, points: 6000, allottedSections: [], allottedSubjects: [], maxWeeklyHours: 20, designatedYear: 1 },
+  { id: 'FAC009', name: 'Prof. Walter White', email: 'white@example.com', code: 'WHT09', designation: 'Lecturer', employmentType: 'contract', department: 'Chemistry', roles: [], streak: 1, profileCompleted: 40, points: 200, allottedSections: [], allottedSubjects: [], maxWeeklyHours: 12, designatedYear: 1 },
+  { id: 'FAC010', name: 'Prof. Indiana Jones', email: 'jones@example.com', code: 'JNS10', designation: 'Professor', employmentType: 'full-time', department: 'Archaeology', roles: [], streak: 12, profileCompleted: 75, points: 2800, allottedSections: [], allottedSubjects: [], maxWeeklyHours: 20, designatedYear: 2 },
+  { id: 'FAC011', name: 'Dr. Marie Curie', email: 'curie@example.com', code: 'CRE11', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 33, profileCompleted: 100, points: 4800, allottedSections: ['CLS005', 'CLS006'], allottedSubjects: ['SUB009'], maxWeeklyHours: 20, designatedYear: 3 },
+  { id: 'FAC012', name: 'Dr. Nikola Tesla', email: 'tesla@example.com', code: 'TSL12', designation: 'Professor', employmentType: 'full-time', department: 'Electronics Engineering', roles: ['HOD'], streak: 40, profileCompleted: 90, points: 5500, allottedSections: ['CLS009', 'CLS010'], allottedSubjects: ['SUB017', 'SUB019'], maxWeeklyHours: 20, designatedYear: 2 },
+  { id: 'FAC013', name: 'Dr. Isaac Newton', email: 'newton@example.com', code: 'NTN13', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 20, profileCompleted: 88, points: 3900, allottedSections: ['CLS001', 'CLS002'], allottedSubjects: ['SUB004'], maxWeeklyHours: 18, designatedYear: 1 },
+  { id: 'FAC014', name: 'Dr. Albert Einstein', email: 'einstein@example.com', code: 'EST14', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 18, profileCompleted: 92, points: 3600, allottedSections: ['CLS003', 'CLS004'], allottedSubjects: ['SUB008'], maxWeeklyHours: 18, designatedYear: 2 },
+  { id: 'FAC015', name: 'Dr. Rosalind Franklin', email: 'franklin@example.com', code: 'FRN15', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 22, profileCompleted: 95, points: 4100, allottedSections: ['CLS006'], allottedSubjects: ['SUB010', 'SUB012'], maxWeeklyHours: 22, designatedYear: 3 },
+  { id: 'FAC016', name: 'Dr. Stephen Hawking', email: 'hawking@example.com', code: 'HWK16', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 30, profileCompleted: 98, points: 4700, allottedSections: ['CLS008'], allottedSubjects: ['SUB015', 'SUB014'], maxWeeklyHours: 20, designatedYear: 4 },
+  { id: 'FAC017', name: 'Prof. Charles Xavier', email: 'xavier@example.com', code: 'XVR17', designation: 'Professor', employmentType: 'full-time', department: 'Electronics Engineering', roles: [], streak: 10, profileCompleted: 80, points: 2500, allottedSections: ['CLS009'], allottedSubjects: ['SUB018'], maxWeeklyHours: 18, designatedYear: 2 },
+  { id: 'FAC018', name: 'Prof. Albus Dumbledore', email: 'dumbledore@example.com', code: 'DDR18', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 55, profileCompleted: 100, points: 6500, allottedSections: ['CLS004'], allottedSubjects: ['SUB007'], maxWeeklyHours: 20, designatedYear: 2 },
+  { id: 'FAC019', name: 'Prof. Severus Snape', email: 'snape@example.com', code: 'SNP19', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Electronics Engineering', roles: [], streak: 5, profileCompleted: 65, points: 1500, allottedSections: ['CLS010'], allottedSubjects: ['SUB020'], maxWeeklyHours: 10, designatedYear: 4 },
+  { id: 'FAC020', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: 'KTG20', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 14, profileCompleted: 85, points: 3200, allottedSections: ['CLS007', 'CLS008'], allottedSubjects: ['SUB016'], maxWeeklyHours: 22, designatedYear: 4 },
 ];
 
 export const classrooms: Classroom[] = Array.from({ length: 25 }, (_, i) => {
@@ -321,14 +321,3 @@ export const userBadges: UserBadge[] = [
     { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() },
     { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
-
-    
-
-
-
-
-
-
-
-
-    
