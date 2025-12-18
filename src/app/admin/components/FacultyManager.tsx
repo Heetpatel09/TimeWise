@@ -7,10 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
-import { getClasses } from '@/lib/services/classes';
-import { getSubjects } from '@/lib/services/subjects';
-import type { Faculty, Class, Subject } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, X } from 'lucide-react';
+import type { Faculty } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -28,16 +26,10 @@ import {
 } from "@/components/ui/alert-dialog"
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function FacultyManager() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,14 +43,8 @@ export default function FacultyManager() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const [facultyData, classData, subjectData] = await Promise.all([
-        getFaculty(),
-        getClasses(),
-        getSubjects(),
-      ]);
+      const facultyData = await getFaculty();
       setFaculty(facultyData);
-      setClasses(classData);
-      setSubjects(subjectData);
     } catch (error) {
       toast({ title: "Error", description: "Failed to load data.", variant: "destructive" });
     } finally {
@@ -125,7 +111,7 @@ export default function FacultyManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentFaculty({ employmentType: 'full-time', allottedSections: [], allottedSubjects: [] });
+    setCurrentFaculty({ employmentType: 'full-time' });
     setPasswordOption('auto');
     setManualPassword('');
     setDialogOpen(true);
@@ -253,81 +239,13 @@ export default function FacultyManager() {
                 <Label htmlFor="department">Designated Department</Label>
                 <Input id="department" value={currentFaculty.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} disabled={isSubmitting}/>
               </div>
-              <div className="space-y-2">
-                <Label>Allotted Sections</Label>
-                 <Popover>
-                    <PopoverTrigger asChild>
-                        <div className="flex flex-wrap gap-1 p-2 border rounded-md min-h-[40px]">
-                            {currentFaculty.allottedSections?.map(id => (
-                                <Badge key={id} variant="secondary">
-                                    {classes.find(c => c.id === id)?.name}
-                                    <button onClick={() => setCurrentFaculty({...currentFaculty, allottedSections: currentFaculty.allottedSections?.filter(sId => sId !== id)})} className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                    </button>
-                                </Badge>
-                            ))}
-                            <div className="flex-grow" />
-                        </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                         <Command>
-                            <CommandInput placeholder="Search sections..." />
-                            <CommandEmpty>No sections found.</CommandEmpty>
-                            <CommandGroup>
-                                {classes.map(c => (
-                                    <CommandItem
-                                        key={c.id}
-                                        onSelect={() => {
-                                            if (!currentFaculty.allottedSections?.includes(c.id)) {
-                                                setCurrentFaculty({...currentFaculty, allottedSections: [...(currentFaculty.allottedSections || []), c.id]});
-                                            }
-                                        }}
-                                    >
-                                        {c.name}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </Command>
-                    </PopoverContent>
-                </Popover>
+               <div className="space-y-2">
+                <Label htmlFor="allottedSections">Allotted Sections (comma-separated IDs)</Label>
+                <Input id="allottedSections" value={Array.isArray(currentFaculty.allottedSections) ? currentFaculty.allottedSections.join(', ') : ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, allottedSections: e.target.value.split(',').map(s => s.trim()) })} disabled={isSubmitting}/>
               </div>
-              <div className="space-y-2">
-                <Label>Allotted Subjects</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <div className="flex flex-wrap gap-1 p-2 border rounded-md min-h-[40px]">
-                            {currentFaculty.allottedSubjects?.map(id => (
-                                <Badge key={id} variant="secondary">
-                                    {subjects.find(s => s.id === id)?.name}
-                                     <button onClick={() => setCurrentFaculty({...currentFaculty, allottedSubjects: currentFaculty.allottedSubjects?.filter(sId => sId !== id)})} className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                    </button>
-                                </Badge>
-                            ))}
-                             <div className="flex-grow" />
-                        </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                         <Command>
-                            <CommandInput placeholder="Search subjects..." />
-                            <CommandEmpty>No subjects found.</CommandEmpty>
-                            <CommandGroup>
-                                {subjects.map(s => (
-                                    <CommandItem
-                                        key={s.id}
-                                        onSelect={() => {
-                                            if (!currentFaculty.allottedSubjects?.includes(s.id)) {
-                                                setCurrentFaculty({...currentFaculty, allottedSubjects: [...(currentFaculty.allottedSubjects || []), s.id]});
-                                            }
-                                        }}
-                                    >
-                                        {s.name}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </Command>
-                    </PopoverContent>
-                </Popover>
+               <div className="space-y-2">
+                <Label htmlFor="allottedSubjects">Allotted Subjects (comma-separated IDs)</Label>
+                <Input id="allottedSubjects" value={Array.isArray(currentFaculty.allottedSubjects) ? currentFaculty.allottedSubjects.join(', ') : ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, allottedSubjects: e.target.value.split(',').map(s => s.trim()) })} disabled={isSubmitting}/>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
