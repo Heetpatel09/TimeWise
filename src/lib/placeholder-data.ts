@@ -31,17 +31,16 @@ export const subjects: Subject[] = [
 ];
 
 export const classes: Class[] = [
-  { id: 'CLS001', name: 'FE COMP A', semester: 1, department: 'Computer Engineering' },
-  { id: 'CLS002', name: 'FE COMP B', semester: 1, department: 'Computer Engineering' },
-  { id: 'CLS003', name: 'SE COMP A', semester: 3, department: 'Computer Engineering' },
-  { id: 'CLS004', name: 'SE COMP B', semester: 3, department: 'Computer Engineering' },
-  { id: 'CLS005', name: 'TE COMP A', semester: 5, department: 'Computer Engineering' },
-  { id: 'CLS006', name: 'TE COMP B', semester: 5, department: 'Computer Engineering' },
-  { id: 'CLS007', name: 'BE COMP A', semester: 7, department: 'Computer Engineering' },
-  { id: 'CLS008', name: 'BE COMP B', semester: 7, department: 'Computer Engineering' },
-  { id: 'CLS009', name: 'SE ETRX', semester: 3, department: 'Electronics Engineering' },
-  { id: 'CLS010', name: 'TE ETRX', semester: 5, department: 'Electronics Engineering' },
-  { id: 'CLS011', name: 'BE ETRX', semester: 7, department: 'Electronics Engineering' },
+  { id: 'CLS001', name: 'AIDS 1', semester: 1, department: 'Computer Engineering' },
+  { id: 'CLS002', name: 'AIDS 2', semester: 1, department: 'Computer Engineering' },
+  { id: 'CLS003', name: 'AIDS 3', semester: 3, department: 'Computer Engineering' },
+  { id: 'CLS004', name: 'AIDS 4', semester: 3, department: 'Computer Engineering' },
+  { id: 'CLS005', name: 'AIDS 5', semester: 5, department: 'Computer Engineering' },
+  { id: 'CLS006', name: 'AIDS 6', semester: 5, department: 'Computer Engineering' },
+  { id: 'CLS007', name: 'AIDS 7', semester: 7, department: 'Computer Engineering' },
+  { id: 'CLS008', name: 'AIDS 8', semester: 7, department: 'Computer Engineering' },
+  { id: 'CLS009', name: 'AIDS 9', semester: 3, department: 'Electronics Engineering' },
+  { id: 'CLS010', name: 'AIML', semester: 5, department: 'Electronics Engineering' },
 ];
 
 const studentNames = [
@@ -314,6 +313,7 @@ export const userBadges: UserBadge[] = [
 ];
 
     
+
 
 
 
