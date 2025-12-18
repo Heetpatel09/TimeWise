@@ -1,10 +1,10 @@
 
-
 'use server';
 
 import { db as getDb } from '@/lib/db';
 import type { User, Admin } from '@/lib/types';
 import { updateAdmin as updateAdminInDb } from './admins';
+import { randomBytes } from 'crypto';
 
 type CredentialEntry = {
     userId: string;
@@ -104,13 +104,7 @@ export async function addCredential(credential: {userId: string, email: string, 
     }
     
     // Determine the final password. Use new one if provided, otherwise fall back to existing.
-    const passwordToSet = credential.password || existingForEmail?.password;
-    if (!passwordToSet) {
-       // This can happen if it's a new user with an auto-generated password that wasn't passed.
-       // However, the addAdmin/addStudent functions should always pass one.
-       // We'll throw an error for safety.
-       throw new Error(`Password not found for user ${credential.email}. A password must be provided for new users.`);
-    }
+    const passwordToSet = credential.password || existingForEmail?.password || randomBytes(8).toString('hex');
     
     // Determine the 'requiresPasswordChange' flag.
     const requiresChange = credential.requiresPasswordChange === undefined 

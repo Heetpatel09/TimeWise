@@ -47,7 +47,7 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Prom
       userId: newItem.id,
       email: newItem.email,
       password: initialPassword,
-      role: 'admin',
+      role: 'admin', // This is still technically correct for the credentials table role type
       requiresPasswordChange: !password, // require change if password was auto-generated
     });
 
