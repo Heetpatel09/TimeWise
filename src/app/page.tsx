@@ -179,12 +179,12 @@ export default function Home() {
     <>
       <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/bafybeiglln5l5ywycrg27l5r5tpvrtucbknfvo4czu244qfthfcyw4h6hi/background.jpeg"
+            src="https://storage.googleapis.com/studio-webapp-assets/bafybeifkwao5lcnm5apxpep4tlgorej24ce2j2s4phx2d6w6w5kmnj5mqa/background.jpeg"
             alt="Abstract background"
             fill
             style={{ objectFit: 'cover', opacity: 1 }}
             priority
-            data-ai-hint="abstract purple gradient"
+            data-ai-hint="purple background icons"
           />
         </div>
       <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
