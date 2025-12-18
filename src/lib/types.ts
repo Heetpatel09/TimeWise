@@ -248,6 +248,7 @@ export interface User {
     avatar: string;
     role: 'admin' | 'faculty' | 'student';
     requiresPasswordChange?: boolean;
+    // For admins/managers, the 'permissions' and specific 'role' are nested
     permissions?: (Permission | '*')[];
 }
 

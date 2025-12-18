@@ -142,7 +142,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
 const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role']) => void }) => {
 
     const roles: { role: User['role'], title: string, description: string, icon: React.ElementType}[] = [
-        { role: 'admin', title: 'Admin / Manager', description: 'Manage university data and schedules.', icon: UserCog },
+        { role: 'admin', title: 'Admin / Manager', description: 'Access the administrative dashboard.', icon: UserCog },
         { role: 'faculty', title: 'Faculty', description: 'Access your schedule and make requests.', icon: UserCheck },
         { role: 'student', title: 'Student', description: 'View your timetable and profile.', icon: Users },
     ]

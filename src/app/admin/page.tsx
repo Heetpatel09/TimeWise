@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import type { Permission } from '@/lib/types';
+import type { Permission, Admin } from '@/lib/types';
 import {
   Tooltip,
   TooltipContent,
@@ -118,11 +118,18 @@ const StatItem = ({ title, value, icon, isLoading }: { title: string, value: num
 
 function AdminDashboard() {
     const { user } = useAuth();
-    const hasPermission = (permission: Permission | '*') => {
-        if (!user || user.role !== 'admin' || !('permissions' in user)) return false;
-        const userPermissions = (user as any).permissions || [];
-        return userPermissions.includes('*') || userPermissions.includes(permission);
+    
+    const hasPermission = (permission: Permission) => {
+        if (!user || user.role !== 'admin') return false;
+        
+        // The user object from AuthContext now holds the nested admin details
+        const adminDetails = user as Admin; 
+        
+        if (!adminDetails.permissions) return false;
+        
+        return adminDetails.permissions.includes('*') || adminDetails.permissions.includes(permission);
     }
+
     const isFullAdmin = hasPermission('*');
 
     const { data: students, isLoading: studentsLoading } = useQuery({ queryKey: ['students'], queryFn: getStudents });

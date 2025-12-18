@@ -52,8 +52,14 @@ export async function login(email: string, password: string): Promise<User> {
         avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
         role: credentialEntry.role,
         requiresPasswordChange: !!credentialEntry.requiresPasswordChange,
-        permissions: details.permissions ? JSON.parse(details.permissions) : [],
     };
+
+    // If the user is an admin, embed the specific admin/manager role and permissions
+    if (credentialEntry.role === 'admin') {
+      const adminDetails: Admin = details as Admin;
+      (user as Admin).role = adminDetails.role;
+      (user as Admin).permissions = adminDetails.permissions ? JSON.parse(adminDetails.permissions as any) : [];
+    }
     
     return user;
 }

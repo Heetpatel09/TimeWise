@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
-import type { Notification } from '@/lib/types';
+import type { Notification, Admin } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { getNotificationsForUser, markNotificationAsRead } from '@/lib/services/notifications';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -203,18 +203,29 @@ export default function DashboardLayout({
       router.push('/');
     }
   }, [user, isLoading, router]);
+  
+  const internalUserRole = (user as Admin | null)?.role;
 
   const getRoleIcon = () => {
     if (!user) return null;
-    switch (user.role) {
+    const currentRole = internalUserRole || user.role;
+    switch (currentRole) {
       case 'admin':
         return <UserCog className="h-5 w-5 mr-2 text-primary" />;
+      case 'manager':
+        return <UserCheck className="h-5 w-5 mr-2 text-primary" />;
       case 'faculty':
         return <UserCheck className="h-5 w-5 mr-2 text-primary" />;
       case 'student':
         return <User className="h-5 w-5 mr-2 text-primary" />;
     }
   };
+  
+  const getRoleName = () => {
+      if (!user) return '';
+      const currentRole = internalUserRole || user.role;
+      return currentRole.charAt(0).toUpperCase() + currentRole.slice(1);
+  }
   
   if (!isClient || isLoading || !user) {
     return (
@@ -283,7 +294,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-2 sm:gap-4">
               <Badge variant="outline" className="hidden sm:flex items-center text-sm">
                   {getRoleIcon()}
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                  {getRoleName()}
               </Badge>
               <NotificationsBell />
               <UserProfile />

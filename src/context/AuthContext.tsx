@@ -6,7 +6,7 @@ import type { User, Admin } from '@/lib/types';
 import { login as loginService } from '@/lib/services/auth';
 
 interface AuthContextType {
-  user: User | null;
+  user: (User & Partial<Admin>) | null; // Allow user to have Admin properties
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => void;
