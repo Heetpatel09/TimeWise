@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -221,7 +220,7 @@ export default function DashboardLayout({
       <div className="relative flex flex-col h-screen">
          <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background.jpeg"
+            src="https://storage.googleapis.com/studio-webapp-assets/bafybeiglln5l5ywycrg27l5r5tpvrtucbknfvo4czu244qfthfcyw4h6hi/background.jpeg"
             alt="Abstract background"
             fill
             style={{ objectFit: 'cover' }}
@@ -240,7 +239,7 @@ export default function DashboardLayout({
       <div className="relative flex flex-col h-screen">
         <div className="fixed inset-0 z-[-1]">
           <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/timewise/background.jpeg"
+            src="https://storage.googleapis.com/studio-webapp-assets/bafybeiglln5l5ywycrg27l5r5tpvrtucbknfvo4czu244qfthfcyw4h6hi/background.jpeg"
             alt="Abstract background"
             fill
             style={{ objectFit: 'cover' }}

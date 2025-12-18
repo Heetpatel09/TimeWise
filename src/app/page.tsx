@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -178,15 +177,15 @@ export default function Home() {
   return (
     <>
       <div className="fixed inset-0 z-[-1]">
-          <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/bafybeifkwao5lcnm5apxpep4tlgorej24ce2j2s4phx2d6w6w5kmnj5mqa/background.jpeg"
-            alt="Abstract background"
-            fill
-            style={{ objectFit: 'cover', opacity: 1 }}
-            priority
-            data-ai-hint="purple background icons"
-          />
-        </div>
+        <Image
+          src="https://storage.googleapis.com/studio-webapp-assets/bafybeifkwao5lcnm5apxpep4tlgorej24ce2j2s4phx2d6w6w5kmnj5mqa/background.jpeg"
+          alt="Abstract background"
+          fill
+          style={{ objectFit: 'cover' }}
+          priority
+          data-ai-hint="purple background icons"
+        />
+      </div>
       <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
         <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">

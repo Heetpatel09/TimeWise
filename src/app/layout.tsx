@@ -1,7 +1,5 @@
-
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster";
-import Image from 'next/image';
 import './globals.css';
 import { Providers } from '@/components/Providers';
 
