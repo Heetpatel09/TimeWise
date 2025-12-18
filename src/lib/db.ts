@@ -323,7 +323,7 @@ function createSchemaAndSeed() {
       id TEXT PRIMARY KEY,
       assignmentId TEXT NOT NULL,
       studentId TEXT NOT NULL,
-      fileUrl TEXT NOT NULL,
+      fileUrl TEXT NOT NULL, -- URL to the submission file
       submittedAt TEXT NOT NULL,
       grade TEXT,
       remarks TEXT,
@@ -433,5 +433,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    
