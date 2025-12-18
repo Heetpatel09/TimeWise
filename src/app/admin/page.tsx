@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, Bot } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, Bot, Lock } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getStudents } from '@/lib/services/students';
 import { getFaculty } from '@/lib/services/faculty';
@@ -18,11 +18,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+import type { Permission } from '@/lib/types';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
-const SectionCard = ({ title, icon: Icon, children }: { title: string, icon: React.ElementType, children: React.ReactNode }) => (
-    <Card>
+const SectionCard = ({ title, icon: Icon, children, isLocked }: { title: string, icon: React.ElementType, children: React.ReactNode, isLocked?: boolean }) => (
+    <Card className={cn(isLocked && "bg-muted/50")}>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
+            <CardTitle className={cn("flex items-center gap-2 text-xl", isLocked && "text-muted-foreground")}>
                 <Icon className="h-5 w-5" />
                 {title}
             </CardTitle>
@@ -33,48 +41,65 @@ const SectionCard = ({ title, icon: Icon, children }: { title: string, icon: Rea
     </Card>
 );
 
-const ManagementLink = ({ href, title, icon: Icon }: { href: string, title: string, icon: React.ElementType }) => (
-    <Link href={href} passHref>
-        <div className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent hover:text-accent-foreground">
-            <div className="rounded-lg bg-secondary p-2 group-hover:bg-primary group-hover:text-primary-foreground">
-                <Icon className="h-5 w-5" />
+const ManagementLink = ({ href, title, icon: Icon, isLocked }: { href: string, title: string, icon: React.ElementType, isLocked?: boolean }) => {
+    const content = (
+        <div className={cn("group flex items-center gap-3 rounded-lg p-3 transition-colors", isLocked ? "cursor-not-allowed" : "hover:bg-accent hover:text-accent-foreground")}>
+            <div className={cn("rounded-lg bg-secondary p-2", !isLocked && "group-hover:bg-primary group-hover:text-primary-foreground")}>
+                <Icon className={cn("h-5 w-5", isLocked ? "text-muted-foreground" : "")}/>
             </div>
-            <span className="font-semibold">{title}</span>
-            <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            <span className={cn("font-semibold", isLocked && "text-muted-foreground")}>{title}</span>
+            {isLocked ? (
+                <Lock className="ml-auto h-4 w-4 text-muted-foreground" />
+            ) : (
+                <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            )}
         </div>
-    </Link>
-);
+    );
+    
+    if(isLocked) {
+        return (
+             <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger className="w-full text-left">{content}</TooltipTrigger>
+                    <TooltipContent><p>You don't have permission to access this section.</p></TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
+    
+    return <Link href={href} passHref>{content}</Link>;
+};
 
-const academicLinks = [
-  { href: "/admin/schedule", title: "Master Schedule", icon: Calendar },
-  { href: "/admin/timetable/generate", title: "Timetable Generator", icon: Bot },
-  { href: "/admin/exams", title: "Exams", icon: FileText },
-  { href: "/admin/attendance", title: "Attendance", icon: CheckSquare },
-  { href: "/admin/results", title: "Results", icon: BarChart3 },
+const academicLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
+  { href: "/admin/schedule", title: "Master Schedule", icon: Calendar, permission: 'manage_schedule' },
+  { href: "/admin/timetable/generate", title: "Timetable Generator", icon: Bot, permission: 'manage_schedule' },
+  { href: "/admin/exams", title: "Exams", icon: FileText, permission: 'manage_exams' },
+  { href: "/admin/attendance", title: "Attendance", icon: CheckSquare, permission: 'manage_attendance' },
+  { href: "/admin/results", title: "Results", icon: BarChart3, permission: 'manage_results' },
 ];
 
-const coreDataLinks = [
-  { href: "/admin/students", title: "Students", icon: Users },
-  { href: "/admin/faculty", title: "Faculty", icon: UserCheck },
-  { href: "/admin/departments", title: "Departments", icon: Building },
-  { href: "/admin/classrooms", title: "Classrooms", icon: Warehouse },
+const coreDataLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
+  { href: "/admin/students", title: "Students", icon: Users, permission: 'manage_students' },
+  { href: "/admin/faculty", title: "Faculty", icon: UserCheck, permission: 'manage_faculty' },
+  { href: "/admin/departments", title: "Departments", icon: Building, permission: 'manage_classes' }, // Tied to classes
+  { href: "/admin/classrooms", title: "Classrooms", icon: Warehouse, permission: 'manage_classrooms' },
 ];
 
-const adminLinks = [
-  { href: "/admin/fees", title: "Fees", icon: Banknote },
-  { href: "/admin/hostels", title: "Hostels", icon: Home },
-  { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail },
-  { href: "/admin/schedule-requests", title: "Schedule Changes", icon: PencilRuler },
-  { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare },
+const adminLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
+  { href: "/admin/fees", title: "Fees", icon: Banknote, permission: 'manage_fees' },
+  { href: "/admin/hostels", title: "Hostels", icon: Home, permission: 'manage_hostels' },
+  { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail, permission: 'manage_requests' },
+  { href: "/admin/schedule-requests", title: "Schedule Changes", icon: PencilRuler, permission: 'manage_requests' },
+  { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare, permission: 'manage_requests' },
 ];
 
+// System links are generally admin-only
 const systemLinks = [
-  { href: "/admin/admins", title: "Admins", icon: ShieldCheck },
+  { href: "/admin/admins", title: "Admins & Managers", icon: ShieldCheck },
   { href: "/admin/leaderboards", title: "Leaderboards", icon: Trophy },
   { href: "/admin/hall-of-fame", title: "Hall of Fame", icon: Award },
   { href: "/admin/api-test", title: "API Key Test", icon: KeyRound },
 ];
-
 
 const StatItem = ({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) => {
     const Icon = icon;
@@ -92,6 +117,14 @@ const StatItem = ({ title, value, icon, isLoading }: { title: string, value: num
 }
 
 function AdminDashboard() {
+    const { user } = useAuth();
+    const hasPermission = (permission: Permission | '*') => {
+        if (!user || user.role !== 'admin' || !('permissions' in user)) return false;
+        const userPermissions = (user as any).permissions || [];
+        return userPermissions.includes('*') || userPermissions.includes(permission);
+    }
+    const isFullAdmin = hasPermission('*');
+
     const { data: students, isLoading: studentsLoading } = useQuery({ queryKey: ['students'], queryFn: getStudents });
     const { data: faculty, isLoading: facultyLoading } = useQuery({ queryKey: ['faculty'], queryFn: getFaculty });
     const { data: schedule, isLoading: scheduleLoading } = useQuery({ queryKey: ['schedule'], queryFn: getSchedule });
@@ -182,18 +215,20 @@ function AdminDashboard() {
             </Collapsible>
 
              <div className="space-y-6">
-                <SectionCard title="Academics" icon={Dumbbell}>
-                    {academicLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                <SectionCard title="Academics" icon={Dumbbell} isLocked={!isFullAdmin && academicLinks.every(l => !hasPermission(l.permission))}>
+                    {academicLinks.map(link => <ManagementLink key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </SectionCard>
-                <SectionCard title="Core Data" icon={School}>
-                    {coreDataLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                <SectionCard title="Core Data" icon={School} isLocked={!isFullAdmin && coreDataLinks.every(l => !hasPermission(l.permission))}>
+                    {coreDataLinks.map(link => <ManagementLink key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </SectionCard>
-                <SectionCard title="Administration & Requests" icon={Workflow}>
-                    {adminLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                <SectionCard title="Administration & Requests" icon={Workflow} isLocked={!isFullAdmin && adminLinks.every(l => !hasPermission(l.permission))}>
+                    {adminLinks.map(link => <ManagementLink key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </SectionCard>
-                <SectionCard title="System & Engagement" icon={Trophy}>
-                    {systemLinks.map(link => <ManagementLink key={link.href} {...link} />)}
-                </SectionCard>
+                {isFullAdmin && (
+                    <SectionCard title="System & Engagement" icon={Trophy}>
+                        {systemLinks.map(link => <ManagementLink key={link.href} {...link} />)}
+                    </SectionCard>
+                )}
              </div>
         </div>
     )

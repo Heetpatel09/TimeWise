@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCog, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
-import { addCredential, updateAdmin } from '@/lib/services/auth';
+import { addCredential } from '@/lib/services/auth';
+import { updateAdmin } from '@/lib/services/admins';
 import Link from 'next/link';
 
 export default function AdminProfilePage() {
@@ -67,7 +68,10 @@ export default function AdminProfilePage() {
                 });
             }
 
-            setAuthUser(updatedUser);
+            setAuthUser({
+              ...user,
+              ...updatedUser
+            });
             toast({
                 title: 'Profile Updated',
                 description: 'Your changes have been saved successfully.',

@@ -1,9 +1,8 @@
 
-
 'use server';
 
 import { db as getDb } from '@/lib/db';
-import type { User } from '@/lib/types';
+import type { User, Admin } from '@/lib/types';
 import { updateAdmin as updateAdminInDb } from './admins';
 
 type CredentialEntry = {
@@ -53,6 +52,7 @@ export async function login(email: string, password: string): Promise<User> {
         avatar: details.avatar || `https://avatar.vercel.sh/${details.email}.png`,
         role: credentialEntry.role,
         requiresPasswordChange: !!credentialEntry.requiresPasswordChange,
+        permissions: details.permissions ? JSON.parse(details.permissions) : [],
     };
     
     return user;
@@ -71,6 +71,7 @@ export async function updateAdmin(updatedDetails: { id: string; name: string, em
     const user: User = {
         ...updatedAdmin,
         role: 'admin',
+        permissions: updatedAdmin.permissions
     };
     return Promise.resolve(user);
 }

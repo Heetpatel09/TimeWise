@@ -88,7 +88,7 @@ export default function AdminsManager() {
                 newPermissions.splice(index, 1);
             }
         }
-        return { ...prev, permissions: newPermissions };
+        return { ...prev, permissions: newPermissions as Permission[] };
     });
   }
 

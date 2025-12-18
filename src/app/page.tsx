@@ -21,7 +21,6 @@ import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
-import './globals.css';
 
 function TimeWiseLogo() {
   return (
@@ -51,7 +50,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
     try {
       const user = await login(email, password);
        if (user.role !== role) {
-        throw new Error(`Invalid credentials for ${role} role.`);
+        throw new Error(`Invalid credentials for this role.`);
       }
       toast({
         title: 'Login Successful',
@@ -76,13 +75,15 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
         case 'student': return 'student@timewise.app';
     }
   }
+  
+  const roleTitle = role === 'admin' ? "Admin / Manager" : role.charAt(0).toUpperCase() + role.slice(1);
 
   return (
     <div>
         <DialogHeader>
           <DialogTitle className="capitalize text-center text-2xl">Login</DialogTitle>
           <DialogDescription className="text-center">
-            Enter your credentials to access the {role} portal.
+            Enter your credentials to access the {roleTitle} portal.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleLogin}>
@@ -141,7 +142,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
 const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role']) => void }) => {
 
     const roles: { role: User['role'], title: string, description: string, icon: React.ElementType}[] = [
-        { role: 'admin', title: 'Admin', description: 'Manage university data and schedules.', icon: UserCog },
+        { role: 'admin', title: 'Admin / Manager', description: 'Manage university data and schedules.', icon: UserCog },
         { role: 'faculty', title: 'Faculty', description: 'Access your schedule and make requests.', icon: UserCheck },
         { role: 'student', title: 'Student', description: 'View your timetable and profile.', icon: Users },
     ]
@@ -185,7 +186,7 @@ export default function Home() {
           src="https://storage.googleapis.com/studio-webapp-assets/bafybeif3uht3ulqaij6j25jmkj2b2getv3p2amwone3v666yq5h3hfd2ve/background.jpeg"
           alt="Abstract background"
           fill
-          style={{ objectFit: 'cover', opacity: 1 }}
+          style={{ objectFit: 'cover' }}
           priority
           data-ai-hint="clock calendar icons"
         />

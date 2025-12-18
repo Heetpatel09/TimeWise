@@ -210,7 +210,7 @@ export interface Admin {
   email: string;
   avatar?: string;
   role: 'admin' | 'manager';
-  permissions: Permission[];
+  permissions: (Permission | '*')[];
 }
 
 export interface Classroom {
@@ -248,6 +248,7 @@ export interface User {
     avatar: string;
     role: 'admin' | 'faculty' | 'student';
     requiresPasswordChange?: boolean;
+    permissions?: (Permission | '*')[];
 }
 
 export interface LeaveRequest {
@@ -461,8 +462,3 @@ export interface UserBadge {
 export interface EnrichedUserBadge extends UserBadge {
   badge: Badge;
 }
-    
-
-    
-
-
