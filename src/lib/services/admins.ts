@@ -47,7 +47,7 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Prom
       userId: newItem.id,
       email: newItem.email,
       password: initialPassword,
-      role: 'admin', // The credential table role is 'admin' for both admins and managers
+      role: 'admin', // ALWAYS use 'admin' for the credential table role to ensure lookup in the 'admins' table.
       requiresPasswordChange: !password, // require change if password was auto-generated
     });
 
