@@ -64,6 +64,7 @@ const nextConfig: NextConfig = {
   devIndicators: {
     allowedDevOrigins: [
         '*.cluster-a6zx3cwnb5hnuwbgyxmofxpkfe.cloudworkstations.dev',
+        '6000-firebase-studio-1756557245547.cluster-a6zx3cwnb5hnuwbgyxmofxpkfe.cloudworkstations.dev'
     ],
   },
   experimental: {
