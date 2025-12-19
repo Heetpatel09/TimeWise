@@ -9,18 +9,8 @@ import {googleAI} from '@genkit-ai/google-genai';
 // service account credentials of the runtime.
 // For local development, it will look for a GEMINI_API_KEY in the .env file.
 
-let plugins: any[] = [];
-
-if (process.env.NODE_ENV === 'production') {
-  // In production (deployed on App Hosting), use the service account credentials.
-  plugins.push(googleAI());
-} else {
-  // In development, use the API key from the .env file.
-  plugins.push(googleAI({ apiKey: process.env.GEMINI_API_KEY }));
-}
-
 export const ai = genkit({
-  plugins: plugins,
+  plugins: [googleAI({apiKey: process.env.GEMINI_API_KEY})],
   logLevel: 'debug',
   enableTracingAndMetrics: true,
 });
