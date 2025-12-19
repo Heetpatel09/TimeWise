@@ -1,0 +1,27 @@
+
+'use server';
+/**
+ * @fileoverview This file is used to register AI flows and tools with Genkit.
+ *
+ * It is not meant to be used in production, and should only be used for development.
+ *
+ * This file will be removed when the app is deployed to production.
+ */
+
+import { ai } from './genkit';
+import { generateTestPaperFlow } from './flows/generate-test-paper-flow';
+import { generateWelcomeNotificationFlow } from './flows/generate-welcome-notification-flow';
+import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts-flow';
+import { generateExamScheduleFlow } from './flows/generate-exam-schedule-flow';
+import { generateSeatingArrangementFlow } from './flows/generate-seating-arrangement-flow';
+import { generateTimetableFlow } from './flows/generate-timetable-flow';
+
+
+export const flows = [
+  generateTestPaperFlow,
+  generateWelcomeNotificationFlow,
+  resolveScheduleConflictsFlow,
+  generateExamScheduleFlow,
+  generateSeatingArrangementFlow,
+  generateTimetableFlow,
+];
