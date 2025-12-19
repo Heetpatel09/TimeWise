@@ -11,6 +11,7 @@
 import { ai } from './genkit';
 import { generateTestPaperFlow } from './flows/generate-test-paper-flow';
 import { generateWelcomeNotificationFlow } from './flows/generate-welcome-notification-flow';
+import { testApiKeyFlow } from './flows/test-api-key-flow';
 import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts-flow';
 import { generateExamScheduleFlow } from './flows/generate-exam-schedule-flow';
 import { generateSeatingArrangementFlow } from './flows/generate-seating-arrangement-flow';
@@ -20,6 +21,7 @@ import { generateTimetableFlow } from './flows/generate-timetable-flow';
 export const flows = [
   generateTestPaperFlow,
   generateWelcomeNotificationFlow,
+  testApiKeyFlow,
   resolveScheduleConflictsFlow,
   generateExamScheduleFlow,
   generateSeatingArrangementFlow,
