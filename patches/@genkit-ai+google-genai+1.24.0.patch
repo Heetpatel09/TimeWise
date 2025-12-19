@@ -1,0 +1,33 @@
+diff --git a/node_modules/@genkit-ai/google-genai/package.json b/node_modules/@genkit-ai/google-genai/package.json
+index 5152a55..1e7f525 100644
+--- a/node_modules/@genkit-ai/google-genai/package.json
++++ b/node_modules/@genkit-ai/google-genai/package.json
+@@ -37,7 +37,7 @@
+   "dependencies": {
+     "@genkit-ai/core": "workspace:^",
+     "@google-cloud/vertexai": "^0.6.1",
+-    "@google/generative-ai": "^0.1.3",
++    "@google/generative-ai": "^0.2.1",
+     "axios": "^1.6.0",
+     "google-auth-library": "^9.0.0"
+   },
+diff --git a/node_modules/@genkit-ai/google-genai/src/gemini.ts b/node_modules/@genkit-ai/google-genai/src/gemini.ts
+index c6ff5bf..1440751 100644
+--- a/node_modules/@genkit-ai/google-genai/src/gemini.ts
++++ b/node_modules/@genkit-ai/google-genai/src/gemini.ts
+@@ -107,7 +107,7 @@
+     const client = new GoogleGenerativeAI(apiKey);
+     const model = client.getGenerativeModel(
+       { model: name },
+-      { apiVersion: 'v1beta' }
++      { apiVersion: 'v1' }
+     );
+     const runner: ModelAction<z.ZodTypeAny, z.ZodTypeAny> = async (request) => {
+       const result = await run(model, request);
+@@ -309,4 +309,4 @@
+   model.countTokens(req);
+ 
+ export const geminiPro = gemini('gemini-pro');
+-export const gemini15Pro = gemini('gemini-1.5-pro-latest');
+\ No newline at end of file
++export const gemini15Pro = gemini('gemini-1.5-pro-latest');
