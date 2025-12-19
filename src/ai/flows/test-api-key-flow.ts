@@ -21,7 +21,7 @@ export const testApiKey = ai.defineFlow(
     try {
       const llmResponse = await ai.generate({
         prompt: 'Give me a two-word "hello world" response.',
-        model: googleAI.model('models/gemini-1.0-pro'),
+        model: googleAI.model('gemini-1.5-flash-latest'),
         config: {
           temperature: 0.5,
         },
@@ -44,7 +44,7 @@ export const testApiKey = ai.defineFlow(
           errorMessage =
             'API rate limit exceeded. Please wait and try again later, or check your billing status.';
         } else if (e.message.toLowerCase().includes('model not found')) {
-           errorMessage = `The model 'models/gemini-1.0-pro' was not found. This is often an authentication issue. Please verify your API key and ensure it is enabled for the 'Generative Language API'.`;
+           errorMessage = `The model 'gemini-1.5-flash-latest' was not found. This is often an authentication issue. Please verify your API key and ensure it is enabled for the 'Generative Language API'.`;
         }
          else {
           errorMessage = e.message;
