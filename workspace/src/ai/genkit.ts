@@ -3,6 +3,7 @@
  */
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
+import 'dotenv/config';
 
 // When running locally, this will look for a GEMINI_API_KEY in the .env file.
 // When deployed to a Google Cloud environment (like App Hosting),
