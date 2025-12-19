@@ -76,7 +76,7 @@
   body {
     height: 100vh;
     width: 100%;
-    background-image: url('/home/user/studio/Background.jpeg');
+    background-image: url('https://storage.googleapis.com/studio-webapp-assets/bafybeif3uht3ulqaij6j25jmkj2b2getv3p2amwone3v666yq5h3hfd2ve/background.jpeg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;

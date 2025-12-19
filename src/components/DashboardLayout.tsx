@@ -230,15 +230,6 @@ export default function DashboardLayout({
   if (!isClient || isLoading || !user) {
     return (
       <div className="relative flex flex-col h-screen">
-         <div className="fixed inset-0 z-[-1]">
-          <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/bafybeicvvbrirxdsorvscajce3r2vpzxdh6gh5z2sxv5s5c3m6y6u27m6i/background.jpeg"
-            alt="Abstract background"
-            fill
-            style={{ objectFit: 'cover', opacity: 1 }}
-            priority
-          />
-        </div>
         <div className="flex items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 animate-spin" />
         </div>
@@ -249,15 +240,6 @@ export default function DashboardLayout({
   if (user.role !== role) {
     return (
       <div className="relative flex flex-col h-screen">
-        <div className="fixed inset-0 z-[-1]">
-          <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/bafybeif3uht3ulqaij6j25jmkj2b2getv3p2amwone3v666yq5h3hfd2ve/background.jpeg"
-            alt="Abstract background"
-            fill
-            style={{ objectFit: 'cover', opacity: 1 }}
-            priority
-          />
-        </div>
         <div className="flex flex-col items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm">
             <h1 className='text-2xl font-bold'>Access Denied</h1>
             <p className='text-muted-foreground'>You do not have permission to view this page.</p>
@@ -269,16 +251,6 @@ export default function DashboardLayout({
 
   return (
       <div className="relative flex flex-col h-screen">
-         <div className="fixed inset-0 z-[-1]">
-          <Image
-            src="https://storage.googleapis.com/studio-webapp-assets/bafybeicvvbrirxdsorvscajce3r2vpzxdh6gh5z2sxv5s5c3m6y6u27m6i/background.jpeg"
-            alt="Abstract background"
-            fill
-            style={{ objectFit: 'cover', opacity: 1 }}
-            priority
-            data-ai-hint="abstract purple gradient"
-          />
-        </div>
         <div className='relative flex flex-col h-screen bg-background/80 backdrop-blur-sm'>
           <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card/80 shadow-sm">
             <div className="flex items-center gap-4">

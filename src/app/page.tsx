@@ -180,48 +180,36 @@ export default function Home() {
   const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
 
   return (
-    <>
-      <div className="fixed inset-0 z-[-1]">
-        <Image
-          src="https://storage.googleapis.com/studio-webapp-assets/bafybeif3uht3ulqaij6j25jmkj2b2getv3p2amwone3v666yq5h3hfd2ve/background.jpeg"
-          alt="Abstract background"
-          fill
-          style={{ objectFit: 'cover' }}
-          priority
-          data-ai-hint="clock calendar icons"
-        />
-      </div>
-      <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden bg-background/80 backdrop-blur-sm">
-        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
-          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <TimeWiseLogo />
-          </div>
-          <p className="mt-6 text-lg md:text-xl max-w-2xl text-foreground/80 font-medium animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-              Developed with scalability, security, and ease of use in mind, TimeWise represents a step forward in modern academic management, ensuring that students and faculty can focus on learning and teaching while the system takes care of the rest.
-          </p>
-
-          <div className="mt-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
-              <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                  if (!open) setSelectedRole(null);
-                  setDialogOpen(open);
-              }}>
-                  <DialogTrigger asChild>
-                      <Button size="lg" className="hover:scale-105 hover:shadow-lg transform transition-transform">
-                          <LogIn className="mr-2 h-5 w-5" />
-                          Login / Get Started
-                      </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    {selectedRole ? (
-                          <CredentialDialog role={selectedRole} onBack={() => setSelectedRole(null)} />
-                    ) : (
-                          <RoleSelectionDialog onSelectRole={setSelectedRole} />
-                    )}
-                  </DialogContent>
-              </Dialog>
-          </div>
+    <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden bg-background/80 backdrop-blur-sm">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <TimeWiseLogo />
         </div>
-      </main>
-    </>
+        <p className="mt-6 text-lg md:text-xl max-w-2xl text-foreground/80 font-medium animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+            Developed with scalability, security, and ease of use in mind, TimeWise represents a step forward in modern academic management, ensuring that students and faculty can focus on learning and teaching while the system takes care of the rest.
+        </p>
+
+        <div className="mt-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                if (!open) setSelectedRole(null);
+                setDialogOpen(open);
+            }}>
+                <DialogTrigger asChild>
+                    <Button size="lg" className="hover:scale-105 hover:shadow-lg transform transition-transform">
+                        <LogIn className="mr-2 h-5 w-5" />
+                        Login / Get Started
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  {selectedRole ? (
+                        <CredentialDialog role={selectedRole} onBack={() => setSelectedRole(null)} />
+                  ) : (
+                        <RoleSelectionDialog onSelectRole={setSelectedRole} />
+                  )}
+                </DialogContent>
+            </Dialog>
+        </div>
+      </div>
+    </main>
   );
 }
