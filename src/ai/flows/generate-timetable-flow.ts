@@ -61,7 +61,7 @@ const generateTimetable = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: googleAI.model('gemini-pro'),
+      model: googleAI.model('gemini-1.5-flash-latest'),
       output: {
         schema: GenerateTimetableOutputSchema,
       },
