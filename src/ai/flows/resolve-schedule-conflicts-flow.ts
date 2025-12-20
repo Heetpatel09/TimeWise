@@ -39,11 +39,12 @@ const resolveConflicts = ai.defineFlow(
            - If a faculty member's class is moved, the notification should be for that 'userId'.
            - If a whole class's classroom is changed, the notification should be for that 'classId'.
            - The message should be clear and informative, e.g., "Your CS101 class on Monday at 10:00 AM has been moved to Room 102."
+        8. If no changes are made or no notifications are necessary, return an empty array for the 'notifications' field.
     `;
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: googleAI.model('gemini-pro'),
+      model: googleAI.model('gemini-1.5-flash'),
       output: {
         schema: ResolveConflictsOutputSchema,
       },
@@ -59,3 +60,4 @@ const resolveConflicts = ai.defineFlow(
 export async function resolveScheduleConflictsFlow(input: ResolveConflictsInput): Promise<ResolveConflictsOutput> {
     return resolveConflicts(input);
 }
+
