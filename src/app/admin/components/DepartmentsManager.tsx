@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -28,7 +28,6 @@ import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star, Beaker, BookOp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,8 +39,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DepartmentsManager() {
@@ -58,8 +56,7 @@ export default function DepartmentsManager() {
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
 
   const [newDepartmentName, setNewDepartmentName] = useState('');
-  const [selectedClasses, setSelectedClasses] = useState<Record<string, string | null>>({});
-
+  
   const { toast } = useToast();
 
   const departments = Array.from(new Set(classes.map(c => c.department)));
@@ -131,8 +128,9 @@ export default function DepartmentsManager() {
         }
         setIsSubmitting(true);
         try {
+            // Add a placeholder class to establish the department
             await addClass({
-                name: `${newDepartmentName.trim()} Placeholder`,
+                name: `Default ${newDepartmentName.trim()} Class`,
                 semester: 1,
                 department: newDepartmentName.trim()
             });
@@ -158,8 +156,8 @@ export default function DepartmentsManager() {
     }
   };
   
-  const openNewSubjectDialog = (department: string, semester?: number) => {
-    setCurrentSubject({ type: 'Theory', semester: semester || 1, department });
+  const openNewSubjectDialog = (department: string) => {
+    setCurrentSubject({ type: 'Theory', department });
     setDialogOpen(true);
   };
   
@@ -181,11 +179,8 @@ export default function DepartmentsManager() {
             </Button>
         </div>
        {departments.map(dept => {
-           const classesInDept = classes.filter(c => c.department === dept);
+           const subjectsInDept = subjects.filter(s => s.department === dept);
            const facultyInDept = faculty.filter(f => f.department === dept);
-           const selectedClassId = selectedClasses[dept];
-           const selectedClass = classesInDept.find(c => c.id === selectedClassId);
-           const subjectsInClass = selectedClass ? subjects.filter(s => s.department === dept && s.semester === selectedClass.semester) : [];
 
            return (
            <Card key={dept}>
@@ -194,15 +189,7 @@ export default function DepartmentsManager() {
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Select onValueChange={(value) => setSelectedClasses(prev => ({...prev, [dept]: value}))}>
-                            <SelectTrigger className="w-full sm:w-[220px]">
-                                <SelectValue placeholder="Select a class..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {classesInDept.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={() => openNewSubjectDialog(dept, selectedClass?.semester)} className="w-full sm:w-auto">
+                        <Button onClick={() => openNewSubjectDialog(dept)} className="w-full sm:w-auto">
                             <PlusCircle className="h-4 w-4 mr-2" /> Add Subject
                         </Button>
                         <Button onClick={() => openNewFacultyDialog(dept)} variant="outline" className="w-full sm:w-auto">
@@ -212,24 +199,26 @@ export default function DepartmentsManager() {
                 </CardHeader>
                 <CardContent className="grid lg:grid-cols-2 gap-6">
                     <div>
-                        <h3 className="text-lg font-semibold mb-2">Subjects {selectedClass ? `for ${selectedClass.name}` : ''}</h3>
+                        <h3 className="text-lg font-semibold mb-2">Subjects</h3>
                          <div className="border rounded-lg">
                             <ScrollArea className="h-72">
                                 <Table>
                                   <TableHeader>
                                     <TableRow>
                                       <TableHead>Name</TableHead>
+                                      <TableHead>Semester</TableHead>
                                       <TableHead>Type</TableHead>
                                       <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
-                                    {subjectsInClass.length > 0 ? subjectsInClass.map((subject) => (
+                                    {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => (
                                       <TableRow key={subject.id}>
                                         <TableCell>
                                             <div>{subject.name}</div>
                                             <div className="text-xs text-muted-foreground">{subject.code}</div>
                                         </TableCell>
+                                        <TableCell>{subject.semester}</TableCell>
                                         <TableCell className='capitalize'>
                                             <Badge variant={'outline'} className="gap-1">
                                                 {subject.type === 'Lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
@@ -266,7 +255,7 @@ export default function DepartmentsManager() {
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">{selectedClassId ? 'No subjects found for this class.' : 'Select a class to view subjects.'}</TableCell>
+                                            <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No subjects found for this department.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
