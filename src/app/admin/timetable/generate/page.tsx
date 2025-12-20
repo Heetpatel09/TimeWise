@@ -55,6 +55,8 @@ export default function TimetableGeneratorPage() {
 
     const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
+
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
     const [generatedData, setGeneratedData] = useState<GenerateTimetableOutput | null>(null);
@@ -66,26 +68,35 @@ export default function TimetableGeneratorPage() {
 
     useEffect(() => {
         setSelectedClassId(null);
+        setSelectedSemester(null);
     }, [selectedDepartment]);
 
-    const departmentInfo = useMemo(() => {
-        if (!selectedDepartment || !subjects || !faculty || !students || !classrooms) return null;
+    useEffect(() => {
+        if (selectedClass) {
+            setSelectedSemester(selectedClass.semester);
+        } else {
+            setSelectedSemester(null);
+        }
+    }, [selectedClass]);
 
-        const deptSubjects = subjects.filter(s => s.department === selectedDepartment);
-        const deptFaculty = faculty.filter(f => f.department === selectedDepartment);
-        const deptStudents = students.filter(s => classes?.find(c => c.id === s.classId)?.department === selectedDepartment);
+    const contextInfo = useMemo(() => {
+        if (!selectedClassId || !selectedSemester || !subjects || !faculty || !students || !classrooms) return null;
+
+        const classStudents = students.filter(s => s.classId === selectedClassId);
+        const relevantSubjects = subjects.filter(s => s.semester === selectedSemester && s.department === selectedClass?.department);
+        const deptFaculty = faculty.filter(f => f.department === selectedClass?.department);
 
         return {
-            studentCount: deptStudents.length,
-            subjects: deptSubjects,
+            studentCount: classStudents.length,
+            subjects: relevantSubjects,
             faculty: deptFaculty,
             classroomCount: classrooms.length,
         };
-    }, [selectedDepartment, subjects, faculty, students, classrooms, classes]);
+    }, [selectedClassId, selectedSemester, subjects, faculty, students, classrooms, selectedClass]);
 
     const handleGenerate = async () => {
-        if (!selectedClass || !departmentInfo) {
-            toast({ title: 'Please select a department and class', variant: 'destructive' });
+        if (!selectedClass || !contextInfo) {
+            toast({ title: 'Please select a department, class, and semester', variant: 'destructive' });
             return;
         }
         setIsGenerating(true);
@@ -94,8 +105,8 @@ export default function TimetableGeneratorPage() {
                 days: DAYS,
                 timeSlots: TIME_SLOTS,
                 classes: [selectedClass],
-                subjects: departmentInfo.subjects, // Use all subjects from the department
-                faculty: departmentInfo.faculty,
+                subjects: contextInfo.subjects,
+                faculty: contextInfo.faculty,
                 classrooms: classrooms || [],
                 existingSchedule: existingSchedule?.filter(s => s.classId !== selectedClassId),
             });
@@ -134,6 +145,7 @@ export default function TimetableGeneratorPage() {
     }
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || studentsLoading || scheduleLoading;
+    const allSemesters = useMemo(() => Array.from(new Set(classesInDept.map(c => c.semester))).sort((a,b) => a-b), [classesInDept]);
 
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
@@ -147,28 +159,36 @@ export default function TimetableGeneratorPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Timetable Generator</CardTitle>
-                        <CardDescription>Select a department and class to generate a timetable using AI.</CardDescription>
+                        <CardDescription>Select a department, class, and semester to generate a timetable using AI.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? <Loader2 className="animate-spin" /> : (
                             <div className="flex flex-col sm:flex-row gap-4 items-center">
                                 <Select onValueChange={setSelectedDepartment} value={selectedDepartment || ''}>
-                                    <SelectTrigger className="w-full sm:w-[250px]">
-                                        <SelectValue placeholder="Select a Department..." />
+                                    <SelectTrigger className="w-full sm:w-[200px]">
+                                        <SelectValue placeholder="Select Department" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                 <Select onValueChange={setSelectedClassId} value={selectedClassId || ''} disabled={!selectedDepartment}>
-                                    <SelectTrigger className="w-full sm:w-[250px]">
-                                        <SelectValue placeholder="Select a Class..." />
+                                    <SelectTrigger className="w-full sm:w-[200px]">
+                                        <SelectValue placeholder="Select Class" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classesInDept.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                                <Button onClick={handleGenerate} disabled={!selectedClassId || isGenerating} className="w-full sm:w-auto">
+                                 <Select onValueChange={(v) => setSelectedSemester(Number(v))} value={selectedSemester?.toString() || ''} disabled={!selectedClassId}>
+                                    <SelectTrigger className="w-full sm:w-[200px]">
+                                        <SelectValue placeholder="Select Semester" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allSemesters.map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Button onClick={handleGenerate} disabled={!selectedClassId || !selectedSemester || isGenerating} className="w-full sm:w-auto">
                                     {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
                                     Generate Timetable
                                 </Button>
@@ -177,39 +197,29 @@ export default function TimetableGeneratorPage() {
                     </CardContent>
                 </Card>
 
-                {selectedDepartment && departmentInfo && (
+                {contextInfo && (
                     <div className="space-y-6 animate-in fade-in-0">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            <InfoCard icon={Users} title="Total Students" numberValue={departmentInfo.studentCount} />
-                            <InfoCard icon={BookOpen} title="Total Subjects" numberValue={departmentInfo.subjects.length} />
-                            <InfoCard icon={UserCheck} title="Total Faculty" numberValue={departmentInfo.faculty.length} />
-                            <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={departmentInfo.classroomCount} />
+                            <InfoCard icon={Users} title="Students in Class" numberValue={contextInfo.studentCount} />
+                            <InfoCard icon={BookOpen} title="Subjects this Sem" numberValue={contextInfo.subjects.length} />
+                            <InfoCard icon={UserCheck} title="Faculty in Dept." numberValue={contextInfo.faculty.length} />
+                            <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={contextInfo.classroomCount} />
                         </div>
-                        {selectedClass ? (
-                             <Alert>
-                                <Bot className="h-4 w-4" />
-                                <AlertTitle>Ready to Generate!</AlertTitle>
-                                <AlertDescription>
-                                    You have selected {selectedClass.name}. The AI will use all subjects and faculty from the {selectedDepartment} department to create an optimal schedule.
-                                </AlertDescription>
-                            </Alert>
-                        ) : (
-                             <Alert>
-                                <AlertTriangle className="h-4 w-4" />
-                                <AlertTitle>Select a Class</AlertTitle>
-                                <AlertDescription>
-                                    Please select a class from the dropdown to continue.
-                                </AlertDescription>
-                            </Alert>
-                        )}
+                        <Alert>
+                            <Bot className="h-4 w-4" />
+                            <AlertTitle>Ready to Generate!</AlertTitle>
+                            <AlertDescription>
+                                You have selected {selectedClass?.name} (Sem {selectedSemester}). The AI will use subjects from this semester and faculty from the {selectedDepartment} department.
+                            </AlertDescription>
+                        </Alert>
                     </div>
                 )}
-                 {!selectedDepartment && (
+                 {(!selectedDepartment || !selectedClassId || !selectedSemester) && (
                      <Alert>
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Select a Department</AlertTitle>
+                        <AlertTitle>Selection Required</AlertTitle>
                         <AlertDescription>
-                            Please select a department from the dropdown to begin.
+                            Please select a department, class, and semester to proceed.
                         </AlertDescription>
                     </Alert>
                 )}

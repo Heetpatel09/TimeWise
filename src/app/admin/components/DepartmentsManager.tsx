@@ -162,7 +162,7 @@ export default function DepartmentsManager() {
   
   const openNewSubjectDialog = (department: string) => {
     setActiveDepartment(department);
-    setCurrentSubject({ type: 'theory', semester: 1 }); // semester is now a default, not a choice
+    setCurrentSubject({ type: 'theory', semester: 1 });
     setSubjectDialogOpen(true);
   };
   
@@ -218,6 +218,7 @@ export default function DepartmentsManager() {
                                       <TableHead>Name</TableHead>
                                       <TableHead>Code</TableHead>
                                       <TableHead>Type</TableHead>
+                                      <TableHead>Semester</TableHead>
                                       <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -232,6 +233,7 @@ export default function DepartmentsManager() {
                                                 {subject.type}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>{subject.semester}</TableCell>
                                         <TableCell className="text-right">
                                           <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -262,7 +264,7 @@ export default function DepartmentsManager() {
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No subjects found for this department.</TableCell>
+                                            <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this department.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
@@ -322,9 +324,8 @@ export default function DepartmentsManager() {
               <Input id="s-type" value={currentSubject.type ?? ''} placeholder="e.g. Theory, Lab" onChange={(e) => setCurrentSubject({ ...currentSubject, type: e.target.value })} disabled={isSubmitting}/>
             </div>
              <div className="space-y-2">
-              <Label htmlFor="s-semester">Default Semester</Label>
+              <Label htmlFor="s-semester">Semester</Label>
               <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
-              <p className="text-xs text-muted-foreground">This subject will be available to all classes in the department, but this helps in initial filtering.</p>
             </div>
           </div>
           <DialogFooter>
