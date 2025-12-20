@@ -1,4 +1,5 @@
 
+
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result, GatePass, Badge, UserBadge } from './types';
 import { format, subDays, addDays } from 'date-fns';
 
@@ -8,6 +9,8 @@ export const subjects: Subject[] = [
   { id: 'SUB002', name: 'Programming Lab I', code: 'CS102', type: 'lab', semester: 1, syllabus: '{"modules":[{"name":"Lab Work","topics":["Basic Programs"],"weightage":"100%"}]}' },
   { id: 'SUB003', name: 'Digital Logic Design', code: 'EC101', type: 'theory', semester: 1, syllabus: '{"modules":[{"name":"Boolean Algebra","topics":["Theorems","Gates"],"weightage":"50%"},{"name":"Combinational Circuits","topics":["Adders","Subtractors"],"weightage":"50%"}]}' },
   { id: 'SUB004', name: 'Applied Mathematics I', code: 'AM101', type: 'theory', semester: 1, syllabus: '{"modules":[{"name":"Calculus","topics":["Limits","Derivatives"],"weightage":"50%"},{"name":"Linear Algebra","topics":["Matrices","Vectors"],"weightage":"50%"}]}' },
+  { id: 'SUB021', name: 'Communication Skills', code: 'HU101', type: 'theory', semester: 1, syllabus: '{"modules":[{"name":"Verbal","topics":["Presentation","Group Discussion"],"weightage":"50%"},{"name":"Written","topics":["Email Etiquette","Report Writing"],"weightage":"50%"}]}' },
+  { id: 'SUB022', name: 'Engineering Drawing', code: 'ME101', type: 'lab', semester: 1, syllabus: '{"modules":[{"name":"Projections","topics":["Orthographic","Isometric"],"weightage":"50%"},{"name":"CAD","topics":["2D Sketching","3D Modeling"],"weightage":"50%"}]}' },
 
   { id: 'SUB005', name: 'Data Structures', code: 'CS201', type: 'theory', semester: 3, syllabus: '{"modules":[{"name":"Arrays and Strings","topics":["Sorting","Searching"],"weightage":"25%"},{"name":"Linked Lists","topics":["Singly","Doubly"],"weightage":"25%"},{"name":"Trees","topics":["BST","AVL"],"weightage":"25%"},{"name":"Graphs","topics":["BFS","DFS"],"weightage":"25%"}]}' },
   { id: 'SUB006', name: 'Data Structures Lab', code: 'CS202', type: 'lab', semester: 3, syllabus: '{"modules":[{"name":"Lab Work","topics":["Implementing DS"],"weightage":"100%"}]}' },
@@ -321,3 +324,4 @@ export const userBadges: UserBadge[] = [
     { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() },
     { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
+
