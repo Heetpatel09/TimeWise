@@ -31,7 +31,7 @@ const generateSeatingArrangement = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: googleAI.model('gemini-1.5-flash'),
+      model: googleAI.model('gemini-1.5-flash-latest'),
       output: {
         schema: GenerateSeatingArrangementOutputSchema,
       },
