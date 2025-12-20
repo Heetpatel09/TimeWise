@@ -52,6 +52,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
 
 function sortTime(a: string, b: string) {
+    if (a === 'Unassigned') return 1;
+    if (b === 'Unassigned') return -1;
     const toDate = (time: string) => {
         const [timePart, modifier] = time.split(' ');
         let [hours, minutes] = timePart.split(':');
@@ -136,6 +138,7 @@ export default function ScheduleManager() {
           const timeDayMap = new Map<string, Schedule[]>();
           
           schedule.forEach(slot => {
+            if (slot.time === 'Unassigned') return;
             const key = `${slot.day}-${slot.time}`;
             if (!timeDayMap.has(key)) {
                 timeDayMap.set(key, []);
@@ -144,6 +147,7 @@ export default function ScheduleManager() {
           });
 
           for (const slot of schedule) {
+              if (slot.time === 'Unassigned') continue;
               if (!newConflicts[slot.id]) newConflicts[slot.id] = [];
               
               const key = `${slot.day}-${slot.time}`;
@@ -410,6 +414,7 @@ export default function ScheduleManager() {
                           <TableRow 
                             key={slot.id}
                             className={cn(
+                                slot.time === 'Unassigned' && 'bg-yellow-100/50 dark:bg-yellow-900/20',
                                 isSpecial && 'bg-purple-900/20 text-foreground hover:bg-purple-900/30',
                                 isConflicting && !isSpecial && 'bg-destructive/20 hover:bg-destructive/30'
                             )}
@@ -427,8 +432,8 @@ export default function ScheduleManager() {
                                   )}
                                 </div>
                             </TableCell>
-                            <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name}</TableCell>
-                            <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name}</TableCell>
+                            <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name || 'Unassigned'}</TableCell>
+                            <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name || 'Unassigned'}</TableCell>
                             <TableCell>
                                {isConflicting && (
                                     <Tooltip>
