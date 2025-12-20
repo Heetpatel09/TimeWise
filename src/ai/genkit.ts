@@ -9,7 +9,7 @@ import {googleAI} from '@genkit-ai/google-genai';
 // the googleAI() plugin without any arguments will automatically use the
 // service account credentials of the runtime.
 export const ai = genkit({
-  plugins: [googleAI({ apiKey: "AQ.Ab8RN6JCy4HZBryDFGo3IYpLavE6lP_AFwFqNvFYQyHJP_astQ" })],
+  plugins: [googleAI({ apiKey: "AIzaSyDyEPz8P_Vqrk5ugXpG050qz-nOj0sdqRo" })],
   logLevel: 'debug',
   enableTracingAndMetrics: true,
 });
