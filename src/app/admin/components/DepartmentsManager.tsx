@@ -47,13 +47,14 @@ export default function DepartmentsManager() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isSubjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [isDeptDialogOpen, setDeptDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
+  const [activeDepartment, setActiveDepartment] = useState<string | null>(null);
 
   const [newDepartmentName, setNewDepartmentName] = useState('');
   
@@ -80,19 +81,21 @@ export default function DepartmentsManager() {
   }, []);
 
   const handleSaveSubject = async () => {
-    if (currentSubject && currentSubject.department) {
+    if (currentSubject && activeDepartment) {
+      const subjectToSave = { ...currentSubject, department: activeDepartment };
       setIsSubmitting(true);
       try {
-        if (currentSubject.id) {
-          await updateSubject(currentSubject as Subject);
+        if (subjectToSave.id) {
+          await updateSubject(subjectToSave as Subject);
           toast({ title: "Subject Updated" });
         } else {
-          await addSubject(currentSubject as Omit<Subject, 'id'>);
+          await addSubject(subjectToSave as Omit<Subject, 'id'>);
           toast({ title: "Subject Added" });
         }
         await loadData();
-        setDialogOpen(false);
+        setSubjectDialogOpen(false);
         setCurrentSubject({});
+        setActiveDepartment(null);
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
@@ -104,14 +107,16 @@ export default function DepartmentsManager() {
   };
 
   const handleSaveFaculty = async () => {
-    if (currentFaculty && currentFaculty.department) {
+    if (currentFaculty && activeDepartment) {
+      const facultyToSave = { ...currentFaculty, department: activeDepartment };
       setIsSubmitting(true);
       try {
-          await addFaculty(currentFaculty as Omit<Faculty, 'id'>);
+          await addFaculty(facultyToSave as Omit<Faculty, 'id'>);
           toast({ title: "Faculty Added", description: "The new faculty member has been created." });
         await loadData();
         setFacultyDialogOpen(false);
         setCurrentFaculty({});
+        setActiveDepartment(null);
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
@@ -128,7 +133,6 @@ export default function DepartmentsManager() {
         }
         setIsSubmitting(true);
         try {
-            // Add a placeholder class to establish the department
             await addClass({
                 name: `Default ${newDepartmentName.trim()} Class`,
                 semester: 1,
@@ -157,12 +161,14 @@ export default function DepartmentsManager() {
   };
   
   const openNewSubjectDialog = (department: string) => {
-    setCurrentSubject({ type: 'Theory', department });
-    setDialogOpen(true);
+    setActiveDepartment(department);
+    setCurrentSubject({ type: 'theory', semester: 1 }); // semester is now a default, not a choice
+    setSubjectDialogOpen(true);
   };
   
   const openNewFacultyDialog = (department: string) => {
-    setCurrentFaculty({ department, employmentType: 'full-time' });
+    setActiveDepartment(department);
+    setCurrentFaculty({ employmentType: 'full-time' });
     setFacultyDialogOpen(true);
   };
 
@@ -181,12 +187,16 @@ export default function DepartmentsManager() {
        {departments.map(dept => {
            const subjectsInDept = subjects.filter(s => s.department === dept);
            const facultyInDept = faculty.filter(f => f.department === dept);
+           const classesInDept = classes.filter(c => c.department === dept);
 
            return (
            <Card key={dept}>
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
+                        <div className="flex flex-wrap gap-1">
+                          {classesInDept.map(c => <Badge key={c.id} variant="secondary">{c.name}</Badge>)}
+                        </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Button onClick={() => openNewSubjectDialog(dept)} className="w-full sm:w-auto">
@@ -199,14 +209,14 @@ export default function DepartmentsManager() {
                 </CardHeader>
                 <CardContent className="grid lg:grid-cols-2 gap-6">
                     <div>
-                        <h3 className="text-lg font-semibold mb-2">Subjects</h3>
+                        <h3 className="text-lg font-semibold mb-2">Subjects in Department</h3>
                          <div className="border rounded-lg">
                             <ScrollArea className="h-72">
                                 <Table>
                                   <TableHeader>
                                     <TableRow>
                                       <TableHead>Name</TableHead>
-                                      <TableHead>Semester</TableHead>
+                                      <TableHead>Code</TableHead>
                                       <TableHead>Type</TableHead>
                                       <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -214,11 +224,8 @@ export default function DepartmentsManager() {
                                   <TableBody>
                                     {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => (
                                       <TableRow key={subject.id}>
-                                        <TableCell>
-                                            <div>{subject.name}</div>
-                                            <div className="text-xs text-muted-foreground">{subject.code}</div>
-                                        </TableCell>
-                                        <TableCell>{subject.semester}</TableCell>
+                                        <TableCell>{subject.name}</TableCell>
+                                        <TableCell>{subject.code}</TableCell>
                                         <TableCell className='capitalize'>
                                             <Badge variant={'outline'} className="gap-1">
                                                 {subject.type === 'Lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
@@ -231,7 +238,7 @@ export default function DepartmentsManager() {
                                               <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                              <DropdownMenuItem onClick={() => { setCurrentSubject(subject); setDialogOpen(true); }}>
+                                              <DropdownMenuItem onClick={() => { setActiveDepartment(dept); setCurrentSubject(subject); setSubjectDialogOpen(true); }}>
                                                 <Edit className="h-4 w-4 mr-2" /> Edit
                                               </DropdownMenuItem>
                                                <AlertDialog>
@@ -298,9 +305,9 @@ export default function DepartmentsManager() {
        )})}
 
       {/* Subject Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentSubject({}); setDialogOpen(isOpen); }}>
+      <Dialog open={isSubjectDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentSubject({}); setActiveDepartment(null); } setSubjectDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : 'Add Subject'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : 'Add Subject to ' + activeDepartment}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="s-name">Name</Label>
@@ -310,28 +317,27 @@ export default function DepartmentsManager() {
               <Label htmlFor="s-code">Code</Label>
               <Input id="s-code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} disabled={isSubmitting}/>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="s-semester">Semester</Label>
-                  <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="s-type">Type</Label>
-                  <Input id="s-type" value={currentSubject.type ?? ''} placeholder="e.g. Theory, Lab" onChange={(e) => setCurrentSubject({ ...currentSubject, type: e.target.value })} disabled={isSubmitting}/>
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="s-type">Type</Label>
+              <Input id="s-type" value={currentSubject.type ?? ''} placeholder="e.g. Theory, Lab" onChange={(e) => setCurrentSubject({ ...currentSubject, type: e.target.value })} disabled={isSubmitting}/>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="s-semester">Default Semester</Label>
+              <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
+              <p className="text-xs text-muted-foreground">This subject will be available to all classes in the department, but this helps in initial filtering.</p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setSubjectDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
             <Button onClick={handleSaveSubject} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
       {/* Faculty Dialog */}
-      <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
+      <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentFaculty({}); setActiveDepartment(null); } setFacultyDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Add Faculty to {currentFaculty.department}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Add Faculty to {activeDepartment}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="f-name">Name</Label>
