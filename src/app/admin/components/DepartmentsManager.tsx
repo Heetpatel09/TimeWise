@@ -474,7 +474,7 @@ export default function DepartmentsManager() {
                                               <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                              <DropdownMenuItem onClick={() => { setActiveDepartment(dept); setCurrentSubject(subject); setSubjectDialogOpen(true); }}>
+                                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setActiveDepartment(dept); setCurrentSubject(subject); setSubjectDialogOpen(true); }}>
                                                 <Edit className="h-4 w-4 mr-2" /> Edit
                                               </DropdownMenuItem>
                                                <AlertDialog>
@@ -540,7 +540,7 @@ export default function DepartmentsManager() {
                                               <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                              <DropdownMenuItem onClick={() => { setActiveDepartment(dept); setCurrentFaculty(fac); setFacultyDialogOpen(true); }}>
+                                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setActiveDepartment(dept); setCurrentFaculty(fac); setFacultyDialogOpen(true); }}>
                                                 <Edit className="h-4 w-4 mr-2" /> Edit
                                               </DropdownMenuItem>
                                                <AlertDialog>
@@ -678,3 +678,5 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
