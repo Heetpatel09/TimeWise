@@ -13,7 +13,7 @@ import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/ser
 import { getClasses, addClass } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Subject, Class, Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, ChevronsUpDown, Check, Eye, EyeOff, Copy } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, ChevronsUpDown, Check, Eye, EyeOff, Copy, X as XIcon } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -25,10 +25,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { cn } from '@/lib/utils';
-
 
 const facultySchema = z.object({
     id: z.string().optional(),
@@ -42,57 +38,65 @@ const facultySchema = z.object({
     allottedSubjects: z.array(z.string()).optional(),
 });
 
-function MultiSelect({ options, selected, onSelect, placeholder }: { options: {value: string, label: string}[], selected: string[], onSelect: (selected: string[]) => void, placeholder: string }) {
-  const [open, setOpen] = useState(false);
 
-  const handleSelect = (currentValue: string) => {
-    const newSelected = selected.includes(currentValue)
-      ? selected.filter(v => v !== currentValue)
-      : [...selected, currentValue];
-    onSelect(newSelected);
-  }
+// New reliable multiple selector component
+function MultipleSelector({
+  options,
+  value,
+  onChange,
+  placeholder,
+}: {
+  options: { label: string; value: string }[];
+  value: string[];
+  onChange: (value: string[]) => void;
+  placeholder: string;
+}) {
+  const [selected, setSelected] = useState<string[]>(value || []);
+
+  const handleSelect = (val: string) => {
+    const newSelected = [...selected, val];
+    setSelected(newSelected);
+    onChange(newSelected);
+  };
+
+  const handleDeselect = (val: string) => {
+    const newSelected = selected.filter((v) => v !== val);
+    setSelected(newSelected);
+    onChange(newSelected);
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          <span className='truncate'>{selected.length > 0 ? `${selected.length} selected` : placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
-        <Command>
-          <CommandInput placeholder="Search..." />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.label}
-                  onSelect={() => handleSelect(option.value)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.includes(option.value) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div>
+      <Select onValueChange={handleSelect}>
+        <SelectTrigger>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value} disabled={selected.includes(option.value)}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="flex flex-wrap gap-1 mt-2">
+        {selected.map((val) => (
+          <Badge key={val} variant="secondary">
+            {options.find((opt) => opt.value === val)?.label}
+            <button
+              type="button"
+              className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onClick={() => handleDeselect(val)}
+            >
+              <XIcon className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+    </div>
   );
 }
+
 
 const DESIGNATION_OPTIONS = ['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer', 'Lab Assistant'];
 const YEAR_OPTIONS = [1, 2, 3, 4];
@@ -174,12 +178,17 @@ function FacultyForm({
                     )}
                     />
             </div>
-            <FormField
+             <FormField
                 control={form.control}
                 name="allottedSubjects"
                 render={({ field }) => (
                     <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
-                    <MultiSelect options={subjectOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select subjects..." />
+                    <MultipleSelector
+                        options={subjectOptions}
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        placeholder="Select subjects..."
+                    />
                     <FormMessage />
                     </FormItem>
                 )}
@@ -681,3 +690,5 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
