@@ -31,6 +31,21 @@ const ALL_TIME_SLOTS = [
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
+function sortTime(a: string, b: string) {
+    const toDate = (time: string) => {
+        const [timePart, modifier] = time.split(' ');
+        let [hours, minutes] = timePart.split(':');
+        if (hours === '12') {
+            hours = '0';
+        }
+        if (modifier === 'PM') {
+            hours = (parseInt(hours, 10) + 12).toString();
+        }
+        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+    };
+    return toDate(a).getTime() - toDate(b).getTime();
+}
+
 export default function TimetableView() {
   const { user } = useAuth();
   const [data, setData] = useState<TimetableData | null>(null);
@@ -84,7 +99,7 @@ export default function TimetableView() {
     doc.save('my_timetable.pdf');
   }
   
-  const scheduleByTime = ALL_TIME_SLOTS.map(time => {
+  const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
     if (BREAK_SLOTS.includes(time)) {
         return {
             time: time,

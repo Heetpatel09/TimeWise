@@ -583,8 +583,8 @@ export default function DepartmentsManager() {
                                         </TableCell>
                                         <TableCell>{subject.semester}</TableCell>
                                         <TableCell className='capitalize'>
-                                            <Badge variant={'outline'} className="gap-1">
-                                                {subject.type === 'Lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                                            <Badge variant={subject.type.toLowerCase() === 'lab' ? 'secondary' : 'outline'} className="gap-1">
+                                                {subject.type.toLowerCase() === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
                                                 {subject.type}
                                             </Badge>
                                         </TableCell>

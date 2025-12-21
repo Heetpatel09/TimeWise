@@ -10,7 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => void;
-  setUser: (user: User) => void;
+  setUser: (user: User | (User & Partial<Admin>)) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
   
-  const handleSetUser = (updatedUser: User) => {
+  const handleSetUser = (updatedUser: User | (User & Partial<Admin>)) => {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const newUser = { ...currentUser, ...updatedUser };
     localStorage.setItem('user', JSON.stringify(newUser));

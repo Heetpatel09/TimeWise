@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview This file is the central point for initializing the Genkit AI object.
  */
@@ -10,5 +11,4 @@ import {googleAI} from '@genkit-ai/google-genai';
 // service account credentials of the runtime.
 export const ai = genkit({
   plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
-  model: 'gemini-2.5-flash'
 });
