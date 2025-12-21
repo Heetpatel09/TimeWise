@@ -24,8 +24,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const TIME_SLOTS = [
-    '07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM', '10:00 AM - 11:00 AM', 
-    '11:00 AM - 12:00 PM', '01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'
+    '07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM', 
+    '09:30 AM - 10:00 AM', // Recess
+    '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', 
+    '12:00 PM - 01:00 PM', // Recess
+    '01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'
 ];
 
 function InfoCard({ icon: Icon, title, stringValue, numberValue }: { icon: React.ElementType, title: string, stringValue?: string, numberValue?: number }) {
@@ -55,8 +58,7 @@ export default function TimetableGeneratorPage() {
 
     const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-    const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
-
+    
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
     const [generatedData, setGeneratedData] = useState<GenerateTimetableOutput | null>(null);
@@ -65,25 +67,18 @@ export default function TimetableGeneratorPage() {
     const departments = useMemo(() => Array.from(new Set(classes?.map(c => c.department) || [])), [classes]);
     const classesInDept = useMemo(() => classes?.filter(c => c.department === selectedDepartment) || [], [classes, selectedDepartment]);
     const selectedClass = useMemo(() => classes?.find(c => c.id === selectedClassId), [classes, selectedClassId]);
+    const selectedSemester = selectedClass?.semester;
+
 
     useEffect(() => {
         setSelectedClassId(null);
-        setSelectedSemester(null);
     }, [selectedDepartment]);
-
-    useEffect(() => {
-        if (selectedClass) {
-            setSelectedSemester(selectedClass.semester);
-        } else {
-            setSelectedSemester(null);
-        }
-    }, [selectedClass]);
-
+    
     const contextInfo = useMemo(() => {
         if (!selectedClassId || !selectedSemester || !subjects || !faculty || !students || !classrooms) return null;
 
         const classStudents = students.filter(s => s.classId === selectedClassId);
-        const relevantSubjects = subjects.filter(s => s.semester === selectedSemester && s.department === selectedClass?.department);
+        const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department);
         const deptFaculty = faculty.filter(f => f.department === selectedClass?.department);
 
         return {
@@ -96,7 +91,7 @@ export default function TimetableGeneratorPage() {
 
     const handleGenerate = async () => {
         if (!selectedClass || !contextInfo) {
-            toast({ title: 'Please select a department, class, and semester', variant: 'destructive' });
+            toast({ title: 'Please select a department and class', variant: 'destructive' });
             return;
         }
         setIsGenerating(true);
@@ -145,8 +140,7 @@ export default function TimetableGeneratorPage() {
     }
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || studentsLoading || scheduleLoading;
-    const allSemesters = useMemo(() => Array.from(new Set(classesInDept.map(c => c.semester))).sort((a,b) => a-b), [classesInDept]);
-
+    
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
             <Button asChild variant="outline" size="sm" className="mb-4">
@@ -159,7 +153,7 @@ export default function TimetableGeneratorPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Timetable Generator</CardTitle>
-                        <CardDescription>Select a department, class, and semester to generate a timetable using AI.</CardDescription>
+                        <CardDescription>Select a department and class to generate a timetable using AI.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? <Loader2 className="animate-spin" /> : (
@@ -180,15 +174,7 @@ export default function TimetableGeneratorPage() {
                                         {classesInDept.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                                 <Select onValueChange={(v) => setSelectedSemester(Number(v))} value={selectedSemester?.toString() || ''} disabled={!selectedClassId}>
-                                    <SelectTrigger className="w-full sm:w-[200px]">
-                                        <SelectValue placeholder="Select Semester" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {allSemesters.map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Button onClick={handleGenerate} disabled={!selectedClassId || !selectedSemester || isGenerating} className="w-full sm:w-auto">
+                                <Button onClick={handleGenerate} disabled={!selectedClassId || isGenerating} className="w-full sm:w-auto">
                                     {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
                                     Generate Timetable
                                 </Button>
@@ -201,7 +187,7 @@ export default function TimetableGeneratorPage() {
                     <div className="space-y-6 animate-in fade-in-0">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                             <InfoCard icon={Users} title="Students in Class" numberValue={contextInfo.studentCount} />
-                            <InfoCard icon={BookOpen} title="Subjects this Sem" numberValue={contextInfo.subjects.length} />
+                            <InfoCard icon={BookOpen} title="Subjects in Dept" numberValue={contextInfo.subjects.length} />
                             <InfoCard icon={UserCheck} title="Faculty in Dept." numberValue={contextInfo.faculty.length} />
                             <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={contextInfo.classroomCount} />
                         </div>
@@ -209,17 +195,17 @@ export default function TimetableGeneratorPage() {
                             <Bot className="h-4 w-4" />
                             <AlertTitle>Ready to Generate!</AlertTitle>
                             <AlertDescription>
-                                You have selected {selectedClass?.name} (Sem {selectedSemester}). The AI will use subjects from this semester and faculty from the {selectedDepartment} department.
+                                You have selected {selectedClass?.name}. The AI will use subjects and faculty from the {selectedDepartment} department.
                             </AlertDescription>
                         </Alert>
                     </div>
                 )}
-                 {(!selectedDepartment || !selectedClassId || !selectedSemester) && (
+                 {(!selectedDepartment || !selectedClassId) && (
                      <Alert>
                         <AlertTriangle className="h-4 w-4" />
                         <AlertTitle>Selection Required</AlertTitle>
                         <AlertDescription>
-                            Please select a department, class, and semester to proceed.
+                            Please select a department and class to proceed.
                         </AlertDescription>
                     </Alert>
                 )}
