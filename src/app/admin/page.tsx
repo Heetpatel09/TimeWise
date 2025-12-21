@@ -80,8 +80,7 @@ const academicLinks: { href: string, title: string, icon: React.ElementType, per
 
 const coreDataLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
   { href: "/admin/students", title: "Students", icon: Users, permission: 'manage_students' },
-  { href: "/admin/faculty", title: "Faculty", icon: UserCheck, permission: 'manage_faculty' },
-  { href: "/admin/departments", title: "Departments", icon: Building, permission: 'manage_classes' }, // Tied to classes
+  { href: "/admin/departments", title: "Departments & Faculty", icon: Building, permission: 'manage_classes' },
   { href: "/admin/classrooms", title: "Classrooms", icon: Warehouse, permission: 'manage_classrooms' },
 ];
 

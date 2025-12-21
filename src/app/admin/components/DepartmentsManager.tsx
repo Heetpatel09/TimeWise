@@ -1,46 +1,258 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
 import { getClasses, addClass } from '@/lib/services/classes';
-import { getFaculty, addFaculty } from '@/lib/services/faculty';
+import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Subject, Class, Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Star, Beaker, BookOpen, Building, UserCheck } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, ChevronsUpDown, Check, Eye, EyeOff, Copy } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+
+
+const facultySchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email(),
+    code: z.string().optional(),
+    designation: z.string().optional(),
+    employmentType: z.enum(['full-time', 'part-time', 'contract']),
+    maxWeeklyHours: z.coerce.number().optional(),
+    designatedYear: z.coerce.number().optional(),
+    allottedSubjects: z.array(z.string()).optional(),
+    allottedSections: z.array(z.string()).optional(),
+});
+
+function MultiSelect({ options, selected, onSelect, placeholder }: { options: {value: string, label: string}[], selected: string[], onSelect: (selected: string[]) => void, placeholder: string }) {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (currentValue: string) => {
+    const newSelected = selected.includes(currentValue)
+      ? selected.filter(v => v !== currentValue)
+      : [...selected, currentValue];
+    onSelect(newSelected);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          <span className='truncate'>{selected.length > 0 ? `${selected.length} selected` : placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Search..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => handleSelect(option.value)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
+function FacultyForm({
+  faculty,
+  subjects,
+  classes,
+  onSave,
+  isSubmitting,
+  department
+}: {
+  faculty: Partial<Faculty>;
+  subjects: Subject[];
+  classes: Class[];
+  onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
+  isSubmitting: boolean;
+  department: string;
+}) {
+  const form = useForm<z.infer<typeof facultySchema>>({
+    resolver: zodResolver(facultySchema),
+    defaultValues: {
+        ...faculty,
+        allottedSubjects: faculty.allottedSubjects || [],
+        allottedSections: faculty.allottedSections || [],
+    },
+  });
+
+  const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
+  const [manualPassword, setManualPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
+
+  const subjectOptions = subjects.map(s => ({ value: s.id, label: `${s.name} (Sem ${s.semester})` }));
+  const classOptions = classes.map(c => ({ value: c.id, label: c.name }));
+
+  const handleSubmit = (data: z.infer<typeof facultySchema>) => {
+    if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
+      toast({ title: "Password Required", description: "Please enter a password for the new faculty member.", variant: "destructive" });
+      return;
+    }
+    onSave(data, passwordOption === 'manual' ? manualPassword : undefined);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ScrollArea className="max-h-[70vh] p-1">
+          <div className="grid gap-4 py-4 pr-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+             <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="designation"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Designation</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+            </div>
+            <FormField
+                control={form.control}
+                name="allottedSubjects"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
+                    <MultiSelect options={subjectOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select subjects..." />
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            <FormField
+                control={form.control}
+                name="allottedSections"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col"><FormLabel>Allotted Sections/Classes</FormLabel>
+                    <MultiSelect options={classOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select classes..." />
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            <div className="grid grid-cols-2 gap-4">
+                 <FormField
+                    control={form.control}
+                    name="employmentType"
+                    render={({ field }) => (
+                        <FormItem><FormLabel>Employment Type</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
+                         </FormControl><SelectContent>
+                            <SelectItem value="full-time">Full-time</SelectItem>
+                            <SelectItem value="part-time">Part-time</SelectItem>
+                            <SelectItem value="contract">Contract</SelectItem>
+                        </SelectContent></Select>
+                        <FormMessage /></FormItem>
+                    )}
+                    />
+                <FormField
+                control={form.control}
+                name="designatedYear"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Designated Year</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+            </div>
+             <FormField
+                control={form.control}
+                name="maxWeeklyHours"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Max Weekly Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+            {!faculty.id && (
+                <>
+                    <div className="space-y-2"><Label>Password</Label>
+                    <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="auto" id="auto-faculty" /><Label htmlFor="auto-faculty">Auto-generate</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="manual" id="manual-faculty" /><Label htmlFor="manual-faculty">Manual</Label></div>
+                    </RadioGroup>
+                    </div>
+                    {passwordOption === 'manual' && (
+                    <div className="space-y-2"><Label htmlFor="manual-password-faculty">Set Password</Label>
+                        <div className="relative">
+                            <Input id="manual-password-faculty" type={showPassword ? "text" : "password"} value={manualPassword} onChange={(e) => setManualPassword(e.target.value)} className="pr-10" disabled={isSubmitting}/>
+                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>
+                        </div>
+                    </div>
+                    )}
+                </>
+            )}
+          </div>
+        </ScrollArea>
+        <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={() => (document.querySelector('[data-state="open"] [cmdk-dialog-close-button]') as HTMLElement)?.click()} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  )
+}
 
 export default function DepartmentsManager() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -51,7 +263,8 @@ export default function DepartmentsManager() {
   const [isDeptDialogOpen, setDeptDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
+
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   const [activeDepartment, setActiveDepartment] = useState<string | null>(null);
@@ -81,7 +294,7 @@ export default function DepartmentsManager() {
   }, []);
 
   const handleSaveSubject = async () => {
-    if (currentSubject && activeDepartment) {
+    if (currentSubject && currentSubject.name && currentSubject.code && currentSubject.type && currentSubject.semester && activeDepartment) {
       const subjectToSave = { ...currentSubject, department: activeDepartment };
       setIsSubmitting(true);
       try {
@@ -102,23 +315,31 @@ export default function DepartmentsManager() {
         setIsSubmitting(false);
       }
     } else {
-      toast({ title: "Department is required", description: "Please select a department for the subject.", variant: "destructive" });
+      toast({ title: "Missing information", description: "Please fill out all subject fields.", variant: "destructive" });
     }
   };
 
-  const handleSaveFaculty = async () => {
-    if (currentFaculty && activeDepartment) {
-      const facultyToSave = { ...currentFaculty, department: activeDepartment };
+  const handleSaveFaculty = async (data: z.infer<typeof facultySchema>, password?: string) => {
+    if (activeDepartment) {
+      const facultyToSave = { ...data, department: activeDepartment };
       setIsSubmitting(true);
       try {
-          await addFaculty(facultyToSave as Omit<Faculty, 'id'>);
-          toast({ title: "Faculty Added", description: "The new faculty member has been created." });
+        if (facultyToSave.id) {
+            await updateFaculty(facultyToSave as Faculty);
+            toast({ title: "Faculty Updated" });
+        } else {
+            const result = await addFaculty(facultyToSave as Omit<Faculty, 'id'>, password);
+            toast({ title: "Faculty Added" });
+            if(result.initialPassword) {
+                setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
+            }
+        }
         await loadData();
         setFacultyDialogOpen(false);
         setCurrentFaculty({});
         setActiveDepartment(null);
       } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+        toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
@@ -160,6 +381,16 @@ export default function DepartmentsManager() {
     }
   };
   
+  const handleDeleteFaculty = async (id: string) => {
+    try {
+      await deleteFaculty(id);
+      await loadData();
+      toast({ title: "Faculty Member Deleted" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+  
   const openNewSubjectDialog = (department: string) => {
     setActiveDepartment(department);
     setCurrentSubject({ type: 'theory', semester: 1 });
@@ -171,6 +402,11 @@ export default function DepartmentsManager() {
     setCurrentFaculty({ employmentType: 'full-time' });
     setFacultyDialogOpen(true);
   };
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied!', description: 'Password copied to clipboard.' });
+  }
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -209,31 +445,32 @@ export default function DepartmentsManager() {
                 </CardHeader>
                 <CardContent className="grid lg:grid-cols-2 gap-6">
                     <div>
-                        <h3 className="text-lg font-semibold mb-2">Subjects in Department</h3>
+                        <h3 className="text-lg font-semibold mb-2">Subjects</h3>
                          <div className="border rounded-lg">
                             <ScrollArea className="h-72">
                                 <Table>
                                   <TableHeader>
                                     <TableRow>
                                       <TableHead>Name</TableHead>
-                                      <TableHead>Code</TableHead>
-                                      <TableHead>Type</TableHead>
                                       <TableHead>Semester</TableHead>
+                                      <TableHead>Type</TableHead>
                                       <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
                                     {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => (
                                       <TableRow key={subject.id}>
-                                        <TableCell>{subject.name}</TableCell>
-                                        <TableCell>{subject.code}</TableCell>
+                                        <TableCell>
+                                          <div>{subject.name}</div>
+                                          <div className="text-xs text-muted-foreground">{subject.code}</div>
+                                        </TableCell>
+                                        <TableCell>{subject.semester}</TableCell>
                                         <TableCell className='capitalize'>
                                             <Badge variant={'outline'} className="gap-1">
                                                 {subject.type === 'Lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
                                                 {subject.type}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>{subject.semester}</TableCell>
                                         <TableCell className="text-right">
                                           <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -264,7 +501,7 @@ export default function DepartmentsManager() {
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this department.</TableCell>
+                                            <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No subjects found.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
@@ -281,20 +518,56 @@ export default function DepartmentsManager() {
                                     <TableRow>
                                       <TableHead>Name</TableHead>
                                       <TableHead>Designation</TableHead>
+                                      <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
                                     {facultyInDept.length > 0 ? facultyInDept.map((fac) => (
                                       <TableRow key={fac.id}>
                                         <TableCell>
-                                            <div>{fac.name}</div>
-                                            <div className="text-xs text-muted-foreground">{fac.email}</div>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar>
+                                                    <AvatarImage src={fac.avatar} alt={fac.name} />
+                                                    <AvatarFallback>{fac.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className="font-bold">{fac.name}</div>
+                                                    <div className="text-sm text-muted-foreground">{fac.email}</div>
+                                                </div>
+                                            </div>
                                         </TableCell>
                                         <TableCell>{fac.designation}</TableCell>
+                                        <TableCell className="text-right">
+                                           <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                              <DropdownMenuItem onClick={() => { setActiveDepartment(dept); setCurrentFaculty(fac); setFacultyDialogOpen(true); }}>
+                                                <Edit className="h-4 w-4 mr-2" /> Edit
+                                              </DropdownMenuItem>
+                                               <AlertDialog>
+                                                  <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                                  </AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteFaculty(fac.id)}>Continue</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                              </AlertDialog>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </TableCell>
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={2} className="text-center h-24 text-muted-foreground">No faculty found for this department.</TableCell>
+                                            <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">No faculty found.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
@@ -337,26 +610,18 @@ export default function DepartmentsManager() {
       
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentFaculty({}); setActiveDepartment(null); } setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Add Faculty to {activeDepartment}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="f-name">Name</Label>
-                <Input id="f-name" value={currentFaculty.name ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} disabled={isSubmitting}/>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="f-email">Email</Label>
-                <Input id="f-email" type="email" value={currentFaculty.email ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} disabled={isSubmitting}/>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="f-designation">Designation</Label>
-                <Input id="f-designation" value={currentFaculty.designation ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, designation: e.target.value })} disabled={isSubmitting}/>
-              </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFacultyDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button onClick={handleSaveFaculty} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
-          </DialogFooter>
+        <DialogContent className="sm:max-w-2xl" cmdk-dialog-close-button="">
+           <DialogHeader>
+                <DialogTitle>{currentFaculty?.id ? `Edit ${currentFaculty.name}` : `Add Faculty to ${activeDepartment}`}</DialogTitle>
+            </DialogHeader>
+            <FacultyForm
+                faculty={currentFaculty}
+                subjects={subjects.filter(s => s.department === activeDepartment)}
+                classes={classes.filter(c => c.department === activeDepartment)}
+                onSave={handleSaveFaculty}
+                isSubmitting={isSubmitting}
+                department={activeDepartment || ''}
+            />
         </DialogContent>
       </Dialog>
 
@@ -374,6 +639,45 @@ export default function DepartmentsManager() {
                 <Button variant="outline" onClick={() => setDeptDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
                 <Button onClick={handleAddDepartment} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Add</Button>
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+       <Dialog open={!!newFacultyCredentials} onOpenChange={() => setNewFacultyCredentials(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Faculty Member Created</DialogTitle>
+            <DialogDescription>
+              Share the following credentials with the new faculty member so they can log in. The password is randomly generated for security if not specified.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert>
+              <AlertTitle>Login Credentials</AlertTitle>
+              <AlertDescription>
+                <div className="space-y-2 mt-2">
+                  <div>
+                    <Label>Email</Label>
+                    <Input readOnly value={newFacultyCredentials?.email ?? ''} />
+                  </div>
+                  {newFacultyCredentials?.initialPassword && (
+                    <div>
+                        <Label>Initial Password</Label>
+                        <div className="flex items-center gap-2">
+                        <Input readOnly type="text" value={newFacultyCredentials?.initialPassword ?? ''} />
+                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(newFacultyCredentials?.initialPassword || '')}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                        </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground pt-2">The faculty member will be required to change this password on their first login.</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setNewFacultyCredentials(null)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
