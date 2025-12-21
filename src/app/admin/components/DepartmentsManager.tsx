@@ -13,7 +13,7 @@ import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/ser
 import { getClasses, addClass } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Subject, Class, Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, ChevronsUpDown, Check, Eye, EyeOff, Copy, X as XIcon } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -26,20 +26,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-const facultySchema = z.object({
-    id: z.string().optional(),
-    name: z.string().min(1, "Name is required"),
-    email: z.string().email(),
-    code: z.string().optional(),
-    designation: z.string().optional(),
-    employmentType: z.enum(['full-time', 'part-time', 'contract']),
-    maxWeeklyHours: z.coerce.number().optional(),
-    designatedYear: z.coerce.number().optional(),
-    allottedSubjects: z.array(z.string()).optional(),
-});
 
-
-// New reliable multiple selector component
 function MultipleSelector({
   options,
   value,
@@ -96,6 +83,19 @@ function MultipleSelector({
     </div>
   );
 }
+
+
+const facultySchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email(),
+    code: z.string().optional(),
+    designation: z.string().optional(),
+    employmentType: z.enum(['full-time', 'part-time', 'contract']),
+    maxWeeklyHours: z.coerce.number().optional(),
+    designatedYear: z.coerce.number().optional(),
+    allottedSubjects: z.array(z.string()).optional(),
+});
 
 
 const DESIGNATION_OPTIONS = ['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer', 'Lab Assistant'];
@@ -275,7 +275,8 @@ export default function DepartmentsManager() {
 
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
-  const [activeDepartment, setActiveDepartment] = useState<string | null>(null);
+  
+  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
   const [newDepartmentName, setNewDepartmentName] = useState('');
   
@@ -290,6 +291,10 @@ export default function DepartmentsManager() {
       setSubjects(subjectData);
       setClasses(classData);
       setFaculty(facultyData);
+      const allDepts = Array.from(new Set(classData.map(c => c.department)));
+      if(allDepts.length > 0 && !selectedDepartment){
+        setSelectedDepartment(allDepts[0]);
+      }
     } catch (error) {
       toast({ title: "Error", description: "Failed to load department data.", variant: "destructive" });
     } finally {
@@ -302,8 +307,8 @@ export default function DepartmentsManager() {
   }, []);
 
   const handleSaveSubject = async () => {
-    if (currentSubject && currentSubject.name && currentSubject.code && currentSubject.type && currentSubject.semester && activeDepartment) {
-      const subjectToSave = { ...currentSubject, department: activeDepartment };
+    if (currentSubject && currentSubject.name && currentSubject.code && currentSubject.type && currentSubject.semester && selectedDepartment) {
+      const subjectToSave = { ...currentSubject, department: selectedDepartment };
       setIsSubmitting(true);
       try {
         if (subjectToSave.id) {
@@ -316,7 +321,6 @@ export default function DepartmentsManager() {
         await loadData();
         setSubjectDialogOpen(false);
         setCurrentSubject({});
-        setActiveDepartment(null);
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
@@ -328,8 +332,8 @@ export default function DepartmentsManager() {
   };
 
   const handleSaveFaculty = async (data: z.infer<typeof facultySchema>, password?: string) => {
-    if (activeDepartment) {
-      const facultyToSave = { ...data, department: activeDepartment };
+    if (selectedDepartment) {
+      const facultyToSave = { ...data, department: selectedDepartment };
       setIsSubmitting(true);
       try {
         if (facultyToSave.id) {
@@ -345,7 +349,6 @@ export default function DepartmentsManager() {
         await loadData();
         setFacultyDialogOpen(false);
         setCurrentFaculty({});
-        setActiveDepartment(null);
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
@@ -362,6 +365,7 @@ export default function DepartmentsManager() {
         }
         setIsSubmitting(true);
         try {
+            // Also add a default class for the new department to make it appear in the list
             await addClass({
                 name: `Default ${newDepartmentName.trim()} Class`,
                 semester: 1,
@@ -400,13 +404,11 @@ export default function DepartmentsManager() {
   };
   
   const openNewSubjectDialog = (department: string) => {
-    setActiveDepartment(department);
     setCurrentSubject({ type: 'theory', semester: 1 });
     setSubjectDialogOpen(true);
   };
   
   const openNewFacultyDialog = (department: string) => {
-    setActiveDepartment(department);
     setCurrentFaculty({ employmentType: 'full-time', designation: 'Assistant Professor', designatedYear: 1 });
     setFacultyDialogOpen(true);
   };
@@ -419,21 +421,30 @@ export default function DepartmentsManager() {
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
+  
+  const dept = selectedDepartment;
+  const subjectsInDept = subjects.filter(s => s.department === dept);
+  const facultyInDept = faculty.filter(f => f.department === dept);
+  const classesInDept = classes.filter(c => c.department === dept);
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-end items-center">
+        <div className="flex justify-between items-center">
+            <Select value={selectedDepartment || ''} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="w-[300px]">
+                    <SelectValue placeholder="Select a Department" />
+                </SelectTrigger>
+                <SelectContent>
+                    {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+            </Select>
             <Button onClick={() => setDeptDialogOpen(true)}>
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Add Department
             </Button>
         </div>
-       {departments.map(dept => {
-           const subjectsInDept = subjects.filter(s => s.department === dept);
-           const facultyInDept = faculty.filter(f => f.department === dept);
-           const classesInDept = classes.filter(c => c.department === dept);
 
-           return (
+       {selectedDepartment && dept && (
            <Card key={dept}>
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
@@ -485,7 +496,7 @@ export default function DepartmentsManager() {
                                               <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setActiveDepartment(dept); setCurrentSubject(subject); setSubjectDialogOpen(true); }}>
+                                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setCurrentSubject(subject); setSubjectDialogOpen(true); }}>
                                                 <Edit className="h-4 w-4 mr-2" /> Edit
                                               </DropdownMenuItem>
                                                <AlertDialog>
@@ -551,7 +562,7 @@ export default function DepartmentsManager() {
                                               <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setActiveDepartment(dept); setCurrentFaculty(fac); setFacultyDialogOpen(true); }}>
+                                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setCurrentFaculty(fac); setFacultyDialogOpen(true); }}>
                                                 <Edit className="h-4 w-4 mr-2" /> Edit
                                               </DropdownMenuItem>
                                                <AlertDialog>
@@ -585,12 +596,12 @@ export default function DepartmentsManager() {
                     </div>
                 </CardContent>
            </Card>
-       )})}
+       )}
 
       {/* Subject Dialog */}
-      <Dialog open={isSubjectDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentSubject({}); setActiveDepartment(null); } setSubjectDialogOpen(isOpen); }}>
+      <Dialog open={isSubjectDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentSubject({}); } setSubjectDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : 'Add Subject to ' + activeDepartment}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : 'Add Subject to ' + selectedDepartment}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="s-name">Name</Label>
@@ -617,14 +628,14 @@ export default function DepartmentsManager() {
       </Dialog>
       
       {/* Faculty Dialog */}
-      <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentFaculty({}); setActiveDepartment(null); } setFacultyDialogOpen(isOpen); }}>
+      <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentFaculty({}); } setFacultyDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-2xl">
            <DialogHeader>
-                <DialogTitle>{currentFaculty?.id ? `Edit ${currentFaculty.name}` : `Add Faculty to ${activeDepartment}`}</DialogTitle>
+                <DialogTitle>{currentFaculty?.id ? `Edit ${currentFaculty.name}` : `Add Faculty to ${selectedDepartment}`}</DialogTitle>
             </DialogHeader>
             <FacultyForm
                 faculty={currentFaculty}
-                subjects={subjects.filter(s => s.department === activeDepartment)}
+                subjects={subjects.filter(s => s.department === selectedDepartment)}
                 onSave={handleSaveFaculty}
                 isSubmitting={isSubmitting}
                 onCancel={() => setFacultyDialogOpen(false)}
