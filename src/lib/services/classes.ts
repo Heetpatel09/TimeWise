@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -50,4 +51,20 @@ export async function deleteClass(id: string) {
     
     revalidateAll();
     return Promise.resolve(id);
+}
+
+export async function renameDepartment(oldName: string, newName: string) {
+    const db = getDb();
+
+    db.transaction(() => {
+        // Update classes
+        db.prepare('UPDATE classes SET department = ? WHERE department = ?').run(newName, oldName);
+        // Update subjects
+        db.prepare('UPDATE subjects SET department = ? WHERE department = ?').run(newName, oldName);
+        // Update faculty
+        db.prepare('UPDATE faculty SET department = ? WHERE department = ?').run(newName, oldName);
+    })();
+
+    revalidateAll();
+    return Promise.resolve({ success: true, oldName, newName });
 }

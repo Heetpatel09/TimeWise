@@ -10,10 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
-import { getClasses, addClass } from '@/lib/services/classes';
+import { getClasses, addClass, renameDepartment } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Subject, Class, Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy, Pencil } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 
 function MultipleSelector({
@@ -39,51 +42,63 @@ function MultipleSelector({
   placeholder: string;
 }) {
   const [selected, setSelected] = useState<string[]>(value || []);
+  const [open, setOpen] = useState(false);
 
   const handleSelect = (val: string) => {
-    const newSelected = [...selected, val];
+    const newSelected = selected.includes(val)
+      ? selected.filter((v) => v !== val)
+      : [...selected, val];
     setSelected(newSelected);
     onChange(newSelected);
   };
-
-  const handleDeselect = (val: string) => {
-    const newSelected = selected.filter((v) => v !== val);
-    setSelected(newSelected);
-    onChange(newSelected);
-  };
-
+  
   return (
-    <div>
-      <Select onValueChange={handleSelect}>
-        <SelectTrigger>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value} disabled={selected.includes(option.value)}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <div className="flex flex-wrap gap-1 mt-2">
-        {selected.map((val) => (
-          <Badge key={val} variant="secondary">
-            {options.find((opt) => opt.value === val)?.label}
-            <button
-              type="button"
-              className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              onClick={() => handleDeselect(val)}
-            >
-              <XIcon className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-            </button>
-          </Badge>
-        ))}
-      </div>
-    </div>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {selected.length > 0
+            ? `${selected.length} selected`
+            : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Search..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => {
+                    handleSelect(option.value);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selected.includes(option.value)
+                        ? "opacity-100"
+                        : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
-
 
 const facultySchema = z.object({
     id: z.string().optional(),
@@ -279,6 +294,8 @@ export default function DepartmentsManager() {
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
   const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [isRenameDeptDialogOpen, setRenameDeptDialogOpen] = useState(false);
+  const [renamingDepartmentName, setRenamingDepartmentName] = useState('');
   
   const { toast } = useToast();
 
@@ -365,7 +382,6 @@ export default function DepartmentsManager() {
         }
         setIsSubmitting(true);
         try {
-            // Also add a default class for the new department to make it appear in the list
             await addClass({
                 name: `Default ${newDepartmentName.trim()} Class`,
                 semester: 1,
@@ -375,6 +391,28 @@ export default function DepartmentsManager() {
             await loadData();
             setDeptDialogOpen(false);
             setNewDepartmentName('');
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+  }
+
+  const handleRenameDepartment = async () => {
+    if (renamingDepartmentName.trim() && selectedDepartment) {
+        if (departments.find(d => d.toLowerCase() === renamingDepartmentName.trim().toLowerCase())) {
+            toast({ title: "Department Exists", description: "This department name already exists.", variant: "destructive" });
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await renameDepartment(selectedDepartment, renamingDepartmentName.trim());
+            toast({ title: "Department Renamed", description: `"${selectedDepartment}" has been renamed to "${renamingDepartmentName.trim()}".`});
+            await loadData();
+            setSelectedDepartment(renamingDepartmentName.trim());
+            setRenameDeptDialogOpen(false);
+            setRenamingDepartmentName('');
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {
@@ -412,6 +450,13 @@ export default function DepartmentsManager() {
     setCurrentFaculty({ employmentType: 'full-time', designation: 'Assistant Professor', designatedYear: 1 });
     setFacultyDialogOpen(true);
   };
+
+  const openRenameDialog = () => {
+      if (selectedDepartment) {
+          setRenamingDepartmentName(selectedDepartment);
+          setRenameDeptDialogOpen(true);
+      }
+  }
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -429,15 +474,20 @@ export default function DepartmentsManager() {
 
   return (
     <div className="space-y-6">
-        <div className="flex justify-between items-center">
-            <Select value={selectedDepartment || ''} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="w-[300px]">
-                    <SelectValue placeholder="Select a Department" />
-                </SelectTrigger>
-                <SelectContent>
-                    {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-            </Select>
+        <div className="flex justify-between items-center flex-wrap gap-4">
+             <div className="flex items-center gap-2">
+                <Select value={selectedDepartment || ''} onValueChange={setSelectedDepartment}>
+                    <SelectTrigger className="w-[300px]">
+                        <SelectValue placeholder="Select a Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={openRenameDialog} disabled={!selectedDepartment}>
+                    <Pencil className="h-4 w-4" />
+                </Button>
+            </div>
             <Button onClick={() => setDeptDialogOpen(true)}>
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Add Department
@@ -643,7 +693,7 @@ export default function DepartmentsManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Department Dialog */}
+      {/* Add Department Dialog */}
       <Dialog open={isDeptDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setNewDepartmentName(''); setDeptDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader><DialogTitle>Add New Department</DialogTitle></DialogHeader>
@@ -659,6 +709,29 @@ export default function DepartmentsManager() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rename Department Dialog */}
+      <Dialog open={isRenameDeptDialogOpen} onOpenChange={setRenameDeptDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Rename Department</DialogTitle>
+                <DialogDescription>
+                    This will update the department name for all associated classes, subjects, and faculty.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="new-dept-name">New Department Name</Label>
+                    <Input id="new-dept-name" value={renamingDepartmentName} onChange={(e) => setRenamingDepartmentName(e.target.value)} placeholder="e.g. Mechanical Engineering" disabled={isSubmitting}/>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setRenameDeptDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                <Button onClick={handleRenameDepartment} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Rename</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
        <Dialog open={!!newFacultyCredentials} onOpenChange={() => setNewFacultyCredentials(null)}>
         <DialogContent>
@@ -701,5 +774,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
