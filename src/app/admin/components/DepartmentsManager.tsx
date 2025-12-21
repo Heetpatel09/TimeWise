@@ -53,7 +53,7 @@ function MultiSelect({ options, selected, onSelect, placeholder }: { options: {v
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
