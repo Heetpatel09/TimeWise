@@ -505,7 +505,7 @@ export default function DepartmentsManager() {
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent className="grid lg:grid-cols-2 gap-6">
+                <CardContent className="space-y-8">
                     <div>
                         <h3 className="text-lg font-semibold mb-2">Subjects</h3>
                          <div className="border rounded-lg">
@@ -574,12 +574,14 @@ export default function DepartmentsManager() {
                      <div>
                         <h3 className="text-lg font-semibold mb-2">Faculty Members</h3>
                          <div className="border rounded-lg">
-                            <ScrollArea className="h-72">
+                            <ScrollArea className="h-96">
                                 <Table>
                                   <TableHeader>
                                     <TableRow>
                                       <TableHead>Name</TableHead>
                                       <TableHead>Designation</TableHead>
+                                      <TableHead>Assigned Subjects</TableHead>
+                                      <TableHead>Designated Year</TableHead>
                                       <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -599,6 +601,15 @@ export default function DepartmentsManager() {
                                             </div>
                                         </TableCell>
                                         <TableCell>{fac.designation}</TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1">
+                                                {(fac.allottedSubjects || []).map(subId => {
+                                                    const subject = subjects.find(s => s.id === subId);
+                                                    return subject ? <Badge key={subId} variant="secondary">{subject.name}</Badge> : null;
+                                                })}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{fac.designatedYear || 'N/A'}</TableCell>
                                         <TableCell className="text-right">
                                            <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -629,7 +640,7 @@ export default function DepartmentsManager() {
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">No faculty found.</TableCell>
+                                            <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No faculty found.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
