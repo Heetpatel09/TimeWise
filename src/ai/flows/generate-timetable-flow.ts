@@ -30,16 +30,17 @@ const generateTimetable = ai.defineFlow(
         CORE CONSTRAINTS (HARD RULES):
         1. No faculty member can be assigned to more than one class in the same time slot. This applies to both the new schedule and the existing one.
         2. No classroom can be used by more than one section in the same time slot, including conflicts with the existing schedule.
-        3. For the class(es) you are generating for, every subject must be scheduled for a reasonable number of hours per week, based on its importance (e.g., core subjects more often than elective/PGPD subjects). Aim for 3-4 hours per week for core subjects.
+        3. For the class(es) you are generating for, every subject must be scheduled for a reasonable number of hours per week, based on its importance (e.g., core subjects more often than elective/PGPD subjects). Aim for 3-4 hours per week for core subjects. Subjects with a lab component should have one dedicated 2-hour lab slot and 1-2 theory slots.
         4. A faculty member’s maximum weekly workload must never be exceeded (consider their load from the existing schedule as well).
         5. Each class section can have only one subject in a single time slot.
         6. The provided time slots are fixed. You must use these exact time slots. Recess times should be left empty.
+        7. Lab subjects must be scheduled in a contiguous 2-hour block.
 
         OPTIMIZATION FEATURES (SOFT RULES):
-        7. Distribute subject hours evenly across the week. Avoid scheduling the same subject back-to-back on the same day if possible.
-        8. Avoid idle gaps in a section’s timetable (lectures should be contiguous).
-        9. Balance faculty schedules.
-        10. Prefer morning slots for core theory subjects. Labs can be in the afternoon.
+        8. Distribute subject hours evenly across the week. Avoid scheduling the same subject back-to-back on the same day if possible (except for labs).
+        9. Avoid idle gaps in a section’s timetable (lectures should be contiguous).
+        10. Balance faculty schedules.
+        11. Prefer morning slots for core theory subjects. Labs can be in the afternoon.
 
         INPUT DATA:
         - Working Days: ${JSON.stringify(input.days)}
