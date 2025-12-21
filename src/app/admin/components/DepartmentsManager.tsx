@@ -18,7 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -53,7 +53,7 @@ function MultipleSelector({
   };
   
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -67,7 +67,7 @@ function MultipleSelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
+      <PopoverContent className="w-[300px] p-0" modal={false}>
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
@@ -121,13 +121,11 @@ function FacultyForm({
   subjects,
   onSave,
   isSubmitting,
-  onCancel
 }: {
   faculty: Partial<Faculty>;
   subjects: Subject[];
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
   isSubmitting: boolean;
-  onCancel: () => void;
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
@@ -265,6 +263,13 @@ function FacultyForm({
               )}
             </div>
           </ScrollArea>
+           <DialogFooter className='mt-4'>
+              <Button type="button" variant="outline" onClick={() => (document.querySelector('[cmdk-dialog-close-button]') as HTMLElement)?.click()} disabled={isSubmitting}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save changes
+              </Button>
+            </DialogFooter>
       </form>
     </Form>
   );
@@ -285,6 +290,8 @@ export default function DepartmentsManager() {
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+  const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
+
 
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [isRenameDeptDialogOpen, setRenameDeptDialogOpen] = useState(false);
@@ -435,7 +442,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewSubjectDialog = (department: string) => {
-    setCurrentSubject({ type: 'theory', semester: 1 });
+    setCurrentSubject({ type: 'theory', semester: selectedSemester || 1 });
     setSubjectDialogOpen(true);
   };
   
@@ -461,15 +468,25 @@ export default function DepartmentsManager() {
   }
   
   const dept = selectedDepartment;
-  const subjectsInDept = subjects.filter(s => s.department === dept);
-  const facultyInDept = faculty.filter(f => f.department === dept);
+  let subjectsInDept = subjects.filter(s => s.department === dept);
+  if (selectedSemester) {
+      subjectsInDept = subjectsInDept.filter(s => s.semester === selectedSemester);
+  }
+  const subjectsInSemesterIds = new Set(subjectsInDept.map(s => s.id));
+  
+  let facultyInDept = faculty.filter(f => f.department === dept);
+  if (selectedSemester) {
+      facultyInDept = facultyInDept.filter(f => f.allottedSubjects.some(subId => subjectsInSemesterIds.has(subId)))
+  }
+
   const classesInDept = classes.filter(c => c.department === dept);
+  const semestersInDept = [...new Set(classes.filter(c => c.department === dept).map(c => c.semester))].sort();
 
   return (
     <div className="space-y-6">
         <div className="flex justify-between items-center flex-wrap gap-4">
              <div className="flex items-center gap-2">
-                <Select value={selectedDepartment || ''} onValueChange={setSelectedDepartment}>
+                <Select value={selectedDepartment || ''} onValueChange={(val) => {setSelectedDepartment(val); setSelectedSemester(null);}}>
                     <SelectTrigger className="w-[300px]">
                         <SelectValue placeholder="Select a Department" />
                     </SelectTrigger>
@@ -492,11 +509,11 @@ export default function DepartmentsManager() {
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
-                        <div className="flex flex-wrap gap-1">
-                          {classesInDept.map(c => <Badge key={c.id} variant="secondary">{c.name}</Badge>)}
-                        </div>
+                        <CardDescription>
+                          {classesInDept.map(c => <Badge key={c.id} variant="secondary" className="mr-1">{c.name}</Badge>)}
+                        </CardDescription>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                     <div className="flex flex-col sm:flex-row gap-2 self-start">
                         <Button onClick={() => openNewSubjectDialog(dept)} className="w-full sm:w-auto">
                             <PlusCircle className="h-4 w-4 mr-2" /> Add Subject
                         </Button>
@@ -506,6 +523,17 @@ export default function DepartmentsManager() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-8">
+                    <div className="flex justify-end">
+                       <Select value={selectedSemester?.toString() || ''} onValueChange={(val) => setSelectedSemester(val ? parseInt(val) : null)}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filter by Semester" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Semesters</SelectItem>
+                                {semestersInDept.map(sem => <SelectItem key={sem} value={sem.toString()}>Semester {sem}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div>
                         <h3 className="text-lg font-semibold mb-2">Subjects</h3>
                          <div className="border rounded-lg">
@@ -563,7 +591,7 @@ export default function DepartmentsManager() {
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No subjects found.</TableCell>
+                                            <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No subjects found for this semester.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
@@ -640,7 +668,7 @@ export default function DepartmentsManager() {
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No faculty found.</TableCell>
+                                            <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No faculty found for this semester.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
@@ -683,7 +711,7 @@ export default function DepartmentsManager() {
       
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentFaculty({}); } setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl" cmdk-dialog-close-button="">
            <DialogHeader>
                 <DialogTitle>{currentFaculty?.id ? `Edit ${currentFaculty.name}` : `Add Faculty to ${selectedDepartment}`}</DialogTitle>
             </DialogHeader>
@@ -692,15 +720,7 @@ export default function DepartmentsManager() {
                 subjects={subjects.filter(s => s.department === selectedDepartment)}
                 onSave={handleSaveFaculty}
                 isSubmitting={isSubmitting}
-                onCancel={() => setFacultyDialogOpen(false)}
             />
-            <DialogFooter>
-              <Button form="faculty-form" type="button" variant="outline" onClick={() => setFacultyDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-              <Button form="faculty-form" type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save changes
-              </Button>
-            </DialogFooter>
         </DialogContent>
       </Dialog>
 
