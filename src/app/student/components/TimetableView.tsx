@@ -11,6 +11,7 @@ import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
 import { getTimetableDataForStudent, getSubjectsForStudent } from '../actions';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface TimetableData {
     student: Student & { className: string };
@@ -27,24 +28,8 @@ const ALL_TIME_SLOTS = [
     '01:00 PM - 02:00 PM',
     '02:00 PM - 03:00 PM'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
-
-
-function sortTime(a: string, b: string) {
-    const toDate = (time: string) => {
-        const [timePart, modifier] = time.split(' ');
-        let [hours, minutes] = timePart.split(':');
-        if (hours === '12') {
-            hours = '0';
-        }
-        if (modifier === 'PM') {
-            hours = (parseInt(hours, 10) + 12).toString();
-        }
-        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
-    };
-    return toDate(a).getTime() - toDate(b).getTime();
-}
 
 export default function TimetableView() {
   const { user } = useAuth();
@@ -99,45 +84,35 @@ export default function TimetableView() {
     doc.save('my_timetable.pdf');
   }
   
-  const scheduleByDay = DAYS.map(day => {
-    const daySlots = studentSchedule.filter(slot => slot.day === day);
-    const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
-        if (BREAK_SLOTS.includes(time)) {
-             return {
-                id: `${day}-${time}-break`,
-                time: time,
-                isBreak: true,
-                day: day,
-            };
-        }
-        const scheduledSlot = daySlots.find(slot => slot.time === time);
-        if (scheduledSlot) {
-            const subject = subjects.find(sub => sub.id === scheduledSlot.subjectId);
-            return {
-              ...scheduledSlot,
-              subjectIsSpecial: subject?.isSpecial || false,
-            };
-        }
+  const scheduleByTime = ALL_TIME_SLOTS.map(time => {
+    if (BREAK_SLOTS.includes(time)) {
         return {
-            id: `${day}-${time}-library`,
             time: time,
-            subjectName: 'Library Slot',
-            facultyName: '-',
-            classroomName: '-',
-            day: day,
-            isLibrary: true,
+            isBreak: true,
+            slots: [],
         };
-    });
-    return {
-        day,
-        slots: fullDaySchedule.sort((a,b) => sortTime(a.time, b.time)),
     }
+    const dailySlots = DAYS.map(day => {
+      const slotsForDayAndTime = studentSchedule.filter(
+        s => s.day === day && s.time === time
+      );
+      return {
+        day,
+        slots: slotsForDayAndTime.map(slot => {
+             const subject = subjects.find(sub => sub.id === slot.subjectId);
+              return {
+                ...slot,
+                subjectIsSpecial: subject?.isSpecial || false,
+              };
+        }),
+      };
+    });
+    return { time, slots: dailySlots, isBreak: false };
   });
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
-
 
   return (
     <div>
@@ -147,73 +122,52 @@ export default function TimetableView() {
                 Download PDF
             </Button>
         </div>
-        <div className="space-y-6">
-        {scheduleByDay.map(({ day, slots }) => (
-            <Card key={day}>
-            <CardHeader>
-                <CardTitle>{day}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {slots.length > 0 ? (
+        <Card>
+            <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                    <Table>
+                    <Table className="border-collapse">
                         <TableHeader>
-                        <TableRow>
-                            <TableHead>Time</TableHead>
-                            <TableHead>Subject</TableHead>
-                            <TableHead>Faculty</TableHead>
-                            <TableHead>Classroom</TableHead>
-                        </TableRow>
+                            <TableRow>
+                                <TableHead className="border font-semibold">Time</TableHead>
+                                {DAYS.map(day => (
+                                    <TableHead key={day} className="border font-semibold">{day}</TableHead>
+                                ))}
+                            </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {slots.map((slot) => (
-                            <TableRow 
-                                key={slot.id}
-                                className={(slot as EnrichedSchedule).subjectIsSpecial ? `bg-[#4A0080] text-white hover:bg-[#4A0080]/90` : ''}
-                            >
-                                <TableCell>{slot.time}</TableCell>
-                                {(slot as any).isLibrary ? (
-                                    <TableCell colSpan={3} className="text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                            <Library className="h-4 w-4" />
-                                            <span>Library Slot</span>
-                                        </div>
-                                    </TableCell>
-                                ) : (slot as any).isBreak ? (
-                                    <TableCell colSpan={3} className="text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                            <Coffee className="h-4 w-4" />
-                                            <span>Break</span>
-                                        </div>
-                                    </TableCell>
-                                ) : (
-                                    <>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                {(slot as EnrichedSchedule).subjectName}
-                                                {(slot as EnrichedSchedule).subjectIsSpecial && <Star className="h-3 w-3 text-yellow-400" />}
-                                            </div>
+                            {scheduleByTime.map(({ time, slots, isBreak }) => (
+                                <TableRow key={time}>
+                                    <TableCell className="border font-medium text-xs whitespace-nowrap">{time}</TableCell>
+                                    {isBreak ? (
+                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary">
+                                            RECESS TIME: {time.replace(/ AM| PM/g, '')}
                                         </TableCell>
-                                        <TableCell>{(slot as EnrichedSchedule).facultyName}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={(slot as EnrichedSchedule).subjectIsSpecial ? 'default' : 'outline'}>
-                                                {(slot as EnrichedSchedule).classroomName}
-                                            </Badge>
-                                        </TableCell>
-                                    </>
-                                )}
-                            </TableRow>
-                        ))}
+                                    ) : (
+                                        slots.map(({ day, slots: daySlots }) => (
+                                            <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
+                                                {daySlots.length > 0 ? (
+                                                    daySlots.map(slot => (
+                                                        <div key={slot.id} className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", slot.subjectIsSpecial ? 'bg-primary/20' : 'bg-muted')}>
+                                                            <div><strong>{slot.subjectName}</strong></div>
+                                                            <div>{slot.facultyName}</div>
+                                                            <div>{slot.classroomName}</div>
+                                                        </div>
+                                                    ))
+                                                ) : ( day !== 'Saturday' &&
+                                                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                                                        <Library className="h-4 w-4" />
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                        ))
+                                    )}
+                                </TableRow>
+                            ))}
                         </TableBody>
                     </Table>
                 </div>
-                ) : (
-                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
-                )}
             </CardContent>
-            </Card>
-        ))}
-        </div>
+        </Card>
     </div>
   );
 }
