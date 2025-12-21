@@ -40,7 +40,6 @@ const facultySchema = z.object({
     maxWeeklyHours: z.coerce.number().optional(),
     designatedYear: z.coerce.number().optional(),
     allottedSubjects: z.array(z.string()).optional(),
-    allottedSections: z.array(z.string()).optional(),
 });
 
 function MultiSelect({ options, selected, onSelect, placeholder }: { options: {value: string, label: string}[], selected: string[], onSelect: (selected: string[]) => void, placeholder: string }) {
@@ -95,18 +94,18 @@ function MultiSelect({ options, selected, onSelect, placeholder }: { options: {v
   );
 }
 
+const DESIGNATION_OPTIONS = ['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer', 'Lab Assistant'];
+const YEAR_OPTIONS = [1, 2, 3, 4];
 
 function FacultyForm({
   faculty,
   subjects,
-  classes,
   onSave,
   isSubmitting,
   department
 }: {
   faculty: Partial<Faculty>;
   subjects: Subject[];
-  classes: Class[];
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
   isSubmitting: boolean;
   department: string;
@@ -116,7 +115,6 @@ function FacultyForm({
     defaultValues: {
         ...faculty,
         allottedSubjects: faculty.allottedSubjects || [],
-        allottedSections: faculty.allottedSections || [],
     },
   });
 
@@ -126,7 +124,6 @@ function FacultyForm({
   const { toast } = useToast();
 
   const subjectOptions = subjects.map(s => ({ value: s.id, label: `${s.name} (Sem ${s.semester})` }));
-  const classOptions = classes.map(c => ({ value: c.id, label: c.name }));
 
   const handleSubmit = (data: z.infer<typeof facultySchema>) => {
     if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
@@ -163,13 +160,19 @@ function FacultyForm({
                     <FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
                 )}
                 />
-                <FormField
-                control={form.control}
-                name="designation"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Designation</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
+                 <FormField
+                    control={form.control}
+                    name="designation"
+                    render={({ field }) => (
+                        <FormItem><FormLabel>Designation</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger>
+                         </FormControl><SelectContent>
+                            {DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        </SelectContent></Select>
+                        <FormMessage /></FormItem>
+                    )}
+                    />
             </div>
             <FormField
                 control={form.control}
@@ -177,16 +180,6 @@ function FacultyForm({
                 render={({ field }) => (
                     <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
                     <MultiSelect options={subjectOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select subjects..." />
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            <FormField
-                control={form.control}
-                name="allottedSections"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col"><FormLabel>Allotted Sections/Classes</FormLabel>
-                    <MultiSelect options={classOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select classes..." />
                     <FormMessage />
                     </FormItem>
                 )}
@@ -208,12 +201,18 @@ function FacultyForm({
                     )}
                     />
                 <FormField
-                control={form.control}
-                name="designatedYear"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Designated Year</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
+                    control={form.control}
+                    name="designatedYear"
+                    render={({ field }) => (
+                        <FormItem><FormLabel>Designated Year</FormLabel>
+                         <Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger>
+                         </FormControl><SelectContent>
+                            {YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                        </SelectContent></Select>
+                        <FormMessage /></FormItem>
+                    )}
+                    />
             </div>
              <FormField
                 control={form.control}
@@ -399,7 +398,7 @@ export default function DepartmentsManager() {
   
   const openNewFacultyDialog = (department: string) => {
     setActiveDepartment(department);
-    setCurrentFaculty({ employmentType: 'full-time' });
+    setCurrentFaculty({ employmentType: 'full-time', designation: 'Assistant Professor', designatedYear: 1 });
     setFacultyDialogOpen(true);
   };
   
@@ -617,7 +616,6 @@ export default function DepartmentsManager() {
             <FacultyForm
                 faculty={currentFaculty}
                 subjects={subjects.filter(s => s.department === activeDepartment)}
-                classes={classes.filter(c => c.department === activeDepartment)}
                 onSave={handleSaveFaculty}
                 isSubmitting={isSubmitting}
                 department={activeDepartment || ''}

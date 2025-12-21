@@ -188,7 +188,7 @@ export interface Faculty {
   avatar?: string;
   profileCompleted: number;
   points: number;
-  allottedSections: string[];
+  allottedSections?: string[];
   allottedSubjects: string[];
   maxWeeklyHours?: number;
   designatedYear?: number;
