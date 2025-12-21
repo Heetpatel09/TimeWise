@@ -509,9 +509,9 @@ export default function DepartmentsManager() {
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
-                        <CardDescription>
+                        <div className="text-sm text-muted-foreground">
                           {classesInDept.map(c => <Badge key={c.id} variant="secondary" className="mr-1">{c.name}</Badge>)}
-                        </CardDescription>
+                        </div>
                     </div>
                      <div className="flex flex-col sm:flex-row gap-2 self-start">
                         <Button onClick={() => openNewSubjectDialog(dept)} className="w-full sm:w-auto">
@@ -805,3 +805,5 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
