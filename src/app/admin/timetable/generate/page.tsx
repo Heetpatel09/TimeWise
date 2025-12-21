@@ -58,6 +58,7 @@ export default function TimetableGeneratorPage() {
 
     const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -67,18 +68,25 @@ export default function TimetableGeneratorPage() {
     const departments = useMemo(() => Array.from(new Set(classes?.map(c => c.department) || [])), [classes]);
     const classesInDept = useMemo(() => classes?.filter(c => c.department === selectedDepartment) || [], [classes, selectedDepartment]);
     const selectedClass = useMemo(() => classes?.find(c => c.id === selectedClassId), [classes, selectedClassId]);
-    const selectedSemester = selectedClass?.semester;
-
 
     useEffect(() => {
         setSelectedClassId(null);
+        setSelectedSemester(null);
     }, [selectedDepartment]);
     
+    useEffect(() => {
+        if(selectedClass) {
+            setSelectedSemester(selectedClass.semester.toString());
+        } else {
+            setSelectedSemester(null);
+        }
+    }, [selectedClass])
+
     const contextInfo = useMemo(() => {
         if (!selectedClassId || !selectedSemester || !subjects || !faculty || !students || !classrooms) return null;
 
         const classStudents = students.filter(s => s.classId === selectedClassId);
-        const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department);
+        const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department && s.semester === parseInt(selectedSemester));
         const deptFaculty = faculty.filter(f => f.department === selectedClass?.department);
 
         return {
@@ -90,8 +98,8 @@ export default function TimetableGeneratorPage() {
     }, [selectedClassId, selectedSemester, subjects, faculty, students, classrooms, selectedClass]);
 
     const handleGenerate = async () => {
-        if (!selectedClass || !contextInfo) {
-            toast({ title: 'Please select a department and class', variant: 'destructive' });
+        if (!selectedClass || !contextInfo || !selectedSemester) {
+            toast({ title: 'Please select a department, class, and semester', variant: 'destructive' });
             return;
         }
         setIsGenerating(true);
@@ -153,7 +161,7 @@ export default function TimetableGeneratorPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Timetable Generator</CardTitle>
-                        <CardDescription>Select a department and class to generate a timetable using AI.</CardDescription>
+                        <CardDescription>Select a department, class, and semester to generate a timetable using AI.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? <Loader2 className="animate-spin" /> : (
@@ -174,6 +182,14 @@ export default function TimetableGeneratorPage() {
                                         {classesInDept.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
+                                 <Select value={selectedSemester || ''} onValueChange={setSelectedSemester} disabled={!selectedClassId}>
+                                    <SelectTrigger className="w-full sm:w-[200px]">
+                                        <SelectValue placeholder="Select Semester" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        { selectedClass && <SelectItem value={selectedClass.semester.toString()}>Semester {selectedClass.semester}</SelectItem> }
+                                    </SelectContent>
+                                </Select>
                                 <Button onClick={handleGenerate} disabled={!selectedClassId || isGenerating} className="w-full sm:w-auto">
                                     {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
                                     Generate Timetable
@@ -187,7 +203,7 @@ export default function TimetableGeneratorPage() {
                     <div className="space-y-6 animate-in fade-in-0">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                             <InfoCard icon={Users} title="Students in Class" numberValue={contextInfo.studentCount} />
-                            <InfoCard icon={BookOpen} title="Subjects in Dept" numberValue={contextInfo.subjects.length} />
+                            <InfoCard icon={BookOpen} title="Subjects for Semester" numberValue={contextInfo.subjects.length} />
                             <InfoCard icon={UserCheck} title="Faculty in Dept." numberValue={contextInfo.faculty.length} />
                             <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={contextInfo.classroomCount} />
                         </div>
@@ -195,7 +211,7 @@ export default function TimetableGeneratorPage() {
                             <Bot className="h-4 w-4" />
                             <AlertTitle>Ready to Generate!</AlertTitle>
                             <AlertDescription>
-                                You have selected {selectedClass?.name}. The AI will use subjects and faculty from the {selectedDepartment} department.
+                                You have selected {selectedClass?.name} (Sem {selectedSemester}). The AI will use subjects from the {selectedDepartment} department for this semester.
                             </AlertDescription>
                         </Alert>
                     </div>
