@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -109,8 +108,8 @@ export default function TimetableGeneratorPage() {
                 days: DAYS,
                 timeSlots: TIME_SLOTS,
                 classes: [selectedClass],
-                subjects: subjects?.filter(s => s.department === selectedClass.department) || [],
-                faculty: faculty?.filter(f => f.department === selectedClass.department) || [],
+                subjects: contextInfo.subjects,
+                faculty: faculty || [],
                 classrooms: classrooms || [],
                 existingSchedule: existingSchedule?.filter(s => s.classId !== selectedClassId),
             });
@@ -183,6 +182,15 @@ export default function TimetableGeneratorPage() {
                                         {classesInDept.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
+                                {selectedClassId && (
+                                    <div className="w-full sm:w-auto">
+                                        <Input
+                                            readOnly
+                                            value={`Semester: ${selectedSemester}`}
+                                            className="w-full sm:w-[200px] text-center font-semibold"
+                                        />
+                                    </div>
+                                )}
                                 <Button onClick={handleGenerate} disabled={!selectedClassId || isGenerating} className="w-full sm:w-auto">
                                     {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
                                     Generate Timetable
