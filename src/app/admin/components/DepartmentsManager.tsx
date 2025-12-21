@@ -154,127 +154,120 @@ function FacultyForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)}>
-        <ScrollArea className="max-h-[70vh] p-1">
-          <div className="grid gap-4 py-4 pr-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+      <form id="faculty-form" onSubmit={form.handleSubmit(handleSubmit)}>
+          <ScrollArea className="max-h-[60vh] p-1">
+            <div className="grid gap-4 py-4 pr-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                      <FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                  )}
+                  />
+                  <FormField
+                      control={form.control}
+                      name="designation"
+                      render={({ field }) => (
+                          <FormItem><FormLabel>Designation</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
+                              <SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger>
+                          </FormControl><SelectContent>
+                              {DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent></Select>
+                          <FormMessage /></FormItem>
+                      )}
+                      />
+              </div>
+              <FormField
+                  control={form.control}
+                  name="allottedSubjects"
+                  render={({ field }) => (
+                      <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
+                      <MultipleSelector
+                          options={subjectOptions}
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          placeholder="Select subjects..."
+                      />
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                  />
+              <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                      control={form.control}
+                      name="employmentType"
+                      render={({ field }) => (
+                          <FormItem><FormLabel>Employment Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
+                              <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
+                          </FormControl><SelectContent>
+                              <SelectItem value="full-time">Full-time</SelectItem>
+                              <SelectItem value="part-time">Part-time</SelectItem>
+                              <SelectItem value="contract">Contract</SelectItem>
+                          </SelectContent></Select>
+                          <FormMessage /></FormItem>
+                      )}
+                      />
+                  <FormField
+                      control={form.control}
+                      name="designatedYear"
+                      render={({ field }) => (
+                          <FormItem><FormLabel>Designated Year</FormLabel>
+                          <Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl>
+                              <SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger>
+                          </FormControl><SelectContent>
+                              {YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                          </SelectContent></Select>
+                          <FormMessage /></FormItem>
+                      )}
+                      />
+              </div>
+              <FormField
+                  control={form.control}
+                  name="maxWeeklyHours"
+                  render={({ field }) => (
+                      <FormItem><FormLabel>Max Weekly Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                  )}
+                  />
+              {!faculty.id && (
+                  <>
+                      <div className="space-y-2"><Label>Password</Label>
+                      <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
+                          <div className="flex items-center space-x-2"><RadioGroupItem value="auto" id="auto-faculty" /><Label htmlFor="auto-faculty">Auto-generate</Label></div>
+                          <div className="flex items-center space-x-2"><RadioGroupItem value="manual" id="manual-faculty" /><Label htmlFor="manual-faculty">Manual</Label></div>
+                      </RadioGroup>
+                      </div>
+                      {passwordOption === 'manual' && (
+                      <div className="space-y-2"><Label htmlFor="manual-password-faculty">Set Password</Label>
+                          <div className="relative">
+                              <Input id="manual-password-faculty" type={showPassword ? "text" : "password"} value={manualPassword} onChange={(e) => setManualPassword(e.target.value)} className="pr-10" disabled={isSubmitting}/>
+                              <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>
+                          </div>
+                      </div>
+                      )}
+                  </>
               )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
-             <div className="grid grid-cols-2 gap-4">
-                <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="designation"
-                    render={({ field }) => (
-                        <FormItem><FormLabel>Designation</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger>
-                         </FormControl><SelectContent>
-                            {DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                        </SelectContent></Select>
-                        <FormMessage /></FormItem>
-                    )}
-                    />
             </div>
-             <FormField
-                control={form.control}
-                name="allottedSubjects"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
-                    <MultipleSelector
-                        options={subjectOptions}
-                        value={field.value || []}
-                        onChange={field.onChange}
-                        placeholder="Select subjects..."
-                    />
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="employmentType"
-                    render={({ field }) => (
-                        <FormItem><FormLabel>Employment Type</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
-                         </FormControl><SelectContent>
-                            <SelectItem value="full-time">Full-time</SelectItem>
-                            <SelectItem value="part-time">Part-time</SelectItem>
-                            <SelectItem value="contract">Contract</SelectItem>
-                        </SelectContent></Select>
-                        <FormMessage /></FormItem>
-                    )}
-                    />
-                <FormField
-                    control={form.control}
-                    name="designatedYear"
-                    render={({ field }) => (
-                        <FormItem><FormLabel>Designated Year</FormLabel>
-                         <Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger>
-                         </FormControl><SelectContent>
-                            {YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
-                        </SelectContent></Select>
-                        <FormMessage /></FormItem>
-                    )}
-                    />
-            </div>
-             <FormField
-                control={form.control}
-                name="maxWeeklyHours"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Max Weekly Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
-            {!faculty.id && (
-                <>
-                    <div className="space-y-2"><Label>Password</Label>
-                    <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="auto" id="auto-faculty" /><Label htmlFor="auto-faculty">Auto-generate</Label></div>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="manual" id="manual-faculty" /><Label htmlFor="manual-faculty">Manual</Label></div>
-                    </RadioGroup>
-                    </div>
-                    {passwordOption === 'manual' && (
-                    <div className="space-y-2"><Label htmlFor="manual-password-faculty">Set Password</Label>
-                        <div className="relative">
-                            <Input id="manual-password-faculty" type={showPassword ? "text" : "password"} value={manualPassword} onChange={(e) => setManualPassword(e.target.value)} className="pr-10" disabled={isSubmitting}/>
-                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>
-                        </div>
-                    </div>
-                    )}
-                </>
-            )}
-          </div>
-        </ScrollArea>
-        <DialogFooter className="mt-4 border-t pt-4">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save changes
-            </Button>
-        </DialogFooter>
+          </ScrollArea>
       </form>
     </Form>
-  )
+  );
 }
 
 export default function DepartmentsManager() {
@@ -690,6 +683,13 @@ export default function DepartmentsManager() {
                 isSubmitting={isSubmitting}
                 onCancel={() => setFacultyDialogOpen(false)}
             />
+            <DialogFooter>
+              <Button form="faculty-form" type="button" variant="outline" onClick={() => setFacultyDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+              <Button form="faculty-form" type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save changes
+              </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
 
