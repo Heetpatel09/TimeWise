@@ -102,11 +102,13 @@ function FacultyForm({
   subjects,
   onSave,
   isSubmitting,
+  onCancel
 }: {
   faculty: Partial<Faculty>;
   subjects: Subject[];
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
   isSubmitting: boolean;
+  onCancel: () => void;
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
@@ -240,7 +242,7 @@ function FacultyForm({
           </div>
         </ScrollArea>
         <DialogFooter className="mt-4 border-t pt-4">
-            <Button type="button" variant="outline" onClick={() => (document.querySelector('[cmdk-dialog-close-button]') as HTMLElement)?.click()} disabled={isSubmitting}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
@@ -607,7 +609,7 @@ export default function DepartmentsManager() {
       
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentFaculty({}); setActiveDepartment(null); } setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="sm:max-w-2xl" cmdk-dialog-close-button="">
+        <DialogContent className="sm:max-w-2xl">
            <DialogHeader>
                 <DialogTitle>{currentFaculty?.id ? `Edit ${currentFaculty.name}` : `Add Faculty to ${activeDepartment}`}</DialogTitle>
             </DialogHeader>
@@ -616,6 +618,7 @@ export default function DepartmentsManager() {
                 subjects={subjects.filter(s => s.department === activeDepartment)}
                 onSave={handleSaveFaculty}
                 isSubmitting={isSubmitting}
+                onCancel={() => setFacultyDialogOpen(false)}
             />
         </DialogContent>
       </Dialog>
@@ -678,5 +681,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
