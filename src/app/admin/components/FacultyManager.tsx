@@ -1,50 +1,283 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
-import type { Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff } from 'lucide-react';
+import { getSubjects } from '@/lib/services/subjects';
+import { getClasses } from '@/lib/services/classes';
+import type { Faculty, Subject, Class } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, ChevronsUpDown, Check } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
-export default function FacultyManager() {
-  const [faculty, setFaculty] = useState<Faculty[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
-  const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
+
+const facultySchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email(),
+    code: z.string().optional(),
+    department: z.string().min(1, "Department is required"),
+    designation: z.string().optional(),
+    employmentType: z.enum(['full-time', 'part-time', 'contract']),
+    maxWeeklyHours: z.coerce.number().optional(),
+    designatedYear: z.coerce.number().optional(),
+    allottedSubjects: z.array(z.string()).optional(),
+    allottedSections: z.array(z.string()).optional(),
+});
+
+function MultiSelect({ options, selected, onSelect, placeholder }: { options: {value: string, label: string}[], selected: string[], onSelect: (selected: string[]) => void, placeholder: string }) {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (currentValue: string) => {
+    const newSelected = selected.includes(currentValue)
+      ? selected.filter(v => v !== currentValue)
+      : [...selected, currentValue];
+    onSelect(newSelected);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          <span className='truncate'>{selected.length > 0 ? `${selected.length} selected` : placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Search..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => handleSelect(option.value)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
+function FacultyForm({
+  faculty,
+  subjects,
+  classes,
+  onSave,
+  isSubmitting,
+}: {
+  faculty: Partial<Faculty>;
+  subjects: Subject[];
+  classes: Class[];
+  onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
+  isSubmitting: boolean;
+}) {
+  const form = useForm<z.infer<typeof facultySchema>>({
+    resolver: zodResolver(facultySchema),
+    defaultValues: {
+        ...faculty,
+        allottedSubjects: faculty.allottedSubjects || [],
+        allottedSections: faculty.allottedSections || [],
+    },
+  });
+
   const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
   const [manualPassword, setManualPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
+  const subjectOptions = subjects.map(s => ({ value: s.id, label: `${s.name} (Sem ${s.semester})` }));
+  const classOptions = classes.map(c => ({ value: c.id, label: c.name }));
+
+  const handleSubmit = (data: z.infer<typeof facultySchema>) => {
+    if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
+      toast({ title: "Password Required", description: "Please enter a password for the new faculty member.", variant: "destructive" });
+      return;
+    }
+    onSave(data, passwordOption === 'manual' ? manualPassword : undefined);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ScrollArea className="max-h-[70vh] p-1">
+          <div className="grid gap-4 py-4 pr-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+             <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="designation"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Designation</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+            </div>
+             <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Designated Department</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+            <FormField
+                control={form.control}
+                name="allottedSubjects"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
+                    <MultiSelect options={subjectOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select subjects..." />
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            <FormField
+                control={form.control}
+                name="allottedSections"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col"><FormLabel>Allotted Sections/Classes</FormLabel>
+                    <MultiSelect options={classOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select classes..." />
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            <div className="grid grid-cols-2 gap-4">
+                 <FormField
+                    control={form.control}
+                    name="employmentType"
+                    render={({ field }) => (
+                        <FormItem><FormLabel>Employment Type</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
+                         </FormControl><SelectContent>
+                            <SelectItem value="full-time">Full-time</SelectItem>
+                            <SelectItem value="part-time">Part-time</SelectItem>
+                            <SelectItem value="contract">Contract</SelectItem>
+                        </SelectContent></Select>
+                        <FormMessage /></FormItem>
+                    )}
+                    />
+                <FormField
+                control={form.control}
+                name="designatedYear"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Designated Year</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+            </div>
+             <FormField
+                control={form.control}
+                name="maxWeeklyHours"
+                render={({ field }) => (
+                    <FormItem><FormLabel>Max Weekly Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                )}
+                />
+            {!faculty.id && (
+                <>
+                    <div className="space-y-2"><Label>Password</Label>
+                    <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="auto" id="auto-faculty" /><Label htmlFor="auto-faculty">Auto-generate</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="manual" id="manual-faculty" /><Label htmlFor="manual-faculty">Manual</Label></div>
+                    </RadioGroup>
+                    </div>
+                    {passwordOption === 'manual' && (
+                    <div className="space-y-2"><Label htmlFor="manual-password-faculty">Set Password</Label>
+                        <div className="relative">
+                            <Input id="manual-password-faculty" type={showPassword ? "text" : "password"} value={manualPassword} onChange={(e) => setManualPassword(e.target.value)} className="pr-10" disabled={isSubmitting}/>
+                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>
+                        </div>
+                    </div>
+                    )}
+                </>
+            )}
+          </div>
+        </ScrollArea>
+        <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={() => (document.querySelector('[data-state="open"] [cmdk-dialog-close-button]') as HTMLElement)?.click()} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  )
+}
+
+
+export default function FacultyManager() {
+  const [faculty, setFaculty] = useState<Faculty[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
+  const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
+  const { toast } = useToast();
+
   async function loadData() {
     setIsLoading(true);
     try {
-      const facultyData = await getFaculty();
+      const [facultyData, subjectData, classData] = await Promise.all([getFaculty(), getSubjects(), getClasses()]);
       setFaculty(facultyData);
+      setSubjects(subjectData);
+      setClasses(classData);
     } catch (error) {
       toast({ title: "Error", description: "Failed to load data.", variant: "destructive" });
     } finally {
@@ -56,22 +289,15 @@ export default function FacultyManager() {
     loadData();
   }, []);
 
-  const handleSave = async () => {
-    if (currentFaculty) {
-       if (!currentFaculty.id && passwordOption === 'manual' && !manualPassword) {
-        toast({ title: "Password Required", description: "Please enter a password for the new faculty member.", variant: "destructive" });
-        return;
-      }
+  const handleSave = async (data: z.infer<typeof facultySchema>, password?: string) => {
       setIsSubmitting(true);
       try {
-        if (currentFaculty.id) {
-          await updateFaculty(currentFaculty as Faculty);
+        const dataToSave = {...data, roles: []};
+        if (dataToSave.id) {
+          await updateFaculty(dataToSave as Faculty);
           toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
         } else {
-          const result = await addFaculty(
-            currentFaculty as Omit<Faculty, 'id'>,
-            passwordOption === 'manual' ? manualPassword : undefined
-          );
+          const result = await addFaculty(dataToSave, password);
           toast({ title: "Faculty Added", description: "The new faculty member has been created." });
           if (result.initialPassword) {
             setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
@@ -79,15 +305,11 @@ export default function FacultyManager() {
         }
         await loadData();
         setDialogOpen(false);
-        setCurrentFaculty({});
-        setPasswordOption('auto');
-        setManualPassword('');
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
-    }
   };
   
   const copyToClipboard = (text: string) => {
@@ -111,9 +333,7 @@ export default function FacultyManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentFaculty({ employmentType: 'full-time' });
-    setPasswordOption('auto');
-    setManualPassword('');
+    setCurrentFaculty({ employmentType: 'full-time', department: 'Computer Engineering' });
     setDialogOpen(true);
   };
   
@@ -200,124 +420,21 @@ export default function FacultyManager() {
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
-        if (!isOpen) {
-            setCurrentFaculty({});
-            setManualPassword('');
-            setPasswordOption('auto');
-        }
-        setDialogOpen(isOpen);
-      }}>
-        <DialogContent className="sm:max-w-2xl">
+      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-2xl" cmdk-dialog-close-button="">
           <DialogHeader>
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
               {currentFaculty?.id ? 'Update faculty details.' : 'Add a new faculty member.'}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[70vh] p-1">
-            <div className="grid gap-4 py-4 pr-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" value={currentFaculty.name ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, name: e.target.value })} disabled={isSubmitting}/>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={currentFaculty.email ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, email: e.target.value })} disabled={isSubmitting}/>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">Staff ID</Label>
-                  <Input id="code" value={currentFaculty.code ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, code: e.target.value })} disabled={isSubmitting}/>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="designation">Designation</Label>
-                  <Input id="designation" value={currentFaculty.designation ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, designation: e.target.value })} disabled={isSubmitting}/>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">Designated Department</Label>
-                <Input id="department" value={currentFaculty.department ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })} disabled={isSubmitting}/>
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="allottedSections">Allotted Sections (comma-separated IDs)</Label>
-                <Input id="allottedSections" value={Array.isArray(currentFaculty.allottedSections) ? currentFaculty.allottedSections.join(', ') : ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, allottedSections: e.target.value.split(',').map(s => s.trim()) })} disabled={isSubmitting}/>
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="allottedSubjects">Allotted Subjects (comma-separated IDs)</Label>
-                <Input id="allottedSubjects" value={Array.isArray(currentFaculty.allottedSubjects) ? currentFaculty.allottedSubjects.join(', ') : ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, allottedSubjects: e.target.value.split(',').map(s => s.trim()) })} disabled={isSubmitting}/>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employmentType">Employment Type</Label>
-                  <Select value={currentFaculty.employmentType} onValueChange={(v: Faculty['employmentType']) => setCurrentFaculty({...currentFaculty, employmentType: v})}>
-                      <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="full-time">Full-time</SelectItem>
-                          <SelectItem value="part-time">Part-time</SelectItem>
-                          <SelectItem value="contract">Contract</SelectItem>
-                      </SelectContent>
-                  </Select>
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="designatedYear">Designated Year</Label>
-                  <Input id="designatedYear" type="number" value={currentFaculty.designatedYear ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, designatedYear: parseInt(e.target.value) || undefined })} disabled={isSubmitting}/>
-                </div>
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="maxWeeklyHours">Maximum Working Hours per Week</Label>
-                <Input id="maxWeeklyHours" type="number" value={currentFaculty.maxWeeklyHours ?? ''} onChange={(e) => setCurrentFaculty({ ...currentFaculty, maxWeeklyHours: parseInt(e.target.value) || undefined })} disabled={isSubmitting}/>
-              </div>
-              {!currentFaculty.id && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Password</Label>
-                    <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="auto" id="auto-faculty" />
-                          <Label htmlFor="auto-faculty">Auto-generate</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="manual" id="manual-faculty" />
-                          <Label htmlFor="manual-faculty">Manual</Label>
-                        </div>
-                    </RadioGroup>
-                  </div>
-                  {passwordOption === 'manual' && (
-                      <div className="space-y-2">
-                          <Label htmlFor="manual-password-faculty">Set Password</Label>
-                          <div className="relative">
-                              <Input 
-                                  id="manual-password-faculty" 
-                                  type={showPassword ? "text" : "password"}
-                                  value={manualPassword} 
-                                  onChange={(e) => setManualPassword(e.target.value)} 
-                                  className="pr-10"
-                                  disabled={isSubmitting}
-                              />
-                              <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute inset-y-0 right-0 h-full px-3"
-                                  onClick={() => setShowPassword(!showPassword)}
-                                  >
-                                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                          </div>
-                      </div>
-                  )}
-                </>
-              )}
-            </div>
-          </ScrollArea>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save changes
-            </Button>
-          </DialogFooter>
+          <FacultyForm
+            faculty={currentFaculty}
+            subjects={subjects}
+            classes={classes}
+            onSave={handleSave}
+            isSubmitting={isSubmitting}
+          />
         </DialogContent>
       </Dialog>
       
