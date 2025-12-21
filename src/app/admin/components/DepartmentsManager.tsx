@@ -13,7 +13,7 @@ import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/ser
 import { getClasses, addClass, renameDepartment } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Subject, Class, Faculty } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy, Pencil } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy, Pencil, ChevronsUpDown, Check } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
