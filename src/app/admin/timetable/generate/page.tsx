@@ -87,15 +87,25 @@ export default function TimetableGeneratorPage() {
 
         const classStudents = students.filter(s => s.classId === selectedClassId);
         const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department && s.semester === parseInt(selectedSemester));
-        const deptFaculty = faculty.filter(f => f.department === selectedClass?.department);
+        
+        const relevantFacultyIds = new Set<string>();
+        relevantSubjects.forEach(sub => {
+            faculty.forEach(fac => {
+                if (fac.allottedSubjects?.includes(sub.id)) {
+                    relevantFacultyIds.add(fac.id);
+                }
+            });
+        });
+        const relevantFaculty = faculty.filter(f => relevantFacultyIds.has(f.id));
 
         return {
             studentCount: classStudents.length,
             subjects: relevantSubjects,
-            faculty: deptFaculty,
+            faculty: relevantFaculty,
             classroomCount: classrooms.length,
         };
     }, [selectedClassId, selectedSemester, subjects, faculty, students, classrooms, selectedClass]);
+
 
     const handleGenerate = async () => {
         if (!selectedClass || !contextInfo || !selectedSemester) {
@@ -204,14 +214,14 @@ export default function TimetableGeneratorPage() {
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                             <InfoCard icon={Users} title="Students in Class" numberValue={contextInfo.studentCount} />
                             <InfoCard icon={BookOpen} title="Subjects for Semester" numberValue={contextInfo.subjects.length} />
-                            <InfoCard icon={UserCheck} title="Faculty in Dept." numberValue={contextInfo.faculty.length} />
+                            <InfoCard icon={UserCheck} title="Relevant Faculty" numberValue={contextInfo.faculty.length} />
                             <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={contextInfo.classroomCount} />
                         </div>
                         <Alert>
                             <Bot className="h-4 w-4" />
                             <AlertTitle>Ready to Generate!</AlertTitle>
                             <AlertDescription>
-                                You have selected {selectedClass?.name} (Sem {selectedSemester}). The AI will use subjects from the {selectedDepartment} department for this semester.
+                                You have selected {selectedClass?.name} (Sem {selectedSemester}). The AI will use the contextual information above to generate the timetable.
                             </AlertDescription>
                         </Alert>
                     </div>
