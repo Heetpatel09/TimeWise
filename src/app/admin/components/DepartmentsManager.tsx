@@ -102,13 +102,11 @@ function FacultyForm({
   subjects,
   onSave,
   isSubmitting,
-  department
 }: {
   faculty: Partial<Faculty>;
   subjects: Subject[];
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
   isSubmitting: boolean;
-  department: string;
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
@@ -241,8 +239,8 @@ function FacultyForm({
             )}
           </div>
         </ScrollArea>
-        <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={() => (document.querySelector('[data-state="open"] [cmdk-dialog-close-button]') as HTMLElement)?.click()} disabled={isSubmitting}>Cancel</Button>
+        <DialogFooter className="mt-4 border-t pt-4">
+            <Button type="button" variant="outline" onClick={() => (document.querySelector('[cmdk-dialog-close-button]') as HTMLElement)?.click()} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
@@ -618,7 +616,6 @@ export default function DepartmentsManager() {
                 subjects={subjects.filter(s => s.department === activeDepartment)}
                 onSave={handleSaveFaculty}
                 isSubmitting={isSubmitting}
-                department={activeDepartment || ''}
             />
         </DialogContent>
       </Dialog>
