@@ -153,7 +153,7 @@ function FacultyForm({
   return (
     <Form {...form}>
       <form id="faculty-form" onSubmit={form.handleSubmit(handleSubmit)}>
-          <ScrollArea className="max-h-[60vh] p-1">
+          <ScrollArea className="max-h-[60vh] p-1 pr-6">
             <div className="grid gap-4 py-4 pr-4">
               <FormField
                 control={form.control}
@@ -524,12 +524,12 @@ export default function DepartmentsManager() {
                 </CardHeader>
                 <CardContent className="space-y-8">
                     <div className="flex justify-end">
-                       <Select value={selectedSemester?.toString() || ''} onValueChange={(val) => setSelectedSemester(val ? parseInt(val) : null)}>
+                       <Select value={selectedSemester?.toString() || 'all'} onValueChange={(val) => setSelectedSemester(val === 'all' ? null : parseInt(val))}>
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filter by Semester" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">All Semesters</SelectItem>
+                                <SelectItem value="all">All Semesters</SelectItem>
                                 {semestersInDept.map(sem => <SelectItem key={sem} value={sem.toString()}>Semester {sem}</SelectItem>)}
                             </SelectContent>
                         </Select>
