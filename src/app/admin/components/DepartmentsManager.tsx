@@ -481,6 +481,33 @@ export default function DepartmentsManager() {
 
   const classesInDept = classes.filter(c => c.department === dept);
   const semestersInDept = [...new Set(classes.filter(c => c.department === dept).map(c => c.semester))].sort();
+  
+  const getFacultySubjectDetails = (facultyMember: Faculty) => {
+    const subjectMap: Map<string, { theory: boolean; lab: boolean }> = new Map();
+
+    facultyMember.allottedSubjects.forEach(subjectId => {
+      const subject = subjects.find(s => s.id === subjectId);
+      if (!subject) return;
+      
+      const baseName = subject.name.replace(/ Lab I| Lab| I/gi, '').trim();
+
+      if (!subjectMap.has(baseName)) {
+        subjectMap.set(baseName, { theory: false, lab: false });
+      }
+      
+      const entry = subjectMap.get(baseName)!;
+      if (subject.type.toLowerCase() === 'theory') {
+        entry.theory = true;
+      } else if (subject.type.toLowerCase() === 'lab') {
+        entry.lab = true;
+      }
+    });
+
+    return Array.from(subjectMap.entries()).map(([name, types]) => ({
+      name,
+      type: types.theory && types.lab ? 'Both' : types.theory ? 'Theory' : 'Lab',
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -509,8 +536,8 @@ export default function DepartmentsManager() {
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
-                        <div className="text-sm text-muted-foreground">
-                          {classesInDept.map(c => <Badge key={c.id} variant="secondary" className="mr-1">{c.name}</Badge>)}
+                        <div className="text-sm text-muted-foreground flex flex-wrap gap-1">
+                          {classesInDept.map(c => <Badge key={c.id} variant="secondary">{c.name}</Badge>)}
                         </div>
                     </div>
                      <div className="flex flex-col sm:flex-row gap-2 self-start">
@@ -630,11 +657,15 @@ export default function DepartmentsManager() {
                                         </TableCell>
                                         <TableCell>{fac.designation}</TableCell>
                                         <TableCell>
-                                            <div className="flex flex-wrap gap-1">
-                                                {(fac.allottedSubjects || []).map(subId => {
-                                                    const subject = subjects.find(s => s.id === subId);
-                                                    return subject ? <Badge key={subId} variant="secondary">{subject.name}</Badge> : null;
-                                                })}
+                                            <div className="flex flex-col gap-1">
+                                                {getFacultySubjectDetails(fac).map(sub => (
+                                                    <div key={sub.name} className="flex items-center gap-2">
+                                                        <span className="text-sm">{sub.name}</span>
+                                                        <Badge variant={sub.type === 'Both' ? 'default' : sub.type === 'Lab' ? 'secondary' : 'outline'}>
+                                                            {sub.type}
+                                                        </Badge>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </TableCell>
                                         <TableCell>{fac.designatedYear || 'N/A'}</TableCell>
@@ -805,5 +836,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
