@@ -58,7 +58,6 @@ export default function TimetableGeneratorPage() {
 
     const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-    const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -68,25 +67,17 @@ export default function TimetableGeneratorPage() {
     const departments = useMemo(() => Array.from(new Set(classes?.map(c => c.department) || [])), [classes]);
     const classesInDept = useMemo(() => classes?.filter(c => c.department === selectedDepartment) || [], [classes, selectedDepartment]);
     const selectedClass = useMemo(() => classes?.find(c => c.id === selectedClassId), [classes, selectedClassId]);
+    const selectedSemester = selectedClass?.semester;
 
     useEffect(() => {
         setSelectedClassId(null);
-        setSelectedSemester(null);
     }, [selectedDepartment]);
     
-    useEffect(() => {
-        if(selectedClass) {
-            setSelectedSemester(selectedClass.semester.toString());
-        } else {
-            setSelectedSemester(null);
-        }
-    }, [selectedClass])
-
     const contextInfo = useMemo(() => {
         if (!selectedClassId || !selectedSemester || !subjects || !faculty || !students || !classrooms) return null;
 
         const classStudents = students.filter(s => s.classId === selectedClassId);
-        const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department && s.semester === parseInt(selectedSemester));
+        const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department && s.semester === selectedSemester);
         
         const relevantFacultyIds = new Set<string>();
         relevantSubjects.forEach(sub => {
@@ -118,8 +109,8 @@ export default function TimetableGeneratorPage() {
                 days: DAYS,
                 timeSlots: TIME_SLOTS,
                 classes: [selectedClass],
-                subjects: contextInfo.subjects,
-                faculty: contextInfo.faculty,
+                subjects: subjects?.filter(s => s.department === selectedClass.department) || [],
+                faculty: faculty?.filter(f => f.department === selectedClass.department) || [],
                 classrooms: classrooms || [],
                 existingSchedule: existingSchedule?.filter(s => s.classId !== selectedClassId),
             });
@@ -171,7 +162,7 @@ export default function TimetableGeneratorPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Timetable Generator</CardTitle>
-                        <CardDescription>Select a department, class, and semester to generate a timetable using AI.</CardDescription>
+                        <CardDescription>Select a department and class to generate a timetable using AI.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? <Loader2 className="animate-spin" /> : (
@@ -190,14 +181,6 @@ export default function TimetableGeneratorPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classesInDept.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                 <Select value={selectedSemester || ''} onValueChange={setSelectedSemester} disabled={!selectedClassId}>
-                                    <SelectTrigger className="w-full sm:w-[200px]">
-                                        <SelectValue placeholder="Select Semester" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        { selectedClass && <SelectItem value={selectedClass.semester.toString()}>Semester {selectedClass.semester}</SelectItem> }
                                     </SelectContent>
                                 </Select>
                                 <Button onClick={handleGenerate} disabled={!selectedClassId || isGenerating} className="w-full sm:w-auto">
