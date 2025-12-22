@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
@@ -76,7 +77,6 @@ export default function TimetableGeneratorPage() {
     const contextInfo = useMemo(() => {
         if (!selectedClassId || !selectedSemester || !subjects || !faculty || !students || !classrooms) return null;
 
-        const classStudents = students.filter(s => s.classId === selectedClassId);
         const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department && s.semester === selectedSemester);
         
         const relevantFacultyIds = new Set<string>();
@@ -90,10 +90,9 @@ export default function TimetableGeneratorPage() {
         const relevantFaculty = faculty.filter(f => relevantFacultyIds.has(f.id));
 
         return {
-            studentCount: classStudents.length,
             subjects: relevantSubjects,
             faculty: relevantFaculty,
-            classroomCount: classrooms.length,
+            classrooms,
         };
     }, [selectedClassId, selectedSemester, subjects, faculty, students, classrooms, selectedClass]);
 
@@ -105,12 +104,14 @@ export default function TimetableGeneratorPage() {
         }
         setIsGenerating(true);
         try {
+            const facultyForDept = faculty?.filter(f => f.department === selectedDepartment) || [];
+
             const result = await generateTimetableFlow({
                 days: DAYS,
                 timeSlots: TIME_SLOTS,
                 classes: [selectedClass],
                 subjects: contextInfo.subjects,
-                faculty: faculty || [],
+                faculty: facultyForDept, // Pass all faculty for the department
                 classrooms: classrooms || [],
                 existingSchedule: existingSchedule?.filter(s => s.classId !== selectedClassId),
             });
@@ -203,11 +204,10 @@ export default function TimetableGeneratorPage() {
 
                 {contextInfo && (
                     <div className="space-y-6 animate-in fade-in-0">
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            <InfoCard icon={Users} title="Students in Class" numberValue={contextInfo.studentCount} />
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <InfoCard icon={BookOpen} title="Subjects for Semester" numberValue={contextInfo.subjects.length} />
                             <InfoCard icon={UserCheck} title="Relevant Faculty" numberValue={contextInfo.faculty.length} />
-                            <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={contextInfo.classroomCount} />
+                            <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={contextInfo.classrooms.length} />
                         </div>
                         <Alert>
                             <Bot className="h-4 w-4" />
