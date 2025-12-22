@@ -13,7 +13,7 @@ import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/serv
 import { getSubjects } from '@/lib/services/subjects';
 import { getClasses } from '@/lib/services/classes';
 import type { Faculty, Subject, Class } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, ChevronsUpDown, Check } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, ChevronsUpDown, Check, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -43,28 +43,61 @@ const facultySchema = z.object({
     allottedSections: z.array(z.string()).optional(),
 });
 
-function MultiSelect({ options, selected, onSelect, placeholder }: { options: {value: string, label: string}[], selected: string[], onSelect: (selected: string[]) => void, placeholder: string }) {
+const MultiSelect = ({
+  options,
+  selected,
+  onChange,
+  className,
+  placeholder = "Select...",
+}: {
+  options: { label: string; value: string }[];
+  selected: string[];
+  onChange: (selected: string[]) => void;
+  className?: string;
+  placeholder?: string;
+}) => {
   const [open, setOpen] = useState(false);
 
-  const handleSelect = (currentValue: string) => {
-    const newSelected = selected.includes(currentValue)
-      ? selected.filter(v => v !== currentValue)
-      : [...selected, currentValue];
-    onSelect(newSelected);
-  }
+  const handleUnselect = (value: string) => {
+    onChange(selected.filter((s) => s !== value));
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          <span className='truncate'>{selected.length > 0 ? `${selected.length} selected` : placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+        <div className={cn("flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", className)}>
+          <div className="flex gap-1 flex-wrap">
+            {selected.map((value) => {
+              const label = options.find((o) => o.value === value)?.label;
+              return (
+                <Badge
+                  key={value}
+                  variant="secondary"
+                  className="mr-1"
+                >
+                  {label}
+                  <button
+                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleUnselect(value);
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={() => handleUnselect(value)}
+                  >
+                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                  </button>
+                </Badge>
+              );
+            })}
+            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
+          </div>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
+        </div>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
         <Command>
@@ -75,13 +108,21 @@ function MultiSelect({ options, selected, onSelect, placeholder }: { options: {v
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
-                  onSelect={() => handleSelect(option.value)}
+                  onSelect={() => {
+                    onChange(
+                      selected.includes(option.value)
+                        ? selected.filter((s) => s !== option.value)
+                        : [...selected, option.value]
+                    );
+                    setOpen(true);
+                  }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                      selected.includes(option.value)
+                        ? "opacity-100"
+                        : "opacity-0"
                     )}
                   />
                   {option.label}
@@ -93,7 +134,7 @@ function MultiSelect({ options, selected, onSelect, placeholder }: { options: {v
       </PopoverContent>
     </Popover>
   );
-}
+};
 
 
 function FacultyForm({
@@ -181,7 +222,7 @@ function FacultyForm({
                 name="allottedSubjects"
                 render={({ field }) => (
                     <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
-                    <MultiSelect options={subjectOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select subjects..." />
+                    <MultiSelect options={subjectOptions} selected={field.value || []} onChange={field.onChange} placeholder="Select subjects..." />
                     <FormMessage />
                     </FormItem>
                 )}
@@ -191,7 +232,7 @@ function FacultyForm({
                 name="allottedSections"
                 render={({ field }) => (
                     <FormItem className="flex flex-col"><FormLabel>Allotted Sections/Classes</FormLabel>
-                    <MultiSelect options={classOptions} selected={field.value || []} onSelect={field.onChange} placeholder="Select classes..." />
+                    <MultiSelect options={classOptions} selected={field.value || []} onChange={field.onChange} placeholder="Select classes..." />
                     <FormMessage />
                     </FormItem>
                 )}
