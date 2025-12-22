@@ -87,27 +87,14 @@ function MultiSelectSubjects({
                   key={value}
                   variant="secondary"
                   className="mr-1"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUnselect(value);
+                  }}
                 >
                   {label}
-                  <div
-                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUnselect(value);
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleUnselect(value);
-                    }}
-                  >
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </div>
+                   <X className="ml-1 h-3 w-3 text-muted-foreground hover:text-foreground" />
                 </Badge>
               );
             })}
@@ -563,3 +550,5 @@ export default function FacultyManager() {
     </div>
   );
 }
+
+    
