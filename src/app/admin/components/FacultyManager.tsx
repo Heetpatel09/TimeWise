@@ -255,7 +255,7 @@ function FacultyForm({
             )}
           </div>
         </ScrollArea>
-        <DialogFooter className="mt-4">
+        <DialogFooter className="mt-4 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
