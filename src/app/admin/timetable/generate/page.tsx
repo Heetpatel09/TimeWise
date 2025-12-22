@@ -12,7 +12,6 @@ import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
-import { getStudents } from '@/lib/services/students';
 import { getSchedule, replaceSchedule } from '@/lib/services/schedule';
 import type { Class, Subject, Faculty, Classroom, Student, Schedule, GenerateTimetableOutput } from '@/lib/types';
 import { Loader2, ArrowLeft, Users, BookOpen, UserCheck, Warehouse, Bot, AlertTriangle } from 'lucide-react';
@@ -22,15 +21,31 @@ import Link from 'next/link';
 import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const TIME_SLOTS = [
+
+const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM', 
     '09:30 AM - 10:00 AM', // Recess
     '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', 
     '12:00 PM - 01:00 PM', // Recess
     '01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'
 ];
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+
+function sortTime(a: string, b: string) {
+    const toDate = (time: string) => {
+        const [timePart, modifier] = time.split(' ');
+        let [hours, minutes] = timePart.split(':');
+        if (hours === '12') hours = '0';
+        if (modifier === 'PM') hours = (parseInt(hours, 10) + 12).toString();
+        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+    };
+    return toDate(a).getTime() - toDate(b).getTime();
+}
+
 
 function InfoCard({ icon: Icon, title, stringValue, numberValue }: { icon: React.ElementType, title: string, stringValue?: string, numberValue?: number }) {
     return (
@@ -96,13 +111,13 @@ export default function TimetableGeneratorPage() {
         setIsGenerating(true);
         try {
             const result = await generateTimetableFlow({
-                days: DAYS,
-                timeSlots: TIME_SLOTS,
+                days: DAYS.filter(d => d !== 'Saturday'), // Assuming Saturday is off
+                timeSlots: ALL_TIME_SLOTS,
                 classes: [selectedClass],
                 subjects: contextInfo.subjects,
                 faculty: contextInfo.faculty,
                 classrooms: classrooms || [],
-                existingSchedule: existingSchedule?.filter(s => s.classId !== selectedClassId),
+                existingSchedule: existingSchedule || [],
             });
 
             if (result.generatedSchedule.length === 0 && result.summary) {
@@ -138,6 +153,21 @@ export default function TimetableGeneratorPage() {
             setIsApplying(false);
         }
     }
+    
+    const scheduleByTime = useMemo(() => {
+        if (!generatedData) return [];
+        return ALL_TIME_SLOTS.sort(sortTime).map(time => {
+            if (BREAK_SLOTS.includes(time)) {
+                return { time, isBreak: true, slots: [] };
+            }
+            const dailySlots = DAYS.map(day => {
+                const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
+                return { day, slot };
+            });
+            return { time, slots: dailySlots, isBreak: false };
+        });
+    }, [generatedData]);
+
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading;
     
@@ -220,31 +250,44 @@ export default function TimetableGeneratorPage() {
             </div>
             
             <Dialog open={isReviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="max-w-7xl">
                     <DialogHeader>
                         <DialogTitle>Review Generated Timetable for {selectedClass?.name}</DialogTitle>
                         <DialogDescription>{generatedData?.summary}</DialogDescription>
                     </DialogHeader>
                     {generatedData && (
-                        <ScrollArea className="h-[60vh] border rounded-md p-4">
-                            <Table>
+                        <ScrollArea className="h-[70vh] border rounded-md">
+                           <Table className="border-collapse">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Day</TableHead>
-                                        <TableHead>Time</TableHead>
-                                        <TableHead>Subject</TableHead>
-                                        <TableHead>Faculty</TableHead>
-                                        <TableHead>Classroom</TableHead>
+                                        <TableHead className="border font-semibold p-2">Time</TableHead>
+                                        {DAYS.map(day => (
+                                            <TableHead key={day} className="border font-semibold p-2">{day}</TableHead>
+                                        ))}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {generatedData.generatedSchedule.map((slot: any, i: number) => (
-                                        <TableRow key={i}>
-                                            <TableCell>{slot.day}</TableCell>
-                                            <TableCell>{slot.time}</TableCell>
-                                            <TableCell>{subjects?.find(s => s.id === slot.subjectId)?.name}</TableCell>
-                                            <TableCell>{faculty?.find(f => f.id === slot.facultyId)?.name}</TableCell>
-                                            <TableCell>{classrooms?.find(c => c.id === slot.classroomId)?.name}</TableCell>
+                                    {scheduleByTime.map(({ time, slots, isBreak }) => (
+                                        <TableRow key={time}>
+                                            <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
+                                            {isBreak ? (
+                                                <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary p-2">
+                                                    RECESS
+                                                </TableCell>
+                                            ) : (
+                                                slots.map(({ day, slot }) => (
+                                                    <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
+                                                        {slot ? (
+                                                             <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", 'bg-muted')}>
+                                                                <div><strong>{subjects?.find(s => s.id === slot.subjectId)?.name}</strong></div>
+                                                                <div className="truncate">{faculty?.find(f => f.id === slot.facultyId)?.name}</div>
+                                                                <div>{classrooms?.find(c => c.id === slot.classroomId)?.name}</div>
+                                                                {slot.batch && <Badge variant="secondary" className="mt-1">Batch {slot.batch}</Badge>}
+                                                            </div>
+                                                        ) : null}
+                                                    </TableCell>
+                                                ))
+                                            )}
                                         </TableRow>
                                     ))}
                                 </TableBody>

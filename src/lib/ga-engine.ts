@@ -1,4 +1,6 @@
 
+'use server';
+
 import { GenerateTimetableInput } from './types';
 
 // --- Core GA Configuration ---
@@ -16,6 +18,7 @@ interface Gene {
     facultyId: string;
     classroomId: string;
     isLab: boolean;
+    batch?: 'A' | 'B';
 }
 
 type Chromosome = Gene[];
@@ -26,6 +29,7 @@ interface Lecture {
     facultyId: string;
     isLab: boolean;
     hours: number;
+    batch?: 'A' | 'B';
 }
 
 // --- Fitness & Penalties ---
@@ -39,46 +43,26 @@ const SOFT_CONSTRAINT_PENALTY = 10;
  * Enforces the "one faculty per subject per class" rule here.
  */
 function createLectureList(input: GenerateTimetableInput): Lecture[] {
-    const lectures: Lecture[] = [];
+    const lectures: Omit<Lecture, 'hours'>[] = [];
     input.classes.forEach(cls => {
         const classSubjects = input.subjects.filter(s => s.semester === cls.semester && s.department === cls.department);
         
         classSubjects.forEach(sub => {
-            // Find a single, consistent faculty for this subject and class
-            const facultyForSubject = input.faculty.find(f => f.allottedSubjects.includes(sub.id));
-            if (!facultyForSubject) {
-                // This will be caught by the impossibility check, but good to be defensive
-                return;
+            const facultyForSubject = input.faculty.find(f => f.allottedSubjects && f.allottedSubjects.includes(sub.id));
+            if (!facultyForSubject) return;
+
+            if (sub.type.toLowerCase() === 'lab') {
+                // Labs are 2 hours per session, and we need sessions for Batch A and Batch B
+                for(let i=0; i<2; i++) lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A' });
+                for(let i=0; i<2; i++) lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B' });
+            } else {
+                 // Theory is 3 hours per week
+                for(let i=0; i<3; i++) lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: false });
             }
-
-            const isLab = sub.type.toLowerCase() === 'lab';
-             // Labs are typically 2 hours, Theory 3 hours per week.
-            const hours = isLab ? 2 : 3;
-
-            lectures.push({
-                classId: cls.id,
-                subjectId: sub.id,
-                facultyId: facultyForSubject.id,
-                isLab: isLab,
-                hours: hours
-            });
         });
     });
-    
-    // Flatten into individual 1-hour genes
-    const flatLectures: Omit<Lecture, 'hours'>[] = [];
-    lectures.forEach(lec => {
-        for (let i = 0; i < lec.hours; i++) {
-            flatLectures.push({
-                classId: lec.classId,
-                subjectId: lec.subjectId,
-                facultyId: lec.facultyId,
-                isLab: lec.isLab
-            });
-        }
-    });
 
-    return flatLectures as any; // The structure is now equivalent to the old one
+    return lectures as any;
 }
 
 
@@ -114,7 +98,6 @@ function createIndividual(lectures: Omit<Lecture, 'hours'>[], input: GenerateTim
         const classroom = availableClassrooms[Math.floor(Math.random() * availableClassrooms.length)];
 
         // Find a random slot that is not yet taken by this class
-        let foundSlot = false;
         for (let i = 0; i < availableSlots.length * 2; i++) { // Try a few times to find a free slot
             const slotIndex = Math.floor(Math.random() * availableSlots.length);
             const slot = availableSlots[slotIndex];
@@ -127,7 +110,6 @@ function createIndividual(lectures: Omit<Lecture, 'hours'>[], input: GenerateTim
             if (!assignedSlotsForClass.get(lecture.classId)!.has(slotKey)) {
                 individual.push({ ...slot, ...lecture, classroomId: classroom.id });
                 assignedSlotsForClass.get(lecture.classId)!.add(slotKey);
-                foundSlot = true;
                 break;
             }
         }
@@ -154,6 +136,7 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
         const facultyIds = new Set();
         const classroomIds = new Set();
         const classIds = new Set();
+        const labBatchTracker = new Map<string, Set<string>>(); // key: classId-subjectId, value: Set<'A' | 'B'>
 
         genesInSlot.forEach(gene => {
             // 1. Faculty conflict
@@ -167,6 +150,19 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
             // 5. Class conflict
             if (classIds.has(gene.classId)) fitness += HARD_CONSTRAINT_PENALTY;
             classIds.add(gene.classId);
+
+            // 6. Lab batch conflict
+            if (gene.isLab && gene.batch) {
+                const key = `${gene.classId}-${gene.subjectId}`;
+                if (!labBatchTracker.has(key)) labBatchTracker.set(key, new Set());
+                if (labBatchTracker.get(key)!.has(gene.batch)) fitness += HARD_CONSTRAINT_PENALTY; // same batch twice
+                labBatchTracker.get(key)!.add(gene.batch);
+            }
+        });
+        
+        // Check if both batches of same lab are at same time
+        labBatchTracker.forEach(batches => {
+            if (batches.size > 1) fitness += HARD_CONSTRAINT_PENALTY;
         });
     });
 
@@ -180,6 +176,21 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
         if (fac.maxWeeklyHours && load > fac.maxWeeklyHours) {
             fitness += (load - fac.maxWeeklyHours) * HARD_CONSTRAINT_PENALTY;
         }
+    });
+
+    // 6. Lab continuity
+     input.classes.forEach(cls => {
+        const classLabs = chromosome.filter(g => g.classId === cls.id && g.isLab);
+        const labGroups = new Map<string, Gene[]>(); // subjectId -> [genes]
+        classLabs.forEach(lab => {
+            if(!labGroups.has(lab.subjectId)) labGroups.set(lab.subjectId, []);
+            labGroups.get(lab.subjectId)!.push(lab);
+        });
+
+        labGroups.forEach(labs => {
+            if(labs.length % 2 !== 0) fitness += HARD_CONSTRAINT_PENALTY; // Labs must be in pairs
+            // This is a simplified check. A more robust check would ensure pairs are on same day and consecutive.
+        });
     });
 
 
@@ -276,7 +287,7 @@ function checkImpossibility(lectures: Omit<Lecture, 'hours'>[], input: GenerateT
    input.classes.forEach(cls => {
        const classSubjects = input.subjects.filter(s => s.semester === cls.semester && s.department === cls.department);
        classSubjects.forEach(sub => {
-           const hasFaculty = input.faculty.some(f => f.allottedSubjects.includes(sub.id));
+           const hasFaculty = input.faculty.some(f => f.allottedSubjects && f.allottedSubjects.includes(sub.id));
            if (!hasFaculty) {
                subjectsWithoutFaculty.add(sub.name);
            }
@@ -305,7 +316,7 @@ function checkImpossibility(lectures: Omit<Lecture, 'hours'>[], input: GenerateT
    const requiredLabSlots = lectures.filter(l => l.isLab).length;
    const availableLabSlots = input.classrooms.filter(c => c.type === 'lab').length * input.days.length * input.timeSlots.filter(t => !t.toLowerCase().includes('recess')).length;
    if (requiredLabSlots > availableLabSlots) {
-       return `Not enough lab classroom slots available. Required: ${requiredLabSlots} slots, Available: ${availableLabSlots} slots. Please add more lab classrooms.`;
+       return `Not enough lab classroom slots available. Required: ${requiredLabSlots} slots (for all batches), Available: ${availableLabSlots} total slots. Please add more lab classrooms.`;
    }
    
    return null;
@@ -322,6 +333,12 @@ export function runGA(input: GenerateTimetableInput) {
     }
 
     let population = Array.from({ length: POPULATION_SIZE }, () => createIndividual(lectures, input));
+
+    // Inject existing schedule as a seed if provided
+    if(input.existingSchedule && input.existingSchedule.length > 0) {
+        population[0] = input.existingSchedule as Chromosome;
+    }
+
 
     let bestTimetable: Chromosome | null = null;
     let bestFitness = Infinity;
