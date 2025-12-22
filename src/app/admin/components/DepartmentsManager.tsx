@@ -13,7 +13,7 @@ import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/ser
 import { getClasses, addClass, renameDepartment } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Subject, Class, Faculty, SubjectPriority } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy, Pencil, ChevronsUpDown, Check } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy, Pencil, ChevronsUpDown, Check, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -30,26 +30,25 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 
 
-function MultipleSelector({
+const MultiSelect = ({
   options,
-  value,
+  selected,
   onChange,
-  placeholder,
+  className,
+  placeholder = "Select...",
 }: {
   options: { label: string; value: string }[];
-  value: string[];
-  onChange: (value: string[]) => void;
-  placeholder: string;
-}) {
+  selected: string[];
+  onChange: (selected: string[]) => void;
+  className?: string;
+  placeholder?: string;
+}) => {
   const [open, setOpen] = useState(false);
 
-  const handleSelect = (selectedValue: string) => {
-    const newSelected = value.includes(selectedValue)
-      ? value.filter((v) => v !== selectedValue)
-      : [...value, selectedValue];
-    onChange(newSelected);
+  const handleUnselect = (value: string) => {
+    onChange(selected.filter((s) => s !== value));
   };
-  
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -57,12 +56,40 @@ function MultipleSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className={cn("w-full justify-between h-auto min-h-10", className)}
+          onClick={() => setOpen(!open)}
         >
-          {value.length > 0
-            ? `${value.length} selected`
-            : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <div className="flex gap-1 flex-wrap">
+            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
+            {selected.map((value) => {
+              const label = options.find((o) => o.value === value)?.label;
+              return (
+                <Badge
+                  key={value}
+                  variant="secondary"
+                  className="mr-1"
+                >
+                  {label}
+                  <button
+                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleUnselect(value);
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={() => handleUnselect(value)}
+                  >
+                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
@@ -74,15 +101,19 @@ function MultipleSelector({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
                   onSelect={() => {
-                    handleSelect(option.value);
+                    onChange(
+                      selected.includes(option.value)
+                        ? selected.filter((s) => s !== option.value)
+                        : [...selected, option.value]
+                    );
+                    setOpen(true);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value.includes(option.value)
+                      selected.includes(option.value)
                         ? "opacity-100"
                         : "opacity-0"
                     )}
@@ -96,7 +127,8 @@ function MultipleSelector({
       </PopoverContent>
     </Popover>
   );
-}
+};
+
 
 const facultySchema = z.object({
     id: z.string().optional(),
@@ -195,9 +227,9 @@ function FacultyForm({
                   name="allottedSubjects"
                   render={({ field }) => (
                       <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
-                      <MultipleSelector
+                      <MultiSelect
                           options={subjectOptions}
-                          value={field.value || []}
+                          selected={field.value || []}
                           onChange={field.onChange}
                           placeholder="Select subjects..."
                       />
@@ -860,3 +892,5 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
