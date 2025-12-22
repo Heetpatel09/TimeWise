@@ -54,7 +54,6 @@ export default function TimetableGeneratorPage() {
     const { data: subjects, isLoading: subjectsLoading } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: getSubjects });
     const { data: faculty, isLoading: facultyLoading } = useQuery<Faculty[]>({ queryKey: ['faculty'], queryFn: getFaculty });
     const { data: classrooms, isLoading: classroomsLoading } = useQuery<Classroom[]>({ queryKey: ['classrooms'], queryFn: getClassrooms });
-    const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ['students'], queryFn: getStudents });
     const { data: existingSchedule, isLoading: scheduleLoading } = useQuery<Schedule[]>({ queryKey: ['schedule'], queryFn: getSchedule });
 
     const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
@@ -75,26 +74,18 @@ export default function TimetableGeneratorPage() {
     }, [selectedDepartment]);
     
     const contextInfo = useMemo(() => {
-        if (!selectedClassId || !selectedSemester || !subjects || !faculty || !students || !classrooms) return null;
+        if (!selectedClassId || !selectedSemester || !subjects || !faculty || !classrooms) return null;
 
         const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department && s.semester === selectedSemester);
         
-        const relevantFacultyIds = new Set<string>();
-        relevantSubjects.forEach(sub => {
-            faculty.forEach(fac => {
-                if (fac.allottedSubjects?.includes(sub.id)) {
-                    relevantFacultyIds.add(fac.id);
-                }
-            });
-        });
-        const relevantFaculty = faculty.filter(f => relevantFacultyIds.has(f.id));
+        const relevantFaculty = faculty.filter(f => f.department === selectedDepartment);
 
         return {
             subjects: relevantSubjects,
             faculty: relevantFaculty,
             classrooms,
         };
-    }, [selectedClassId, selectedSemester, subjects, faculty, students, classrooms, selectedClass]);
+    }, [selectedClassId, selectedSemester, subjects, faculty, classrooms, selectedClass, selectedDepartment]);
 
 
     const handleGenerate = async () => {
@@ -104,17 +95,16 @@ export default function TimetableGeneratorPage() {
         }
         setIsGenerating(true);
         try {
-            const facultyForDept = faculty?.filter(f => f.department === selectedDepartment) || [];
-
             const result = await generateTimetableFlow({
                 days: DAYS,
                 timeSlots: TIME_SLOTS,
                 classes: [selectedClass],
                 subjects: contextInfo.subjects,
-                faculty: facultyForDept, // Pass all faculty for the department
+                faculty: contextInfo.faculty,
                 classrooms: classrooms || [],
                 existingSchedule: existingSchedule?.filter(s => s.classId !== selectedClassId),
             });
+
             if (result.generatedSchedule.length === 0 && result.summary) {
                 toast({ title: 'Generation Failed', description: result.summary, variant: 'destructive', duration: 10000 });
             } else {
@@ -149,7 +139,7 @@ export default function TimetableGeneratorPage() {
         }
     }
 
-    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || studentsLoading || scheduleLoading;
+    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading;
     
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
@@ -163,7 +153,7 @@ export default function TimetableGeneratorPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Timetable Generator</CardTitle>
-                        <CardDescription>Select a department and class to generate a timetable using AI.</CardDescription>
+                        <CardDescription>Select a department and class to generate a timetable using a Genetic Algorithm.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? <Loader2 className="animate-spin" /> : (
@@ -206,7 +196,7 @@ export default function TimetableGeneratorPage() {
                     <div className="space-y-6 animate-in fade-in-0">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <InfoCard icon={BookOpen} title="Subjects for Semester" numberValue={contextInfo.subjects.length} />
-                            <InfoCard icon={UserCheck} title="Relevant Faculty" numberValue={contextInfo.faculty.length} />
+                            <InfoCard icon={UserCheck} title="Faculty in Department" numberValue={contextInfo.faculty.length} />
                             <InfoCard icon={Warehouse} title="Available Classrooms" numberValue={contextInfo.classrooms.length} />
                         </div>
                         <Alert>
