@@ -476,12 +476,12 @@ export default function DepartmentsManager() {
                     </div>
                      <div className="flex flex-col sm:flex-row gap-2 self-start">
                         {semestersInDept.length > 0 && (
-                            <Select value={selectedSemester?.toString() || ''} onValueChange={(val) => setSelectedSemester(val ? parseInt(val) : null)}>
+                            <Select value={selectedSemester?.toString() || 'all'} onValueChange={(val) => setSelectedSemester(val === 'all' ? null : parseInt(val))}>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="All Semesters" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value=''>All Semesters</SelectItem>
+                                    <SelectItem value='all'>All Semesters</SelectItem>
                                     {semestersInDept.map(sem => <SelectItem key={sem} value={sem.toString()}>Semester {sem}</SelectItem>)}
                                 </SelectContent>
                             </Select>
