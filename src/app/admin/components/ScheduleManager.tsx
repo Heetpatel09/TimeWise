@@ -630,30 +630,39 @@ export default function ScheduleManager() {
                         <CardContent><p className="text-sm text-muted-foreground">{generatedSchedule.summary}</p></CardContent>
                     </Card>
                     <ScrollArea className="h-80 border rounded-md p-4">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Day</TableHead>
+                      <div className="space-y-4">
+                        {DAYS.map(day => {
+                          const daySlots = (generatedSchedule.generatedSchedule as Schedule[]).filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time));
+                          if (daySlots.length === 0) return null;
+                          return (
+                            <div key={day}>
+                              <h3 className="font-semibold text-lg mb-2">{day}</h3>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
                                     <TableHead>Time</TableHead>
                                     <TableHead>Class</TableHead>
                                     <TableHead>Subject</TableHead>
                                     <TableHead>Faculty</TableHead>
                                     <TableHead>Classroom</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {generatedSchedule.generatedSchedule.map((slot:any, i:number) => (
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {daySlots.map((slot: any, i: number) => (
                                     <TableRow key={i}>
-                                        <TableCell>{slot.day}</TableCell>
-                                        <TableCell>{slot.time}</TableCell>
-                                        <TableCell>{getRelationInfo(slot.classId, 'class')?.name}</TableCell>
-                                        <TableCell>{getRelationInfo(slot.subjectId, 'subject')?.name}</TableCell>
-                                        <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name}</TableCell>
-                                        <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name}</TableCell>
+                                      <TableCell>{slot.time}</TableCell>
+                                      <TableCell>{getRelationInfo(slot.classId, 'class')?.name}</TableCell>
+                                      <TableCell>{getRelationInfo(slot.subjectId, 'subject')?.name}</TableCell>
+                                      <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name}</TableCell>
+                                      <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name}</TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </ScrollArea>
                 </div>
             ) : (
