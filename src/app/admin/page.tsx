@@ -4,13 +4,6 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ChevronDown, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, Bot, Lock } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { getStudents } from '@/lib/services/students';
-import { getFaculty } from '@/lib/services/faculty';
-import { getSchedule } from '@/lib/services/schedule';
-import { getClasses } from '@/lib/services/classes';
-import { getSubjects } from '@/lib/services/subjects';
-import { getClassrooms } from '@/lib/services/classrooms';
-import { getHostels } from '@/lib/services/hostels';
 import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
@@ -20,6 +13,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import type { Permission, Admin } from '@/lib/types';
+import { getAdminDashboardStats } from '@/lib/services/admins';
 import {
   Tooltip,
   TooltipContent,
@@ -132,21 +126,19 @@ function AdminDashboard() {
 
     const isFullAdmin = hasPermission('*');
 
-    const { data: students, isLoading: studentsLoading } = useQuery({ queryKey: ['students'], queryFn: getStudents });
-    const { data: faculty, isLoading: facultyLoading } = useQuery({ queryKey: ['faculty'], queryFn: getFaculty });
-    const { data: schedule, isLoading: scheduleLoading } = useQuery({ queryKey: ['schedule'], queryFn: getSchedule });
-    const { data: classes, isLoading: classesLoading } = useQuery({ queryKey: ['classes'], queryFn: getClasses });
-    const { data: subjects, isLoading: subjectsLoading } = useQuery({ queryKey: ['subjects'], queryFn: getSubjects });
-    const { data: classrooms, isLoading: classroomsLoading } = useQuery({ queryKey: ['classrooms'], queryFn: getClassrooms });
-    const { data: hostels, isLoading: hostelsLoading } = useQuery({ queryKey: ['hostels'], queryFn: getHostels });
+    const { data: stats, isLoading: statsLoading } = useQuery({ 
+      queryKey: ['adminDashboardStats'], 
+      queryFn: getAdminDashboardStats 
+    });
     const [isChartOpen, setIsChartOpen] = useState(false);
     
-    const studentCount = students?.length ?? 0;
-    const facultyCount = faculty?.length ?? 0;
-    const classCount = classes?.length ?? 0;
-    const subjectCount = subjects?.length ?? 0;
-    const classroomCount = classrooms?.length ?? 0;
-    const hostelCount = hostels?.length ?? 0;
+    const studentCount = stats?.studentCount ?? 0;
+    const facultyCount = stats?.facultyCount ?? 0;
+    const classCount = stats?.classCount ?? 0;
+    const subjectCount = stats?.subjectCount ?? 0;
+    const classroomCount = stats?.classroomCount ?? 0;
+    const hostelCount = stats?.hostelCount ?? 0;
+    const scheduleCount = stats?.scheduleCount ?? 0;
 
     const chartData = [
         { year: "Two Years Ago", students: Math.floor(studentCount * 0.8), faculty: Math.floor(facultyCount * 0.75), classes: Math.floor(classCount * 0.8), subjects: Math.floor(subjectCount * 0.85), classrooms: Math.floor(classroomCount * 0.7), hostels: Math.floor(hostelCount * 0.6) },
@@ -173,13 +165,13 @@ function AdminDashboard() {
                             <CardDescription>An overview of the core university data.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4">
-                            <StatItem title="Total Students" value={studentCount} icon={Users} isLoading={studentsLoading} />
-                            <StatItem title="Total Faculty" value={facultyCount} icon={UserCheck} isLoading={facultyLoading} />
-                            <StatItem title="Total Classes" value={classCount} icon={School} isLoading={classesLoading} />
-                            <StatItem title="Total Subjects" value={subjectCount} icon={Book} isLoading={subjectsLoading} />
-                            <StatItem title="Total Classrooms" value={classroomCount} icon={Warehouse} isLoading={classroomsLoading} />
-                            <StatItem title="Total Hostels" value={hostelCount} icon={Home} isLoading={hostelsLoading} />
-                            <StatItem title="Scheduled Slots" value={schedule?.length ?? 0} icon={Calendar} isLoading={scheduleLoading} />
+                            <StatItem title="Total Students" value={studentCount} icon={Users} isLoading={statsLoading} />
+                            <StatItem title="Total Faculty" value={facultyCount} icon={UserCheck} isLoading={statsLoading} />
+                            <StatItem title="Total Classes" value={classCount} icon={School} isLoading={statsLoading} />
+                            <StatItem title="Total Subjects" value={subjectCount} icon={Book} isLoading={statsLoading} />
+                            <StatItem title="Total Classrooms" value={classroomCount} icon={Warehouse} isLoading={statsLoading} />
+                            <StatItem title="Total Hostels" value={hostelCount} icon={Home} isLoading={statsLoading} />
+                            <StatItem title="Scheduled Slots" value={scheduleCount} icon={Calendar} isLoading={statsLoading} />
                         </CardContent>
                         <CardFooter>
                             <CollapsibleTrigger asChild>

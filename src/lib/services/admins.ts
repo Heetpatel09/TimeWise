@@ -22,6 +22,27 @@ export async function getAdmins(): Promise<Admin[]> {
     }))));
 }
 
+export async function getAdminDashboardStats() {
+  const db = getDb();
+  const studentCount = (db.prepare('SELECT COUNT(*) as count FROM students').get() as any).count;
+  const facultyCount = (db.prepare('SELECT COUNT(*) as count FROM faculty').get() as any).count;
+  const classCount = (db.prepare('SELECT COUNT(*) as count FROM classes').get() as any).count;
+  const subjectCount = (db.prepare('SELECT COUNT(*) as count FROM subjects').get() as any).count;
+  const classroomCount = (db.prepare('SELECT COUNT(*) as count FROM classrooms').get() as any).count;
+  const hostelCount = (db.prepare('SELECT COUNT(*) as count FROM hostels').get() as any).count;
+  const scheduleCount = (db.prepare('SELECT COUNT(*) as count FROM schedule').get() as any).count;
+
+  return {
+    studentCount,
+    facultyCount,
+    classCount,
+    subjectCount,
+    classroomCount,
+    hostelCount,
+    scheduleCount,
+  };
+}
+
 export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Promise<{ id: string, name: string, email: string, initialPassword?: string }> {
     const db = getDb();
     
@@ -111,5 +132,3 @@ export async function deleteAdmin(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    
