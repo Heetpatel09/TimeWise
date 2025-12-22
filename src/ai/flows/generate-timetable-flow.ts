@@ -16,7 +16,7 @@ const generateTimetable = ai.defineFlow(
   },
   async (input) => {
     
-    const result = runGA(input);
+    const result = await runGA(input);
 
     if (!result.success) {
       return {

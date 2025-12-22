@@ -42,7 +42,7 @@ const SOFT_CONSTRAINT_PENALTY = 10;
  * Pre-processes the input data to create a list of all required lecture slots.
  * Enforces the "one faculty per subject per class" rule here.
  */
-function createLectureList(input: GenerateTimetableInput): Lecture[] {
+function createLectureList(input: GenerateTimetableInput): Omit<Lecture, 'hours'>[] {
     const lectures: Omit<Lecture, 'hours'>[] = [];
     input.classes.forEach(cls => {
         const classSubjects = input.subjects.filter(s => s.semester === cls.semester && s.department === cls.department);
@@ -62,7 +62,7 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
         });
     });
 
-    return lectures as any;
+    return lectures;
 }
 
 
@@ -324,7 +324,7 @@ function checkImpossibility(lectures: Omit<Lecture, 'hours'>[], input: GenerateT
 
 
 // --- Main GA Runner ---
-export function runGA(input: GenerateTimetableInput) {
+export async function runGA(input: GenerateTimetableInput) {
     const lectures = createLectureList(input);
 
     const impossibilityReason = checkImpossibility(lectures, input);
