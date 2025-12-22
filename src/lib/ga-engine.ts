@@ -25,6 +25,7 @@ interface Lecture {
     subjectId: string;
     facultyId: string;
     isLab: boolean;
+    hours: number;
 }
 
 // --- Fitness & Penalties ---
@@ -51,48 +52,40 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
             }
 
             const isLab = sub.type.toLowerCase() === 'lab';
-            const theoryHours = 3;
-            const labHours = 2;
+             // Labs are typically 2 hours, Theory 3 hours per week.
+            const hours = isLab ? 2 : 3;
 
-            if (isLab) {
-                // Lab subjects get lab hours + theory hours.
-                for (let i = 0; i < labHours; i++) {
-                     lectures.push({
-                        classId: cls.id,
-                        subjectId: sub.id,
-                        facultyId: facultyForSubject.id,
-                        isLab: true,
-                    });
-                }
-                for (let i = 0; i < 1; i++) { // And 1 hour of theory
-                    lectures.push({
-                        classId: cls.id,
-                        subjectId: sub.id,
-                        facultyId: facultyForSubject.id,
-                        isLab: false,
-                    });
-                }
-            } else {
-                // Theory subjects get standard theory hours.
-                for (let i = 0; i < theoryHours; i++) {
-                    lectures.push({
-                        classId: cls.id,
-                        subjectId: sub.id,
-                        facultyId: facultyForSubject.id,
-                        isLab: false,
-                    });
-                }
-            }
+            lectures.push({
+                classId: cls.id,
+                subjectId: sub.id,
+                facultyId: facultyForSubject.id,
+                isLab: isLab,
+                hours: hours
+            });
         });
     });
-    return lectures;
+    
+    // Flatten into individual 1-hour genes
+    const flatLectures: Omit<Lecture, 'hours'>[] = [];
+    lectures.forEach(lec => {
+        for (let i = 0; i < lec.hours; i++) {
+            flatLectures.push({
+                classId: lec.classId,
+                subjectId: lec.subjectId,
+                facultyId: lec.facultyId,
+                isLab: lec.isLab
+            });
+        }
+    });
+
+    return flatLectures as any; // The structure is now equivalent to the old one
 }
 
 
 /**
  * Generates a single random, but structurally valid, timetable (Chromosome).
  */
-function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): Chromosome {
+function createIndividual(lectures: Omit<Lecture, 'hours'>[], input: GenerateTimetableInput): Chromosome {
     const individual: Chromosome = [];
     const timeSlots = input.timeSlots.filter(t => !t.toLowerCase().includes('recess'));
 
@@ -113,7 +106,6 @@ function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): C
     const assignedSlotsForClass = new Map<string, Set<string>>(); // classId -> Set<"day-time">
 
     lectures.forEach(lecture => {
-        const subject = input.subjects.find(s => s.id === lecture.subjectId)!;
         const requiredClassroomType = lecture.isLab ? 'lab' : 'classroom';
         const availableClassrooms = input.classrooms.filter(c => c.type === requiredClassroomType);
         
@@ -123,7 +115,7 @@ function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): C
 
         // Find a random slot that is not yet taken by this class
         let foundSlot = false;
-        for (let i = 0; i < availableSlots.length; i++) {
+        for (let i = 0; i < availableSlots.length * 2; i++) { // Try a few times to find a free slot
             const slotIndex = Math.floor(Math.random() * availableSlots.length);
             const slot = availableSlots[slotIndex];
             const slotKey = `${slot.day}-${slot.time}`;
@@ -232,7 +224,12 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
         if (teachingDays <= input.days.length - 1) {
             fitness -= SOFT_CONSTRAINT_PENALTY * 5; // Reward
         }
-
+        
+        // NEW: Classroom Consistency Penalty
+        const uniqueClassrooms = new Set(classSchedule.map(g => g.classroomId)).size;
+        if (uniqueClassrooms > 1) {
+            fitness += SOFT_CONSTRAINT_PENALTY * (uniqueClassrooms - 1);
+        }
     });
 
     return fitness;
@@ -241,7 +238,7 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
 /**
  * Performs mutation on a chromosome.
  */
-function mutate(chromosome: Chromosome, lectures: Lecture[], input: GenerateTimetableInput): Chromosome {
+function mutate(chromosome: Chromosome, lectures: Omit<Lecture, 'hours'>[], input: GenerateTimetableInput): Chromosome {
     const newChromosome = JSON.parse(JSON.stringify(chromosome));
     
     for (let i = 0; i < newChromosome.length; i++) {
@@ -273,7 +270,7 @@ function crossover(parent1: Chromosome, parent2: Chromosome): Chromosome[] {
 /**
 * Checks if a valid schedule is even possible with the given constraints.
 */
-function checkImpossibility(lectures: Lecture[], input: GenerateTimetableInput): string | null {
+function checkImpossibility(lectures: Omit<Lecture, 'hours'>[], input: GenerateTimetableInput): string | null {
    // Check if every subject has an assigned faculty
    const subjectsWithoutFaculty = new Set<string>();
    input.classes.forEach(cls => {
@@ -294,7 +291,6 @@ function checkImpossibility(lectures: Lecture[], input: GenerateTimetableInput):
    // Check faculty availability
    const requiredFacultyHours = new Map<string, number>();
    lectures.forEach(lec => {
-       const hours = lec.isLab ? 2 : 1;
        requiredFacultyHours.set(lec.facultyId, (requiredFacultyHours.get(lec.facultyId) || 0) + 1);
    });
 
