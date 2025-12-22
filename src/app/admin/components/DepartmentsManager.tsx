@@ -76,9 +76,9 @@ function MultipleSelector({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    handleSelect(option.value);
+                  value={option.value}
+                  onSelect={(currentValue) => {
+                    handleSelect(currentValue);
                   }}
                 >
                   <Check
@@ -536,7 +536,7 @@ export default function DepartmentsManager() {
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
-                        <div className="text-sm text-muted-foreground flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {classesInDept.map(c => <Badge key={c.id} variant="secondary" className="mr-1">{c.name}</Badge>)}
                         </div>
                     </div>
