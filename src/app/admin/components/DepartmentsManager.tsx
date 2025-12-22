@@ -201,7 +201,7 @@ export default function DepartmentsManager() {
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-8">
+                <CardContent>
                     <div>
                         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><BookOpen/> Subjects</h3>
                          <div className="border rounded-lg">
@@ -272,6 +272,7 @@ export default function DepartmentsManager() {
                                 </Table>
                             </ScrollArea>
                         </div>
+                    </div>
                 </CardContent>
            </Card>
        )}
