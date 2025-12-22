@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,9 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import { getSubjects } from '@/lib/services/subjects';
-import { getClasses } from '@/lib/services/classes';
-import type { Faculty, Subject, Class } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, ChevronsUpDown, Check, X } from 'lucide-react';
+import type { Faculty, Subject } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, ChevronsUpDown, Check, X, Building } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +26,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 
 const facultySchema = z.object({
@@ -40,7 +41,6 @@ const facultySchema = z.object({
     maxWeeklyHours: z.coerce.number().min(1, "Required").max(48, "Cannot exceed 48"),
     designatedYear: z.coerce.number().min(1, "Required"),
     allottedSubjects: z.array(z.string()).optional(),
-    allottedSections: z.array(z.string()).optional(),
 });
 
 
@@ -159,11 +159,13 @@ function FacultyForm({
   faculty,
   subjects,
   onSave,
+  onCancel,
   isSubmitting,
 }: {
   faculty: Partial<Faculty>;
   subjects: Subject[];
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
+  onCancel: () => void;
   isSubmitting: boolean;
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
@@ -254,7 +256,7 @@ function FacultyForm({
           </div>
         </ScrollArea>
         <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={() => (document.querySelector('[data-state="open"] [cmdk-dialog-close-button]') as HTMLElement)?.click()} disabled={isSubmitting}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
@@ -267,9 +269,8 @@ function FacultyForm({
 
 
 export default function FacultyManager() {
-  const [faculty, setFaculty] = useState<Faculty[]>([]);
+  const [allFaculty, setAllFaculty] = useState<Faculty[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -277,13 +278,17 @@ export default function FacultyManager() {
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
   const { toast } = useToast();
 
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [designationFilter, setDesignationFilter] = useState('all');
+
+  const departments = useMemo(() => ['all', ...Array.from(new Set(allFaculty.map(f => f.department)))], [allFaculty]);
+
   async function loadData() {
     setIsLoading(true);
     try {
-      const [facultyData, subjectData, classData] = await Promise.all([getFaculty(), getSubjects(), getClasses()]);
-      setFaculty(facultyData);
+      const [facultyData, subjectData] = await Promise.all([getFaculty(), getSubjects()]);
+      setAllFaculty(facultyData);
       setSubjects(subjectData);
-      setClasses(classData);
     } catch (error) {
       toast({ title: "Error", description: "Failed to load data.", variant: "destructive" });
     } finally {
@@ -298,7 +303,7 @@ export default function FacultyManager() {
   const handleSave = async (data: z.infer<typeof facultySchema>, password?: string) => {
       setIsSubmitting(true);
       try {
-        const dataToSave = {...data, roles: []};
+        const dataToSave = {...data, roles: []}; // Roles are not managed here
         if (dataToSave.id) {
           await updateFaculty(dataToSave as Faculty);
           toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
@@ -343,91 +348,164 @@ export default function FacultyManager() {
     setDialogOpen(true);
   };
   
+  const filteredFaculty = useMemo(() => {
+    return allFaculty.filter(f => {
+        const departmentMatch = departmentFilter === 'all' || f.department === departmentFilter;
+        const designationMatch = designationFilter === 'all' || f.designation === designationFilter;
+        return departmentMatch && designationMatch;
+    });
+  }, [allFaculty, departmentFilter, designationFilter]);
+
+  const facultyByDepartment = useMemo(() => {
+    return filteredFaculty.reduce((acc, fac) => {
+      if (!acc[fac.department]) {
+        acc[fac.department] = [];
+      }
+      acc[fac.department].push(fac);
+      return acc;
+    }, {} as Record<string, Faculty[]>);
+  }, [filteredFaculty]);
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
   return (
-    <div>
-      <div className="flex justify-end mb-4">
-        <Button onClick={openNewDialog}>
+    <div className='space-y-6'>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div className='flex gap-2'>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Filter by Department..."/></SelectTrigger>
+                <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d === 'all' ? 'All Departments' : d}</SelectItem>)}</SelectContent>
+            </Select>
+             <Select value={designationFilter} onValueChange={setDesignationFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Filter by Designation..."/></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value='all'>All Designations</SelectItem>
+                    {DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
+        <Button onClick={openNewDialog} className="w-full sm:w-auto">
           <PlusCircle className="h-4 w-4 mr-2" />
           Add Faculty
         </Button>
       </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Staff ID</TableHead>
-              <TableHead>Designation</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {faculty.map((fac) => (
-              <TableRow key={fac.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                        <AvatarImage src={fac.avatar} alt={fac.name} />
-                        <AvatarFallback>{fac.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <div className="font-bold">{fac.name}</div>
-                        <div className="text-sm text-muted-foreground">{fac.email}</div>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{fac.code}</TableCell>
-                <TableCell>{fac.designation}</TableCell>
-                <TableCell>{fac.department}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(fac)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the faculty member and any associated schedule slots.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(fac.id)}>Continue</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+
+       {Object.keys(facultyByDepartment).length > 0 ? (
+          <div className="space-y-6">
+            {Object.entries(facultyByDepartment).map(([department, faculty]) => (
+                <Collapsible key={department} defaultOpen>
+                    <Card>
+                        <CollapsibleTrigger asChild>
+                            <CardHeader className="cursor-pointer">
+                                <CardTitle className="flex items-center gap-2 text-xl">
+                                    <Building className="h-5 w-5" /> 
+                                    {department}
+                                    <Badge variant="secondary" className="ml-2">{faculty.length} members</Badge>
+                                    <ChevronsUpDown className="h-4 w-4 ml-auto text-muted-foreground" />
+                                </CardTitle>
+                            </CardHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                             <CardContent>
+                                <div className="border rounded-lg">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Name</TableHead>
+                                      <TableHead>Staff ID</TableHead>
+                                      <TableHead>Designation</TableHead>
+                                      <TableHead>Subjects</TableHead>
+                                      <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {faculty.map((fac) => (
+                                      <TableRow key={fac.id}>
+                                        <TableCell className="font-medium">
+                                          <div className="flex items-center gap-3">
+                                            <Avatar>
+                                                <AvatarImage src={fac.avatar} alt={fac.name} />
+                                                <AvatarFallback>{fac.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <div className="font-bold">{fac.name}</div>
+                                                <div className="text-sm text-muted-foreground">{fac.email}</div>
+                                            </div>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>{fac.code}</TableCell>
+                                        <TableCell>{fac.designation}</TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1">
+                                                {fac.allottedSubjects?.slice(0, 2).map(subId => {
+                                                    const subject = subjects.find(s => s.id === subId);
+                                                    return subject ? <Badge key={subId} variant="outline">{subject.code}</Badge> : null;
+                                                })}
+                                                {fac.allottedSubjects && fac.allottedSubjects.length > 2 && (
+                                                    <Badge variant="outline">+{fac.allottedSubjects.length - 2} more</Badge>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <span className="sr-only">Open menu</span>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                              <DropdownMenuItem onClick={() => handleEdit(fac)}>
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Edit
+                                              </DropdownMenuItem>
+                                              <AlertDialog>
+                                                  <AlertDialogTrigger asChild>
+                                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                  </AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                        This action cannot be undone. This will permanently delete the faculty member and any associated schedule slots.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDelete(fac.id)}>Continue</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                              </AlertDialog>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                                </div>
+                            </CardContent>
+                        </CollapsibleContent>
+                    </Card>
+                </Collapsible>
             ))}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+        ) : (
+            <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                    No faculty members match the current filters.
+                </CardContent>
+            </Card>
+       )}
+
 
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl" cmdk-dialog-close-button="">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
@@ -438,6 +516,7 @@ export default function FacultyManager() {
             faculty={currentFaculty}
             subjects={subjects}
             onSave={handleSave}
+            onCancel={() => setDialogOpen(false)}
             isSubmitting={isSubmitting}
           />
         </DialogContent>
@@ -484,5 +563,3 @@ export default function FacultyManager() {
     </div>
   );
 }
-
-    
