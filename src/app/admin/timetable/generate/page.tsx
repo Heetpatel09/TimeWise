@@ -22,6 +22,7 @@ import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 
 const ALL_TIME_SLOTS = [
@@ -93,6 +94,7 @@ export default function TimetableGeneratorPage() {
 
         const relevantSubjects = subjects.filter(s => s.department === selectedClass?.department && s.semester === selectedSemester);
         
+        // Find all faculty relevant to the department. The GA will handle specific subject assignments.
         const relevantFaculty = faculty.filter(f => f.department === selectedDepartment);
 
         return {
@@ -111,7 +113,7 @@ export default function TimetableGeneratorPage() {
         setIsGenerating(true);
         try {
             const result = await generateTimetableFlow({
-                days: DAYS.filter(d => d !== 'Saturday'), // Assuming Saturday is off
+                days: DAYS.filter(d => d !== 'Saturday'), // Standard 5-day week
                 timeSlots: ALL_TIME_SLOTS,
                 classes: [selectedClass],
                 subjects: contextInfo.subjects,
@@ -282,7 +284,7 @@ export default function TimetableGeneratorPage() {
                                                                 <div><strong>{subjects?.find(s => s.id === slot.subjectId)?.name}</strong></div>
                                                                 <div className="truncate">{faculty?.find(f => f.id === slot.facultyId)?.name}</div>
                                                                 <div>{classrooms?.find(c => c.id === slot.classroomId)?.name}</div>
-                                                                {slot.batch && <Badge variant="secondary" className="mt-1">Batch {slot.batch}</Badge>}
+                                                                {(slot as any).batch && <Badge variant="secondary" className="mt-1">Batch {(slot as any).batch}</Badge>}
                                                             </div>
                                                         ) : null}
                                                     </TableCell>
