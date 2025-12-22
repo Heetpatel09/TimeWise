@@ -555,9 +555,9 @@ export default function ScheduleManager() {
       </Dialog>
       
       <Dialog open={!!aiResolution} onOpenChange={() => setAiResolution(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Review AI-Generated Schedule</DialogTitle>
+            <DialogTitle>Review AI-Resolved Schedule</DialogTitle>
             <DialogDescription>
               The AI has resolved the schedule conflicts. Review the changes and approve to apply them.
             </DialogDescription>
@@ -577,7 +577,7 @@ export default function ScheduleManager() {
                         <CardTitle className='text-base'>Notifications to be Sent</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        {aiResolution?.notifications.map((notif: Notification, index: number) => {
+                        {aiResolution?.notifications && aiResolution.notifications.length > 0 ? aiResolution.notifications.map((notif: Notification, index: number) => {
                             const user = notif.userId ? getRelationInfo(notif.userId, 'faculty') : null;
                             const targetClass = notif.classId ? getRelationInfo(notif.classId, 'class') : null;
                             const studentRecipients = students.filter(s => s.classId === notif.classId);
@@ -594,8 +594,40 @@ export default function ScheduleManager() {
                                 <p><strong>To:</strong> {recipientText}</p>
                                 <p><strong>Message:</strong> {notif.message}</p>
                             </div>
-                        )})}
+                        )}) : <p className="text-sm text-muted-foreground">No notifications will be sent for this resolution.</p>}
                     </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Proposed New Schedule</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                     {aiResolution && DAYS.map(day => {
+                        const daySlots = aiResolution.resolvedSchedule.filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time));
+                        if (daySlots.length === 0) return null;
+                        return (
+                          <div key={day}>
+                            <h4 className="font-semibold text-md mb-2">{day}</h4>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Time</TableHead><TableHead>Class</TableHead><TableHead>Subject</TableHead><TableHead>Faculty</TableHead><TableHead>Classroom</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {daySlots.map(slot => (
+                                  <TableRow key={slot.id} className={schedule.find(s => s.id === slot.id)?.facultyId !== slot.facultyId || schedule.find(s => s.id === slot.id)?.classroomId !== slot.classroomId ? 'bg-primary/10' : ''}>
+                                    <TableCell>{slot.time}</TableCell>
+                                    <TableCell>{slot.className}</TableCell>
+                                    <TableCell>{slot.subjectName}</TableCell>
+                                    <TableCell>{slot.facultyName}</TableCell>
+                                    <TableCell>{slot.classroomName}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )
+                      })}
+                  </CardContent>
                 </Card>
             </div>
           </ScrollArea>
