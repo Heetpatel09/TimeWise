@@ -22,7 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
@@ -33,29 +33,35 @@ const facultySchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "Name is required"),
     email: z.string().email(),
-    code: z.string().optional(),
+    code: z.string().min(1, "Staff ID is required"),
     department: z.string().min(1, "Department is required"),
-    designation: z.string().optional(),
+    designation: z.string().min(1, "Designation is required"),
     employmentType: z.enum(['full-time', 'part-time', 'contract']),
-    maxWeeklyHours: z.coerce.number().optional(),
-    designatedYear: z.coerce.number().optional(),
+    maxWeeklyHours: z.coerce.number().min(1, "Required").max(48, "Cannot exceed 48"),
+    designatedYear: z.coerce.number().min(1, "Required"),
     allottedSubjects: z.array(z.string()).optional(),
     allottedSections: z.array(z.string()).optional(),
 });
 
-const MultiSelect = ({
+
+const DESIGNATION_OPTIONS = ['Professor', 'Assistant Professor', 'Lecturer'];
+const YEAR_OPTIONS = [1, 2, 3, 4];
+const DEPARTMENT_OPTIONS = ['Computer Engineering', 'IT', 'AI & DS', 'Electronics Engineering', 'Mechanical Engineering'];
+
+
+function MultiSelectSubjects({
   options,
   selected,
   onChange,
   className,
-  placeholder = "Select...",
+  placeholder = "Select subjects...",
 }: {
   options: { label: string; value: string }[];
   selected: string[];
   onChange: (selected: string[]) => void;
   className?: string;
   placeholder?: string;
-}) => {
+}) {
   const [open, setOpen] = useState(false);
 
   const handleUnselect = (value: string) => {
@@ -65,8 +71,15 @@ const MultiSelect = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <div className={cn("flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", className)}>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-between h-auto min-h-10", className)}
+          onClick={() => setOpen(!open)}
+        >
           <div className="flex gap-1 flex-wrap">
+            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
             {selected.map((value) => {
               const label = options.find((o) => o.value === value)?.label;
               return (
@@ -76,7 +89,7 @@ const MultiSelect = ({
                   className="mr-1"
                 >
                   {label}
-                  <button
+                  <div
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -87,21 +100,25 @@ const MultiSelect = ({
                       e.preventDefault();
                       e.stopPropagation();
                     }}
-                    onClick={() => handleUnselect(value)}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleUnselect(value);
+                    }}
                   >
                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
+                  </div>
                 </Badge>
               );
             })}
-            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
           </div>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
-        </div>
+        </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
+      <PopoverContent className="w-full p-0">
         <Command>
           <CommandInput placeholder="Search..." />
+          <ScrollArea className="max-h-72">
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
@@ -130,6 +147,7 @@ const MultiSelect = ({
               ))}
             </CommandGroup>
           </CommandList>
+          </ScrollArea>
         </Command>
       </PopoverContent>
     </Popover>
@@ -140,13 +158,11 @@ const MultiSelect = ({
 function FacultyForm({
   faculty,
   subjects,
-  classes,
   onSave,
   isSubmitting,
 }: {
   faculty: Partial<Faculty>;
   subjects: Subject[];
-  classes: Class[];
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
   isSubmitting: boolean;
 }) {
@@ -155,7 +171,6 @@ function FacultyForm({
     defaultValues: {
         ...faculty,
         allottedSubjects: faculty.allottedSubjects || [],
-        allottedSections: faculty.allottedSections || [],
     },
   });
 
@@ -164,14 +179,20 @@ function FacultyForm({
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
-  const subjectOptions = subjects.map(s => ({ value: s.id, label: `${s.name} (Sem ${s.semester})` }));
-  const classOptions = classes.map(c => ({ value: c.id, label: c.name }));
+  const subjectOptions = subjects.map(s => ({ value: s.id, label: `${s.name} (${s.code})` }));
 
   const handleSubmit = (data: z.infer<typeof facultySchema>) => {
     if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
       toast({ title: "Password Required", description: "Please enter a password for the new faculty member.", variant: "destructive" });
       return;
     }
+    
+    const { maxWeeklyHours, employmentType } = data;
+    if (employmentType === 'part-time' && (maxWeeklyHours! < 15 || maxWeeklyHours! > 30)) {
+        form.setError('maxWeeklyHours', { message: 'Part-time hours must be between 15 and 30.'});
+        return;
+    }
+
     onSave(data, passwordOption === 'manual' ? manualPassword : undefined);
   };
 
@@ -180,94 +201,38 @@ function FacultyForm({
       <form onSubmit={form.handleSubmit(handleSubmit)}>
         <ScrollArea className="max-h-[70vh] p-1">
           <div className="grid gap-4 py-4 pr-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
+             <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+            
              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="designation"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Designation</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
+                <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="designation" render={({ field }) => (<FormItem><FormLabel>Designation</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger></FormControl><SelectContent>{DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
             </div>
-             <FormField
-                control={form.control}
-                name="department"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Designated Department</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
+
+            <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Specific Department</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select department"/></SelectTrigger></FormControl><SelectContent>{DEPARTMENT_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+            
             <FormField
                 control={form.control}
                 name="allottedSubjects"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col"><FormLabel>Allotted Subjects</FormLabel>
-                    <MultiSelect options={subjectOptions} selected={field.value || []} onChange={field.onChange} placeholder="Select subjects..." />
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            <FormField
-                control={form.control}
-                name="allottedSections"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col"><FormLabel>Allotted Sections/Classes</FormLabel>
-                    <MultiSelect options={classOptions} selected={field.value || []} onChange={field.onChange} placeholder="Select classes..." />
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="employmentType"
-                    render={({ field }) => (
-                        <FormItem><FormLabel>Employment Type</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger>
-                         </FormControl><SelectContent>
-                            <SelectItem value="full-time">Full-time</SelectItem>
-                            <SelectItem value="part-time">Part-time</SelectItem>
-                            <SelectItem value="contract">Contract</SelectItem>
-                        </SelectContent></Select>
-                        <FormMessage /></FormItem>
-                    )}
+                    <FormItem className="flex flex-col"><FormLabel>Subject(s) to be Allotted</FormLabel>
+                    <MultiSelectSubjects
+                        options={subjectOptions}
+                        selected={field.value || []}
+                        onChange={field.onChange}
                     />
-                <FormField
-                control={form.control}
-                name="designatedYear"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Designated Year</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+                    <FormMessage />
+                    </FormItem>
                 )}
                 />
+
+            <div className="grid grid-cols-2 gap-4">
+                 <FormField control={form.control} name="designatedYear" render={({ field }) => (<FormItem><FormLabel>Designated Year</FormLabel><Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl><SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger></FormControl><SelectContent>{YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>Year {y}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                 <FormField control={form.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>Employment Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger></FormControl><SelectContent><SelectItem value="full-time">Full-time</SelectItem><SelectItem value="part-time">Part-time</SelectItem><SelectItem value="contract">Contract</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             </div>
-             <FormField
-                control={form.control}
-                name="maxWeeklyHours"
-                render={({ field }) => (
-                    <FormItem><FormLabel>Max Weekly Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
-                )}
-                />
+
+             <FormField control={form.control} name="maxWeeklyHours" render={({ field }) => (<FormItem><FormLabel>Max Working Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+
             {!faculty.id && (
                 <>
                     <div className="space-y-2"><Label>Password</Label>
@@ -374,7 +339,7 @@ export default function FacultyManager() {
   };
   
   const openNewDialog = () => {
-    setCurrentFaculty({ employmentType: 'full-time', department: 'Computer Engineering' });
+    setCurrentFaculty({ employmentType: 'full-time' });
     setDialogOpen(true);
   };
   
@@ -472,7 +437,6 @@ export default function FacultyManager() {
           <FacultyForm
             faculty={currentFaculty}
             subjects={subjects}
-            classes={classes}
             onSave={handleSave}
             isSubmitting={isSubmitting}
           />
@@ -520,3 +484,5 @@ export default function FacultyManager() {
     </div>
   );
 }
+
+    
