@@ -34,7 +34,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 59; // Increment this to force re-initialization
+const schemaVersion = 60; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'db-version.txt');
 
 
@@ -88,7 +88,8 @@ function createSchemaAndSeed() {
         semester INTEGER NOT NULL,
         syllabus TEXT,
         isSpecial BOOLEAN,
-        department TEXT
+        department TEXT,
+        priority TEXT
     );
     CREATE TABLE IF NOT EXISTS classes (
         id TEXT PRIMARY KEY,
@@ -354,7 +355,7 @@ function createSchemaAndSeed() {
   `);
   
   // Seed the database
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, section, batch, phone, category, classId, avatar, profileCompleted, sgpa, cgpa, streak, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSections, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -386,7 +387,7 @@ function createSchemaAndSeed() {
             insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, assignedClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0);
         });
         
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering'));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering', s.priority || null));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
 
         // Step 2: Insert credentials for all users

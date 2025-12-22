@@ -137,6 +137,8 @@ export const GenerateTimetableOutputSchema = z.object({
 });
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
 
+export type SubjectPriority = 'Non Negotiable' | 'High' | 'Medium' | 'Low';
+
 export interface Subject {
   id: string;
   name: string;
@@ -146,6 +148,7 @@ export interface Subject {
   syllabus?: string;
   department?: string;
   isSpecial?: boolean;
+  priority?: SubjectPriority;
 }
 
 export interface Class {

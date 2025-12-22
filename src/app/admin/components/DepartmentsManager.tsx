@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
 import { getClasses, addClass, renameDepartment } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
-import type { Subject, Class, Faculty } from '@/lib/types';
+import type { Subject, Class, Faculty, SubjectPriority } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, UserCheck, Beaker, X as XIcon, Eye, EyeOff, Copy, Pencil, ChevronsUpDown, Check } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -41,14 +41,12 @@ function MultipleSelector({
   onChange: (value: string[]) => void;
   placeholder: string;
 }) {
-  const [selected, setSelected] = useState<string[]>(value || []);
   const [open, setOpen] = useState(false);
 
-  const handleSelect = (val: string) => {
-    const newSelected = selected.includes(val)
-      ? selected.filter((v) => v !== val)
-      : [...selected, val];
-    setSelected(newSelected);
+  const handleSelect = (selectedValue: string) => {
+    const newSelected = value.includes(selectedValue)
+      ? value.filter((v) => v !== selectedValue)
+      : [...value, selectedValue];
     onChange(newSelected);
   };
   
@@ -61,8 +59,8 @@ function MultipleSelector({
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selected.length > 0
-            ? `${selected.length} selected`
+          {value.length > 0
+            ? `${value.length} selected`
             : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -76,15 +74,15 @@ function MultipleSelector({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    handleSelect(currentValue);
+                  value={option.label}
+                  onSelect={() => {
+                    handleSelect(option.value);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selected.includes(option.value)
+                      value.includes(option.value)
                         ? "opacity-100"
                         : "opacity-0"
                     )}
@@ -115,6 +113,7 @@ const facultySchema = z.object({
 
 const DESIGNATION_OPTIONS = ['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer', 'Lab Assistant'];
 const YEAR_OPTIONS = [1, 2, 3, 4];
+const PRIORITY_OPTIONS: SubjectPriority[] = ['Non Negotiable', 'High', 'Medium', 'Low'];
 
 function FacultyForm({
   faculty,
@@ -442,7 +441,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewSubjectDialog = (department: string) => {
-    setCurrentSubject({ type: 'theory', semester: selectedSemester || 1 });
+    setCurrentSubject({ type: 'theory', semester: selectedSemester || 1, priority: 'High' });
     setSubjectDialogOpen(true);
   };
   
@@ -571,6 +570,7 @@ export default function DepartmentsManager() {
                                       <TableHead>Name</TableHead>
                                       <TableHead>Semester</TableHead>
                                       <TableHead>Type</TableHead>
+                                      <TableHead>Priority</TableHead>
                                       <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -587,6 +587,11 @@ export default function DepartmentsManager() {
                                                 {subject.type.toLowerCase() === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
                                                 {subject.type}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {subject.type === 'theory' && (
+                                                <Badge variant="outline">{subject.priority || 'High'}</Badge>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-right">
                                           <DropdownMenu>
@@ -618,7 +623,7 @@ export default function DepartmentsManager() {
                                       </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No subjects found for this semester.</TableCell>
+                                            <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this semester.</TableCell>
                                         </TableRow>
                                     )}
                                   </TableBody>
@@ -724,14 +729,33 @@ export default function DepartmentsManager() {
               <Label htmlFor="s-code">Code</Label>
               <Input id="s-code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} disabled={isSubmitting}/>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="s-type">Type</Label>
-              <Input id="s-type" value={currentSubject.type ?? ''} placeholder="e.g. Theory, Lab" onChange={(e) => setCurrentSubject({ ...currentSubject, type: e.target.value })} disabled={isSubmitting}/>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <Label htmlFor="s-type">Type</Label>
+                <Select value={currentSubject.type} onValueChange={(v: 'theory' | 'lab') => setCurrentSubject({ ...currentSubject, type: v })}>
+                    <SelectTrigger id="s-type"><SelectValue placeholder="Select type"/></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="theory">Theory</SelectItem>
+                        <SelectItem value="lab">Lab</SelectItem>
+                    </SelectContent>
+                </Select>
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="s-semester">Semester</Label>
+                <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
+                </div>
             </div>
-             <div className="space-y-2">
-              <Label htmlFor="s-semester">Semester</Label>
-              <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
-            </div>
+            {currentSubject.type === 'theory' && (
+              <div className="space-y-2">
+                <Label htmlFor="s-priority">Priority (Weekly Hours)</Label>
+                <Select value={currentSubject.priority} onValueChange={(v: SubjectPriority) => setCurrentSubject({ ...currentSubject, priority: v })}>
+                    <SelectTrigger id="s-priority"><SelectValue placeholder="Select priority"/></SelectTrigger>
+                    <SelectContent>
+                        {PRIORITY_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSubjectDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>

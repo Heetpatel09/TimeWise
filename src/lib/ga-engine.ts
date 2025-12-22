@@ -1,7 +1,7 @@
 
 'use server';
 
-import { GenerateTimetableInput } from './types';
+import { GenerateTimetableInput, type SubjectPriority } from './types';
 
 // --- Core GA Configuration ---
 const POPULATION_SIZE = 100;
@@ -36,6 +36,7 @@ const HARD_CONSTRAINT_PENALTY = 1000;
 const SOFT_CONSTRAINT_PENALTY = 10;
 const IDLE_GAP_PENALTY = 50; // Increased penalty for gaps
 const PARTIAL_DAY_PENALTY = 20; // Penalty for having a day with very few classes
+const CLASSROOM_CHANGE_PENALTY = 5;
 
 // Define valid lab slot pairs
 const VALID_LAB_SLOT_PAIRS: string[][] = [
@@ -44,6 +45,15 @@ const VALID_LAB_SLOT_PAIRS: string[][] = [
     ['01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'], // Slots 5 & 6
 ];
 
+const getHoursForPriority = (priority?: SubjectPriority): number => {
+    switch (priority) {
+        case 'Non Negotiable': return 4;
+        case 'High': return 3;
+        case 'Medium': return 2;
+        case 'Low': return 1;
+        default: return 3; // Default to 3 hours if not specified
+    }
+};
 
 /**
  * Pre-processes the input data to create a list of all required lecture slots.
@@ -55,18 +65,22 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
         
         classSubjects.forEach(sub => {
             const facultyForSubject = input.faculty.find(f => f.allottedSubjects && f.allottedSubjects.includes(sub.id));
-            if (!facultyForSubject) return;
+            if (!facultyForSubject) {
+                console.warn(`No faculty found for subject ${sub.name} (${sub.id})`);
+                return;
+            }
 
             if (sub.type.toLowerCase() === 'lab') {
-                // Labs are 2 hours per session, and we need sessions for Batch A and Batch B
-                // So, for each 2-hour lab requirement, we create two genes for batch A and two for batch B.
+                // Labs are 2 hours per session, and we need sessions for Batch A and Batch B.
                 lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A' });
                 lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A' });
                 lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B' });
                 lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B' });
             } else {
-                 // Theory is 3 hours per week
-                for(let i=0; i<3; i++) lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: false });
+                 const hours = getHoursForPriority(sub.priority);
+                 for(let i = 0; i < hours; i++) {
+                    lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: false });
+                 }
             }
         });
     });
@@ -222,9 +236,10 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
             dailyLectures.get(gene.day)!.push(gene);
         });
 
-        let idleDays = input.days.length - dailyLectures.size;
+        const idleDays = input.days.length - dailyLectures.size;
         if (idleDays === 1) {
-            fitness -= SOFT_CONSTRAINT_PENALTY * 10; // Big reward for one idle day
+            // Reward for having exactly one idle day
+            fitness -= SOFT_CONSTRAINT_PENALTY * 10;
         }
 
         dailyLectures.forEach((lecturesOnDay, day) => {
@@ -248,7 +263,7 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
         // Classroom Consistency Penalty
         const uniqueClassrooms = new Set(classSchedule.map(g => g.classroomId)).size;
         if (uniqueClassrooms > 1) {
-            fitness += SOFT_CONSTRAINT_PENALTY * (uniqueClassrooms - 1);
+            fitness += CLASSROOM_CHANGE_PENALTY * (uniqueClassrooms - 1);
         }
     });
 
