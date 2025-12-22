@@ -67,7 +67,7 @@ function MultipleSelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" modal={false}>
+      <PopoverContent className="w-[300px] p-0">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
@@ -537,7 +537,7 @@ export default function DepartmentsManager() {
                     <div className='space-y-1.5'>
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
                         <div className="text-sm text-muted-foreground flex flex-wrap gap-1">
-                          {classesInDept.map(c => <Badge key={c.id} variant="secondary">{c.name}</Badge>)}
+                          {classesInDept.map(c => <Badge key={c.id} variant="secondary" className="mr-1">{c.name}</Badge>)}
                         </div>
                     </div>
                      <div className="flex flex-col sm:flex-row gap-2 self-start">
