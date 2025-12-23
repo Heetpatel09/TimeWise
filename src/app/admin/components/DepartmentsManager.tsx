@@ -109,7 +109,7 @@ function MultiSelectSubjects({
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onMouseDown={(e) => e.preventDefault()}>
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
@@ -118,15 +118,14 @@ function MultiSelectSubjects({
                 <CommandGroup>
                 {options.map((option) => (
                     <CommandItem
-                    key={option.value}
-                    onSelect={() => {
+                      key={option.value}
+                      onSelect={() => {
                         onChange(
-                        selected.includes(option.value)
+                          selected.includes(option.value)
                             ? selected.filter((s) => s !== option.value)
                             : [...selected, option.value]
                         );
-                        setOpen(true);
-                    }}
+                      }}
                     >
                     <Check
                         className={cn(
@@ -786,21 +785,23 @@ export default function DepartmentsManager() {
 
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl grid grid-rows-[auto_1fr_auto] h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
               {currentFaculty?.id ? 'Update faculty details.' : `Add a new faculty member to the ${selectedDepartment} department.`}
             </DialogDescription>
           </DialogHeader>
-            <FacultyForm
-              faculty={currentFaculty}
-              subjects={subjects.filter(s => s.department === selectedDepartment)}
-              onSave={handleSaveFaculty}
-              onCancel={() => setFacultyDialogOpen(false)}
-              isSubmitting={isSubmitting}
-              department={selectedDepartment!}
-            />
+            <div className="overflow-y-auto px-6">
+                <FacultyForm
+                faculty={currentFaculty}
+                subjects={subjects.filter(s => s.department === selectedDepartment)}
+                onSave={handleSaveFaculty}
+                onCancel={() => setFacultyDialogOpen(false)}
+                isSubmitting={isSubmitting}
+                department={selectedDepartment!}
+                />
+            </div>
         </DialogContent>
       </Dialog>
       
