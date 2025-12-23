@@ -66,7 +66,7 @@ function MultiSelectSubjects({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -109,7 +109,7 @@ function MultiSelectSubjects({
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
@@ -121,7 +121,6 @@ function MultiSelectSubjects({
                       key={option.value}
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        e.stopPropagation();
                       }}
                       onSelect={() => {
                         onChange(
