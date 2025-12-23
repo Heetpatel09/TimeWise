@@ -19,7 +19,8 @@ export const subjects: Subject[] = [
   { id: 'SUB009', name: 'Database Management Systems', code: 'CS301', type: 'theory', semester: 5, syllabus: '{"modules":[{"name":"SQL Basics","topics":["SELECT","UPDATE","DELETE"],"weightage":"40%"},{"name":"Normalization","topics":["1NF","2NF","3NF"],"weightage":"60%"}]}', department: 'Computer Engineering', priority: 'High' },
   { id: 'SUB010', name: 'DBMS Lab', code: 'CS302', type: 'lab', semester: 5, syllabus: '{"modules":[{"name":"Lab Work","topics":["Queries","Schema Design"],"weightage":"100%"}]}', department: 'Computer Engineering' },
   { id: 'SUB011', name: 'Operating Systems', code: 'CS303', type: 'theory', semester: 5, syllabus: '{"modules":[{"name":"Process Management","topics":["Scheduling","Deadlocks"],"weightage":"50%"},{"name":"Memory Management","topics":["Paging","Segmentation"],"weightage":"50%"}]}', department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB012', name: 'Computer Networks', code: 'CS304', type: 'theory', semester: 5, syllabus: '{"modules":[{"name":"OSI Model","topics":["Layers"],"weightage":"50%"},{"name":"TCP/IP","topics":["Sockets","Ports"],"weightage":"50%"}]}', department: 'Computer Engineering', priority: 'High' },
+  { id: 'SUB023', name: 'Operating Systems Lab', code: 'CS304', type: 'lab', semester: 5, syllabus: '{"modules":[{"name":"Lab Work","topics":["Shell Scripting","System Calls"],"weightage":"100%"}]}', department: 'Computer Engineering' },
+  { id: 'SUB012', name: 'Computer Networks', code: 'CS305', type: 'theory', semester: 5, syllabus: '{"modules":[{"name":"OSI Model","topics":["Layers"],"weightage":"50%"},{"name":"TCP/IP","topics":["Sockets","Ports"],"weightage":"50%"}]}', department: 'Computer Engineering', priority: 'High' },
 
   { id: 'SUB013', name: 'Machine Learning', code: 'AI401', type: 'theory', semester: 7, syllabus: '{"modules":[{"name":"Supervised Learning","topics":["Regression","Classification"],"weightage":"50%"},{"name":"Unsupervised Learning","topics":["Clustering","Dimensionality Reduction"],"weightage":"50%"}]}', department: 'Computer Engineering', priority: 'High' },
   { id: 'SUB014', name: 'Cryptography and Security', code: 'CS402', type: 'theory', semester: 7, syllabus: '{"modules":[{"name":"Symmetric Key","topics":["DES","AES"],"weightage":"50%"},{"name":"Asymmetric Key","topics":["RSA","ECC"],"weightage":"50%"}]}', department: 'Computer Engineering', priority: 'High' },
@@ -81,7 +82,7 @@ export const faculty: Faculty[] = [
   { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: 'TNG01', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['HOD'], streak: 45, profileCompleted: 90, points: 5200, allottedSubjects: ['SUB001'], maxWeeklyHours: 20, designatedYear: 1 },
   { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: 'LCE02', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 8, profileCompleted: 80, points: 2100, allottedSubjects: ['SUB003'], maxWeeklyHours: 18, designatedYear: 1 },
   { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: 'HPR03', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['Lab Incharge'], streak: 15, profileCompleted: 85, points: 3400, allottedSubjects: ['SUB002', 'SUB022', 'SUB021'], maxWeeklyHours: 22, designatedYear: 1 },
-  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: 'NMN04', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 50, points: 500, allottedSubjects: ['SUB011'], maxWeeklyHours: 10, designatedYear: 3 },
+  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: 'NMN04', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 50, points: 500, allottedSubjects: ['SUB011', 'SUB023'], maxWeeklyHours: 10, designatedYear: 3 },
   { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', code: 'KNH05', designation: 'Lecturer', employmentType: 'contract', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 60, points: 800, allottedSubjects: ['SUB005'], maxWeeklyHours: 15, designatedYear: 2 },
   { id: 'FAC006', name: 'Dr. Abhinav Gupta', email: 'abhinav@example.com', code: 'GPT06', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 25, profileCompleted: 95, points: 4500, allottedSubjects: ['SUB013', 'SUB016'], maxWeeklyHours: 20, designatedYear: 4 },
   { id: 'FAC007', name: 'Prof. Sheldon Cooper', email: 'cooper@example.com', code: 'CPR07', designation: 'Professor', employmentType: 'full-time', department: 'Physics', roles: [], streak: 3, profileCompleted: 70, points: 1200, allottedSubjects: [], maxWeeklyHours: 18, designatedYear: 1 },
@@ -323,6 +324,8 @@ export const userBadges: UserBadge[] = [
     { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() },
     { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
+
+    
 
     
 
