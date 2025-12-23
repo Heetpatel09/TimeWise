@@ -109,13 +109,13 @@ function MultiSelectSubjects({
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onMouseDown={(e) => e.preventDefault()}>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
-            <ScrollArea className="max-h-72">
-                <CommandEmpty>No results found.</CommandEmpty>
-                <CommandGroup>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              <ScrollArea className="max-h-72">
                 {options.map((option) => (
                     <CommandItem
                       key={option.value}
@@ -138,8 +138,8 @@ function MultiSelectSubjects({
                     {option.label}
                     </CommandItem>
                 ))}
-                </CommandGroup>
-            </ScrollArea>
+              </ScrollArea>
+            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
@@ -785,7 +785,7 @@ export default function DepartmentsManager() {
 
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="max-w-2xl grid grid-rows-[auto_1fr_auto] h-[90vh] p-0">
+        <DialogContent className="max-w-2xl grid-rows-[auto,1fr,auto] flex h-[90vh] flex-col p-0">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
