@@ -838,3 +838,5 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
