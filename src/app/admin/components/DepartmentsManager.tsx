@@ -75,7 +75,7 @@ function MultiSelectSubjects({
 
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -117,7 +117,7 @@ function MultiSelectSubjects({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput placeholder="Search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
@@ -126,10 +126,6 @@ function MultiSelectSubjects({
                 {options.map((option) => (
                     <CommandItem
                       key={option.value}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
                       onSelect={() => handleSelect(option.value)}
                     >
                     <Check
@@ -319,7 +315,7 @@ export default function DepartmentsManager() {
   const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
+  const [currentSubject, setCurrentSubject] = useState<Partial<Subject> & { facultyId?: string | null }>({});
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
 
@@ -356,21 +352,62 @@ export default function DepartmentsManager() {
     loadData();
   }, []);
   
+  const dept = selectedDepartment;
+  const subjectsInDept = subjects.filter(s => s.department === dept && (semesterFilter === 'all' || s.semester.toString() === semesterFilter));
+  const facultyInDept = allFaculty.filter(f => f.department === dept);
+  const classesInDept = classes.filter(c => c.department === dept);
+  
   const handleSaveSubject = async () => {
     if (currentSubject && currentSubject.name && currentSubject.code && currentSubject.type && currentSubject.semester && selectedDepartment) {
-      const subjectToSave = { ...currentSubject, department: selectedDepartment };
+      const subjectToSave: Omit<Subject, 'id'> = {
+        name: currentSubject.name,
+        code: currentSubject.code,
+        type: currentSubject.type,
+        semester: currentSubject.semester,
+        department: selectedDepartment,
+        priority: currentSubject.priority,
+        isSpecial: currentSubject.isSpecial,
+        syllabus: currentSubject.syllabus,
+      };
+
       setIsSubmitting(true);
       try {
-        if (subjectToSave.id) {
-          await updateSubject(subjectToSave as Subject);
-          toast({ title: "Subject Updated" });
+        let savedSubject: Subject;
+        if (currentSubject.id) {
+          savedSubject = await updateSubject({ ...subjectToSave, id: currentSubject.id });
         } else {
-          await addSubject(subjectToSave as Omit<Subject, 'id'>);
-          toast({ title: "Subject Added" });
+          savedSubject = await addSubject(subjectToSave);
         }
-        await loadData();
+
+        // Handle faculty assignment
+        const originalFaculty = allFaculty.find(f => f.allottedSubjects.includes(savedSubject.id));
+        const newFacultyId = currentSubject.facultyId;
+
+        if (originalFaculty?.id !== newFacultyId) {
+          // Remove from old faculty
+          if (originalFaculty) {
+            const updatedOldFaculty = {
+              ...originalFaculty,
+              allottedSubjects: originalFaculty.allottedSubjects.filter(subId => subId !== savedSubject.id)
+            };
+            await updateFaculty(updatedOldFaculty);
+          }
+          // Add to new faculty
+          if (newFacultyId) {
+            const newFaculty = allFaculty.find(f => f.id === newFacultyId);
+            if (newFaculty && !newFaculty.allottedSubjects.includes(savedSubject.id)) {
+              const updatedNewFaculty = {
+                ...newFaculty,
+                allottedSubjects: [...newFaculty.allottedSubjects, savedSubject.id]
+              };
+              await updateFaculty(updatedNewFaculty);
+            }
+          }
+        }
+
+        toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
         setSubjectDialogOpen(false);
-        setCurrentSubject({});
+        await loadData();
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
@@ -427,7 +464,13 @@ export default function DepartmentsManager() {
 
 
   const openNewSubjectDialog = () => {
-    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High' });
+    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High', facultyId: null });
+    setSubjectDialogOpen(true);
+  };
+  
+  const openEditSubjectDialog = (subject: Subject) => {
+    const faculty = facultyInDept.find(f => f.allottedSubjects?.includes(subject.id));
+    setCurrentSubject({ ...subject, facultyId: faculty?.id || null });
     setSubjectDialogOpen(true);
   };
   
@@ -499,11 +542,6 @@ export default function DepartmentsManager() {
     navigator.clipboard.writeText(text);
     toast({ title: 'Copied!', description: 'Password copied to clipboard.' });
   }
-
-  const dept = selectedDepartment;
-  const subjectsInDept = subjects.filter(s => s.department === dept && (semesterFilter === 'all' || s.semester.toString() === semesterFilter));
-  const facultyInDept = allFaculty.filter(f => f.department === dept);
-  const classesInDept = classes.filter(c => c.department === dept);
   
   const semesterOptions = useMemo(() => {
     if (!dept) return [];
@@ -577,7 +615,7 @@ export default function DepartmentsManager() {
                                         <TableHead>Name</TableHead>
                                         <TableHead>Semester</TableHead>
                                         <TableHead>Type</TableHead>
-                                        <TableHead>Priority</TableHead>
+                                        <TableHead>Faculty</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -596,9 +634,7 @@ export default function DepartmentsManager() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                {subject.type === 'theory' && (
-                                                    <Badge variant="outline">{subject.priority || 'High'}</Badge>
-                                                )}
+                                                { allFaculty.find(f => f.allottedSubjects?.includes(subject.id))?.name || <span className="text-muted-foreground">Unassigned</span> }
                                             </TableCell>
                                             <TableCell className="text-right">
                                             <DropdownMenu>
@@ -606,7 +642,7 @@ export default function DepartmentsManager() {
                                                 <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setCurrentSubject(subject); setSubjectDialogOpen(true); }}>
+                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openEditSubjectDialog(subject); }}>
                                                     <Edit className="h-4 w-4 mr-2" /> Edit
                                                 </DropdownMenuItem>
                                                 <AlertDialog>
@@ -730,6 +766,16 @@ export default function DepartmentsManager() {
                 <Label htmlFor="s-semester">Semester</Label>
                 <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
                 </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="s-faculty">Allot Faculty</Label>
+                <Select value={currentSubject.facultyId || ''} onValueChange={(v) => setCurrentSubject({...currentSubject, facultyId: v })}>
+                    <SelectTrigger id="s-faculty"><SelectValue placeholder="Select a faculty member" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">Unassigned</SelectItem>
+                        {facultyInDept.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
             </div>
              {currentSubject.type === 'theory' && (
               <div className="space-y-2">
