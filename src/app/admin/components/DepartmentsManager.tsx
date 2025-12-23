@@ -110,7 +110,7 @@ function MultiSelectSubjects({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput placeholder="Search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
@@ -119,9 +119,6 @@ function MultiSelectSubjects({
                 {options.map((option) => (
                     <CommandItem
                       key={option.value}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                      }}
                       onSelect={() => {
                         onChange(
                           selected.includes(option.value)
