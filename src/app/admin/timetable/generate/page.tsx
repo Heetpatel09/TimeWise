@@ -36,7 +36,7 @@ const ALL_TIME_SLOTS = [
     '1:15-2:10'
 ];
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const BREAK_SLOTS = ['9:20-9:30', '11:20-12:20'];
 
 function sortTime(a: string, b: string) {
@@ -114,7 +114,7 @@ export default function TimetableGeneratorPage() {
         setIsGenerating(true);
         try {
             const result = await generateTimetableFlow({
-                days: DAYS.filter(d => d !== 'Saturday'), // Standard 5-day week
+                days: DAYS,
                 timeSlots: ALL_TIME_SLOTS,
                 classes: [selectedClass],
                 subjects: contextInfo.subjects,

@@ -144,7 +144,9 @@ function createIndividual(lectures: Lecture[], input: GenerateTimetableInput, le
 
         let placed = false;
         for(let i = 0; i < 100; i++) { // Try to place for a while
-            const day = input.days.filter(d => d !== codeChefDay)[Math.floor(Math.random() * (input.days.length - 1))];
+            const workingDays = input.days.filter(d => d !== codeChefDay);
+            if (workingDays.length === 0) break; // Should not happen with 5 days
+            const day = workingDays[Math.floor(Math.random() * workingDays.length)];
             
             if (lecture.isLab) {
                 // Lab placement for 2 continuous hours
@@ -271,8 +273,11 @@ function mutate(chromosome: Chromosome, input: GenerateTimetableInput, lectureSl
 
         // Ensure we don't mutate code chef or lab slots for simplicity in this mutation
         if(gene1.isCodeChef || gene1.isLab) return newChromosome;
+        
+        const workingDays = input.days.filter(d => d !== gene1.day && !newChromosome.some(g => g.isCodeChef && g.day === d));
+        if (workingDays.length === 0) return newChromosome;
 
-        const newDay = input.days.filter(d => !gene1.isCodeChef || d !== gene1.day)[Math.floor(Math.random() * (input.days.length - (gene1.isCodeChef ? 1 : 0)))];
+        const newDay = workingDays[Math.floor(Math.random() * workingDays.length)];
         const newTime = lectureSlots[Math.floor(Math.random() * lectureSlots.length)];
         
         newChromosome[geneIndex1].day = newDay;
@@ -346,7 +351,7 @@ function checkImpossibility(lectures: Lecture[], input: GenerateTimetableInput):
 // --- Main GA Runner ---
 export async function runGA(input: GenerateTimetableInput) {
     const lectures = createLectureList(input);
-    const lectureSlots = input.timeSlots.filter(t => !t.includes('break') && !t.includes('recess'));
+    const lectureSlots = input.timeSlots.filter(t => !t.includes('9:20-9:30') && !t.includes('11:20-12:20'));
 
     const impossibilityReason = checkImpossibility(lectures, input);
     if (impossibilityReason) {

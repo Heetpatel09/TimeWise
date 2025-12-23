@@ -1,5 +1,6 @@
 
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { EnrichedSchedule, Class, Subject, Classroom } from '@/lib/types';
@@ -18,31 +19,25 @@ import { isToday, format } from 'date-fns';
 import AttendanceDialog from './AttendanceDialog';
 
 const ALL_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '09:30 AM - 10:00 AM', // Break
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '12:00 PM - 01:00 PM', // Break
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '7:30-8:25',
+    '8:25-9:20',
+    '9:20-9:30', // break
+    '9:30-10:25',
+    '10:25-11:20',
+    '11:20-12:20', // recess
+    '12:20-1:15',
+    '1:15-2:10'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+const BREAK_SLOTS = ['9:20-9:30', '11:20-12:20'];
 
 function sortTime(a: string, b: string) {
-    const toDate = (time: string) => {
-        const [timePart, modifier] = time.split(' ');
-        let [hours, minutes] = timePart.split(':');
-        if (hours === '12') {
-            hours = '0';
-        }
-        if (modifier === 'PM') {
-            hours = (parseInt(hours, 10) + 12).toString();
-        }
-        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+    const toMinutes = (time: string) => {
+        const [start] = time.split('-');
+        const [h, m] = start.split(':').map(Number);
+        return h * 60 + m;
     };
-    return toDate(a).getTime() - toDate(b).getTime();
+    return toMinutes(a) - toMinutes(b);
 }
 
 export default function TimetableView() {
@@ -111,17 +106,12 @@ export default function TimetableView() {
     doc.save('my_schedule.pdf');
   }
 
-  const scheduleByDay = DAYS.map(day => {
-    const daySlots = facultySchedule.filter(slot => slot.day === day);
-    const fullDaySchedule = ALL_TIME_SLOTS.map(time => {
-        if (BREAK_SLOTS.includes(time)) {
-            return { id: `${day}-${time}-break`, time: time, isBreak: true, day: day };
-        }
-        const scheduledSlot = daySlots.find(slot => slot.time === time);
-        if (scheduledSlot) return scheduledSlot;
-        return { id: `${day}-${time}-library`, time: time, day: day, isLibrary: true };
-    }).sort((a,b) => sortTime(a.time, b.time));
-    return { day, slots: fullDaySchedule };
+  const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
+    if (BREAK_SLOTS.includes(time)) {
+        return { time: time, isBreak: true };
+    }
+    const dailySlots = DAYS.map(day => facultySchedule.find(s => s.day === day && s.time === time));
+    return { time, slots: dailySlots };
   });
   
   const todayName = format(new Date(), 'EEEE');
@@ -139,80 +129,58 @@ export default function TimetableView() {
         </Button>
       </div>
       <div className="space-y-6">
-        {scheduleByDay.map(({ day, slots }) => (
-          <Card key={day}>
-            <CardHeader>
-              <CardTitle>{day}</CardTitle>
-            </CardHeader>
+        <Card>
             <CardContent>
-              {slots.length > 0 ? (
-                <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                          <TableHead>Time</TableHead>
-                          <TableHead>Class</TableHead>
-                          <TableHead>Subject</TableHead>
-                          <TableHead>Classroom</TableHead>
-                          <TableHead>Attendance</TableHead>
+                            <TableHead>Time</TableHead>
+                            {DAYS.map(day => <TableHead key={day}>{day}</TableHead>)}
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {slots.map((slot: any) => (
-                          <TableRow key={slot.id} className={slot.subjectIsSpecial ? `bg-purple-900/10 dark:bg-purple-900/50` : ''}>
-                            <TableCell>{slot.time}</TableCell>
-                            {slot.isLibrary ? (
-                               <TableCell colSpan={4} className="text-muted-foreground">
-                                     <div className="flex items-center gap-2">
-                                         <Library className="h-4 w-4" />
-                                         <span>Library Slot</span>
-                                     </div>
-                               </TableCell>
-                            ) : slot.isBreak ? (
-                                <TableCell colSpan={4} className="text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                        <Coffee className="h-4 w-4" />
-                                        <span>Break</span>
-                                    </div>
-                                </TableCell>
-                            ) : (
-                              <>
-                                <TableCell>{(slot as EnrichedSchedule).className}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                  {(slot as EnrichedSchedule).subjectName}
-                                  {(slot as EnrichedSchedule).subjectIsSpecial && <Star className="h-3 w-3 text-yellow-400" />}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={(slot as EnrichedSchedule).subjectIsSpecial ? 'default' : (slot as EnrichedSchedule).classroomType === 'lab' ? 'secondary' : 'outline'}>
-                                    {(slot as EnrichedSchedule).classroomName}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={() => handleTakeAttendance(slot)}
-                                        disabled={day !== todayName}
-                                    >
-                                        <CheckSquare className="h-4 w-4 mr-2" />
-                                        Mark Attendance
-                                    </Button>
-                                </TableCell>
-                              </>
-                            )}
-                          </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {scheduleByTime.map(row => (
+                            <TableRow key={row.time}>
+                                <TableCell>{row.time}</TableCell>
+                                {row.isBreak ? (
+                                    <TableCell colSpan={DAYS.length} className="text-center font-semibold bg-secondary">
+                                        {row.time === '9:20-9:30' ? 'BREAK' : 'RECESS'}
+                                    </TableCell>
+                                ) : (
+                                    row.slots?.map((slot, index) => (
+                                        <TableCell key={index}>
+                                            {slot ? (
+                                                <div className="space-y-1">
+                                                    <p className="font-semibold">{slot.subjectName}</p>
+                                                    <p className="text-xs text-muted-foreground">{slot.className}</p>
+                                                    <Badge variant={slot.classroomType === 'lab' ? 'secondary' : 'outline'}>{slot.classroomName}</Badge>
+                                                    {isToday(new Date()) && slot.day === todayName && (
+                                                         <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            className="w-full mt-2"
+                                                            onClick={() => handleTakeAttendance(slot)}
+                                                        >
+                                                            <CheckSquare className="h-4 w-4 mr-2" />
+                                                            Attendance
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                     <Library className="h-4 w-4" />
+                                                     <span>Library</span>
+                                                 </div>
+                                            )}
+                                        </TableCell>
+                                    ))
+                                )}
+                            </TableRow>
                         ))}
-                      </TableBody>
-                    </Table>
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
-              )}
+                    </TableBody>
+                </Table>
             </CardContent>
-          </Card>
-        ))}
+        </Card>
       </div>
       
       {isAttendanceDialogOpen && selectedSlotForAttendance && (
