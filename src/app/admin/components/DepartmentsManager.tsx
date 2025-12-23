@@ -62,7 +62,7 @@ function MultiSelectSubjects({
   const [open, setOpen] = useState(false);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -116,10 +116,6 @@ function MultiSelectSubjects({
                             : [...selected, option.value]
                         );
                         setOpen(true);
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
                       }}
                     >
                     <Check
@@ -178,7 +174,7 @@ function FacultyForm({
   const subjectOptions = useMemo(() => {
     return subjects
         .filter(s => subjectSemesterFilter === 'all' || s.semester.toString() === subjectSemesterFilter)
-        .map(s => ({ value: s.id, label: `${s.name} (Sem ${s.semester}) - ${s.type.charAt(0).toUpperCase() + s.type.slice(1)}` }));
+        .map(s => ({ value: s.id, label: `${s.name} (${s.type.charAt(0).toUpperCase() + s.type.slice(1)})` }));
   }, [subjects, subjectSemesterFilter]);
   
   const semesterOptions = useMemo(() => {
@@ -205,7 +201,7 @@ function FacultyForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="grid grid-rows-[1fr_auto] gap-4 h-full">
-        <ScrollArea className="pr-4 -mr-4">
+        <div className="overflow-y-auto pr-4 -mr-4">
         <div className="grid gap-4 py-4">
             <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
@@ -284,7 +280,7 @@ function FacultyForm({
             </>
         )}
         </div>
-        </ScrollArea>
+        </div>
         <DialogFooter className="mt-4 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -656,7 +652,7 @@ export default function DepartmentsManager() {
                                                          <div className="flex flex-wrap gap-1">
                                                               {fac.allottedSubjects?.slice(0, 2).map(subId => {
                                                                   const subject = subjects.find(s => s.id === subId);
-                                                                  return subject ? <Badge key={subId} variant="outline">{subject.code}</Badge> : null;
+                                                                  return subject ? <Badge key={subId} variant="outline">{subject.name}</Badge> : null;
                                                               })}
                                                               {fac.allottedSubjects && fac.allottedSubjects.length > 2 && (
                                                                   <Badge variant="outline">+{fac.allottedSubjects.length - 2} more</Badge>
@@ -843,5 +839,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
