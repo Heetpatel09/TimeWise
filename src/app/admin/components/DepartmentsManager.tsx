@@ -66,7 +66,7 @@ function MultiSelectSubjects({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -125,6 +125,7 @@ function MultiSelectSubjects({
                             ? selected.filter((s) => s !== option.value)
                             : [...selected, option.value]
                         );
+                        setOpen(true);
                       }}
                     >
                     <Check
