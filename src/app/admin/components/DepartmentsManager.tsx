@@ -493,11 +493,7 @@ export default function DepartmentsManager() {
     navigator.clipboard.writeText(text);
     toast({ title: 'Copied!', description: 'Password copied to clipboard.' });
   }
-  
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
-  }
-  
+
   const dept = selectedDepartment;
   const subjectsInDept = subjects.filter(s => s.department === dept && (semesterFilter === 'all' || s.semester.toString() === semesterFilter));
   const facultyInDept = allFaculty.filter(f => f.department === dept);
@@ -508,6 +504,10 @@ export default function DepartmentsManager() {
     const semesters = new Set(subjects.filter(s => s.department === dept).map(s => s.semester));
     return ['all', ...Array.from(semesters).sort((a,b) => a-b).map(String)];
   }, [subjects, dept]);
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
   
   return (
     <div className="space-y-6">
@@ -785,7 +785,7 @@ export default function DepartmentsManager() {
       </Dialog>
 
       {/* Faculty Dialog */}
-      <Dialog open={isFacultyDialogOpen} onOpenChange={setFacultyDialogOpen}>
+      <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
@@ -846,3 +846,7 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
+
+    
