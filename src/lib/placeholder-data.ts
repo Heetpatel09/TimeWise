@@ -78,9 +78,9 @@ export const students: Student[] = studentNames.map((name, index) => {
 
 
 export const faculty: Faculty[] = [
-  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: 'TNG01', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['HOD'], streak: 45, profileCompleted: 90, points: 5200, allottedSubjects: ['SUB001', 'SUB005'], maxWeeklyHours: 20, designatedYear: 1 },
-  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: 'LCE02', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 8, profileCompleted: 80, points: 2100, allottedSubjects: ['SUB003', 'SUB021'], maxWeeklyHours: 18, designatedYear: 1 },
-  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: 'HPR03', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['Lab Incharge'], streak: 15, profileCompleted: 85, points: 3400, allottedSubjects: ['SUB002', 'SUB022'], maxWeeklyHours: 22, designatedYear: 1 },
+  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: 'TNG01', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['HOD'], streak: 45, profileCompleted: 90, points: 5200, allottedSubjects: ['SUB001'], maxWeeklyHours: 20, designatedYear: 1 },
+  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: 'LCE02', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 8, profileCompleted: 80, points: 2100, allottedSubjects: ['SUB003'], maxWeeklyHours: 18, designatedYear: 1 },
+  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: 'HPR03', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['Lab Incharge'], streak: 15, profileCompleted: 85, points: 3400, allottedSubjects: ['SUB002', 'SUB022', 'SUB021'], maxWeeklyHours: 22, designatedYear: 1 },
   { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: 'NMN04', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 50, points: 500, allottedSubjects: ['SUB011'], maxWeeklyHours: 10, designatedYear: 3 },
   { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', code: 'KNH05', designation: 'Lecturer', employmentType: 'contract', department: 'Computer Engineering', roles: [], streak: 0, profileCompleted: 60, points: 800, allottedSubjects: ['SUB005'], maxWeeklyHours: 15, designatedYear: 2 },
   { id: 'FAC006', name: 'Dr. Abhinav Gupta', email: 'abhinav@example.com', code: 'GPT06', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 25, profileCompleted: 95, points: 4500, allottedSubjects: ['SUB013', 'SUB016'], maxWeeklyHours: 20, designatedYear: 4 },
@@ -323,5 +323,7 @@ export const userBadges: UserBadge[] = [
     { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() },
     { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
+
+    
 
     
