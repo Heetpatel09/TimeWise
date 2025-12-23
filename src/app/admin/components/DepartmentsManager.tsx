@@ -115,7 +115,11 @@ function MultiSelectSubjects({
                             ? selected.filter((s) => s !== option.value)
                             : [...selected, option.value]
                         );
-                        setOpen(true); // Keep it open
+                        setOpen(true);
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                       }}
                     >
                     <Check
@@ -149,7 +153,7 @@ function FacultyForm({
 }: {
   faculty: Partial<Faculty>;
   subjects: Subject[];
-  onSave: (data: z.infer<typeof facultySchema>, password?: string) => void;
+  onSave: (data: z.infer<typeof facultySchema>, password?: string) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   department: string;
@@ -174,7 +178,7 @@ function FacultyForm({
   const subjectOptions = useMemo(() => {
     return subjects
         .filter(s => subjectSemesterFilter === 'all' || s.semester.toString() === subjectSemesterFilter)
-        .map(s => ({ value: s.id, label: `${s.name} (Sem ${s.semester})` }));
+        .map(s => ({ value: s.id, label: `${s.name} (Sem ${s.semester}) - ${s.type.charAt(0).toUpperCase() + s.type.slice(1)}` }));
   }, [subjects, subjectSemesterFilter]);
   
   const semesterOptions = useMemo(() => {
@@ -183,7 +187,7 @@ function FacultyForm({
   }, [subjects]);
 
 
-  const handleSubmit = (data: z.infer<typeof facultySchema>) => {
+  const handleSubmit = async (data: z.infer<typeof facultySchema>) => {
     if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
       toast({ title: "Password Required", description: "Please enter a password for the new faculty member.", variant: "destructive" });
       return;
@@ -195,7 +199,7 @@ function FacultyForm({
         return;
     }
 
-    onSave(data, passwordOption === 'manual' ? manualPassword : undefined);
+    await onSave(data, passwordOption === 'manual' ? manualPassword : undefined);
   };
 
   return (
@@ -382,16 +386,17 @@ export default function DepartmentsManager() {
       try {
         const dataToSave = {...data, roles: []};
         if (dataToSave.id) {
-          await updateFaculty(dataToSave as Faculty);
+          const updatedFaculty = await updateFaculty(dataToSave as Faculty);
+          setAllFaculty(prev => prev.map(f => f.id === updatedFaculty.id ? updatedFaculty : f));
           toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
         } else {
-          const result = await addFaculty(dataToSave, password);
+          const newFacultyResult = await addFaculty(dataToSave, password);
+          setAllFaculty(prev => [...prev, newFacultyResult]);
           toast({ title: "Faculty Added", description: "The new faculty member has been created." });
-          if (result.initialPassword) {
-            setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
+          if (newFacultyResult.initialPassword) {
+            setNewFacultyCredentials({ email: newFacultyResult.email, initialPassword: newFacultyResult.initialPassword });
           }
         }
-        await loadData();
         setFacultyDialogOpen(false);
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
