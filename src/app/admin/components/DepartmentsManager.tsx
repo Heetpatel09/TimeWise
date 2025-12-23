@@ -61,10 +61,6 @@ function MultiSelectSubjects({
 }) {
   const [open, setOpen] = useState(false);
 
-  const handleUnselect = (value: string) => {
-    onChange(selected.filter((s) => s !== value));
-  };
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -73,7 +69,6 @@ function MultiSelectSubjects({
           role="combobox"
           aria-expanded={open}
           className={cn("w-full justify-between h-auto min-h-10", className)}
-          onClick={() => setOpen(!open)}
         >
           <div className="flex gap-1 flex-wrap">
             {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
@@ -89,16 +84,11 @@ function MultiSelectSubjects({
                    <button
                     type="button"
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUnselect(value);
-                      }
-                    }}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      onChange(selected.filter((s) => s !== value));
                     }}
-                    onClick={() => handleUnselect(value)}
                    >
                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                    </button>
@@ -119,16 +109,13 @@ function MultiSelectSubjects({
                 {options.map((option) => (
                     <CommandItem
                       key={option.value}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
                       onSelect={() => {
                         onChange(
                           selected.includes(option.value)
                             ? selected.filter((s) => s !== option.value)
                             : [...selected, option.value]
                         );
+                        setOpen(true); // Keep it open
                       }}
                     >
                     <Check
@@ -851,4 +838,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
