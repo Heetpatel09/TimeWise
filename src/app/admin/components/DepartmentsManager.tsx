@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
@@ -210,8 +209,8 @@ function FacultyForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)}>
-        <ScrollArea className="max-h-[65vh] p-1 pr-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="grid grid-rows-[1fr_auto] gap-4 h-full">
+        <div className="overflow-y-auto px-1 pr-4">
         <div className="grid gap-4 py-4">
             <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
@@ -290,7 +289,7 @@ function FacultyForm({
             </>
         )}
         </div>
-        </ScrollArea>
+        </div>
         <DialogFooter className="mt-4 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -786,7 +785,7 @@ export default function DepartmentsManager() {
 
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="max-w-2xl grid-rows-[auto_1fr_auto]" style={{maxHeight: '90vh'}}>
+        <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
