@@ -61,6 +61,19 @@ function MultiSelectSubjects({
 }) {
   const [open, setOpen] = useState(false);
 
+  const handleSelect = (value: string) => {
+    onChange(
+      selected.includes(value)
+        ? selected.filter((s) => s !== value)
+        : [...selected, value]
+    );
+  };
+  
+  const handleUnselect = (value: string) => {
+    onChange(selected.filter((s) => s !== value));
+  };
+
+
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
@@ -71,7 +84,7 @@ function MultiSelectSubjects({
           className={cn("w-full justify-between h-auto min-h-10", className)}
         >
           <div className="flex gap-1 flex-wrap">
-            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
+             {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
             {selected.map((value) => {
               const label = options.find((o) => o.value === value)?.label;
               return (
@@ -79,6 +92,10 @@ function MultiSelectSubjects({
                   key={value}
                   variant="secondary"
                   className="mr-1"
+                  onClick={(e) => {
+                      e.stopPropagation(); // Prevent opening popover
+                      handleUnselect(value);
+                  }}
                 >
                   {label}
                    <button
@@ -87,8 +104,8 @@ function MultiSelectSubjects({
                     onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onChange(selected.filter((s) => s !== value));
                     }}
+                    onClick={() => handleUnselect(value)}
                    >
                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                    </button>
@@ -109,14 +126,11 @@ function MultiSelectSubjects({
                 {options.map((option) => (
                     <CommandItem
                       key={option.value}
-                      onSelect={() => {
-                        onChange(
-                          selected.includes(option.value)
-                            ? selected.filter((s) => s !== option.value)
-                            : [...selected, option.value]
-                        );
-                        setOpen(true);
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                       }}
+                      onSelect={() => handleSelect(option.value)}
                     >
                     <Check
                         className={cn(
@@ -652,7 +666,7 @@ export default function DepartmentsManager() {
                                                          <div className="flex flex-wrap gap-1">
                                                               {fac.allottedSubjects?.slice(0, 2).map(subId => {
                                                                   const subject = subjects.find(s => s.id === subId);
-                                                                  return subject ? <Badge key={subId} variant="outline">{subject.name}</Badge> : null;
+                                                                  return subject ? <Badge key={subId} variant="outline">{subject.name} ({subject.type.charAt(0).toUpperCase()})</Badge> : null;
                                                               })}
                                                               {fac.allottedSubjects && fac.allottedSubjects.length > 2 && (
                                                                   <Badge variant="outline">+{fac.allottedSubjects.length - 2} more</Badge>
