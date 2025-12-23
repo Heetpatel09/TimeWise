@@ -786,7 +786,7 @@ export default function DepartmentsManager() {
 
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl grid-rows-[auto_1fr_auto]" style={{maxHeight: '90vh'}}>
           <DialogHeader>
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
@@ -846,5 +846,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
