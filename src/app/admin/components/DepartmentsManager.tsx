@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
@@ -111,36 +112,36 @@ function MultiSelectSubjects({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder="Search..." />
-          <ScrollArea className="max-h-72">
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  onSelect={() => {
-                    onChange(
-                      selected.includes(option.value)
-                        ? selected.filter((s) => s !== option.value)
-                        : [...selected, option.value]
-                    );
-                    setOpen(true);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.includes(option.value)
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            <ScrollArea className="max-h-72">
+                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandGroup>
+                {options.map((option) => (
+                    <CommandItem
+                    key={option.value}
+                    onSelect={() => {
+                        onChange(
+                        selected.includes(option.value)
+                            ? selected.filter((s) => s !== option.value)
+                            : [...selected, option.value]
+                        );
+                        setOpen(true);
+                    }}
+                    >
+                    <Check
+                        className={cn(
+                        "mr-2 h-4 w-4",
+                        selected.includes(option.value)
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                    />
+                    {option.label}
+                    </CommandItem>
+                ))}
+                </CommandGroup>
+            </ScrollArea>
           </CommandList>
-          </ScrollArea>
         </Command>
       </PopoverContent>
     </Popover>
@@ -210,7 +211,7 @@ function FacultyForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="grid grid-rows-[1fr_auto] gap-4 h-full">
-        <div className="overflow-y-auto px-1 pr-4">
+        <ScrollArea className="pr-4 -mr-4">
         <div className="grid gap-4 py-4">
             <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
@@ -289,7 +290,7 @@ function FacultyForm({
             </>
         )}
         </div>
-        </div>
+        </ScrollArea>
         <DialogFooter className="mt-4 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
