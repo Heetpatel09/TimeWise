@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -86,8 +86,7 @@ function MultiSelectSubjects({
                   className="mr-1"
                 >
                   {label}
-                   <button
-                    type="button"
+                   <div
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -101,7 +100,7 @@ function MultiSelectSubjects({
                     onClick={() => handleUnselect(value)}
                    >
                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                   </button>
+                   </div>
                 </Badge>
               );
             })}
@@ -847,5 +846,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
