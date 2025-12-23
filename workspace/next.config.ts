@@ -67,9 +67,6 @@ const nextConfig: NextConfig = {
         '6000-firebase-studio-1756557245547.cluster-a6zx3cwnb5hnuwbgyxmofxpkfe.cloudworkstations.dev'
     ],
   },
-  experimental: {
-    
-  }
 };
 
 export default nextConfig;
