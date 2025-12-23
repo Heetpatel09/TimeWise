@@ -18,6 +18,7 @@ interface Gene {
     facultyId: string;
     classroomId: string;
     isLab: boolean;
+    isCodeChef?: boolean;
     batch?: 'A' | 'B';
 }
 
@@ -28,6 +29,7 @@ interface Lecture {
     subjectId: string;
     facultyId: string;
     isLab: boolean;
+    priorityValue: number;
     batch?: 'A' | 'B';
 }
 
@@ -36,14 +38,7 @@ const HARD_CONSTRAINT_PENALTY = 1000;
 const SOFT_CONSTRAINT_PENALTY = 10;
 const IDLE_GAP_PENALTY = 50; // Increased penalty for gaps
 const PARTIAL_DAY_PENALTY = 20; // Penalty for having a day with very few classes
-const CLASSROOM_CHANGE_PENALTY = 5;
-
-// Define valid lab slot pairs
-const VALID_LAB_SLOT_PAIRS: string[][] = [
-    ['07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM'], // Slots 1 & 2
-    ['10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM'], // Slots 3 & 4
-    ['01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'], // Slots 5 & 6
-];
+const CLASSROOM_CHANGE_PENALTY = 15; // Increased penalty for classroom changes
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
     switch (priority) {
@@ -54,6 +49,16 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
         default: return 3; // Default to 3 hours if not specified
     }
 };
+
+const getPriorityValue = (priority?: SubjectPriority): number => {
+     switch (priority) {
+        case 'Non Negotiable': return 4;
+        case 'High': return 3;
+        case 'Medium': return 2;
+        case 'Low': return 1;
+        default: return 2; 
+    }
+}
 
 /**
  * Pre-processes the input data to create a list of all required lecture slots.
@@ -70,20 +75,25 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
                 return;
             }
 
+            const priorityValue = getPriorityValue(sub.priority);
+
             if (sub.type.toLowerCase() === 'lab') {
                 // Labs are 2 hours per session, and we need sessions for Batch A and Batch B.
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A' });
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A' });
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B' });
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B' });
+                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A', priorityValue });
+                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A', priorityValue });
+                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B', priorityValue });
+                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B', priorityValue });
             } else {
                  const hours = getHoursForPriority(sub.priority);
                  for(let i = 0; i < hours; i++) {
-                    lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: false });
+                    lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: false, priorityValue });
                  }
             }
         });
     });
+
+    // Sort lectures by priority so higher priority subjects are placed first
+    lectures.sort((a, b) => b.priorityValue - a.priorityValue);
     return lectures;
 }
 
@@ -91,11 +101,38 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
 /**
  * Generates a single random, but structurally valid, timetable (Chromosome).
  */
-function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): Chromosome {
+function createIndividual(lectures: Lecture[], input: GenerateTimetableInput, lectureSlots: string[]): Chromosome {
     const individual: Chromosome = [];
     const lectureQueue = [...lectures];
 
     const assignedSlotsForClass = new Map<string, Set<string>>(); // classId -> Set<"day-time">
+    let librarySlotsAssigned = 0;
+    const maxLibrarySlots = 3;
+
+    // Designate a random "Code Chef" day
+    const codeChefDay = input.days[Math.floor(Math.random() * input.days.length)];
+    const codeChefSubjectId = 'CODECHEF';
+
+    // Populate the schedule with Code Chef day first
+    input.classes.forEach(cls => {
+        lectureSlots.forEach(time => {
+            const classroom = input.classrooms[Math.floor(Math.random() * input.classrooms.length)];
+             const faculty = input.faculty[Math.floor(Math.random() * input.faculty.length)];
+            individual.push({
+                day: codeChefDay,
+                time,
+                classId: cls.id,
+                subjectId: codeChefSubjectId,
+                facultyId: faculty.id, // Placeholder
+                classroomId: classroom.id, // Placeholder
+                isLab: false,
+                isCodeChef: true,
+            });
+
+             if (!assignedSlotsForClass.has(cls.id)) assignedSlotsForClass.set(cls.id, new Set());
+             assignedSlotsForClass.get(cls.id)!.add(`${codeChefDay}-${time}`);
+        });
+    });
 
     while (lectureQueue.length > 0) {
         const lecture = lectureQueue.shift()!;
@@ -106,12 +143,16 @@ function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): C
         const classroom = availableClassrooms[Math.floor(Math.random() * availableClassrooms.length)];
 
         let placed = false;
-        // Try to place for a while, then give up on this attempt
-        for(let i = 0; i < 100; i++) {
+        for(let i = 0; i < 100; i++) { // Try to place for a while
+            const day = input.days.filter(d => d !== codeChefDay)[Math.floor(Math.random() * (input.days.length - 1))];
+            
             if (lecture.isLab) {
-                // Try to place a 2-hour lab block
-                const day = input.days[Math.floor(Math.random() * input.days.length)];
-                const pair = VALID_LAB_SLOT_PAIRS[Math.floor(Math.random() * VALID_LAB_SLOT_PAIRS.length)];
+                // Lab placement for 2 continuous hours
+                const validLabPairs: string[][] = [];
+                for(let j=0; j < lectureSlots.length - 1; j++) {
+                    validLabPairs.push([lectureSlots[j], lectureSlots[j+1]]);
+                }
+                const pair = validLabPairs[Math.floor(Math.random() * validLabPairs.length)];
                 
                 const slotKey1 = `${day}-${pair[0]}`;
                 const slotKey2 = `${day}-${pair[1]}`;
@@ -119,10 +160,9 @@ function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): C
                 if (!assignedSlotsForClass.has(lecture.classId)) assignedSlotsForClass.set(lecture.classId, new Set());
 
                 if (!assignedSlotsForClass.get(lecture.classId)!.has(slotKey1) && !assignedSlotsForClass.get(lecture.classId)!.has(slotKey2)) {
-                    // We found a free block for this class. Place both genes.
-                    const labPartner = lectureQueue.findIndex(l => l.subjectId === lecture.subjectId && l.batch === lecture.batch);
-                    if (labPartner !== -1) {
-                         const partnerLecture = lectureQueue.splice(labPartner, 1)[0];
+                    const labPartnerIndex = lectureQueue.findIndex(l => l.subjectId === lecture.subjectId && l.batch === lecture.batch);
+                    if (labPartnerIndex !== -1) {
+                         const partnerLecture = lectureQueue.splice(labPartnerIndex, 1)[0];
                          individual.push({ day, time: pair[0], ...lecture, classroomId: classroom.id });
                          individual.push({ day, time: pair[1], ...partnerLecture, classroomId: classroom.id });
                          assignedSlotsForClass.get(lecture.classId)!.add(slotKey1);
@@ -132,9 +172,8 @@ function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): C
                     }
                 }
             } else {
-                // Place a 1-hour theory lecture
-                const day = input.days[Math.floor(Math.random() * input.days.length)];
-                const time = input.timeSlots.filter(t => !t.toLowerCase().includes('recess'))[Math.floor(Math.random() * (input.timeSlots.length - 2))];
+                // Theory lecture placement
+                const time = lectureSlots[Math.floor(Math.random() * lectureSlots.length)];
                 const slotKey = `${day}-${time}`;
 
                 if (!assignedSlotsForClass.has(lecture.classId)) assignedSlotsForClass.set(lecture.classId, new Set());
@@ -147,10 +186,7 @@ function createIndividual(lectures: Lecture[], input: GenerateTimetableInput): C
                 }
             }
         }
-        if(!placed) {
-            // Could not place, put it back in the queue to try later
-            lectureQueue.push(lecture);
-        }
+        if(!placed) lectureQueue.push(lecture);
     }
     return individual;
 }
@@ -172,130 +208,105 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
     timeSlotMap.forEach(genesInSlot => {
         const facultyIds = new Set();
         const classroomIds = new Set();
-        const labBatchTracker = new Map<string, Set<string>>(); // key: classId-subjectId, value: Set<'A' | 'B'>
+        const labBatchTracker = new Map<string, Set<string>>();
 
         genesInSlot.forEach(gene => {
-            // 1. Faculty conflict
+            if (gene.isCodeChef) return; // Ignore code chef slots for conflict checks
             if (facultyIds.has(gene.facultyId)) fitness += HARD_CONSTRAINT_PENALTY;
             facultyIds.add(gene.facultyId);
-
-            // 2. Classroom conflict
             if (classroomIds.has(gene.classroomId)) fitness += HARD_CONSTRAINT_PENALTY;
             classroomIds.add(gene.classroomId);
-
-            // Lab batch conflict: Check if two different batches of the same lab are at the same time
             if(gene.isLab && gene.batch) {
                 const key = `${gene.classId}-${gene.subjectId}`;
                 if (!labBatchTracker.has(key)) labBatchTracker.set(key, new Set());
                 labBatchTracker.get(key)!.add(gene.batch);
             }
         });
-        
         labBatchTracker.forEach(batches => {
-            if(batches.size > 1) fitness += HARD_CONSTRAINT_PENALTY; // e.g., Batch A and B of same lab at same time
+            if(batches.size > 1) fitness += HARD_CONSTRAINT_PENALTY;
         });
     });
-
-    // Check lab pairing and continuity
-    const labsByClassSubBatch = new Map<string, Gene[]>();
-    chromosome.filter(g => g.isLab).forEach(lab => {
-        const key = `${lab.classId}-${lab.subjectId}-${lab.batch}`;
-        if(!labsByClassSubBatch.has(key)) labsByClassSubBatch.set(key, []);
-        labsByClassSubBatch.get(key)!.push(lab);
-    });
-    
-    labsByClassSubBatch.forEach(labs => {
-        if(labs.length !== 2) {
-            fitness += HARD_CONSTRAINT_PENALTY; // Should be exactly 2 hours
-            return;
-        }
-        const [lab1, lab2] = labs;
-        if(lab1.day !== lab2.day) {
-             fitness += HARD_CONSTRAINT_PENALTY; // Must be on the same day
-             return;
-        }
-        
-        const isPairValid = VALID_LAB_SLOT_PAIRS.some(pair => 
-            (pair[0] === lab1.time && pair[1] === lab2.time) ||
-            (pair[1] === lab1.time && pair[0] === lab2.time)
-        );
-
-        if(!isPairValid) {
-            fitness += HARD_CONSTRAINT_PENALTY; // Not in a valid consecutive pair
-        }
-    });
-
 
     // SOFT CONSTRAINTS
     input.classes.forEach(cls => {
-        const classSchedule = chromosome.filter(g => g.classId === cls.id);
-        const dailyLectures = new Map<string, Gene[]>();
+        const classSchedule = chromosome.filter(g => g.classId === cls.id && !g.isCodeChef);
+        const dayScheduleMap = new Map<string, Gene[]>();
         
         classSchedule.forEach(gene => {
-            if (!dailyLectures.has(gene.day)) dailyLectures.set(gene.day, []);
-            dailyLectures.get(gene.day)!.push(gene);
+            if (!dayScheduleMap.has(gene.day)) dayScheduleMap.set(gene.day, []);
+            dayScheduleMap.get(gene.day)!.push(gene);
         });
 
-        const idleDays = input.days.length - dailyLectures.size;
-        if (idleDays === 1) {
-            // Reward for having exactly one idle day
-            fitness -= SOFT_CONSTRAINT_PENALTY * 10;
-        }
+        // Classroom Consistency for continuous lectures
+        dayScheduleMap.forEach((lecturesOnDay) => {
+             const sortedLectures = lecturesOnDay.sort((a, b) => input.timeSlots.indexOf(a.time) - input.timeSlots.indexOf(b.time));
+             for(let i=0; i < sortedLectures.length - 1; i++) {
+                 const currentLec = sortedLectures[i];
+                 const nextLec = sortedLectures[i+1];
+                 const timeIndexCurrent = input.timeSlots.indexOf(currentLec.time);
+                 const timeIndexNext = input.timeSlots.indexOf(nextLec.time);
 
-        dailyLectures.forEach((lecturesOnDay, day) => {
-             // Idle Gaps Penalty
-            const timeSlots = input.timeSlots.filter(t => !t.toLowerCase().includes('recess'));
-            const dayScheduleIndexes = lecturesOnDay.map(g => timeSlots.indexOf(g.time)).sort((a,b) => a-b);
-            if (dayScheduleIndexes.length > 1) {
-                for (let i = 0; i < dayScheduleIndexes.length - 1; i++) {
-                    const gap = dayScheduleIndexes[i+1] - dayScheduleIndexes[i];
-                    if (gap > 1) {
-                        fitness += IDLE_GAP_PENALTY * (gap - 1);
-                    }
-                }
-            }
-            // Partially filled day penalty
-            if(dayScheduleIndexes.length > 0 && dayScheduleIndexes.length < 4) {
-                fitness += PARTIAL_DAY_PENALTY;
-            }
+                 if(timeIndexNext - timeIndexCurrent === 1 && !currentLec.isLab && !nextLec.isLab) { // Are they consecutive?
+                     if(currentLec.classroomId !== nextLec.classroomId) {
+                         fitness += CLASSROOM_CHANGE_PENALTY;
+                     }
+                 }
+             }
         });
-
-        // Classroom Consistency Penalty
-        const uniqueClassrooms = new Set(classSchedule.map(g => g.classroomId)).size;
-        if (uniqueClassrooms > 1) {
-            fitness += CLASSROOM_CHANGE_PENALTY * (uniqueClassrooms - 1);
-        }
     });
 
     return fitness;
 }
 
+
 /**
  * Performs mutation on a chromosome.
  */
-function mutate(chromosome: Chromosome): Chromosome {
-    const newChromosome = JSON.parse(JSON.stringify(chromosome));
+function mutate(chromosome: Chromosome, input: GenerateTimetableInput, lectureSlots: string[]): Chromosome {
+    let newChromosome = JSON.parse(JSON.stringify(chromosome));
     
-    for (let i = 0; i < newChromosome.length; i++) {
-        if (Math.random() < MUTATION_RATE) {
-            const j = Math.floor(Math.random() * newChromosome.length);
-            // Simple swap of two random genes' positions
-            [newChromosome[i].day, newChromosome[j].day] = [newChromosome[j].day, newChromosome[i].day];
-            [newChromosome[i].time, newChromosome[j].time] = [newChromosome[j].time, newChromosome[i].time];
-        }
+    if (Math.random() < MUTATION_RATE) {
+        const geneIndex1 = Math.floor(Math.random() * newChromosome.length);
+        let gene1 = newChromosome[geneIndex1];
+
+        // Ensure we don't mutate code chef or lab slots for simplicity in this mutation
+        if(gene1.isCodeChef || gene1.isLab) return newChromosome;
+
+        const newDay = input.days.filter(d => !gene1.isCodeChef || d !== gene1.day)[Math.floor(Math.random() * (input.days.length - (gene1.isCodeChef ? 1 : 0)))];
+        const newTime = lectureSlots[Math.floor(Math.random() * lectureSlots.length)];
+        
+        newChromosome[geneIndex1].day = newDay;
+        newChromosome[geneIndex1].time = newTime;
     }
     return newChromosome;
 }
+
 
 /**
  * Performs crossover between two parent chromosomes.
  */
 function crossover(parent1: Chromosome, parent2: Chromosome): Chromosome[] {
     const crossoverPoint = Math.floor(Math.random() * parent1.length);
-    const child1 = [...parent1.slice(0, crossoverPoint), ...parent2.slice(crossoverPoint)];
-    const child2 = [...parent2.slice(0, crossoverPoint), ...parent1.slice(crossoverPoint)];
-    return [child1, child2];
+    const child1Genes: Gene[] = [];
+    const child2Genes: Gene[] = [];
+
+    const parent1Map = new Map(parent1.map(g => [`${g.classId}-${g.subjectId}-${g.day}-${g.time}`, g]));
+    const parent2Map = new Map(parent2.map(g => [`${g.classId}-${g.subjectId}-${g.day}-${g.time}`, g]));
+
+    for (let i = 0; i < parent1.length; i++) {
+        if (i < crossoverPoint) {
+            child1Genes.push(parent1[i]);
+            child2Genes.push(parent2[i]);
+        } else {
+            child1Genes.push(parent2[i]);
+            child2Genes.push(parent1[i]);
+        }
+    }
+    
+    // Naive crossover, might produce invalid schedules but fitness function will penalize them.
+    return [child1Genes, child2Genes];
 }
+
 
 /**
 * Checks if a valid schedule is even possible with the given constraints.
@@ -327,12 +338,6 @@ function checkImpossibility(lectures: Lecture[], input: GenerateTimetableInput):
            return `Faculty ${faculty.name} is over-allocated. Required: ${requiredHours} hours, Max: ${faculty.maxWeeklyHours} hours. Please increase their max weekly hours.`;
        }
    }
-
-   const requiredLabSlots = lectures.filter(l => l.isLab).length;
-   const availableLabSlots = input.classrooms.filter(c => c.type === 'lab').length * input.days.length * VALID_LAB_SLOT_PAIRS.length;
-   if (requiredLabSlots > availableLabSlots * 2) { // x2 because each slot pair takes 2 genes
-       return `Not enough lab classroom slots available. Required: ${requiredLabSlots / 2} 2-hour lab blocks, but only ${availableLabSlots} are possible in the schedule. Please add more lab classrooms.`;
-   }
    
    return null;
 }
@@ -341,21 +346,14 @@ function checkImpossibility(lectures: Lecture[], input: GenerateTimetableInput):
 // --- Main GA Runner ---
 export async function runGA(input: GenerateTimetableInput) {
     const lectures = createLectureList(input);
+    const lectureSlots = input.timeSlots.filter(t => !t.includes('break') && !t.includes('recess'));
 
     const impossibilityReason = checkImpossibility(lectures, input);
     if (impossibilityReason) {
         return { success: false, message: impossibilityReason, bestTimetable: null, generations: 0, fitness: -1 };
     }
 
-    let population = Array.from({ length: POPULATION_SIZE }, () => createIndividual(lectures, input));
-
-    if(input.existingSchedule && input.existingSchedule.length > 0) {
-        // Seed the population with the existing schedule for stability
-        const seedChromosome = input.existingSchedule.filter(
-            slot => input.classes.some(c => c.id === slot.classId)
-        ) as Chromosome;
-        if(seedChromosome.length > 0) population[0] = seedChromosome;
-    }
+    let population = Array.from({ length: POPULATION_SIZE }, () => createIndividual(lectures, input, lectureSlots));
 
     let bestTimetable: Chromosome | null = null;
     let bestFitness = Infinity;
@@ -388,9 +386,9 @@ export async function runGA(input: GenerateTimetableInput) {
             const parent1 = fitnessScores[Math.floor(Math.random() * (population.length / 2))].chromosome;
             const parent2 = fitnessScores[Math.floor(Math.random() * (population.length / 2))].chromosome;
             const [child1, child2] = crossover(parent1, parent2);
-            newPopulation.push(mutate(child1));
+            newPopulation.push(mutate(child1, input, lectureSlots));
             if (newPopulation.length < POPULATION_SIZE) {
-                newPopulation.push(mutate(child2));
+                newPopulation.push(mutate(child2, input, lectureSlots));
             }
         }
         population = newPopulation;

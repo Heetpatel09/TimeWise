@@ -26,25 +26,26 @@ import { Badge } from '@/components/ui/badge';
 
 
 const ALL_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM', 
-    '09:30 AM - 10:00 AM', // Recess
-    '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', 
-    '12:00 PM - 01:00 PM', // Recess
-    '01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'
+    '7:30-8:25',
+    '8:25-9:20',
+    '9:20-9:30', // break
+    '9:30-10:25',
+    '10:25-11:20',
+    '11:20-12:20', // recess
+    '12:20-1:15',
+    '1:15-2:10'
 ];
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+const BREAK_SLOTS = ['9:20-9:30', '11:20-12:20'];
 
 function sortTime(a: string, b: string) {
-    const toDate = (time: string) => {
-        const [timePart, modifier] = time.split(' ');
-        let [hours, minutes] = timePart.split(':');
-        if (hours === '12') hours = '0';
-        if (modifier === 'PM') hours = (parseInt(hours, 10) + 12).toString();
-        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+    const toMinutes = (time: string) => {
+        const [start] = time.split('-');
+        const [h, m] = start.split(':').map(Number);
+        return h * 60 + m;
     };
-    return toDate(a).getTime() - toDate(b).getTime();
+    return toMinutes(a) - toMinutes(b);
 }
 
 
@@ -274,14 +275,14 @@ export default function TimetableGeneratorPage() {
                                             <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
                                             {isBreak ? (
                                                 <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary p-2">
-                                                    RECESS
+                                                    {time === '9:20-9:30' ? '10 MIN BREAK' : 'RECESS'}
                                                 </TableCell>
                                             ) : (
                                                 slots.map(({ day, slot }) => (
                                                     <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
                                                         {slot ? (
-                                                             <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", 'bg-muted')}>
-                                                                <div><strong>{subjects?.find(s => s.id === slot.subjectId)?.name}</strong></div>
+                                                             <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", slot.subjectId === 'CODECHEF' ? 'bg-blue-100' : 'bg-muted')}>
+                                                                <div><strong>{subjects?.find(s => s.id === slot.subjectId)?.name || 'Code Chef'}</strong></div>
                                                                 <div className="truncate">{faculty?.find(f => f.id === slot.facultyId)?.name}</div>
                                                                 <div>{classrooms?.find(c => c.id === slot.classroomId)?.name}</div>
                                                                 {(slot as any).batch && <Badge variant="secondary" className="mt-1">Batch {(slot as any).batch}</Badge>}
