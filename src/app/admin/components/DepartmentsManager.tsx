@@ -117,7 +117,7 @@ function MultiSelectSubjects({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command shouldFilter={false}>
+        <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
@@ -126,6 +126,10 @@ function MultiSelectSubjects({
                 {options.map((option) => (
                     <CommandItem
                       key={option.value}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                       onSelect={() => handleSelect(option.value)}
                     >
                     <Check
@@ -769,10 +773,10 @@ export default function DepartmentsManager() {
             </div>
             <div className="space-y-2">
                 <Label htmlFor="s-faculty">Allot Faculty</Label>
-                <Select value={currentSubject.facultyId || ''} onValueChange={(v) => setCurrentSubject({...currentSubject, facultyId: v })}>
+                <Select value={currentSubject.facultyId || 'unassigned'} onValueChange={(v) => setCurrentSubject({...currentSubject, facultyId: v === 'unassigned' ? null : v })}>
                     <SelectTrigger id="s-faculty"><SelectValue placeholder="Select a faculty member" /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {facultyInDept.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
