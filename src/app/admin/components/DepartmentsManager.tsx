@@ -110,7 +110,7 @@ function MultiSelectSubjects({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command shouldFilter={false}>
+        <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
@@ -119,13 +119,16 @@ function MultiSelectSubjects({
                 {options.map((option) => (
                     <CommandItem
                       key={option.value}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                       onSelect={() => {
                         onChange(
                           selected.includes(option.value)
                             ? selected.filter((s) => s !== option.value)
                             : [...selected, option.value]
                         );
-                        setOpen(true);
                       }}
                     >
                     <Check
@@ -786,7 +789,7 @@ export default function DepartmentsManager() {
 
       {/* Faculty Dialog */}
       <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
-        <DialogContent className="max-w-2xl grid-rows-[auto,1fr,auto] flex h-[90vh] flex-col p-0">
+        <DialogContent className="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] flex h-[90vh] flex-col p-0">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
@@ -848,3 +851,4 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
