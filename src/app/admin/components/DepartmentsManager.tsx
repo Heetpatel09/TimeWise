@@ -379,9 +379,9 @@ export default function DepartmentsManager() {
       setIsSubmitting(true);
       try {
         if (currentSubject.id) {
-          await updateSubject({ ...subjectToSave, id: currentSubject.id });
+          await updateSubject({ ...subjectToSave, id: currentSubject.id }, allFaculty);
         } else {
-          await addSubject(subjectToSave);
+          await addSubject({ ...subjectToSave }, allFaculty);
         }
 
         toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
@@ -412,17 +412,15 @@ export default function DepartmentsManager() {
       try {
         const dataToSave: Omit<Faculty, 'id'> & {id?: string} = {...data, roles: []};
         if (dataToSave.id) {
-          const updatedFaculty = await updateFaculty(dataToSave as Faculty);
-          setAllFaculty(prev => prev.map(f => f.id === updatedFaculty.id ? updatedFaculty : f));
-          toast({ title: "Faculty Updated", description: "The faculty member's details have been saved." });
+          await updateFaculty(dataToSave as Faculty);
         } else {
           const newFacultyResult = await addFaculty(dataToSave, password);
-          setAllFaculty(prev => [...prev, newFacultyResult]);
-          toast({ title: "Faculty Added", description: "The new faculty member has been created." });
           if (newFacultyResult.initialPassword) {
             setNewFacultyCredentials({ email: newFacultyResult.email, initialPassword: newFacultyResult.initialPassword });
           }
         }
+        await loadData();
+        toast({ title: dataToSave.id ? "Faculty Updated" : "Faculty Added" });
         setFacultyDialogOpen(false);
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
@@ -448,7 +446,10 @@ export default function DepartmentsManager() {
   };
   
   const openEditSubjectDialog = (subject: Subject) => {
-    setCurrentSubject({...subject, facultyIds: subject.facultyIds || []});
+    const assignedFacultyIds = allFaculty
+      .filter(f => f.allottedSubjects?.includes(subject.id))
+      .map(f => f.id);
+    setCurrentSubject({...subject, facultyIds: assignedFacultyIds});
     setSubjectDialogOpen(true);
   };
   
@@ -607,7 +608,7 @@ export default function DepartmentsManager() {
                                     </TableHeader>
                                     <TableBody>
                                         {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
-                                            const assignedFaculty = allFaculty.filter(f => subject.facultyIds?.includes(f.id));
+                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
                                             return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>

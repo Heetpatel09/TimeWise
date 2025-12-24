@@ -19,11 +19,11 @@ export async function getSubjects(): Promise<Subject[]> {
   return JSON.parse(JSON.stringify(results.map(s => ({ 
       ...s, 
       isSpecial: !!s.isSpecial,
-      facultyIds: s.facultyIds ? JSON.parse(s.facultyIds) : [],
+      facultyIds: [], // This is derived dynamically, not stored
     }))));
 }
 
-export async function addSubject(item: Omit<Subject, 'id'>): Promise<Subject> {
+export async function addSubject(item: Omit<Subject, 'id'>, allFaculty: Faculty[]): Promise<Subject> {
     const db = getDb();
     const id = `SUB${Date.now()}`;
     
@@ -34,25 +34,22 @@ export async function addSubject(item: Omit<Subject, 'id'>): Promise<Subject> {
 
     const newItem: Subject = { ...item, id, name: finalName };
     
-    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority, facultyIds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.department, item.priority, JSON.stringify(item.facultyIds || []));
+    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.department, item.priority);
     
-    // After adding the subject, update the faculty assignments
-    if (item.facultyIds && item.facultyIds.length > 0) {
-        const allFaculty: Faculty[] = db.prepare('SELECT * FROM faculty').all() as any[];
-        
+    // Update faculty assignments
+    const facultyIds = item.facultyIds || [];
+    if (facultyIds.length > 0) {
         db.transaction(() => {
-            allFaculty.forEach(fac => {
-                let subjects = fac.allottedSubjects ? JSON.parse(fac.allottedSubjects as any) : [];
-                
-                // If this faculty is in the new subject's list, add the subject
-                if (item.facultyIds!.includes(fac.id)) {
-                    if (!subjects.includes(id)) {
-                        subjects.push(id);
+            facultyIds.forEach(facultyId => {
+                const fac = allFaculty.find(f => f.id === facultyId);
+                if (fac) {
+                    const allottedSubjects = fac.allottedSubjects ? [...fac.allottedSubjects] : [];
+                    if (!allottedSubjects.includes(id)) {
+                        allottedSubjects.push(id);
+                        db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(allottedSubjects), facultyId);
                     }
-                } 
-                
-                db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(subjects), fac.id);
+                }
             });
         })();
     }
@@ -61,7 +58,7 @@ export async function addSubject(item: Omit<Subject, 'id'>): Promise<Subject> {
     return Promise.resolve(newItem);
 }
 
-export async function updateSubject(updatedItem: Subject) {
+export async function updateSubject(updatedItem: Subject, allFaculty: Faculty[]) {
     const db = getDb();
     
     let finalName = updatedItem.name;
@@ -70,23 +67,24 @@ export async function updateSubject(updatedItem: Subject) {
     }
     const finalItem = { ...updatedItem, name: finalName };
 
-    const oldSubject: Subject | undefined = db.prepare('SELECT * FROM subjects WHERE id = ?').get(finalItem.id) as any;
-    const oldFacultyIds = oldSubject?.facultyIds ? JSON.parse(oldSubject.facultyIds as any) : [];
-
-    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, department = ?, priority = ?, facultyIds = ? WHERE id = ?');
-    stmt.run(finalItem.name, finalItem.code, (finalItem.isSpecial || false) ? 1 : 0, finalItem.type, finalItem.semester, finalItem.syllabus, finalItem.department, finalItem.priority, JSON.stringify(finalItem.facultyIds || []), finalItem.id);
+    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, department = ?, priority = ? WHERE id = ?');
+    stmt.run(finalItem.name, finalItem.code, (finalItem.isSpecial || false) ? 1 : 0, finalItem.type, finalItem.semester, finalItem.syllabus, finalItem.department, finalItem.priority, finalItem.id);
     
     // Update faculty assignments based on changes
     const newFacultyIds = finalItem.facultyIds || [];
+    const oldFacultyIds = allFaculty
+        .filter(f => f.allottedSubjects?.includes(finalItem.id))
+        .map(f => f.id);
+
     const addedFaculty = newFacultyIds.filter(id => !oldFacultyIds.includes(id));
     const removedFaculty = oldFacultyIds.filter((id: string) => !newFacultyIds.includes(id));
 
     db.transaction(() => {
         // Add subject to newly assigned faculty
         addedFaculty.forEach(facultyId => {
-            const fac: Faculty | undefined = db.prepare('SELECT * FROM faculty WHERE id = ?').get(facultyId) as any;
+            const fac = allFaculty.find(f => f.id === facultyId);
             if (fac) {
-                const subjects = fac.allottedSubjects ? JSON.parse(fac.allottedSubjects as any) : [];
+                const subjects = fac.allottedSubjects || [];
                 if (!subjects.includes(finalItem.id)) {
                     subjects.push(finalItem.id);
                     db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(subjects), facultyId);
@@ -95,9 +93,9 @@ export async function updateSubject(updatedItem: Subject) {
         });
         // Remove subject from unassigned faculty
         removedFaculty.forEach((facultyId: string) => {
-            const fac: Faculty | undefined = db.prepare('SELECT * FROM faculty WHERE id = ?').get(facultyId) as any;
+            const fac = allFaculty.find(f => f.id === facultyId);
             if (fac) {
-                let subjects = fac.allottedSubjects ? JSON.parse(fac.allottedSubjects as any) : [];
+                let subjects = fac.allottedSubjects || [];
                 subjects = subjects.filter((subId: string) => subId !== finalItem.id);
                 db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(subjects), facultyId);
             }
@@ -118,6 +116,22 @@ export async function deleteSubject(id: string) {
     
     const stmt = db.prepare('DELETE FROM subjects WHERE id = ?');
     stmt.run(id);
+
+    // Also remove from all faculty allotted subjects
+    const allFaculty: Faculty[] = db.prepare('SELECT id, allottedSubjects FROM faculty').all() as any[];
+    db.transaction(() => {
+        allFaculty.forEach(fac => {
+            if (fac.allottedSubjects) {
+                let subjects = Array.isArray(fac.allottedSubjects) ? fac.allottedSubjects : JSON.parse(fac.allottedSubjects as any);
+                if (subjects.includes(id)) {
+                    const updatedSubjects = subjects.filter((subId: string) => subId !== id);
+                    db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(updatedSubjects), fac.id);
+                }
+            }
+        });
+    })();
+
+
     revalidateAll();
     return Promise.resolve(id);
 }
