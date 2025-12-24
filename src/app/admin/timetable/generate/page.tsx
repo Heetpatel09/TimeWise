@@ -196,88 +196,103 @@ export default function TimetableGeneratorPage() {
                     Back to Dashboard
                 </Link>
             </Button>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Master Timetable Generator</CardTitle>
-                        <CardDescription>
-                            Generate a conflict-free timetable class by class. Select a class to begin.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {isLoading ? <Loader2 className="animate-spin" /> : (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <label>Department</label>
-                                <Select value={selectedDepartment} onValueChange={(val) => { setSelectedDepartment(val); setSelectedSemester(''); setSelectedClassId('') }}>
-                                    <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
-                                    <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <label>Semester</label>
-                                <Select value={selectedSemester} onValueChange={(val) => { setSelectedSemester(val); setSelectedClassId(''); }} disabled={!selectedDepartment}>
-                                    <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
-                                    <SelectContent>{semestersInDept.map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <label>Class</label>
-                                <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedSemester}>
-                                    <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
-                                    <SelectContent>{classesInSemester.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        )}
-                    </CardContent>
-                </Card>
-                
-                {selectedClassDetails && (
-                    <Card className="md:col-span-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-1 space-y-6">
+                    <Card>
                         <CardHeader>
-                            <CardTitle>Class Details: {classes?.find(c=>c.id === selectedClassId)?.name}</CardTitle>
-                            <CardDescription>An overview of the selected class.</CardDescription>
+                            <CardTitle>Configuration</CardTitle>
+                            <CardDescription>Select a class to generate a timetable for.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <Users className="h-5 w-5 text-primary"/>
-                                        <h3 className="font-semibold">Total Students: {selectedClassDetails.studentCount}</h3>
+                        <CardContent className="space-y-4">
+                            {isLoading ? <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div> : (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label>1. Select Department</Label>
+                                        <Select value={selectedDepartment} onValueChange={(val) => { setSelectedDepartment(val); setSelectedSemester(''); setSelectedClassId('') }}>
+                                            <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
+                                            <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>2. Select Semester</Label>
+                                        <Select value={selectedSemester} onValueChange={(val) => { setSelectedSemester(val); setSelectedClassId(''); }} disabled={!selectedDepartment}>
+                                            <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
+                                            <SelectContent>{semestersInDept.map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>3. Select Class</Label>
+                                        <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedSemester}>
+                                            <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
+                                            <SelectContent>{classesInSemester.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId} size="lg" className="w-full">
+                        {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
+                        Generate Timetable
+                    </Button>
+                </div>
+                
+                <div className="lg:col-span-2">
+                    {selectedClassDetails ? (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Class Details: {classes?.find(c=>c.id === selectedClassId)?.name}</CardTitle>
+                                <CardDescription>An overview of the selected class's requirements.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <Card>
+                                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                                                <Users className="h-4 w-4 text-muted-foreground"/>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-2xl font-bold">{selectedClassDetails.studentCount}</div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="font-semibold flex items-center gap-2 text-sm"><BookOpen className="h-4 w-4 text-muted-foreground"/>Subjects & Faculty</h3>
+                                        <ScrollArea className="h-48 border rounded-md">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Subject</TableHead>
+                                                        <TableHead>Faculty</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {selectedClassDetails.subjects.map(sub => (
+                                                        <TableRow key={sub.id}>
+                                                            <TableCell className="text-xs">{sub.name}</TableCell>
+                                                            <TableCell className="text-xs">{sub.facultyName}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </ScrollArea>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <h3 className="font-semibold flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary"/>Subjects & Faculty</h3>
-                                    <ScrollArea className="h-40 border rounded-md">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Subject</TableHead>
-                                                    <TableHead>Assigned Faculty</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {selectedClassDetails.subjects.map(sub => (
-                                                    <TableRow key={sub.id}>
-                                                        <TableCell>{sub.name}</TableCell>
-                                                        <TableCell>{sub.facultyName}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </ScrollArea>
-                                </div>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId} size="lg" className="w-full">
-                                {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
-                                Generate for Class
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                )}
+                            </CardContent>
+                        </Card>
+                    ) : (
+                         <Card className="flex flex-col items-center justify-center text-center h-full p-8">
+                             <CardHeader>
+                                <CardTitle>Select a Class</CardTitle>
+                                <CardDescription>Choose a class from the left panel to see its details and generate a timetable.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Bot className="h-16 w-16 text-muted-foreground" />
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
             </div>
             
             <Dialog open={isReviewDialogOpen} onOpenChange={setReviewDialogOpen}>
