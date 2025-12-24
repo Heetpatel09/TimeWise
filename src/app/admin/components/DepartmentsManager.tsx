@@ -386,7 +386,7 @@ export default function DepartmentsManager() {
         toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
         setSubjectDialogOpen(false);
         await loadData();
-      } catch (error: any) => {
+      } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
         setIsSubmitting(false);
@@ -401,7 +401,7 @@ export default function DepartmentsManager() {
       await deleteSubject(id);
       await loadData();
       toast({ title: "Subject Deleted" });
-    } catch (error: any) => {
+    } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
