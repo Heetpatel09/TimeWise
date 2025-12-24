@@ -24,22 +24,25 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 const ALL_TIME_SLOTS = [
-    '07:30-08:25',
-    '08:25-09:20',
-    '09:20-09:30', // Break
-    '09:30-10:25',
-    '10:25-11:20',
-    '11:20-12:20', // Lunch
-    '12:20-01:15',
-    '01:15-02:10'
+    '07:30 AM - 08:30 AM',
+    '08:30 AM - 09:30 AM',
+    '09:30 AM - 10:00 AM', // Break
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM', // Break
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['09:20-09:30', '11:20-12:20'];
+const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split('-');
-        const [h, m] = start.split(':').map(Number);
+        const [start] = time.split(' - ');
+        let [h, m] = start.split(':').map(Number);
+        const modifier = time.slice(-2);
+        if (h === 12) h = 0;
+        if (modifier === 'PM') h += 12;
         return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
@@ -130,7 +133,7 @@ export default function TimetableGeneratorPage() {
             
             const result = await generateTimetableFlow({
                 days: DAYS,
-                timeSlots: ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t)),
+                timeSlots: ALL_TIME_SLOTS,
                 classes: [classToGenerate],
                 subjects,
                 faculty,
@@ -138,7 +141,7 @@ export default function TimetableGeneratorPage() {
                 existingSchedule: existingSchedule.filter(s => s.classId !== selectedClassId),
             });
 
-            if (result.generatedSchedule.length > 0) {
+            if (result.success && result.generatedSchedule.length > 0) {
                 setGeneratedData(result);
                 setReviewDialogOpen(true);
             } else {
@@ -300,7 +303,7 @@ export default function TimetableGeneratorPage() {
                                                     <TableRow key={time}>
                                                         <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
                                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
-                                                             {time === '09:20-09:30' ? 'RECESS' : 'LUNCH BREAK'}
+                                                             {time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
                                                         </TableCell>
                                                     </TableRow>
                                                 )
@@ -367,3 +370,5 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
+
+    
