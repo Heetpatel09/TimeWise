@@ -92,10 +92,6 @@ function MultiSelectFaculty({
                   key={value}
                   variant="secondary"
                   className="mr-1"
-                  onClick={(e) => {
-                      e.stopPropagation(); // Prevent opening popover
-                      handleUnselect(value);
-                  }}
                 >
                   {label}
                    <button
