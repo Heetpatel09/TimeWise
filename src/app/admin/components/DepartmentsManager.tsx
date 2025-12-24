@@ -167,6 +167,11 @@ function FacultyForm({
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
     defaultValues: {
+        name: faculty.name || '',
+        email: faculty.email || '',
+        code: faculty.code || '',
+        designation: faculty.designation || '',
+        employmentType: faculty.employmentType || 'full-time',
         ...faculty,
         department: department,
         allottedSubjects: faculty.allottedSubjects || [],
