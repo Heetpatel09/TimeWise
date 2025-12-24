@@ -16,7 +16,7 @@ const generateTimetable = ai.defineFlow(
   },
   async (input) => {
     
-    const { success, message, bestTimetable, generations, fitness } = await runGA(input);
+    const { success, message, bestTimetable, generations, fitness, codeChefDay } = await runGA(input);
     
     if (success && bestTimetable) {
         const schedule = bestTimetable
@@ -30,12 +30,10 @@ const generateTimetable = ai.defineFlow(
                 time: gene.time,
             }));
         
-        const codeChefDay = bestTimetable.find(g => g.isCodeChef)?.day;
-
         return {
             summary: message || `Generated schedule after ${generations} generations with fitness ${fitness}.`,
             generatedSchedule: schedule,
-            codeChefDay,
+            codeChefDay: codeChefDay,
         };
     } else {
         return {
