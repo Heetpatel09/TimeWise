@@ -176,6 +176,7 @@ function FacultyForm({
         department: department,
         allottedSubjects: faculty.allottedSubjects || [],
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
+        designatedYear: faculty.designatedYear || 1,
     },
   });
 
@@ -370,7 +371,7 @@ export default function DepartmentsManager() {
     }
     setIsSubmitting(true);
     try {
-      const subjectToSave: Omit<Subject, 'id'> = {
+      const subjectToSave: Omit<Subject, 'id'> & { id?: string } = {
         name: currentSubject.name,
         code: currentSubject.code,
         type: currentSubject.type,
@@ -381,11 +382,15 @@ export default function DepartmentsManager() {
         syllabus: currentSubject.syllabus,
         facultyIds: currentSubject.facultyIds || [],
       };
+      
+      if(currentSubject.id) {
+          subjectToSave.id = currentSubject.id;
+      }
 
       if (currentSubject.id) {
-        await updateSubject({ ...subjectToSave, id: currentSubject.id }, allFaculty);
+        await updateSubject(subjectToSave as Subject, allFaculty);
       } else {
-        await addSubject({ ...subjectToSave }, allFaculty);
+        await addSubject(subjectToSave);
       }
       toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
       setSubjectDialogOpen(false);
@@ -447,10 +452,7 @@ export default function DepartmentsManager() {
   };
   
   const openEditSubjectDialog = (subject: Subject) => {
-    const assignedFacultyIds = allFaculty
-      .filter(f => f.allottedSubjects?.includes(subject.id))
-      .map(f => f.id);
-    setCurrentSubject({...subject, facultyIds: assignedFacultyIds});
+    setCurrentSubject(subject);
     setSubjectDialogOpen(true);
   };
   
@@ -609,7 +611,7 @@ export default function DepartmentsManager() {
                                     </TableHeader>
                                     <TableBody>
                                         {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
-                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
+                                            const assignedFaculty = allFaculty.filter(f => subject.facultyIds?.includes(f.id));
                                             return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>
