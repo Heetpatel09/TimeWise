@@ -134,6 +134,7 @@ export const GenerateTimetableOutputSchema = z.object({
     day: z.string(),
     time: z.string(),
   })),
+  codeChefDay: z.string().optional(),
 });
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
 
@@ -235,7 +236,7 @@ export interface Schedule {
   subjectId: string;
   facultyId: string;
   classroomId: string;
-  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
   time: string; // e.g., "09:00 - 10:00"
 }
 
