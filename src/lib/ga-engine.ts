@@ -13,6 +13,7 @@ interface Gene {
     classroomId: string;
     isLab: boolean;
     isCodeChef?: boolean;
+    batch?: 'A' | 'B';
 }
 
 interface Lecture {
@@ -20,6 +21,7 @@ interface Lecture {
     subjectId: string;
     isLab: boolean;
     facultyId: string;
+    batch?: 'A' | 'B';
 }
 
 // --- Helper Functions ---
@@ -55,12 +57,15 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
         }
 
         if (sub.type === 'lab') {
-            // Add one entry for the 2-hour lab block
-            lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId });
+            // A lab needs a 2-hour slot. We add two genes for it.
+            lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId: facultyId, batch: 'A' });
+            lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId: facultyId, batch: 'A' });
+            lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId: facultyId, batch: 'B' });
+            lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId: facultyId, batch: 'B' });
         } else {
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
-                lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: false, facultyId });
+                lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: false, facultyId: facultyId });
             }
         }
     });
@@ -81,17 +86,6 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const finalSchedule: Gene[] = [];
     
-    // Create a grid of all available slots, also checking against existing schedule for other classes
-    const availableSlots: { day: string, time: string }[] = [];
-    workingDays.forEach(day => {
-        timeSlots.forEach(time => {
-             const isOccupied = input.existingSchedule?.some(slot => slot.day === day && slot.time === time);
-             if(!isOccupied) {
-                availableSlots.push({ day, time });
-             }
-        });
-    });
-
     const facultyTimeMap = new Map<string, Set<string>>(); // key: facultyId, value: Set<day-time>
     const classroomTimeMap = new Map<string, Set<string>>(); // key: classroomId, value: Set<day-time>
     
@@ -104,42 +98,41 @@ export async function runGA(input: GenerateTimetableInput) {
         if (!classroomTimeMap.has(slot.classroomId)) classroomTimeMap.set(slot.classroomId, new Set());
         classroomTimeMap.get(slot.classroomId)!.add(slotKey);
     });
-
-    const labs = lectureQueue.filter(l => l.isLab);
+    
+    const labsA = lectureQueue.filter(l => l.isLab && l.batch === 'A');
+    const labsB = lectureQueue.filter(l => l.isLab && l.batch === 'B');
     const theories = lectureQueue.filter(l => !l.isLab);
 
-    // 1. Place Labs First (they are the most constrained)
-    for (const lab of labs) {
+    const placeLabBatch = (labBatch: Lecture[], batchName: 'A' | 'B') => {
         const labRooms = input.classrooms.filter(c => c.type === 'lab');
-        if (labRooms.length === 0) continue; // Cannot schedule lab
+        if (labRooms.length === 0) return false;
 
         let placed = false;
-        // Iterate through days and time slots to find a 2-hour window
-        for (const day of workingDays) {
+        
+        for(const day of workingDays) {
             for (let i = 0; i < timeSlots.length - 1; i++) {
-                const time1 = timeSlots[i];
-                const time2 = timeSlots[i+1];
+                 const time1 = timeSlots[i];
+                 const time2 = timeSlots[i+1];
 
-                const slotKey1 = `${day}-${time1}`;
-                const slotKey2 = `${day}-${time2}`;
-
-                const facultyBusy = facultyTimeMap.get(lab.facultyId)?.has(slotKey1) || facultyTimeMap.get(lab.facultyId)?.has(slotKey2);
+                 const slotKey1 = `${day}-${time1}`;
+                 const slotKey2 = `${day}-${time2}`;
+                
+                const facultyBusy = facultyTimeMap.get(labBatch[0].facultyId)?.has(slotKey1) || facultyTimeMap.get(labBatch[0].facultyId)?.has(slotKey2);
                 if (facultyBusy) continue;
 
-                // Find an available lab room for both slots
+                if (finalSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2))) continue;
+
                 const availableRoom = labRooms.find(room => 
                     !classroomTimeMap.get(room.id)?.has(slotKey1) && 
                     !classroomTimeMap.get(room.id)?.has(slotKey2)
                 );
 
                 if (availableRoom) {
-                    const gene1: Gene = { ...lab, day, time: time1, classroomId: availableRoom.id };
-                    const gene2: Gene = { ...lab, day, time: time2, classroomId: availableRoom.id };
-                    finalSchedule.push(gene1, gene2);
+                    finalSchedule.push({ ...labBatch[0], day, time: time1, classroomId: availableRoom.id, batch: batchName });
+                    finalSchedule.push({ ...labBatch[0], day, time: time2, classroomId: availableRoom.id, batch: batchName });
 
-                    // Mark slots as taken
-                    if (!facultyTimeMap.has(lab.facultyId)) facultyTimeMap.set(lab.facultyId, new Set());
-                    facultyTimeMap.get(lab.facultyId)!.add(slotKey1).add(slotKey2);
+                    if (!facultyTimeMap.has(labBatch[0].facultyId)) facultyTimeMap.set(labBatch[0].facultyId, new Set());
+                    facultyTimeMap.get(labBatch[0].facultyId)!.add(slotKey1).add(slotKey2);
                     
                     if (!classroomTimeMap.has(availableRoom.id)) classroomTimeMap.set(availableRoom.id, new Set());
                     classroomTimeMap.get(availableRoom.id)!.add(slotKey1).add(slotKey2);
@@ -150,31 +143,30 @@ export async function runGA(input: GenerateTimetableInput) {
             }
             if (placed) break;
         }
+        return placed;
     }
+    
+    placeLabBatch(labsA, 'A');
+    placeLabBatch(labsB, 'B');
 
     // 2. Place Theory Lectures
     const theoryRooms = input.classrooms.filter(c => c.type === 'classroom');
     for (const theory of theories) {
          let placed = false;
-         // Find a free slot for this theory lecture
          for (const day of workingDays) {
              for (const time of timeSlots) {
                 const slotKey = `${day}-${time}`;
                 
-                // Is the class itself already busy?
                 if (finalSchedule.some(g => g.day === day && g.time === time)) continue;
 
-                // Is the faculty busy?
                 if (facultyTimeMap.get(theory.facultyId)?.has(slotKey)) continue;
 
-                // Find an available classroom
                 const availableRoom = theoryRooms.find(room => !classroomTimeMap.get(room.id)?.has(slotKey));
 
                 if (availableRoom) {
                     const gene: Gene = { ...theory, day, time, classroomId: availableRoom.id };
                     finalSchedule.push(gene);
 
-                    // Mark resources as used
                     if (!facultyTimeMap.has(theory.facultyId)) facultyTimeMap.set(theory.facultyId, new Set());
                     facultyTimeMap.get(theory.facultyId)!.add(slotKey);
                     
@@ -187,6 +179,11 @@ export async function runGA(input: GenerateTimetableInput) {
              }
              if (placed) break;
          }
+    }
+    
+    const academicSlotsCount = finalSchedule.filter(s => s.subjectId !== 'LIB001').length;
+    if (academicSlotsCount < 21) {
+        return { success: false, message: `Could not schedule all required lectures. Only placed ${academicSlotsCount} out of 21. Please check constraints (e.g., faculty availability, classroom availability).`, bestTimetable: null, generations: 0, fitness: -1, codeChefDay: null };
     }
     
     // 3. Fill remaining slots with Library
@@ -213,16 +210,15 @@ export async function runGA(input: GenerateTimetableInput) {
         });
     }
 
-    if (finalSchedule.filter(s => !s.isLab).length + (finalSchedule.filter(s => s.isLab).length / 2) < 21) {
-         return { success: false, message: 'Failed to schedule all required lectures. Check constraints.', bestTimetable: null, generations: 0, fitness: -1, codeChefDay: null };
-    }
 
     return { 
         success: true, 
         message: 'Successfully generated a conflict-free schedule.', 
         bestTimetable: finalSchedule, 
-        generations: 1, // Not a GA anymore, but keeping structure
+        generations: 1, 
         fitness: 0, 
         codeChefDay: codeChefDay 
     };
 }
+
+    
