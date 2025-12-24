@@ -46,12 +46,12 @@ const facultySchema = z.object({
     allottedSubjects: z.array(z.string()).optional(),
 });
 
-function MultiSelectSubjects({
+function MultiSelectFaculty({
   options,
   selected,
   onChange,
   className,
-  placeholder = "Select subjects...",
+  placeholder = "Select faculty...",
 }: {
   options: { label: string; value: string }[];
   selected: string[];
@@ -242,10 +242,11 @@ function FacultyForm({
             name="allottedSubjects"
             render={({ field }) => (
                 <FormItem className="flex flex-col"><FormLabel>Subject(s) to be Allotted</FormLabel>
-                <MultiSelectSubjects
+                <MultiSelectFaculty
                     options={subjectOptions}
                     selected={field.value || []}
                     onChange={field.onChange}
+                    placeholder="Select subjects..."
                 />
                 <FormMessage />
                 </FormItem>
@@ -319,7 +320,7 @@ export default function DepartmentsManager() {
   const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [currentSubject, setCurrentSubject] = useState<Partial<Subject> & { facultyId?: string | null }>({});
+  const [currentSubject, setCurrentSubject] = useState<Partial<Subject> & { facultyIds?: string[] }>({});
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
 
@@ -372,6 +373,7 @@ export default function DepartmentsManager() {
         priority: currentSubject.priority,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
+        facultyIds: currentSubject.facultyIds || [],
       };
 
       setIsSubmitting(true);
@@ -381,32 +383,6 @@ export default function DepartmentsManager() {
           savedSubject = await updateSubject({ ...subjectToSave, id: currentSubject.id });
         } else {
           savedSubject = await addSubject(subjectToSave);
-        }
-
-        // Handle faculty assignment
-        const originalFaculty = allFaculty.find(f => f.allottedSubjects.includes(savedSubject.id));
-        const newFacultyId = currentSubject.facultyId;
-
-        if (originalFaculty?.id !== newFacultyId) {
-          // Remove from old faculty
-          if (originalFaculty) {
-            const updatedOldFaculty = {
-              ...originalFaculty,
-              allottedSubjects: originalFaculty.allottedSubjects.filter(subId => subId !== savedSubject.id)
-            };
-            await updateFaculty(updatedOldFaculty);
-          }
-          // Add to new faculty
-          if (newFacultyId) {
-            const newFaculty = allFaculty.find(f => f.id === newFacultyId);
-            if (newFaculty && !newFaculty.allottedSubjects.includes(savedSubject.id)) {
-              const updatedNewFaculty = {
-                ...newFaculty,
-                allottedSubjects: [...newFaculty.allottedSubjects, savedSubject.id]
-              };
-              await updateFaculty(updatedNewFaculty);
-            }
-          }
         }
 
         toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
@@ -435,7 +411,7 @@ export default function DepartmentsManager() {
   const handleSaveFaculty = async (data: z.infer<typeof facultySchema>, password?: string) => {
       setIsSubmitting(true);
       try {
-        const dataToSave = {...data, roles: []};
+        const dataToSave: Omit<Faculty, 'id'> & {id?: string} = {...data, roles: []};
         if (dataToSave.id) {
           const updatedFaculty = await updateFaculty(dataToSave as Faculty);
           setAllFaculty(prev => prev.map(f => f.id === updatedFaculty.id ? updatedFaculty : f));
@@ -468,13 +444,15 @@ export default function DepartmentsManager() {
 
 
   const openNewSubjectDialog = () => {
-    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High', facultyId: null });
+    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High', facultyIds: [] });
     setSubjectDialogOpen(true);
   };
   
   const openEditSubjectDialog = (subject: Subject) => {
-    const faculty = facultyInDept.find(f => f.allottedSubjects?.includes(subject.id));
-    setCurrentSubject({ ...subject, facultyId: faculty?.id || null });
+    const facultyIds = allFaculty
+      .filter(f => f.allottedSubjects && f.allottedSubjects.includes(subject.id))
+      .map(f => f.id);
+    setCurrentSubject({ ...subject, facultyIds: facultyIds || [] });
     setSubjectDialogOpen(true);
   };
   
@@ -624,51 +602,54 @@ export default function DepartmentsManager() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => (
-                                        <TableRow key={subject.id}>
-                                            <TableCell>
-                                            <div>{subject.name}</div>
-                                            <div className="text-xs text-muted-foreground">{subject.code}</div>
-                                            </TableCell>
-                                            <TableCell>{subject.semester}</TableCell>
-                                            <TableCell className='capitalize'>
-                                                <Badge variant={subject.type.toLowerCase() === 'lab' ? 'secondary' : 'outline'} className="gap-1">
-                                                    {subject.type.toLowerCase() === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
-                                                    {subject.type}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                { allFaculty.find(f => f.allottedSubjects?.includes(subject.id))?.name || <span className="text-muted-foreground">Unassigned</span> }
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openEditSubjectDialog(subject); }}>
-                                                    <Edit className="h-4 w-4 mr-2" /> Edit
-                                                </DropdownMenuItem>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>Continue</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-                                        )) : (
+                                        {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
+                                            const assignedFaculty = allFaculty.filter(f => subject.facultyIds?.includes(f.id));
+                                            return (
+                                            <TableRow key={subject.id}>
+                                                <TableCell>
+                                                <div>{subject.name}</div>
+                                                <div className="text-xs text-muted-foreground">{subject.code}</div>
+                                                </TableCell>
+                                                <TableCell>{subject.semester}</TableCell>
+                                                <TableCell className='capitalize'>
+                                                    <Badge variant={subject.type.toLowerCase() === 'lab' ? 'secondary' : 'outline'} className="gap-1">
+                                                        {subject.type.toLowerCase() === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                                                        {subject.type}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    { assignedFaculty.length > 0 ? assignedFaculty.map(f => f.name).join(', ') : <span className="text-muted-foreground">Unassigned</span> }
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openEditSubjectDialog(subject); }}>
+                                                        <Edit className="h-4 w-4 mr-2" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>Continue</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                            )
+                                        }) : (
                                             <TableRow>
                                                 <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this department/semester.</TableCell>
                                             </TableRow>
@@ -773,13 +754,12 @@ export default function DepartmentsManager() {
             </div>
             <div className="space-y-2">
                 <Label htmlFor="s-faculty">Allot Faculty</Label>
-                <Select value={currentSubject.facultyId || 'unassigned'} onValueChange={(v) => setCurrentSubject({...currentSubject, facultyId: v === 'unassigned' ? null : v })}>
-                    <SelectTrigger id="s-faculty"><SelectValue placeholder="Select a faculty member" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {facultyInDept.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+                 <MultiSelectFaculty
+                    options={facultyInDept.map(f => ({ value: f.id, label: f.name }))}
+                    selected={currentSubject.facultyIds || []}
+                    onChange={(selectedIds) => setCurrentSubject({...currentSubject, facultyIds: selectedIds})}
+                    placeholder="Select up to 2 faculty members"
+                />
             </div>
              {currentSubject.type === 'theory' && (
               <div className="space-y-2">
