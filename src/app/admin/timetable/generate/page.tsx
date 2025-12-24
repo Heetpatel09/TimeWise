@@ -24,29 +24,23 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 const ALL_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM',
+    '7:30-8:25',
+    '8:25-9:20',
+    '9:20-9:30', // break
+    '9:30-10:25',
+    '10:25-11:20',
+    '11:20-12:20', // recess
+    '12:20-1:15',
+    '1:15-2:10'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
+const BREAK_SLOTS = ['9:20-9:30', '11:20-12:20'];
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split(' - ');
-        let [h, m] = start.split(':');
-        const modifier = start.slice(-2);
-        let hours = parseInt(h, 10);
-        if (modifier === 'PM' && hours !== 12) {
-            hours += 12;
-        }
-        if (modifier === 'AM' && hours === 12) {
-            hours = 0;
-        }
-        return hours * 60 + parseInt(m, 10);
+        const [start] = time.split('-');
+        const [h, m] = start.split(':').map(Number);
+        return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
 }
@@ -136,7 +130,7 @@ export default function TimetableGeneratorPage() {
             
             const result = await generateTimetableFlow({
                 days: DAYS,
-                timeSlots: ALL_TIME_SLOTS,
+                timeSlots: ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t)),
                 classes: [classToGenerate],
                 subjects,
                 faculty,
@@ -187,8 +181,6 @@ export default function TimetableGeneratorPage() {
     };
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading;
-    
-    const workingDays = generatedData?.codeChefDay ? DAYS.filter(d => d !== generatedData.codeChefDay) : DAYS;
 
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
@@ -285,7 +277,7 @@ export default function TimetableGeneratorPage() {
             <Dialog open={isReviewDialogOpen} onOpenChange={setReviewDialogOpen}>
                 <DialogContent className="max-w-7xl">
                     <DialogHeader>
-                        <DialogTitle>Review Generated Timetable</DialogTitle>
+                        <DialogTitle>Review Generated Timetable for {classes?.find(c => c.id === selectedClassId)?.name}</DialogTitle>
                         <DialogDescription>{generatedData?.summary}</DialogDescription>
                     </DialogHeader>
                     {generatedData && (
@@ -302,7 +294,18 @@ export default function TimetableGeneratorPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {ALL_TIME_SLOTS.sort(sortTime).map(time => (
+                                        {ALL_TIME_SLOTS.sort(sortTime).map(time => {
+                                            if (BREAK_SLOTS.includes(time)) {
+                                                return (
+                                                    <TableRow key={time}>
+                                                        <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
+                                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
+                                                             {time === '9:20-9:30' ? 'RECESS' : 'LUNCH BREAK'}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )
+                                            }
+                                            return (
                                             <TableRow key={time}>
                                                 <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
                                                 {DAYS.map(day => {
@@ -319,23 +322,31 @@ export default function TimetableGeneratorPage() {
                                                         )
                                                     }
                                                     
+                                                    const subject = slot ? getRelationInfo(slot.subjectId, 'subject') : null;
+
                                                     return (
                                                         <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
-                                                            {slot ? (
-                                                                 <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", getRelationInfo(slot.subjectId, 'subject')?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
-                                                                    <div><strong>{getRelationInfo(slot.subjectId, 'subject')?.name}</strong></div>
-                                                                    <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
-                                                                    <div className='flex justify-between'>
-                                                                        <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
-                                                                        <Badge variant="secondary">{getRelationInfo(slot.classId, 'class')?.name}</Badge>
+                                                            {slot && subject ? (
+                                                                (subject.id === 'LIB001') ? (
+                                                                     <div className='flex justify-center items-center h-full text-muted-foreground'>
+                                                                        <Library className="h-4 w-4 mr-2" />
+                                                                        <span>Library</span>
                                                                     </div>
-                                                                </div>
-                                                            ) : <div className='flex justify-center items-center h-full text-muted-foreground'><Library className="h-4 w-4" /></div>}
+                                                                ) : (
+                                                                    <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
+                                                                        <div><strong>{subject.name} {subject.type === 'lab' && '(Lab)'}</strong></div>
+                                                                        <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                                        <div className='flex justify-between mt-1'>
+                                                                            <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            ) : <div className='flex justify-center items-center h-full text-muted-foreground'><div className='w-4 h-4'></div></div>}
                                                         </TableCell>
                                                     )
                                                 })}
                                             </TableRow>
-                                        ))}
+                                        )})}
                                     </TableBody>
                                 </Table>
                             </ScrollArea>
@@ -344,7 +355,7 @@ export default function TimetableGeneratorPage() {
                             )}
                         </div>
                     )}
-                    <DialogFooter>
+                    <DialogFooter className="mt-4">
                         <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleApplySchedule} disabled={isApplying || !generatedData || generatedData.generatedSchedule.length === 0}>
                             {isApplying && <Loader2 className="animate-spin mr-2" />}

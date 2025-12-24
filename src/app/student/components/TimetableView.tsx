@@ -77,7 +77,9 @@ export default function TimetableView() {
             }
             const slot = studentSchedule.find(s => s.day === day && s.time === time);
             if (slot) {
-                return [day, time, slot.subjectName, slot.facultyName, slot.classroomName];
+                const subject = subjects.find(sub => sub.id === slot.subjectId);
+                const subjectName = subject ? `${subject.name} ${subject.type === 'lab' ? '(Lab)' : ''}` : 'N/A';
+                return [day, time, subjectName, slot.facultyName, slot.classroomName];
             }
             return [day, time, 'Library Slot', '-', '-'];
         });
@@ -112,12 +114,15 @@ export default function TimetableView() {
               return {
                 ...slot,
                 subjectIsSpecial: subject?.isSpecial || false,
+                subjectType: subject?.type,
               };
         }),
       };
     });
     return { time, slots: dailySlots, isBreak: false };
   });
+
+  const codeChefDay = data?.schedule.find(s => s.subjectId === 'CODECHEF')?.day;
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -139,7 +144,7 @@ export default function TimetableView() {
                             <TableRow>
                                 <TableHead className="border font-semibold">Time</TableHead>
                                 {DAYS.map(day => (
-                                    <TableHead key={day} className="border font-semibold">{day}</TableHead>
+                                    <TableHead key={day} className={cn("border font-semibold", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}{day === codeChefDay && " (CodeChef)"}</TableHead>
                                 ))}
                             </TableRow>
                         </TableHeader>
@@ -148,27 +153,41 @@ export default function TimetableView() {
                                 <TableRow key={time}>
                                     <TableCell className="border font-medium text-xs whitespace-nowrap">{time}</TableCell>
                                     {isBreak ? (
-                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary">
-                                            {time === '9:20-9:30' ? 'BREAK' : 'RECESS'}
+                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
+                                             {time === '9:20-9:30' ? 'RECESS' : 'LUNCH BREAK'}
                                         </TableCell>
                                     ) : (
-                                        slots.map(({ day, slots: daySlots }) => (
+                                        slots.map(({ day, slots: daySlots }) => {
+                                             if (day === codeChefDay) {
+                                                return (
+                                                    <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center">
+                                                        <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold">
+                                                            <Bot className="h-4 w-4 mr-2"/>
+                                                            <span>CodeChef Day</span>
+                                                        </div>
+                                                    </TableCell>
+                                                )
+                                            }
+                                            return (
                                             <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
                                                 {daySlots.length > 0 ? (
                                                     daySlots.map(slot => (
-                                                        <div key={slot.id} className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", slot.subjectIsSpecial ? 'bg-primary/20' : 'bg-muted')}>
-                                                            <div><strong>{slot.subjectName}</strong></div>
-                                                            <div>{slot.facultyName}</div>
-                                                            <div>{slot.classroomName}</div>
-                                                        </div>
+                                                         slot.subjectId === 'LIB001' ? (
+                                                              <div key={slot.id} className='flex justify-center items-center h-full text-muted-foreground'>
+                                                                <Library className="h-4 w-4 mr-2" />
+                                                                <span>Library</span>
+                                                            </div>
+                                                         ) : (
+                                                            <div key={slot.id} className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", slot.subjectIsSpecial ? 'bg-primary/20' : 'bg-muted')}>
+                                                                <div><strong>{slot.subjectName} {slot.subjectType === 'lab' && '(Lab)'}</strong></div>
+                                                                <div>{slot.facultyName}</div>
+                                                                <div>{slot.classroomName}</div>
+                                                            </div>
+                                                         )
                                                     ))
-                                                ) : (
-                                                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                                                        <Library className="h-4 w-4" />
-                                                    </div>
-                                                )}
+                                                ) : null}
                                             </TableCell>
-                                        ))
+                                        )})
                                     )}
                                 </TableRow>
                             ))}
