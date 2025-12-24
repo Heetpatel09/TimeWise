@@ -43,6 +43,7 @@ const facultySchema = z.object({
     employmentType: z.enum(['full-time', 'part-time', 'contract']),
     maxWeeklyHours: z.coerce.number().min(1, "Required").max(48, "Cannot exceed 48"),
     designatedYear: z.coerce.number().min(1, "Required"),
+    allottedSubjects: z.array(z.string()).optional(),
 });
 
 function FacultyForm({
@@ -50,13 +51,15 @@ function FacultyForm({
   onSave,
   onCancel,
   isSubmitting,
-  department,
+  departments,
+  subjects,
 }: {
   faculty: Partial<Faculty>;
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
-  department: string;
+  departments: string[];
+  subjects: Subject[];
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
@@ -67,16 +70,21 @@ function FacultyForm({
         designation: faculty.designation || '',
         employmentType: faculty.employmentType || 'full-time',
         ...faculty,
-        department: department,
+        department: faculty.department || '',
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
         designatedYear: faculty.designatedYear || 1,
+        allottedSubjects: faculty.allottedSubjects || [],
     },
   });
 
   const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
   const [manualPassword, setManualPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubjectPopoverOpen, setSubjectPopoverOpen] = useState(false);
   const { toast } = useToast();
+  
+  const selectedDepartment = form.watch('department');
+  const availableSubjects = useMemo(() => subjects.filter(s => s.department === selectedDepartment), [subjects, selectedDepartment]);
 
   const handleSubmit = async (data: z.infer<typeof facultySchema>) => {
     if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
@@ -106,8 +114,108 @@ function FacultyForm({
             <FormField control={form.control} name="designation" render={({ field }) => (<FormItem><FormLabel>Designation</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger></FormControl><SelectContent>{DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
         </div>
 
-        <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><Input {...field} disabled={true} /><FormMessage /></FormItem>)} />
+        <FormField
+          control={form.control}
+          name="department"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Department</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
+        <FormField
+          control={form.control}
+          name="allottedSubjects"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Allotted Subjects</FormLabel>
+              <Popover open={isSubjectPopoverOpen} onOpenChange={setSubjectPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between h-auto",
+                        !field.value?.length && "text-muted-foreground"
+                      )}
+                      disabled={!selectedDepartment}
+                    >
+                      <div className="flex gap-1 flex-wrap">
+                        {field.value && field.value.length > 0
+                          ? field.value.map((subId) => {
+                               const sub = availableSubjects.find(s => s.id === subId);
+                               return (
+                                <Badge
+                                  variant="secondary"
+                                  key={subId}
+                                  className="mr-1"
+                                >
+                                  {sub?.name || subId}
+                                </Badge>
+                              )
+                            })
+                          : "Select subjects"}
+                      </div>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search subjects..." />
+                    <CommandEmpty>No subjects found for this department.</CommandEmpty>
+                    <CommandGroup>
+                        <ScrollArea className='h-48'>
+                      {availableSubjects.map((sub) => (
+                        <CommandItem
+                          value={sub.name}
+                          key={sub.id}
+                          onSelect={() => {
+                            const currentValue = field.value || [];
+                            const newValue = currentValue.includes(sub.id)
+                              ? currentValue.filter((id) => id !== sub.id)
+                              : [...currentValue, sub.id];
+                            field.onChange(newValue);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              field.value?.includes(sub.id)
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {sub.name}
+                        </CommandItem>
+                      ))}
+                      </ScrollArea>
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="designatedYear" render={({ field }) => (<FormItem><FormLabel>Designated Year</FormLabel><Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl><SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger></FormControl><SelectContent>{YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>Year {y}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>Employment Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger></FormControl><SelectContent><SelectItem value="full-time">Full-time</SelectItem><SelectItem value="part-time">Part-time</SelectItem><SelectItem value="contract">Contract</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
@@ -268,7 +376,7 @@ export default function DepartmentsManager() {
   const handleSaveFaculty = async (data: z.infer<typeof facultySchema>, password?: string) => {
       setIsSubmitting(true);
       try {
-        const dataToSave: Omit<Faculty, 'id' | 'allottedSubjects'> & {id?: string} = {...data, roles: []};
+        const dataToSave = { ...data, roles: [] } as Omit<Faculty, 'id'> & {id?: string};
         if (dataToSave.id) {
           await updateFaculty(dataToSave as Faculty);
         } else {
@@ -309,7 +417,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewFacultyDialog = () => {
-    setCurrentFaculty({ employmentType: 'full-time' });
+    setCurrentFaculty({ employmentType: 'full-time', department: selectedDepartment || '' });
     setFacultyDialogOpen(true);
   };
   
@@ -651,7 +759,7 @@ export default function DepartmentsManager() {
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
             <DialogDescription>
-              {currentFaculty?.id ? 'Update faculty details.' : `Add a new faculty member to the ${selectedDepartment} department.`}
+              {currentFaculty?.id ? 'Update faculty details.' : `Add a new faculty member.`}
             </DialogDescription>
           </DialogHeader>
             <div className="overflow-y-auto px-6">
@@ -660,7 +768,8 @@ export default function DepartmentsManager() {
                 onSave={handleSaveFaculty}
                 onCancel={() => setFacultyDialogOpen(false)}
                 isSubmitting={isSubmitting}
-                department={selectedDepartment!}
+                departments={departments}
+                subjects={subjects}
                 />
             </div>
         </DialogContent>
