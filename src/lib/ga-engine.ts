@@ -242,5 +242,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay: CODECHEF_DAY,
     };
 }
-
-    
