@@ -359,36 +359,36 @@ export default function DepartmentsManager() {
   const classesInDept = classes.filter(c => c.department === dept);
   
   const handleSaveSubject = async () => {
-    if (currentSubject && currentSubject.name && currentSubject.code && currentSubject.type && currentSubject.semester && selectedDepartment) {
-        setIsSubmitting(true);
-        try {
-            const subjectToSave: Omit<Subject, 'id'> = {
-                name: currentSubject.name,
-                code: currentSubject.code,
-                type: currentSubject.type,
-                semester: currentSubject.semester,
-                department: selectedDepartment,
-                priority: currentSubject.priority,
-                isSpecial: currentSubject.isSpecial,
-                syllabus: currentSubject.syllabus,
-                facultyIds: currentSubject.facultyIds || [],
-            };
+    if (!currentSubject || !currentSubject.name || !currentSubject.code || !currentSubject.type || !currentSubject.semester || !selectedDepartment) {
+      toast({ title: "Missing information", description: "Please fill out all subject fields.", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const subjectToSave: Omit<Subject, 'id'> = {
+        name: currentSubject.name,
+        code: currentSubject.code,
+        type: currentSubject.type,
+        semester: currentSubject.semester,
+        department: selectedDepartment,
+        priority: currentSubject.priority,
+        isSpecial: currentSubject.isSpecial,
+        syllabus: currentSubject.syllabus,
+        facultyIds: currentSubject.facultyIds || [],
+      };
 
-            if (currentSubject.id) {
-                await updateSubject({ ...subjectToSave, id: currentSubject.id }, allFaculty);
-            } else {
-                await addSubject({ ...subjectToSave }, allFaculty);
-            }
-            toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
-            setSubjectDialogOpen(false);
-            await loadData();
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        } finally {
-            setIsSubmitting(false);
-        }
-    } else {
-        toast({ title: "Missing information", description: "Please fill out all subject fields.", variant: "destructive" });
+      if (currentSubject.id) {
+        await updateSubject({ ...subjectToSave, id: currentSubject.id }, allFaculty);
+      } else {
+        await addSubject({ ...subjectToSave }, allFaculty);
+      }
+      toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
+      setSubjectDialogOpen(false);
+      await loadData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
