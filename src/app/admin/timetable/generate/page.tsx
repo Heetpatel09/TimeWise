@@ -17,7 +17,7 @@ import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOut
 import { Loader2, ArrowLeft, Bot, Users, BookOpen, Library } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
+import { runGA } from '@/lib/ga-engine';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -131,7 +131,7 @@ export default function TimetableGeneratorPage() {
             const classToGenerate = classes.find(c => c.id === selectedClassId);
             if (!classToGenerate) throw new Error("Selected class not found.");
             
-            const result = await generateTimetableFlow({
+            const result = await runGA({
                 days: DAYS,
                 timeSlots: ALL_TIME_SLOTS,
                 classes: [classToGenerate],
@@ -377,3 +377,4 @@ export default function TimetableGeneratorPage() {
     );
 }
 
+    

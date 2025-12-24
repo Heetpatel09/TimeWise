@@ -8,6 +8,9 @@ import { ai } from '@/ai/genkit';
 import { GenerateTimetableInputSchema, GenerateTimetableOutputSchema, type GenerateTimetableInput, type GenerateTimetableOutput } from '@/lib/types';
 import { runGA } from '@/lib/ga-engine';
 
+// This file is now a simple wrapper. The core logic is in ga-engine.ts
+// and is called directly from the client for better reliability.
+// This flow can be used for other integrations if needed.
 const generateTimetable = ai.defineFlow(
   {
     name: 'generateTimetableFlow',
@@ -16,7 +19,7 @@ const generateTimetable = ai.defineFlow(
   },
   async (input) => {
     
-    const { success, message, bestTimetable, generations, fitness, codeChefDay } = await runGA(input);
+    const { success, message, bestTimetable, codeChefDay } = await runGA(input);
     
     if (success && bestTimetable) {
         const schedule = bestTimetable
@@ -31,7 +34,7 @@ const generateTimetable = ai.defineFlow(
             }));
         
         return {
-            summary: message || `Generated schedule after ${generations} generations with fitness ${fitness}.`,
+            summary: message || `Generated a valid schedule.`,
             generatedSchedule: schedule,
             codeChefDay: codeChefDay,
         };
@@ -48,3 +51,5 @@ const generateTimetable = ai.defineFlow(
 export async function generateTimetableFlow(input: GenerateTimetableInput): Promise<GenerateTimetableOutput> {
     return generateTimetable(input);
 }
+
+    
