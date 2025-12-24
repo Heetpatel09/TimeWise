@@ -1,7 +1,7 @@
 
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -27,7 +27,7 @@ import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getStudents } from '@/lib/services/students';
 import type { Schedule, Class, Subject, Faculty, Classroom, Notification, Student, ResolveConflictsOutput, GenerateTimetableOutput } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles, Wand2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles, Wand2, FilterX } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -106,6 +106,11 @@ export default function ScheduleManager() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSchedule, setGeneratedSchedule] = useState<GenerateTimetableOutput | null>(null);
 
+  // Filter states
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedSemester, setSelectedSemester] = useState('all');
+  const [selectedClass, setSelectedClass] = useState('all');
+
   
   const { toast } = useToast();
 
@@ -174,6 +179,39 @@ export default function ScheduleManager() {
           findConflicts();
       }
   }, [schedule, classes, faculty, classrooms]);
+  
+  const departments = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.department)))], [classes]);
+  const semesters = useMemo(() => {
+    if (selectedDepartment === 'all') return ['all'];
+    return ['all', ...Array.from(new Set(classes.filter(c => c.department === selectedDepartment).map(c => c.semester.toString())))].sort();
+  }, [classes, selectedDepartment]);
+
+  const filteredClasses = useMemo(() => {
+    if (selectedDepartment === 'all') return ['all'];
+    let filtered = classes.filter(c => c.department === selectedDepartment);
+    if (selectedSemester !== 'all') {
+      filtered = filtered.filter(c => c.semester.toString() === selectedSemester);
+    }
+    return ['all', ...filtered.map(c => c.id)];
+  }, [classes, selectedDepartment, selectedSemester]);
+
+  const filteredSchedule = useMemo(() => {
+    if (selectedDepartment === 'all') return schedule;
+    let filtered = schedule;
+
+    const classIdsInDept = classes.filter(c => c.department === selectedDepartment).map(c => c.id);
+    filtered = filtered.filter(s => classIdsInDept.includes(s.classId));
+
+    if (selectedSemester !== 'all') {
+      const classIdsInSemester = classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester).map(c => c.id);
+      filtered = filtered.filter(s => classIdsInSemester.includes(s.classId));
+    }
+    if (selectedClass !== 'all') {
+      filtered = filtered.filter(s => s.classId === selectedClass);
+    }
+    return filtered;
+  }, [schedule, classes, selectedDepartment, selectedSemester, selectedClass]);
+
 
   const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom' | 'student') => {
     switch (type) {
@@ -234,7 +272,7 @@ export default function ScheduleManager() {
       setIsResolvingWithAI(true);
       try {
         const resolution = await resolveScheduleConflicts({
-          schedule: schedule.map(s => ({
+          schedule: filteredSchedule.map(s => ({
             ...s,
             className: getRelationInfo(s.classId, 'class')?.name || 'N/A',
             facultyName: getRelationInfo(s.facultyId, 'faculty')?.name || 'N/A',
@@ -310,7 +348,7 @@ export default function ScheduleManager() {
   const exportPDF = async () => {
     setIsExporting(true);
     try {
-        const {pdf, error} = await exportScheduleToPDF(schedule, classes, subjects, faculty, classrooms);
+        const {pdf, error} = await exportScheduleToPDF(filteredSchedule, classes, subjects, faculty, classrooms);
         if (error) {
             throw new Error(error);
         }
@@ -331,7 +369,7 @@ export default function ScheduleManager() {
   
   const scheduleByDay = DAYS.map(day => ({
     day,
-    slots: schedule.filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time)),
+    slots: filteredSchedule.filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time)),
   }));
 
   const selectedSubjectType = subjects.find(s => s.id === currentSlot?.subjectId)?.type;
@@ -352,6 +390,39 @@ export default function ScheduleManager() {
 
   return (
     <TooltipProvider>
+      <Card className='mb-4'>
+        <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
+        <CardContent className="flex flex-wrap gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <Label>Department:</Label>
+              <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedSemester('all'); setSelectedClass('all'); }}>
+                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{departments.map(d => <SelectItem key={d} value={d} className="capitalize">{d}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+             <div className="flex items-center gap-2">
+              <Label>Semester:</Label>
+              <Select value={selectedSemester} onValueChange={(v) => { setSelectedSemester(v); setSelectedClass('all'); }} disabled={selectedDepartment === 'all'}>
+                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{semesters.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All' : s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+             <div className="flex items-center gap-2">
+              <Label>Class:</Label>
+              <Select value={selectedClass} onValueChange={setSelectedClass} disabled={selectedSemester === 'all'}>
+                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    {filteredClasses.map(cId => {
+                        if (cId === 'all') return <SelectItem key={cId} value={cId}>All</SelectItem>;
+                        const classInfo = getRelationInfo(cId, 'class');
+                        return <SelectItem key={cId} value={cId}>{classInfo?.name}</SelectItem>;
+                    })}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="outline" onClick={() => { setSelectedDepartment('all'); setSelectedSemester('all'); setSelectedClass('all'); }}><FilterX className="h-4 w-4 mr-2"/>Clear</Button>
+        </CardContent>
+      </Card>
       <div className="flex justify-between items-center mb-4">
         <div className='flex gap-2'>
             <Button onClick={() => { setGeneratedSchedule(null); setGenerateDialogOpen(true); }} variant="outline">
@@ -723,5 +794,4 @@ export default function ScheduleManager() {
     </TooltipProvider>
   );
 }
-
     
