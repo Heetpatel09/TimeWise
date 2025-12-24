@@ -51,7 +51,7 @@ function MultiSelectFaculty({
   selected,
   onChange,
   className,
-  placeholder = "Select faculty...",
+  placeholder = "Select...",
 }: {
   options: { label: string; value: string }[];
   selected: string[];
