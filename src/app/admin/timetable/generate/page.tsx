@@ -17,11 +17,11 @@ import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOut
 import { Loader2, ArrowLeft, Bot, Users, BookOpen, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { runGA } from '@/lib/ga-engine';
 
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
@@ -67,6 +67,7 @@ export default function TimetableGeneratorPage() {
     
     const [selectedDepartment, setSelectedDepartment] = useState<string>('');
     const [selectedSemester, setSelectedSemester] = useState<string>('');
+    const [selectedClassId, setSelectedClassId] = useState<string>('');
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -80,6 +81,29 @@ export default function TimetableGeneratorPage() {
         const semesters = new Set(classes.filter(c => c.department === selectedDepartment).map(c => c.semester));
         return Array.from(semesters).sort((a,b) => a-b);
     }, [classes, selectedDepartment]);
+
+    const classesInSemester = useMemo(() => {
+        if (!classes || !selectedDepartment || !selectedSemester) return [];
+        return classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester);
+    }, [classes, selectedDepartment, selectedSemester]);
+    
+    const selectedClassDetails = useMemo(() => {
+        if (!selectedClassId || !classes || !students || !subjects || !faculty) return null;
+        const cls = classes.find(c => c.id === selectedClassId);
+        if (!cls) return null;
+        
+        const studentCount = students.filter(s => s.classId === selectedClassId).length;
+        const classSubjects = subjects.filter(s => s.department === cls.department && s.semester === cls.semester)
+            .map(sub => ({
+                ...sub,
+                facultyName: faculty.find(f => f.allottedSubjects?.includes(sub.id))?.name || 'N/A'
+            }));
+
+        return {
+            studentCount,
+            subjects: classSubjects
+        };
+    }, [selectedClassId, classes, students, subjects, faculty]);
 
     useEffect(() => {
         if (departments.length > 0 && !selectedDepartment) {
@@ -95,50 +119,39 @@ export default function TimetableGeneratorPage() {
         }
     }, [semestersInDept, selectedSemester]);
 
+     useEffect(() => {
+        if (classesInSemester.length > 0 && !classesInSemester.some(c => c.id === selectedClassId)) {
+            setSelectedClassId(classesInSemester[0].id);
+        } else if (classesInSemester.length === 0) {
+            setSelectedClassId('');
+        }
+    }, [classesInSemester, selectedClassId]);
+
     const handleGenerate = async () => {
-        if (!selectedDepartment || !selectedSemester || !classes || !subjects || !faculty || !classrooms) {
+        if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule) {
             toast({ title: 'Data not loaded yet. Please wait.', variant: 'destructive' });
             return;
         }
         setIsGenerating(true);
         try {
-            const classesToGenerate = classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester);
+            const classToGenerate = classes.find(c => c.id === selectedClassId);
+            if (!classToGenerate) throw new Error("Selected class not found.");
             
-            if (classesToGenerate.length === 0) {
-                throw new Error("No classes found for the selected department and semester.");
-            }
-
-            const { success, message, bestTimetable } = await runGA({
+            const result = await generateTimetableFlow({
                 days: DAYS,
                 timeSlots: ALL_TIME_SLOTS,
-                classes: classesToGenerate,
+                classes: [classToGenerate],
                 subjects,
                 faculty,
                 classrooms,
+                existingSchedule: existingSchedule.filter(s => s.classId !== selectedClassId),
             });
 
-            if (success && bestTimetable) {
-                const schedule = bestTimetable
-                    .filter(gene => !gene.isCodeChef)
-                    .map(gene => ({
-                        classId: gene.classId,
-                        subjectId: gene.subjectId,
-                        facultyId: gene.facultyId,
-                        classroomId: gene.classroomId,
-                        day: gene.day,
-                        time: gene.time,
-                    }));
-                
-                const codeChefDay = bestTimetable.find(g => g.isCodeChef)?.day;
-
-                setGeneratedData({
-                    summary: message || `Successfully generated timetable for ${selectedSemester}. ${codeChefDay ? `${codeChefDay} is CodeChef day.` : ''}`,
-                    generatedSchedule: schedule,
-                    codeChefDay,
-                });
+            if (result.generatedSchedule.length > 0) {
+                setGeneratedData(result);
                 setReviewDialogOpen(true);
             } else {
-                toast({ title: 'Generation Failed', description: message || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
+                toast({ title: 'Generation Failed', description: result.summary || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
             }
         } catch (e: any) {
             toast({ title: 'Engine Error', description: e.message, variant: 'destructive' });
@@ -148,16 +161,14 @@ export default function TimetableGeneratorPage() {
     };
     
     const handleApplySchedule = async () => {
-        if (!generatedData || !existingSchedule) return;
+        if (!generatedData || !existingSchedule || !selectedClassId) return;
         setIsApplying(true);
         try {
-            const classesToUpdate = classes?.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester).map(c => c.id) || [];
-            
-            const otherSchedules = existingSchedule.filter(s => !classesToUpdate.includes(s.classId));
+            const otherSchedules = existingSchedule.filter(s => s.classId !== selectedClassId);
             const newFullSchedule = [...otherSchedules, ...(generatedData.generatedSchedule as Schedule[])];
             
             await replaceSchedule(newFullSchedule);
-            toast({ title: "Schedule Applied!", description: `The new timetable has been successfully created and merged.` });
+            toast({ title: "Schedule Applied!", description: `The new timetable for the selected class has been created and merged.` });
             queryClient.invalidateQueries({ queryKey: ['schedule'] });
             setReviewDialogOpen(false);
             setGeneratedData(null);
@@ -193,36 +204,83 @@ export default function TimetableGeneratorPage() {
                     <CardHeader>
                         <CardTitle>Master Timetable Generator</CardTitle>
                         <CardDescription>
-                            Generate a conflict-free timetable for all classes in a specific semester.
+                            Generate a conflict-free timetable class by class. Select a class to begin.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {isLoading ? <Loader2 className="animate-spin" /> : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <label>Department</label>
-                                <Select value={selectedDepartment} onValueChange={(val) => { setSelectedDepartment(val); setSelectedSemester(''); }}>
+                                <Select value={selectedDepartment} onValueChange={(val) => { setSelectedDepartment(val); setSelectedSemester(''); setSelectedClassId('') }}>
                                     <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
                                     <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <label>Semester</label>
-                                <Select value={selectedSemester} onValueChange={(val) => { setSelectedSemester(val); }} disabled={!selectedDepartment}>
+                                <Select value={selectedSemester} onValueChange={(val) => { setSelectedSemester(val); setSelectedClassId(''); }} disabled={!selectedDepartment}>
                                     <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
                                     <SelectContent>{semestersInDept.map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <label>Class</label>
+                                <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedSemester}>
+                                    <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
+                                    <SelectContent>{classesInSemester.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                         </div>
                         )}
                     </CardContent>
-                    <CardFooter>
-                         <Button onClick={handleGenerate} disabled={isGenerating || !selectedSemester} size="lg">
-                            {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
-                            Generate for Semester {selectedSemester}
-                        </Button>
-                    </CardFooter>
                 </Card>
+                
+                {selectedClassDetails && (
+                    <Card className="md:col-span-3">
+                        <CardHeader>
+                            <CardTitle>Class Details: {classes?.find(c=>c.id === selectedClassId)?.name}</CardTitle>
+                            <CardDescription>An overview of the selected class.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <Users className="h-5 w-5 text-primary"/>
+                                        <h3 className="font-semibold">Total Students: {selectedClassDetails.studentCount}</h3>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary"/>Subjects & Faculty</h3>
+                                    <ScrollArea className="h-40 border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Subject</TableHead>
+                                                    <TableHead>Assigned Faculty</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {selectedClassDetails.subjects.map(sub => (
+                                                    <TableRow key={sub.id}>
+                                                        <TableCell>{sub.name}</TableCell>
+                                                        <TableCell>{sub.facultyName}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </ScrollArea>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId} size="lg" className="w-full">
+                                {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
+                                Generate for Class
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                )}
             </div>
             
             <Dialog open={isReviewDialogOpen} onOpenChange={setReviewDialogOpen}>
@@ -254,12 +312,12 @@ export default function TimetableGeneratorPage() {
                                                     </TableCell>
                                                 ) : (
                                                     DAYS.map(day => {
-                                                        const slots = (generatedData.generatedSchedule as Schedule[]).filter(s => s.day === day && s.time === time);
+                                                        const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
                                                         
                                                         return (
                                                             <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
-                                                                {slots.length > 0 ? slots.map(slot => (
-                                                                     <div key={slot.classId} className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", getRelationInfo(slot.subjectId, 'subject')?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
+                                                                {slot ? (
+                                                                     <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", getRelationInfo(slot.subjectId, 'subject')?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
                                                                         <div><strong>{getRelationInfo(slot.subjectId, 'subject')?.name}</strong></div>
                                                                         <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
                                                                         <div className='flex justify-between'>
@@ -267,7 +325,7 @@ export default function TimetableGeneratorPage() {
                                                                             <Badge variant="secondary">{getRelationInfo(slot.classId, 'class')?.name}</Badge>
                                                                         </div>
                                                                     </div>
-                                                                )) : <div className='h-full'></div>}
+                                                                ) : <div className='h-full'></div>}
                                                             </TableCell>
                                                         )
                                                     })
