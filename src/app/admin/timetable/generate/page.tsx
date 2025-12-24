@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
