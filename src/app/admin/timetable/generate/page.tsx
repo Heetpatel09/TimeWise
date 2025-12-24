@@ -11,7 +11,6 @@ import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
-import { getStudents } from '@/lib/services/students';
 import { getSchedule, replaceSchedule } from '@/lib/services/schedule';
 import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOutput, Student } from '@/lib/types';
 import { Loader2, ArrowLeft, Bot, Users, BookOpen, UserCheck } from 'lucide-react';
@@ -64,11 +63,10 @@ export default function TimetableGeneratorPage() {
     const { data: subjects, isLoading: subjectsLoading } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: getSubjects });
     const { data: faculty, isLoading: facultyLoading } = useQuery<Faculty[]>({ queryKey: ['faculty'], queryFn: getFaculty });
     const { data: classrooms, isLoading: classroomsLoading } = useQuery<Classroom[]>({ queryKey: ['classrooms'], queryFn: getClassrooms });
-    const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ['students'], queryFn: getStudents });
     const { data: existingSchedule, isLoading: scheduleLoading } = useQuery<Schedule[]>({ queryKey: ['schedule'], queryFn: getSchedule });
     
     const [selectedDepartment, setSelectedDepartment] = useState<string>('');
-    const [selectedClassId, setSelectedClassId] = useState<string>('');
+    const [selectedSemester, setSelectedSemester] = useState<string>('');
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -76,7 +74,12 @@ export default function TimetableGeneratorPage() {
     const [isApplying, setIsApplying] = useState(false);
 
     const departments = useMemo(() => classes ? [...new Set(classes.map(c => c.department))] : [], [classes]);
-    const classesInDept = useMemo(() => classes ? classes.filter(c => c.department === selectedDepartment) : [], [classes, selectedDepartment]);
+    const semestersInDept = useMemo(() => {
+        if (!classes || !selectedDepartment) return [];
+        const semesters = new Set(classes.filter(c => c.department === selectedDepartment).map(c => c.semester));
+        return Array.from(semesters).sort((a,b) => a-b);
+    }, [classes, selectedDepartment]);
+
 
     useEffect(() => {
         if (departments.length > 0 && !selectedDepartment) {
@@ -85,34 +88,33 @@ export default function TimetableGeneratorPage() {
     }, [departments, selectedDepartment]);
     
      useEffect(() => {
-        if (classesInDept.length > 0 && !selectedClassId) {
-            setSelectedClassId(classesInDept[0].id);
-        } else if (classesInDept.length > 0 && selectedClassId && !classesInDept.find(c => c.id === selectedClassId)) {
-            setSelectedClassId(classesInDept[0].id);
-        } else if (classesInDept.length === 0) {
-            setSelectedClassId('');
+        if (semestersInDept.length > 0 && !selectedSemester) {
+            setSelectedSemester(semestersInDept[0].toString());
+        } else if (semestersInDept.length > 0 && selectedSemester && !semestersInDept.includes(parseInt(selectedSemester))) {
+            setSelectedSemester(semestersInDept[0].toString());
+        } else if (semestersInDept.length === 0) {
+            setSelectedSemester('');
         }
-    }, [classesInDept, selectedClassId]);
+    }, [semestersInDept, selectedSemester]);
 
 
     const handleGenerate = async () => {
-        if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule) {
+        if (!selectedDepartment || !selectedSemester || !classes || !subjects || !faculty || !classrooms) {
             toast({ title: 'Data not loaded yet. Please wait.', variant: 'destructive' });
             return;
         }
         setIsGenerating(true);
         try {
-            const classToGenerate = classes.find(c => c.id === selectedClassId);
-            if (!classToGenerate) throw new Error("Selected class not found.");
+            const classesToGenerate = classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester);
+            if (classesToGenerate.length === 0) throw new Error("No classes found for the selected department and semester.");
 
             const result = await generateTimetableFlow({
                 days: DAYS,
                 timeSlots: ALL_TIME_SLOTS,
-                classes: [classToGenerate], // Generate for only one class
+                classes: classesToGenerate,
                 subjects,
                 faculty,
                 classrooms,
-                existingSchedule // Provide existing schedule for conflict checking
             });
 
             if (result.generatedSchedule.length === 0 && result.summary) {
@@ -132,9 +134,9 @@ export default function TimetableGeneratorPage() {
         if (!generatedData) return;
         setIsApplying(true);
         try {
-            const finalSchedule = [...(existingSchedule || []), ...generatedData.generatedSchedule as Schedule[]];
-            await replaceSchedule(finalSchedule);
-            toast({ title: "Schedule Updated!", description: `The timetable for the selected class has been integrated.` });
+            // Replace the entire schedule with the newly generated one
+            await replaceSchedule(generatedData.generatedSchedule as Schedule[]);
+            toast({ title: "Schedule Applied!", description: `The new timetable has been successfully created.` });
             queryClient.invalidateQueries({ queryKey: ['schedule'] });
             setReviewDialogOpen(false);
             setGeneratedData(null);
@@ -155,31 +157,7 @@ export default function TimetableGeneratorPage() {
         }
     };
 
-    const selectedClassDetails = useMemo(() => {
-        if (!selectedClassId || !classes || !students || !subjects || !faculty) return null;
-        
-        const sClass = classes.find(c => c.id === selectedClassId);
-        if (!sClass) return null;
-
-        const studentCount = students.filter(s => s.classId === selectedClassId).length;
-        const classSubjects = subjects
-            .filter(sub => sub.department === sClass.department && sub.semester === sClass.semester)
-            .map(sub => {
-                const assignedFaculty = faculty.find(f => f.allottedSubjects?.includes(sub.id));
-                return {
-                    ...sub,
-                    facultyName: assignedFaculty?.name || 'Unassigned'
-                };
-            });
-
-        return {
-            studentCount,
-            subjects: classSubjects
-        };
-
-    }, [selectedClassId, classes, students, subjects, faculty]);
-
-    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading;
+    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading;
     
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
@@ -189,101 +167,41 @@ export default function TimetableGeneratorPage() {
                     Back to Dashboard
                 </Link>
             </Button>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Class-wise Timetable Generator</CardTitle>
-                            <CardDescription>
-                                Generate a conflict-free timetable for a specific class.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {isLoading ? <Loader2 className="animate-spin" /> : (
-                            <>
-                                <div className="space-y-2">
-                                    <label>Department</label>
-                                    <Select value={selectedDepartment} onValueChange={(val) => {setSelectedDepartment(val); setSelectedClassId('')}}>
-                                        <SelectTrigger className="w-full"><SelectValue placeholder="Select Department" /></SelectTrigger>
-                                        <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                     <label>Class</label>
-                                    <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedDepartment}>
-                                        <SelectTrigger className="w-full"><SelectValue placeholder="Select Class" /></SelectTrigger>
-                                        <SelectContent>{classesInDept.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </div>
-                            </>
-                            )}
-                        </CardContent>
-                        <CardFooter>
-                            <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId} size="lg" className="w-full">
-                                {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
-                                Generate for Class
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
-
-                <div className="lg:col-span-2">
-                   {selectedClassDetails ? (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Class Details: {classes?.find(c => c.id === selectedClassId)?.name}</CardTitle>
-                                <CardDescription>
-                                    An overview of the selected class to be scheduled.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="flex items-center gap-4 p-4 rounded-lg bg-secondary">
-                                    <Users className="h-8 w-8 text-primary" />
-                                    <div>
-                                        <p className="text-2xl font-bold">{selectedClassDetails.studentCount}</p>
-                                        <p className="text-sm text-muted-foreground">Student(s)</p>
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary"/> Subjects & Faculty</h4>
-                                    <ScrollArea className="h-64 border rounded-md">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Subject</TableHead>
-                                                    <TableHead>Type</TableHead>
-                                                    <TableHead>Assigned Faculty</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {selectedClassDetails.subjects.map(sub => (
-                                                    <TableRow key={sub.id}>
-                                                        <TableCell>{sub.name}</TableCell>
-                                                        <TableCell><Badge variant="outline" className="capitalize">{sub.type}</Badge></TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-2">
-                                                                <UserCheck className="h-4 w-4 text-muted-foreground"/>
-                                                                {sub.facultyName}
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </ScrollArea>
-                                </div>
-
-                            </CardContent>
-                        </Card>
-                   ) : !isLoading && (
-                     <Card className="flex items-center justify-center h-full">
-                        <div className="text-center p-8">
-                            <p className="text-muted-foreground">Select a class to view its details and generate a timetable.</p>
+            <div className="grid grid-cols-1 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Master Timetable Generator</CardTitle>
+                        <CardDescription>
+                            Generate a conflict-free timetable for an entire semester within a department.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {isLoading ? <Loader2 className="animate-spin" /> : (
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label>Department</label>
+                                <Select value={selectedDepartment} onValueChange={(val) => {setSelectedDepartment(val); setSelectedSemester('')}}>
+                                    <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
+                                    <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                    <label>Semester</label>
+                                <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedDepartment}>
+                                    <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
+                                    <SelectContent>{semestersInDept.map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                    </Card>
-                   )}
-                </div>
+                        )}
+                    </CardContent>
+                    <CardFooter>
+                        <Button onClick={handleGenerate} disabled={isGenerating || !selectedSemester} size="lg" className="w-full sm:w-auto">
+                            {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
+                            Generate Timetable
+                        </Button>
+                    </CardFooter>
+                </Card>
             </div>
             
             <Dialog open={isReviewDialogOpen} onOpenChange={setReviewDialogOpen}>
@@ -315,17 +233,20 @@ export default function TimetableGeneratorPage() {
                                                     </TableCell>
                                                 ) : (
                                                     DAYS.map(day => {
-                                                        const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
+                                                        const slots = (generatedData.generatedSchedule as Schedule[]).filter(s => s.day === day && s.time === time);
                                                         
                                                         return (
                                                             <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
-                                                                {slot ? (
-                                                                    <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", getRelationInfo(slot.subjectId, 'subject')?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
+                                                                {slots.map(slot => (
+                                                                     <div key={slot.id || `${slot.classId}-${slot.subjectId}`} className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", getRelationInfo(slot.subjectId, 'subject')?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
                                                                         <div><strong>{getRelationInfo(slot.subjectId, 'subject')?.name}</strong></div>
-                                                                        <div className="truncate">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
-                                                                        <div>{getRelationInfo(slot.classroomId, 'classroom')?.name}</div>
+                                                                        <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                                        <div className='flex justify-between'>
+                                                                            <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
+                                                                            <Badge variant="secondary">{getRelationInfo(slot.classId, 'class')?.name}</Badge>
+                                                                        </div>
                                                                     </div>
-                                                                ) : null }
+                                                                ))}
                                                             </TableCell>
                                                         )
                                                     })
@@ -344,7 +265,7 @@ export default function TimetableGeneratorPage() {
                         <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleApplySchedule} disabled={isApplying || !generatedData || generatedData.generatedSchedule.length === 0}>
                             {isApplying && <Loader2 className="animate-spin mr-2" />}
-                            Integrate This Schedule
+                            Apply Full Schedule
                         </Button>
                     </DialogFooter>
                 </DialogContent>
