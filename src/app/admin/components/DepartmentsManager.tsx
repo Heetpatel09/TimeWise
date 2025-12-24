@@ -69,7 +69,6 @@ function FacultyForm({
         code: faculty.code || '',
         designation: faculty.designation || '',
         employmentType: faculty.employmentType || 'full-time',
-        ...faculty,
         department: faculty.department || '',
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
         designatedYear: faculty.designatedYear || 1,
@@ -152,7 +151,7 @@ function FacultyForm({
                       variant="outline"
                       role="combobox"
                       className={cn(
-                        "w-full justify-between h-auto",
+                        "w-full justify-between h-auto min-h-10",
                         !field.value?.length && "text-muted-foreground"
                       )}
                     >
@@ -167,6 +166,21 @@ function FacultyForm({
                                   className="mr-1"
                                 >
                                   {sub?.name || subId}
+                                  <button
+                                    type="button"
+                                    className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newValue = field.value?.filter((id) => id !== subId);
+                                      field.onChange(newValue);
+                                    }}
+                                  >
+                                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                  </button>
                                 </Badge>
                               )
                             })
@@ -179,34 +193,36 @@ function FacultyForm({
                 <PopoverContent className="w-full p-0">
                   <Command>
                     <CommandInput placeholder="Search subjects..." />
-                    <CommandEmpty>No subjects found for this department.</CommandEmpty>
-                    <CommandGroup>
-                        <ScrollArea className='h-48'>
-                      {availableSubjects.map((sub) => (
-                        <CommandItem
-                          value={sub.name}
-                          key={sub.id}
-                          onSelect={() => {
-                            const currentValue = field.value || [];
-                            const newValue = currentValue.includes(sub.id)
-                              ? currentValue.filter((id) => id !== sub.id)
-                              : [...currentValue, sub.id];
-                            field.onChange(newValue);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              field.value?.includes(sub.id)
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          {sub.name}
-                        </CommandItem>
-                      ))}
-                      </ScrollArea>
-                    </CommandGroup>
+                    <CommandList>
+                        <CommandEmpty>No subjects found for this department.</CommandEmpty>
+                        <CommandGroup>
+                            <ScrollArea className='h-48'>
+                          {availableSubjects.map((sub) => (
+                            <CommandItem
+                              value={sub.name}
+                              key={sub.id}
+                              onSelect={() => {
+                                const currentValue = field.value || [];
+                                const newValue = currentValue.includes(sub.id)
+                                  ? currentValue.filter((id) => id !== sub.id)
+                                  : [...currentValue, sub.id];
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value?.includes(sub.id)
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {sub.name}
+                            </CommandItem>
+                          ))}
+                          </ScrollArea>
+                        </CommandGroup>
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
@@ -300,7 +316,7 @@ export default function DepartmentsManager() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const [subjectData, classData, facultyData] = await Promise.all([getSubjects(), getClasses(), getFaculty()]);
+      const [subjectData, classData, facultyData] = await Promise.all([getSubjects(), getSubjects(), getFaculty()]);
       setSubjects(subjectData);
       setClasses(classData);
       setAllFaculty(facultyData);
