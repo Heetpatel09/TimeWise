@@ -134,7 +134,6 @@ export const GenerateTimetableOutputSchema = z.object({
     day: z.string(),
     time: z.string(),
   })),
-  codeChefDay: z.string().optional(),
 });
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
 

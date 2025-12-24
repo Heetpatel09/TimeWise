@@ -148,7 +148,7 @@ export default function TimetableGeneratorPage() {
                 toast({ title: 'Generation Failed', description: result.summary || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
             }
         } catch (e: any) {
-            toast({ title: 'Engine Error', description: e.message, variant: 'destructive' });
+            toast({ title: 'Engine Error', description: e.message || "An unexpected error occurred from the server.", variant: 'destructive' });
         } finally {
             setIsGenerating(false);
         }
@@ -184,6 +184,9 @@ export default function TimetableGeneratorPage() {
     };
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading;
+    
+    const codeChefDay = generatedData?.generatedSchedule.find(s => s.subjectId === 'CODECHEF')?.day;
+
 
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
@@ -292,7 +295,7 @@ export default function TimetableGeneratorPage() {
                                         <TableRow>
                                             <TableHead className="border font-semibold p-2">Time</TableHead>
                                             {DAYS.map(day => (
-                                                <TableHead key={day} className={cn("border font-semibold p-2", day === generatedData.codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
+                                                <TableHead key={day} className={cn("border font-semibold p-2", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
                                             ))}
                                         </TableRow>
                                     </TableHeader>
@@ -314,7 +317,7 @@ export default function TimetableGeneratorPage() {
                                                 {DAYS.map(day => {
                                                     const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
                                                     
-                                                    if (day === generatedData.codeChefDay) {
+                                                    if (day === codeChefDay) {
                                                         return (
                                                              <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center">
                                                                 <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold">
