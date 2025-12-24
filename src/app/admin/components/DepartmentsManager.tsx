@@ -373,6 +373,7 @@ export default function DepartmentsManager() {
         priority: currentSubject.priority,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
+        facultyIds: currentSubject.facultyIds || [],
       };
 
       setIsSubmitting(true);
@@ -442,12 +443,12 @@ export default function DepartmentsManager() {
 
 
   const openNewSubjectDialog = () => {
-    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High' });
+    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High', facultyIds: [] });
     setSubjectDialogOpen(true);
   };
   
   const openEditSubjectDialog = (subject: Subject) => {
-    setCurrentSubject(subject);
+    setCurrentSubject({...subject, facultyIds: subject.facultyIds || []});
     setSubjectDialogOpen(true);
   };
   
@@ -526,6 +527,14 @@ export default function DepartmentsManager() {
     return ['all', ...Array.from(semesters).sort((a,b) => a-b).map(String)];
   }, [subjects, dept]);
   
+  const facultyOptionsForDept = useMemo(() => {
+      if (!dept) return [];
+      return allFaculty
+        .filter(f => f.department === dept)
+        .map(f => ({ value: f.id, label: f.name }));
+  }, [allFaculty, dept]);
+
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -598,7 +607,7 @@ export default function DepartmentsManager() {
                                     </TableHeader>
                                     <TableBody>
                                         {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
-                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
+                                            const assignedFaculty = allFaculty.filter(f => subject.facultyIds?.includes(f.id));
                                             return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>
@@ -746,6 +755,15 @@ export default function DepartmentsManager() {
                 <Label htmlFor="s-semester">Semester</Label>
                 <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
                 </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Faculty</Label>
+              <MultiSelectFaculty
+                  options={facultyOptionsForDept}
+                  selected={currentSubject.facultyIds || []}
+                  onChange={(selected) => setCurrentSubject({ ...currentSubject, facultyIds: selected })}
+                  placeholder="Allot faculty for this subject"
+              />
             </div>
              {currentSubject.type === 'theory' && (
               <div className="space-y-2">
