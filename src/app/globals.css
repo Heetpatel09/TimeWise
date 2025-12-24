@@ -73,13 +73,11 @@
 }
 
 @layer base {
+  * {
+    @apply border-border;
+  }
   body {
-    height: 100vh;
-    width: 100%;
-    background-image: url('https://storage.googleapis.com/studio-webapp-assets/bafybeidjqub2hve6nveizkdl6yhhogb5cgh2ifzndg3vwv3ldb24tg6bnq/background.jpeg');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;
+    @apply bg-background text-foreground;
   }
 }
 

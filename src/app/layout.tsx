@@ -22,21 +22,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased h-full" suppressHydrationWarning>
         <Providers>
-        <div
-  className="relative h-full w-full"
-  style={{
-    backgroundImage: "url('https://storage.googleapis.com/studio-webapp-assets/bafybeidjqub2hve6nveizkdl6yhhogb5cgh2ifzndg3vwv3ldb24tg6bnq/background.jpeg')",
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  }}
->
-  <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
-
-  <div className="relative z-10 h-full w-full">
-    {children}
-  </div>
-</div>
+            {children}
         </Providers>
         <Toaster />
       </body>
