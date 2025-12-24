@@ -17,7 +17,7 @@ import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOut
 import { Loader2, ArrowLeft, Bot, Users, BookOpen, Library } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { runGA } from '@/lib/ga-engine';
+import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -131,9 +131,9 @@ export default function TimetableGeneratorPage() {
             const classToGenerate = classes.find(c => c.id === selectedClassId);
             if (!classToGenerate) throw new Error("Selected class not found.");
             
-            const result = await runGA({
+            const result = await generateTimetableFlow({
                 days: DAYS,
-                timeSlots: ALL_TIME_SLOTS,
+                timeSlots: ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t)),
                 classes: [classToGenerate],
                 subjects,
                 faculty,
@@ -141,17 +141,11 @@ export default function TimetableGeneratorPage() {
                 existingSchedule: existingSchedule.filter(s => s.classId !== selectedClassId),
             });
 
-            const generatedSchedule = result.bestTimetable as Schedule[];
-
-            if (result.success && generatedSchedule.length > 0) {
-                 setGeneratedData({
-                    summary: result.message,
-                    generatedSchedule: generatedSchedule,
-                    codeChefDay: result.codeChefDay,
-                });
-                setReviewDialogOpen(true);
+            if (result && result.generatedSchedule.length > 0) {
+                 setGeneratedData(result);
+                 setReviewDialogOpen(true);
             } else {
-                toast({ title: 'Generation Failed', description: result.message || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
+                toast({ title: 'Generation Failed', description: result.summary || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
             }
         } catch (e: any) {
             toast({ title: 'Engine Error', description: e.message, variant: 'destructive' });
@@ -376,5 +370,3 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
-
-    

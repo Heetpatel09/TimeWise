@@ -60,4 +60,3 @@ const resolveConflicts = ai.defineFlow(
 export async function resolveScheduleConflictsFlow(input: ResolveConflictsInput): Promise<ResolveConflictsOutput> {
     return resolveConflicts(input);
 }
-
