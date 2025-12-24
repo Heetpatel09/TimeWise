@@ -564,17 +564,31 @@ export default function DepartmentsManager() {
                                     <TableHeader>
                                         <TableRow>
                                         <TableHead>Name</TableHead>
+                                        <TableHead>Assigned Faculty</TableHead>
                                         <TableHead>Semester</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => (
+                                        {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
+                                            const assignedFaculty = allFaculty.find(f => f.allottedSubjects?.includes(subject.id));
+                                            return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>
                                                 <div>{subject.name}</div>
                                                 <div className="text-xs text-muted-foreground">{subject.code}</div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {assignedFaculty ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Avatar className="h-6 w-6">
+                                                                <AvatarImage src={assignedFaculty.avatar} alt={assignedFaculty.name} />
+                                                                <AvatarFallback>{assignedFaculty.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                                            </Avatar>
+                                                            <span className="text-xs">{assignedFaculty.name}</span>
+                                                        </div>
+                                                    ) : <span className="text-xs text-muted-foreground">N/A</span>}
                                                 </TableCell>
                                                 <TableCell>{subject.semester}</TableCell>
                                                 <TableCell className='capitalize'>
@@ -612,7 +626,7 @@ export default function DepartmentsManager() {
                                                 </TableCell>
                                             </TableRow>
                                             )
-                                        ) : (
+                                        }) : (
                                             <TableRow>
                                                 <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this department/semester.</TableCell>
                                             </TableRow>
@@ -826,3 +840,5 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
