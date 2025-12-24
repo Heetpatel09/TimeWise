@@ -141,11 +141,17 @@ export default function TimetableGeneratorPage() {
                 existingSchedule: existingSchedule.filter(s => s.classId !== selectedClassId),
             });
 
-            if (result.success && result.generatedSchedule.length > 0) {
-                setGeneratedData(result);
+            const generatedSchedule = result.bestTimetable as Schedule[];
+
+            if (result.success && generatedSchedule.length > 0) {
+                 setGeneratedData({
+                    summary: result.message,
+                    generatedSchedule: generatedSchedule,
+                    codeChefDay: result.codeChefDay,
+                });
                 setReviewDialogOpen(true);
             } else {
-                toast({ title: 'Generation Failed', description: result.summary || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
+                toast({ title: 'Generation Failed', description: result.message || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
             }
         } catch (e: any) {
             toast({ title: 'Engine Error', description: e.message, variant: 'destructive' });
@@ -371,4 +377,3 @@ export default function TimetableGeneratorPage() {
     );
 }
 
-    

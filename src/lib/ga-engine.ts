@@ -21,6 +21,7 @@ const ALL_TIME_SLOTS = [
 ];
 
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:30') && !t.includes('12:00'));
+const TOTAL_ACADEMIC_SLOTS_REQUIRED = 21;
 
 // --- Helper Functions ---
 function getFacultyForSubject(subjectId: string, facultyList: Faculty[]): string | null {
@@ -61,96 +62,89 @@ interface LectureToBePlaced {
 function isConflict(gene: Omit<Gene, 'id'>, schedule: Gene[]): boolean {
     return schedule.some(slot => {
         if (slot.day !== gene.day || slot.time !== gene.time) return false;
+        // A faculty member can't be in two places at once.
         if (slot.facultyId === gene.facultyId) return true;
+        // A classroom can't be used by two classes at once.
         if (slot.classroomId === gene.classroomId) return true;
+        // The same class can't have two different lectures at the same time.
         if (slot.classId === gene.classId) return true;
         return false;
     });
 }
 
+// Main solving function with backtracking
 function solveTimetable(
     lecturesToPlace: LectureToBePlaced[],
     schedule: Gene[],
-    input: GenerateTimetableInput,
-    attempt: number = 0
+    input: GenerateTimetableInput
 ): Gene[] | null {
-     if (lecturesToPlace.length === 0) {
-        return schedule; // Success
-    }
-
-    if (attempt > lecturesToPlace.length * 2) { // To avoid infinite recursion on impossible schedules
-        return null;
+    // If all lectures are placed, we have a solution
+    if (lecturesToPlace.length === 0) {
+        return schedule;
     }
 
     const lecture = lecturesToPlace[0];
     const remainingLectures = lecturesToPlace.slice(1);
+    
     const availableClassrooms = input.classrooms.filter(c => c.type === (lecture.isLab ? 'lab' : 'classroom'));
 
+    // --- Try to place the current lecture ---
+    // Iterate through all possible days (excluding CodeChef day) and time slots
     for (const day of DAYS.filter(d => d !== CODECHEF_DAY)) {
-        if (lecture.isLab) {
-            // Max 1 lab per day for the class
-            if (schedule.some(s => s.classId === lecture.classId && s.day === day && s.isLab)) {
-                continue;
-            }
+        
+        // Constraint: At most one lab session per day for the class
+        if (lecture.isLab && schedule.some(s => s.classId === lecture.classId && s.day === day && s.isLab)) {
+            continue;
+        }
 
+        // Constraint: At most two lectures of the same subject per day
+        if (!lecture.isLab && schedule.filter(s => s.classId === lecture.classId && s.day === day && s.subjectId === lecture.subjectId).length >= 2) {
+            continue;
+        }
+
+        if (lecture.isLab) {
+            // Find two consecutive slots for the lab
             for (let i = 0; i < LECTURE_TIME_SLOTS.length - 1; i++) {
                 const time1 = LECTURE_TIME_SLOTS[i];
                 const time2 = LECTURE_TIME_SLOTS[i+1];
 
                 const time1Index = ALL_TIME_SLOTS.indexOf(time1);
                 const time2Index = ALL_TIME_SLOTS.indexOf(time2);
-                if (time2Index - time1Index !== 1) continue;
+                if (time2Index - time1Index !== 1) continue; // Skip non-consecutive slots (across breaks)
 
                 for (const classroom of availableClassrooms) {
                     const gene1: Omit<Gene, 'id'> = { ...lecture, day, time: time1, classroomId: classroom.id, isCodeChef: false };
                     const gene2: Omit<Gene, 'id'> = { ...lecture, day, time: time2, classroomId: classroom.id, isCodeChef: false };
 
+                    // Check for conflicts for both slots
                     if (!isConflict(gene1, [...schedule, ...input.existingSchedule]) && !isConflict(gene2, [...schedule, ...input.existingSchedule])) {
                         const newSchedule = [...schedule, { ...gene1, id: '' }, { ...gene2, id: '' }];
-                        const result = solveTimetable(remainingLectures, newSchedule, input, 0);
-                        if (result) return result;
+                        const result = solveTimetable(remainingLectures, newSchedule, input);
+                        if (result) return result; // Found a solution
                     }
                 }
             }
-        } else { // Theory
-             // Max 2 slots of same subject per day
-            if (schedule.filter(s => s.classId === lecture.classId && s.day === day && s.subjectId === lecture.subjectId).length >= 2) {
-                continue;
-            }
+        } else { // Theory lecture
             for (const time of LECTURE_TIME_SLOTS) {
                 for (const classroom of availableClassrooms) {
                     const gene: Omit<Gene, 'id'> = { ...lecture, day, time, classroomId: classroom.id, isCodeChef: false };
                     if (!isConflict(gene, [...schedule, ...input.existingSchedule])) {
                         const newSchedule = [...schedule, { ...gene, id: '' }];
-                        const result = solveTimetable(remainingLectures, newSchedule, input, 0);
-                        if (result) return result;
+                        const result = solveTimetable(remainingLectures, newSchedule, input);
+                        if (result) return result; // Found a solution
                     }
                 }
             }
         }
     }
 
-    // Backtracking: if we can't place the current lecture, try swapping a lower priority one.
-    const lowerPriorityLectureIndex = schedule.findIndex(g => !g.isLab && g.isCodeChef !== true);
-    if(lowerPriorityLectureIndex !== -1) {
-        const tempSchedule = [...schedule];
-        const removedGene = tempSchedule.splice(lowerPriorityLectureIndex, 1)[0];
-        const newQueue = [lecture, ...remainingLectures, {
-            classId: removedGene.classId,
-            subjectId: removedGene.subjectId,
-            facultyId: removedGene.facultyId,
-            isLab: removedGene.isLab,
-            duration: 1
-        }];
-        return solveTimetable(newQueue, tempSchedule, input, attempt + 1);
-    }
-
-
-    return null; // No solution found
+    // If we've tried all possibilities for the current lecture and found no solution,
+    // it means we need to backtrack by returning null.
+    return null;
 }
 
 export async function runGA(input: GenerateTimetableInput) {
-    const { classes: classesToSchedule, subjects, faculty, classrooms, existingSchedule = [] } = input;
+    const { classes: classesToSchedule, subjects, faculty, classrooms } = input;
 
     if (classesToSchedule.length === 0) {
         return { success: false, message: 'No class selected for timetable generation.', bestTimetable: [] };
@@ -159,9 +153,9 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const allClassSubjects = subjects.filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department);
     
-    const theoryLectures: LectureToBePlaced[] = [];
-    const labLectures: LectureToBePlaced[] = [];
+    const lecturesToPlace: LectureToBePlaced[] = [];
 
+    // Create a list of all required lectures based on subject type and priority
     allClassSubjects.forEach(sub => {
         const facultyId = getFacultyForSubject(sub.id, faculty);
         if (!facultyId) {
@@ -170,35 +164,32 @@ export async function runGA(input: GenerateTimetableInput) {
         }
 
         if (sub.type === 'lab') {
-            labLectures.push({ subjectId: sub.id, facultyId, isLab: true, duration: 2, classId: classToSchedule.id });
+            // Labs are 2 hours long, once per week
+            lecturesToPlace.push({ subjectId: sub.id, facultyId, isLab: true, duration: 2, classId: classToSchedule.id });
         } else {
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
-                theoryLectures.push({ subjectId: sub.id, facultyId, isLab: false, duration: 1, classId: classToSchedule.id });
+                lecturesToPlace.push({ subjectId: sub.id, facultyId, isLab: false, duration: 1, classId: classToSchedule.id });
             }
         }
     });
 
-    const lectureQueue = [...labLectures, ...theoryLectures];
-    
-    const generatedSchedule = solveTimetable(lectureQueue, [], input);
-    
-    if (!generatedSchedule) {
+    // Solve the timetable
+    const initialSchedule: Gene[] = [];
+    const generatedSchedule = solveTimetable(lecturesToPlace, initialSchedule, input);
+
+    const actualAcademicSlots = generatedSchedule ? generatedSchedule.filter(g => !g.isCodeChef).length : 0;
+
+    if (!generatedSchedule || actualAcademicSlots < TOTAL_ACADEMIC_SLOTS_REQUIRED) {
         return {
              success: false,
-             message: `Could not schedule all required lectures. This may be due to a lack of available faculty or classrooms, or overly strict constraints.`,
+             message: `Generation failed. Could not schedule all required ${TOTAL_ACADEMIC_SLOTS_REQUIRED} academic slots. Only placed ${actualAcademicSlots}. This is likely due to restrictive constraints (e.g., not enough available faculty or classrooms for the required times).`,
              bestTimetable: [],
              codeChefDay: CODECHEF_DAY,
         }
     }
 
-    let placedSlots = 0;
-    generatedSchedule.forEach(g => {
-        if (g.isLab) placedSlots += 1; // Count a lab session (2 genes) as 2 hours
-        else placedSlots += 1;
-    });
-
-    // Fill remaining slots with Library (up to 3)
+    // --- Fill remaining slots with Library ---
     let librarySlots = 0;
     const occupiedSlots = new Set(generatedSchedule.map(g => `${g.day}-${g.time}`));
     for (const day of DAYS.filter(d => d !== CODECHEF_DAY)) {
@@ -208,7 +199,7 @@ export async function runGA(input: GenerateTimetableInput) {
             const slotKey = `${day}-${time}`;
             if (!occupiedSlots.has(slotKey)) {
                 generatedSchedule.push({
-                    id: `GEN${Date.now()}${Math.random()}`,
+                    id: `GEN_LIB_${librarySlots}`,
                     day, time, classId: classToSchedule.id,
                     subjectId: 'LIB001', facultyId: 'NA', classroomId: 'NA',
                     isLab: false
@@ -219,10 +210,10 @@ export async function runGA(input: GenerateTimetableInput) {
         }
     }
 
-    // Add CodeChef day for display
+    // Add CodeChef day for display purposes
     LECTURE_TIME_SLOTS.forEach(time => {
         generatedSchedule.push({
-            id: `GEN${Date.now()}${Math.random()}`,
+            id: `GEN_CC_${time}`,
             day: CODECHEF_DAY, time, classId: classToSchedule.id,
             subjectId: 'CODECHEF', facultyId: 'NA', classroomId: 'NA', isLab: false, isCodeChef: true,
         });
@@ -230,14 +221,11 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const finalSchedule = generatedSchedule.map(g => ({ ...g, id: g.id || `GEN${Date.now()}${Math.random()}` }));
     
-    const finalAcademicSlots = finalSchedule.filter(g => !g.isCodeChef && g.subjectId !== 'LIB001').length;
-
-
     return {
         success: true,
-        message: `Successfully generated a complete and conflict-free schedule with ${finalAcademicSlots} academic slots.`,
+        message: `Successfully generated a complete and conflict-free schedule with ${actualAcademicSlots} academic slots.`,
         bestTimetable: finalSchedule,
-        generations: 1, // N/A for this algorithm
+        generations: 1, // Not applicable for this algorithm
         fitness: 0, // 0 fitness means no conflicts
         codeChefDay: CODECHEF_DAY,
     };
