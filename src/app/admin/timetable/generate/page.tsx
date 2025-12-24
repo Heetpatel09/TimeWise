@@ -14,7 +14,7 @@ import { getClassrooms } from '@/lib/services/classrooms';
 import { getSchedule, replaceSchedule } from '@/lib/services/schedule';
 import { getStudents } from '@/lib/services/students';
 import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOutput, Student } from '@/lib/types';
-import { Loader2, ArrowLeft, Bot, Users, BookOpen, UserCheck } from 'lucide-react';
+import { Loader2, ArrowLeft, Bot, Users, BookOpen, Library } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
@@ -26,16 +26,13 @@ import { Badge } from '@/components/ui/badge';
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
     '08:30 AM - 09:30 AM',
-    '09:30 AM - 10:00 AM', // Break
     '10:00 AM - 11:00 AM',
     '11:00 AM - 12:00 PM',
-    '12:00 PM - 01:00 PM', // Break
     '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '02:00 PM - 03:00 PM',
 ];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
@@ -191,6 +188,8 @@ export default function TimetableGeneratorPage() {
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading;
     
+    const workingDays = generatedData?.codeChefDay ? DAYS.filter(d => d !== generatedData.codeChefDay) : DAYS;
+
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
             <Button asChild variant="outline" size="sm" className="mb-4">
@@ -298,7 +297,7 @@ export default function TimetableGeneratorPage() {
                                         <TableRow>
                                             <TableHead className="border font-semibold p-2">Time</TableHead>
                                             {DAYS.map(day => (
-                                                <TableHead key={day} className="border font-semibold p-2">{day}</TableHead>
+                                                <TableHead key={day} className={cn("border font-semibold p-2", day === generatedData.codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}{day === generatedData.codeChefDay && " (CodeChef)"}</TableHead>
                                             ))}
                                         </TableRow>
                                     </TableHeader>
@@ -306,30 +305,35 @@ export default function TimetableGeneratorPage() {
                                         {ALL_TIME_SLOTS.sort(sortTime).map(time => (
                                             <TableRow key={time}>
                                                 <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
-                                                {BREAK_SLOTS.includes(time) ? (
-                                                     <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary p-2">
-                                                        {time === '09:30 AM - 10:00 AM' ? 'SHORT BREAK' : 'LUNCH BREAK'}
-                                                    </TableCell>
-                                                ) : (
-                                                    DAYS.map(day => {
-                                                        const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
-                                                        
+                                                {DAYS.map(day => {
+                                                    const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
+                                                    
+                                                    if (day === generatedData.codeChefDay) {
                                                         return (
-                                                            <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
-                                                                {slot ? (
-                                                                     <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", getRelationInfo(slot.subjectId, 'subject')?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
-                                                                        <div><strong>{getRelationInfo(slot.subjectId, 'subject')?.name}</strong></div>
-                                                                        <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
-                                                                        <div className='flex justify-between'>
-                                                                            <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
-                                                                            <Badge variant="secondary">{getRelationInfo(slot.classId, 'class')?.name}</Badge>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : <div className='h-full'></div>}
-                                                            </TableCell>
+                                                             <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center">
+                                                                <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold">
+                                                                    <Bot className="h-4 w-4 mr-2"/>
+                                                                    <span>CodeChef Day</span>
+                                                                </div>
+                                                             </TableCell>
                                                         )
-                                                    })
-                                                )}
+                                                    }
+                                                    
+                                                    return (
+                                                        <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
+                                                            {slot ? (
+                                                                 <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", getRelationInfo(slot.subjectId, 'subject')?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
+                                                                    <div><strong>{getRelationInfo(slot.subjectId, 'subject')?.name}</strong></div>
+                                                                    <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                                    <div className='flex justify-between'>
+                                                                        <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
+                                                                        <Badge variant="secondary">{getRelationInfo(slot.classId, 'class')?.name}</Badge>
+                                                                    </div>
+                                                                </div>
+                                                            ) : <div className='flex justify-center items-center h-full text-muted-foreground'><Library className="h-4 w-4" /></div>}
+                                                        </TableCell>
+                                                    )
+                                                })}
                                             </TableRow>
                                         ))}
                                     </TableBody>
