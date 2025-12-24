@@ -18,7 +18,6 @@ export async function getSubjects(): Promise<Subject[]> {
   return JSON.parse(JSON.stringify(results.map(s => ({ 
       ...s, 
       isSpecial: !!s.isSpecial,
-      facultyIds: s.facultyIds ? JSON.parse(s.facultyIds) : [],
     }))));
 }
 
@@ -33,8 +32,8 @@ export async function addSubject(item: Omit<Subject, 'id'>): Promise<Subject> {
 
     const newItem: Subject = { ...item, id, name: finalName };
     
-    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority, facultyIds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.department, item.priority, JSON.stringify(item.facultyIds || []));
+    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.department, item.priority);
     
     revalidateAll();
     return Promise.resolve(newItem);
@@ -49,8 +48,8 @@ export async function updateSubject(updatedItem: Subject): Promise<Subject> {
     }
     const finalItem = { ...updatedItem, name: finalName };
 
-    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, department = ?, priority = ?, facultyIds = ? WHERE id = ?');
-    stmt.run(finalItem.name, finalItem.code, (finalItem.isSpecial || false) ? 1 : 0, finalItem.type, finalItem.semester, finalItem.syllabus, finalItem.department, finalItem.priority, JSON.stringify(finalItem.facultyIds || []), finalItem.id);
+    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, department = ?, priority = ? WHERE id = ?');
+    stmt.run(finalItem.name, finalItem.code, (finalItem.isSpecial || false) ? 1 : 0, finalItem.type, finalItem.semester, finalItem.syllabus, finalItem.department, finalItem.priority, finalItem.id);
     
     revalidateAll();
     return Promise.resolve(finalItem);
