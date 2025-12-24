@@ -155,7 +155,6 @@ function FacultyForm({
                         "w-full justify-between h-auto",
                         !field.value?.length && "text-muted-foreground"
                       )}
-                      disabled={!selectedDepartment}
                     >
                       <div className="flex gap-1 flex-wrap">
                         {field.value && field.value.length > 0
