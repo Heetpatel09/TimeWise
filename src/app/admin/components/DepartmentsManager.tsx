@@ -391,17 +391,16 @@ export default function DepartmentsManager() {
   const handleSaveFaculty = async (data: z.infer<typeof facultySchema>, password?: string) => {
       setIsSubmitting(true);
       try {
-        const dataToSave = { ...data, roles: [] } as Omit<Faculty, 'id'> & {id?: string};
-        if (dataToSave.id) {
-          await updateFaculty(dataToSave as Faculty);
+        if (data.id) {
+          await updateFaculty(data as Faculty);
         } else {
-          const newFacultyResult = await addFaculty(dataToSave, password);
+          const newFacultyResult = await addFaculty(data as Omit<Faculty, 'id'>, password);
           if (newFacultyResult.initialPassword) {
             setNewFacultyCredentials({ email: newFacultyResult.email, initialPassword: newFacultyResult.initialPassword });
           }
         }
         await loadData();
-        toast({ title: dataToSave.id ? "Faculty Updated" : "Faculty Added" });
+        toast({ title: data.id ? "Faculty Updated" : "Faculty Added" });
         setFacultyDialogOpen(false);
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
