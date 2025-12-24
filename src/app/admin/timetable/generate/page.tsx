@@ -24,23 +24,31 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 const ALL_TIME_SLOTS = [
-    '7:30-8:25',
-    '8:25-9:20',
-    '9:20-9:30', // break
-    '9:30-10:25',
-    '10:25-11:20',
-    '11:20-12:20', // recess
-    '12:20-1:15',
-    '1:15-2:10'
+    '07:30 AM - 08:30 AM',
+    '08:30 AM - 09:30 AM',
+    '09:30 AM - 10:00 AM', // Break
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM', // Lunch
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['9:20-9:30', '11:20-12:20'];
+const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split('-');
+        const [start] = time.split(' - ');
         const [h, m] = start.split(':').map(Number);
-        return h * 60 + m;
+        const modifier = time.slice(-2);
+        let hours = h;
+        if (modifier === 'PM' && h < 12) {
+            hours += 12;
+        }
+        if (modifier === 'AM' && h === 12) { // Midnight case
+            hours = 0;
+        }
+        return hours * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
 }
@@ -300,7 +308,7 @@ export default function TimetableGeneratorPage() {
                                                     <TableRow key={time}>
                                                         <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
                                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
-                                                             {time === '9:20-9:30' ? 'RECESS' : 'LUNCH BREAK'}
+                                                             {time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
                                                         </TableCell>
                                                     </TableRow>
                                                 )
