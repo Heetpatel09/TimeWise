@@ -50,23 +50,7 @@ import { generateTimetableFlow as generateTimetable } from '@/ai/flows/generate-
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
-
-function sortTime(a: string, b: string) {
-    if (a === 'Unassigned') return 1;
-    if (b === 'Unassigned') return -1;
-    const toDate = (time: string) => {
-        const [timePart, modifier] = time.split(' ');
-        let [hours, minutes] = timePart.split(':');
-        if (hours === '12') {
-            hours = '0';
-        }
-        if (modifier === 'PM') {
-            hours = (parseInt(hours, 10) + 12).toString();
-        }
-        return new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
-    };
-    return toDate(a).getTime() - toDate(b).getTime();
-}
+import { Badge } from '@/components/ui/badge';
 
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
@@ -78,9 +62,21 @@ const ALL_TIME_SLOTS = [
     '01:00 PM - 02:00 PM',
     '02:00 PM - 03:00 PM'
 ];
-
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:30') && !t.includes('12:00'));
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function sortTime(a: string, b: string) {
+    const toMinutes = (time: string) => {
+        const [start] = time.split(' - ');
+        let [h, m] = start.split(':').map(Number);
+        const modifier = time.slice(-2);
+        if (h === 12) h = 0;
+        if (modifier === 'PM') h += 12;
+        return h * 60 + m;
+    };
+    return toMinutes(a) - toMinutes(b);
+}
 
 interface Conflict {
   type: 'faculty' | 'classroom' | 'class';
@@ -187,29 +183,39 @@ export default function ScheduleManager() {
   }, [classes, selectedDepartment]);
 
   const filteredClasses = useMemo(() => {
-    if (selectedDepartment === 'all') return ['all'];
+    if (selectedDepartment === 'all') {
+        if(selectedClass !== 'all') setSelectedClass('all');
+        return ['all', ...classes.map(c => c.id)];
+    }
     let filtered = classes.filter(c => c.department === selectedDepartment);
     if (selectedSemester !== 'all') {
       filtered = filtered.filter(c => c.semester.toString() === selectedSemester);
+    }
+    if (!filtered.some(c => c.id === selectedClass)) {
+        if (selectedClass !== 'all') setSelectedClass('all');
     }
     return ['all', ...filtered.map(c => c.id)];
   }, [classes, selectedDepartment, selectedSemester]);
 
   const filteredSchedule = useMemo(() => {
-    if (selectedDepartment === 'all') return schedule;
-    let filtered = schedule;
-
-    const classIdsInDept = classes.filter(c => c.department === selectedDepartment).map(c => c.id);
-    filtered = filtered.filter(s => classIdsInDept.includes(s.classId));
-
-    if (selectedSemester !== 'all') {
-      const classIdsInSemester = classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester).map(c => c.id);
-      filtered = filtered.filter(s => classIdsInSemester.includes(s.classId));
+    if (selectedDepartment === 'all' && selectedClass === 'all') return schedule;
+    
+    let filteredByDept = schedule;
+    if (selectedDepartment !== 'all') {
+        const classIdsInDept = classes.filter(c => c.department === selectedDepartment).map(c => c.id);
+        filteredByDept = schedule.filter(s => classIdsInDept.includes(s.classId));
     }
+    
     if (selectedClass !== 'all') {
-      filtered = filtered.filter(s => s.classId === selectedClass);
+      return filteredByDept.filter(s => s.classId === selectedClass);
     }
-    return filtered;
+    
+    if (selectedSemester !== 'all') {
+        const classIdsInSemester = classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester).map(c => c.id);
+        return filteredByDept.filter(s => classIdsInSemester.includes(s.classId));
+    }
+
+    return filteredByDept;
   }, [schedule, classes, selectedDepartment, selectedSemester, selectedClass]);
 
 
@@ -367,11 +373,6 @@ export default function ScheduleManager() {
     }
   }
   
-  const scheduleByDay = DAYS.map(day => ({
-    day,
-    slots: filteredSchedule.filter(slot => slot.day === day).sort((a,b) => sortTime(a.time, b.time)),
-  }));
-
   const selectedSubjectType = subjects.find(s => s.id === currentSlot?.subjectId)?.type;
   
   const filteredClassrooms = classrooms.filter(c => {
@@ -383,6 +384,7 @@ export default function ScheduleManager() {
   });
 
   const hasConflicts = Object.values(conflicts).some(c => c.length > 0);
+  const codeChefDay = schedule.find(s => s.subjectId === 'CODECHEF')?.day;
 
   if (isDataLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -409,11 +411,11 @@ export default function ScheduleManager() {
             </div>
              <div className="flex items-center gap-2">
               <Label>Class:</Label>
-              <Select value={selectedClass} onValueChange={setSelectedClass} disabled={selectedSemester === 'all'}>
-                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+              <Select value={selectedClass} onValueChange={setSelectedClass} disabled={selectedDepartment === 'all'}>
+                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Select a Class"/></SelectTrigger>
                 <SelectContent>
                     {filteredClasses.map(cId => {
-                        if (cId === 'all') return <SelectItem key={cId} value={cId}>All</SelectItem>;
+                        if (cId === 'all') return <SelectItem key={cId} value={cId}>All Classes</SelectItem>;
                         const classInfo = getRelationInfo(cId, 'class');
                         return <SelectItem key={cId} value={cId}>{classInfo?.name}</SelectItem>;
                     })}
@@ -434,7 +436,7 @@ export default function ScheduleManager() {
                 Download PDF
             </Button>
              <Button onClick={handleResolveWithAI} disabled={!hasConflicts || isResolvingWithAI}>
-                {isResolvingWithAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {isResolvingWithAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                 Resolve Conflicts
             </Button>
         </div>
@@ -453,120 +455,104 @@ export default function ScheduleManager() {
         </Alert>
       )}
 
-      <div className="space-y-6">
-        {scheduleByDay.map(({ day, slots }) => (
-          <Card key={day}>
-            <CardHeader>
-              <CardTitle>{day}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {slots.length > 0 ? (
-                <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
+    <Card>
+        <CardContent className="p-0">
+            <div className="overflow-x-auto">
+                 <Table className="border-collapse">
+                    <TableHeader>
                         <TableRow>
-                          <TableHead>Time</TableHead>
-                          <TableHead>Class</TableHead>
-                          <TableHead>Subject</TableHead>
-                          <TableHead>Faculty</TableHead>
-                          <TableHead>Classroom</TableHead>
-                          <TableHead>Conflicts</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="border font-semibold p-2">Time</TableHead>
+                            {DAYS.map(day => (
+                                <TableHead key={day} className={cn("border font-semibold p-2 text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
+                            ))}
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {slots.map((slot) => {
-                          const subject = getRelationInfo(slot.subjectId, 'subject');
-                          const isSpecial = subject?.isSpecial;
-                          const slotConflicts = conflicts[slot.id] || [];
-                          const isConflicting = slotConflicts.length > 0;
-                          
-                          return (
-                          <TableRow 
-                            key={slot.id}
-                            className={cn(
-                                slot.time === 'Unassigned' && 'bg-yellow-100/50 dark:bg-yellow-900/20',
-                                isSpecial && 'bg-purple-900/20 text-foreground hover:bg-purple-900/30',
-                                isConflicting && !isSpecial && 'bg-destructive/20 hover:bg-destructive/30'
-                            )}
-                          >
-                            <TableCell>{slot.time}</TableCell>
-                            <TableCell>{getRelationInfo(slot.classId, 'class')?.name}</TableCell>
-                            <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {subject?.name}
-                                  {isSpecial && (
-                                    <Tooltip>
-                                        <TooltipTrigger><Star className="h-3 w-3 text-yellow-400" /></TooltipTrigger>
-                                        <TooltipContent><p>Special Subject</p></TooltipContent>
-                                    </Tooltip>
-                                  )}
-                                </div>
-                            </TableCell>
-                            <TableCell>{getRelationInfo(slot.facultyId, 'faculty')?.name || 'Unassigned'}</TableCell>
-                            <TableCell>{getRelationInfo(slot.classroomId, 'classroom')?.name || 'Unassigned'}</TableCell>
-                            <TableCell>
-                               {isConflicting && (
-                                    <Tooltip>
-                                        <TooltipTrigger className='flex items-center gap-1 text-destructive'>
-                                            <AlertTriangle className="h-4 w-4" />
-                                            {slotConflicts.length}
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <div className="p-2">
-                                                <h4 className="font-bold mb-2">Conflicts Detected:</h4>
-                                                <ul className="list-disc pl-4 space-y-1">
-                                                    {slotConflicts.map((c, i) => <li key={i}>{c.message}</li>)}
-                                                </ul>
-                                            </div>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0" disabled={isSpecial}>
-                                    <MoreHorizontal className={`h-4 w-4 ${isSpecial ? 'text-gray-300' : ''}`} />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                                   <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
-                                                <Trash2 className="h-4 w-4 mr-2" />Delete
-                                            </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete the schedule slot.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDelete(slot.id)}>Continue</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        )})}
-                      </TableBody>
-                    </Table>
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-4">No classes scheduled for {day}.</p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
+                    </TableHeader>
+                    <TableBody>
+                        {ALL_TIME_SLOTS.sort(sortTime).map(time => {
+                             if (BREAK_SLOTS.includes(time)) {
+                                return (
+                                    <TableRow key={time}>
+                                        <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
+                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
+                                             {time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            }
+                            return (
+                                <TableRow key={time}>
+                                     <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{time}</TableCell>
+                                     {DAYS.map(day => {
+                                         const slotsForCell = filteredSchedule.filter(s => s.day === day && s.time === time);
+                                          return (
+                                            <TableCell key={`${day}-${time}`} className={cn("border p-1 align-top text-xs min-w-[150px]", day === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
+                                                 {slotsForCell.length > 0 ? (
+                                                     <div className="space-y-1">
+                                                         {slotsForCell.map(slot => {
+                                                             const subject = getRelationInfo(slot.subjectId, 'subject');
+                                                             const slotConflicts = conflicts[slot.id] || [];
+                                                             const isConflicting = slotConflicts.length > 0;
+                                                             return (
+                                                                 <div key={slot.id} className={cn("p-1 rounded-sm text-[11px] leading-tight", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted', isConflicting && 'bg-destructive/20')}>
+                                                                    <div className="flex justify-between items-start">
+                                                                        <div>
+                                                                             <div className='font-bold'>{getRelationInfo(slot.classId, 'class')?.name}</div>
+                                                                            <div className='truncate'>{subject?.name}</div>
+                                                                            <div className="text-muted-foreground truncate">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                                        </div>
+                                                                        <DropdownMenu>
+                                                                            <DropdownMenuTrigger asChild>
+                                                                                <Button variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0"><MoreHorizontal className="h-3 w-3" /></Button>
+                                                                            </DropdownMenuTrigger>
+                                                                            <DropdownMenuContent>
+                                                                                 <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                                                                                 <AlertDialog>
+                                                                                    <AlertDialogTrigger asChild>
+                                                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                                                                            <Trash2 className="h-4 w-4 mr-2" />Delete
+                                                                                        </DropdownMenuItem>
+                                                                                    </AlertDialogTrigger>
+                                                                                    <AlertDialogContent>
+                                                                                        <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this slot.</AlertDialogDescription></AlertDialogHeader>
+                                                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(slot.id)}>Continue</AlertDialogAction></AlertDialogFooter>
+                                                                                    </AlertDialogContent>
+                                                                                </AlertDialog>
+                                                                            </DropdownMenuContent>
+                                                                        </DropdownMenu>
+                                                                    </div>
+                                                                    <div className="flex justify-between items-center mt-1">
+                                                                        <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
+                                                                        {isConflicting && (
+                                                                             <Tooltip>
+                                                                                <TooltipTrigger><AlertTriangle className="h-4 w-4 text-destructive" /></TooltipTrigger>
+                                                                                <TooltipContent>
+                                                                                    <ul className="list-disc pl-4 space-y-1">
+                                                                                       {slotConflicts.map((c, i) => <li key={i}>{c.message}</li>)}
+                                                                                    </ul>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        )}
+                                                                    </div>
+                                                                 </div>
+                                                             )
+                                                         })}
+                                                     </div>
+                                                 ) : ( day === codeChefDay ? 
+                                                    <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold text-center">
+                                                        <span>CodeChef Day</span>
+                                                    </div> 
+                                                    : null)}
+                                            </TableCell>
+                                         );
+                                     })}
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                 </Table>
+            </div>
+        </CardContent>
+    </Card>
 
       <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
         <DialogContent>
