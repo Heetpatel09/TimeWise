@@ -316,7 +316,7 @@ export default function DepartmentsManager() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const [subjectData, classData, facultyData] = await Promise.all([getSubjects(), getSubjects(), getFaculty()]);
+      const [subjectData, classData, facultyData] = await Promise.all([getSubjects(), getClasses(), getFaculty()]);
       setSubjects(subjectData);
       setClasses(classData);
       setAllFaculty(facultyData);
@@ -391,8 +391,8 @@ export default function DepartmentsManager() {
   const handleSaveFaculty = async (data: z.infer<typeof facultySchema>, password?: string) => {
       setIsSubmitting(true);
       try {
-        if (data.id) {
-          await updateFaculty(data as Faculty);
+        if (currentFaculty.id) {
+          await updateFaculty({ ...data, id: currentFaculty.id });
         } else {
           const newFacultyResult = await addFaculty(data as Omit<Faculty, 'id'>, password);
           if (newFacultyResult.initialPassword) {
@@ -400,7 +400,7 @@ export default function DepartmentsManager() {
           }
         }
         await loadData();
-        toast({ title: data.id ? "Faculty Updated" : "Faculty Added" });
+        toast({ title: currentFaculty.id ? "Faculty Updated" : "Faculty Added" });
         setFacultyDialogOpen(false);
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
@@ -536,9 +536,6 @@ export default function DepartmentsManager() {
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
                         <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
-                        <div className="flex flex-wrap gap-1">
-                          {classesInDept.map(c => <Badge key={c.id} variant="secondary" className="mr-1">{c.name}</Badge>)}
-                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
