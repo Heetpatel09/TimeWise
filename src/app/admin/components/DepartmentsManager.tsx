@@ -380,7 +380,7 @@ export default function DepartmentsManager() {
         priority: currentSubject.priority,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
-        facultyIds: currentSubject.facultyIds || [],
+        facultyIds: [], // This is now managed on the faculty side
       };
       
       if(currentSubject.id) {
@@ -388,7 +388,7 @@ export default function DepartmentsManager() {
       }
 
       if (currentSubject.id) {
-        await updateSubject(subjectToSave as Subject, allFaculty);
+        await updateSubject(subjectToSave as Subject);
       } else {
         await addSubject(subjectToSave);
       }
@@ -611,7 +611,7 @@ export default function DepartmentsManager() {
                                     </TableHeader>
                                     <TableBody>
                                         {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
-                                            const assignedFaculty = allFaculty.filter(f => subject.facultyIds?.includes(f.id));
+                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
                                             return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>
@@ -759,15 +759,6 @@ export default function DepartmentsManager() {
                 <Label htmlFor="s-semester">Semester</Label>
                 <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
                 </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Faculty</Label>
-              <MultiSelectFaculty
-                  options={facultyOptionsForDept}
-                  selected={currentSubject.facultyIds || []}
-                  onChange={(selected) => setCurrentSubject({ ...currentSubject, facultyIds: selected })}
-                  placeholder="Allot faculty for this subject"
-              />
             </div>
              {currentSubject.type === 'theory' && (
               <div className="space-y-2">

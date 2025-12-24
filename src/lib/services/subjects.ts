@@ -40,7 +40,7 @@ export async function addSubject(item: Omit<Subject, 'id'>): Promise<Subject> {
     return Promise.resolve(newItem);
 }
 
-export async function updateSubject(updatedItem: Subject, allFaculty: Faculty[]): Promise<Subject> {
+export async function updateSubject(updatedItem: Subject): Promise<Subject> {
     const db = getDb();
     
     let finalName = updatedItem.name;
