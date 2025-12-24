@@ -173,10 +173,8 @@ function FacultyForm({
                                       e.preventDefault();
                                       e.stopPropagation();
                                     }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const newValue = field.value?.filter((id) => id !== subId);
-                                      field.onChange(newValue);
+                                    onClick={() => {
+                                      field.onChange(field.value?.filter((id) => id !== subId));
                                     }}
                                   >
                                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
