@@ -18,7 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-const Section = ({ title, icon: Icon, children, isLocked, gridCols = "grid-cols-1 sm:grid-cols-2" }: { title: string, icon: React.ElementType, children: React.ReactNode, isLocked?: boolean, gridCols?: string }) => (
+const Section = ({ title, icon: Icon, children, gridCols = "grid-cols-1 sm:grid-cols-2" }: { title: string, icon: React.ElementType, children: React.ReactNode, isLocked?: boolean, gridCols?: string }) => (
     <div>
         <h2 className="text-lg font-semibold flex items-center gap-2 mb-3 text-muted-foreground">
             <Icon className="h-5 w-5" />
@@ -91,7 +91,6 @@ const adminLinks: { href: string, title: string, icon: React.ElementType, permis
   { href: "/admin/fees", title: "Fees", icon: Banknote, permission: 'manage_fees' },
   { href: "/admin/hostels", title: "Hostels", icon: Home, permission: 'manage_hostels' },
   { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail, permission: 'manage_requests' },
-  { href: "/admin/schedule-requests", title: "Schedule Changes", icon: PencilRuler, permission: 'manage_requests' },
   { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare, permission: 'manage_requests' },
 ];
 
@@ -164,13 +163,13 @@ function AdminDashboard() {
     return (
         <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
             <div className="xl:col-span-2 space-y-8">
-                 <Section title="Academics" icon={Dumbbell} isLocked={!isFullAdmin && academicLinks.every(l => !hasPermission(l.permission))}>
+                 <Section title="Academics" icon={Dumbbell}>
                     {academicLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </Section>
-                <Section title="Core Data" icon={School} isLocked={!isFullAdmin && coreDataLinks.every(l => !hasPermission(l.permission))}>
+                <Section title="Core Data" icon={School}>
                     {coreDataLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </Section>
-                <Section title="Administration & Requests" icon={Workflow} isLocked={!isFullAdmin && adminLinks.every(l => !hasPermission(l.permission))}>
+                <Section title="Administration & Requests" icon={Workflow}>
                     {adminLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </Section>
                 {isFullAdmin && (
