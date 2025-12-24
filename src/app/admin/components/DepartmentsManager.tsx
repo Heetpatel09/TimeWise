@@ -380,7 +380,7 @@ export default function DepartmentsManager() {
         priority: currentSubject.priority,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
-        facultyIds: [], // This is now managed on the faculty side
+        facultyIds: currentSubject.facultyIds || [],
       };
       
       if(currentSubject.id) {
@@ -611,7 +611,7 @@ export default function DepartmentsManager() {
                                     </TableHeader>
                                     <TableBody>
                                         {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
-                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
+                                            const assignedFaculty = allFaculty.filter(f => subject.facultyIds?.includes(f.id));
                                             return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>
@@ -771,6 +771,15 @@ export default function DepartmentsManager() {
                 </Select>
               </div>
             )}
+            <div className="space-y-2">
+                <Label>Allot Faculty</Label>
+                <MultiSelectFaculty
+                    options={facultyOptionsForDept}
+                    selected={currentSubject.facultyIds || []}
+                    onChange={(selected) => setCurrentSubject({...currentSubject, facultyIds: selected})}
+                    placeholder="Select faculty..."
+                />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSubjectDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
