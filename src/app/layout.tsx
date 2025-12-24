@@ -22,7 +22,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased h-full" suppressHydrationWarning>
         <Providers>
-            {children}
+            <div className="relative h-full w-full bg-background/80 backdrop-blur-sm">
+                {children}
+            </div>
         </Providers>
         <Toaster />
       </body>
