@@ -336,7 +336,6 @@ export default function DepartmentsManager() {
   const dept = selectedDepartment;
   const subjectsInDept = subjects.filter(s => s.department === dept && (semesterFilter === 'all' || s.semester.toString() === semesterFilter));
   const facultyInDept = allFaculty.filter(f => f.department === dept);
-  const classesInDept = classes.filter(c => c.department === dept);
   
   const handleSaveSubject = async () => {
     if (!currentSubject || !currentSubject.name || !currentSubject.code || !currentSubject.type || !currentSubject.semester || !selectedDepartment) {
@@ -392,7 +391,8 @@ export default function DepartmentsManager() {
         if (currentFaculty.id) {
           await updateFaculty({ ...data, id: currentFaculty.id });
         } else {
-          const newFacultyResult = await addFaculty(data as Omit<Faculty, 'id'>, password);
+          const facultyData = data as Omit<Faculty, 'id'>;
+          const newFacultyResult = await addFaculty(facultyData, password);
           if (newFacultyResult.initialPassword) {
             setNewFacultyCredentials({ email: newFacultyResult.email, initialPassword: newFacultyResult.initialPassword });
           }
@@ -840,5 +840,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
