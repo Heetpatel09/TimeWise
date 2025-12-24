@@ -34,7 +34,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 60; // Increment this to force re-initialization
+const schemaVersion = 61; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'workspace/db-version.txt');
 
 
@@ -93,7 +93,8 @@ function createSchemaAndSeed() {
         syllabus TEXT,
         isSpecial BOOLEAN,
         department TEXT,
-        priority TEXT
+        priority TEXT,
+        facultyIds TEXT
     );
     CREATE TABLE IF NOT EXISTS classes (
         id TEXT PRIMARY KEY,
@@ -131,7 +132,6 @@ function createSchemaAndSeed() {
         profileCompleted INTEGER NOT NULL DEFAULT 0,
         points INTEGER NOT NULL DEFAULT 0,
         allottedSections TEXT,
-        allottedSubjects TEXT,
         maxWeeklyHours INTEGER,
         designatedYear INTEGER
     );
@@ -359,10 +359,10 @@ function createSchemaAndSeed() {
   `);
   
   // Seed the database
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority, facultyIds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, section, batch, phone, category, classId, avatar, profileCompleted, sgpa, cgpa, streak, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSections, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSections, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
     const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -383,7 +383,7 @@ function createSchemaAndSeed() {
         // Step 1: Insert base data for users and other entities
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions));
-        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSections), JSON.stringify(f.allottedSubjects), f.maxWeeklyHours, f.designatedYear));
+        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSections), f.maxWeeklyHours, f.designatedYear));
         classes.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
         students.forEach(s => {
             const scheduledClasses = classes.filter(c => schedule.some(sch => sch.classId === c.id));
@@ -391,7 +391,7 @@ function createSchemaAndSeed() {
             insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, assignedClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0);
         });
         
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering', s.priority || null));
+        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering', s.priority || null, JSON.stringify(s.facultyIds || [])));
         classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
 
         // Step 2: Insert credentials for all users
@@ -442,5 +442,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    

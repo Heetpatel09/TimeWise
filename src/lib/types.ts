@@ -149,6 +149,7 @@ export interface Subject {
   department?: string;
   isSpecial?: boolean;
   priority?: SubjectPriority;
+  facultyIds?: string[];
 }
 
 export interface Class {
@@ -192,7 +193,6 @@ export interface Faculty {
   profileCompleted: number;
   points: number;
   allottedSections?: string[];
-  allottedSubjects: string[];
   maxWeeklyHours?: number;
   designatedYear?: number;
 }
