@@ -3,7 +3,7 @@
 
 import type { GenerateTimetableInput, Subject, Faculty, Classroom, Schedule } from './types';
 
-// This is a more robust, deterministic scheduler that combines dynamic data with a structured template.
+// This is a robust, deterministic scheduler that combines dynamic data with a structured template.
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const CODECHEF_DAY = 'Saturday';
@@ -28,19 +28,6 @@ function getFacultyForSubject(subjectId: string, facultyList: Faculty[]): string
     return assignedFaculty?.id || null;
 }
 
-function findAvailableRoom(type: 'lab' | 'classroom', day: string, time: string, classrooms: Classroom[], schedule: Schedule[]): string | null {
-    const availableRooms = classrooms.filter(room => room.type === type);
-    for (const room of availableRooms) {
-        const isOccupied = schedule.some(slot =>
-            slot.day === day && slot.time === time && slot.classroomId === room.id
-        );
-        if (!isOccupied) {
-            return room.id;
-        }
-    }
-    return null;
-}
-
 const getHoursForPriority = (priority?: Subject['priority']): number => {
     switch (priority) {
         case 'Non Negotiable': return 4;
@@ -51,126 +38,156 @@ const getHoursForPriority = (priority?: Subject['priority']): number => {
     }
 };
 
+interface LectureToBePlaced {
+    subjectId: string;
+    facultyId: string;
+    isLab: boolean;
+    duration: number; // 1 for theory, 2 for lab
+    classId: string;
+    batch?: 'A' | 'B';
+}
+
+
+function isConflict(gene: Omit<Gene, 'id'>, schedule: Gene[]): boolean {
+    return schedule.some(slot => {
+        if (slot.day !== gene.day || slot.time !== gene.time) return false;
+        if (slot.facultyId === gene.facultyId) return true;
+        if (slot.classroomId === gene.classroomId) return true;
+        if (slot.classId === gene.classId) return true; // A class can't be in two places at once
+        return false;
+    });
+}
+
+
+function solveTimetable(
+    lecturesToPlace: LectureToBePlaced[],
+    schedule: Gene[],
+    input: GenerateTimetableInput
+): Gene[] | null {
+    if (lecturesToPlace.length === 0) {
+        return schedule; // Success
+    }
+
+    const lecture = lecturesToPlace[0];
+    const remainingLectures = lecturesToPlace.slice(1);
+    const availableClassrooms = input.classrooms.filter(c => c.type === (lecture.isLab ? 'lab' : 'classroom'));
+
+    for (const day of DAYS) {
+        // Max 2 slots of same subject per day
+        if (schedule.filter(s => s.classId === lecture.classId && s.day === day && s.subjectId === lecture.subjectId).length >= 2) {
+            continue;
+        }
+
+        if (lecture.isLab) {
+             // Max 1 lab per day for the class
+            if (schedule.some(s => s.classId === lecture.classId && s.day === day && s.isLab)) {
+                continue;
+            }
+
+            for (let i = 0; i < LECTURE_TIME_SLOTS.length - 1; i++) {
+                const time1 = LECTURE_TIME_SLOTS[i];
+                const time2 = LECTURE_TIME_SLOTS[i+1];
+
+                // Skip if there's a break in between
+                const time1Index = ALL_TIME_SLOTS.indexOf(time1);
+                const time2Index = ALL_TIME_SLOTS.indexOf(time2);
+                if (time2Index - time1Index !== 1) continue;
+
+
+                for (const classroom of availableClassrooms) {
+                    const gene1: Omit<Gene, 'id'> = { ...lecture, day, time: time1, classroomId: classroom.id };
+                    const gene2: Omit<Gene, 'id'> = { ...lecture, day, time: time2, classroomId: classroom.id };
+
+                    if (!isConflict(gene1, [...schedule, ...input.existingSchedule]) && !isConflict(gene2, [...schedule, ...input.existingSchedule])) {
+                        const newSchedule = [...schedule, { ...gene1, id: '' }, { ...gene2, id: '' }];
+                        const result = solveTimetable(remainingLectures, newSchedule, input);
+                        if (result) return result;
+                    }
+                }
+            }
+        } else { // Theory
+            for (const time of LECTURE_TIME_SLOTS) {
+                for (const classroom of availableClassrooms) {
+                    const gene: Omit<Gene, 'id'> = { ...lecture, day, time, classroomId: classroom.id };
+                    if (!isConflict(gene, [...schedule, ...input.existingSchedule])) {
+                        const newSchedule = [...schedule, { ...gene, id: '' }];
+                        const result = solveTimetable(remainingLectures, newSchedule, input);
+                        if (result) return result;
+                    }
+                }
+            }
+        }
+    }
+
+    return null; // No solution found from this path
+}
+
+
 export async function runGA(input: GenerateTimetableInput) {
-    const { classes: classesToSchedule, subjects, faculty, classrooms, existingSchedule } = input;
-    const finalSchedule: Schedule[] = [...(existingSchedule || [])];
-    const classToSchedule = classesToSchedule[0]; // We are generating for one class at a time.
+    const { classes: classesToSchedule, subjects, faculty, classrooms, existingSchedule = [] } = input;
+
+    if (classesToSchedule.length === 0) {
+        return { success: false, message: 'No class selected for timetable generation.', bestTimetable: [] };
+    }
+    const classToSchedule = classesToSchedule[0];
 
     const allClassSubjects = subjects.filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department);
     
-    // --- Create a list of all required lectures ---
-    const lectureQueue: { subjectId: string, isLab: boolean, batch?: 'A' | 'B' }[] = [];
+    // --- Create a list of all required lectures to be placed ---
+    const lectureQueue: LectureToBePlaced[] = [];
     
-    // 1. Add Lab subjects (2 consecutive slots for each batch)
     const labSubjects = allClassSubjects.filter(s => s.type === 'lab');
     labSubjects.forEach(sub => {
-        // One session for Batch A (represented by two consecutive genes)
-        lectureQueue.push({ subjectId: sub.id, isLab: true, batch: 'A' });
-        lectureQueue.push({ subjectId: sub.id, isLab: true, batch: 'A' });
-        // One session for Batch B
-        lectureQueue.push({ subjectId: sub.id, isLab: true, batch: 'B' });
-        lectureQueue.push({ subjectId: sub.id, isLab: true, batch: 'B' });
+        const facultyId = getFacultyForSubject(sub.id, faculty);
+        if (!facultyId) {
+            return { success: false, message: `No faculty assigned for lab subject ${sub.name}.`, bestTimetable: [] };
+        }
+        // One 2-hour lab session per week. duration=2 signifies it's a paired event.
+        lectureQueue.push({ subjectId: sub.id, facultyId, isLab: true, duration: 2, classId: classToSchedule.id });
     });
 
-    // 2. Add Theory subjects based on priority
     const theorySubjects = allClassSubjects.filter(s => s.type === 'theory');
     theorySubjects.forEach(sub => {
         const hours = getHoursForPriority(sub.priority);
+        const facultyId = getFacultyForSubject(sub.id, faculty);
+        if (!facultyId) {
+            return { success: false, message: `No faculty assigned for theory subject ${sub.name}.`, bestTimetable: [] };
+        }
         for (let i = 0; i < hours; i++) {
-            lectureQueue.push({ subjectId: sub.id, isLab: false });
+            lectureQueue.push({ subjectId: sub.id, facultyId, isLab: false, duration: 1, classId: classToSchedule.id });
         }
     });
 
-    const generatedSchedule: Schedule[] = [];
-    const occupiedSlots = new Set<string>(); // "day-time" for the current class
+    const totalRequiredAcademicSlots = lectureQueue.reduce((acc, lec) => acc + lec.duration, 0);
 
-    // --- Placement Algorithm ---
+    // Sort by duration to place labs first, then by a random factor to vary the search
+    lectureQueue.sort((a, b) => b.duration - a.duration || Math.random() - 0.5);
 
-    // 1. Place Labs First (Max 1 lab session per day for this class)
-    const dailyLabCount = new Map<string, number>();
-    DAYS.forEach(d => dailyLabCount.set(d, 0));
-
-    const labQueue = lectureQueue.filter(l => l.isLab);
-    const placedLabSubjects = new Set<string>(); // To track which lab (subject+batch) has been placed
-
-    for (let i = 0; i < labQueue.length; i += 2) {
-        const labGene1 = labQueue[i];
-        const labGene2 = labQueue[i+1];
-        const subjectId = labGene1.subjectId;
-        const batch = labGene1.batch;
-        
-        if (placedLabSubjects.has(`${subjectId}-${batch}`)) continue;
-
-        let placed = false;
-        for (const day of DAYS) {
-            if ((dailyLabCount.get(day) || 0) >= 1) continue; // Max one lab session per day for this class
-
-            for (let j = 0; j < LECTURE_TIME_SLOTS.length - 1; j++) {
-                const time1 = LECTURE_TIME_SLOTS[j];
-                const time2 = LECTURE_TIME_SLOTS[j+1];
-
-                const slotKey1 = `${day}-${time1}`;
-                const slotKey2 = `${day}-${time2}`;
-
-                if (occupiedSlots.has(slotKey1) || occupiedSlots.has(slotKey2)) continue;
-
-                const facultyId = getFacultyForSubject(subjectId, faculty);
-                if (!facultyId) continue;
-                
-                // Check faculty availability for both slots in the master schedule
-                const isFacultyBusy = finalSchedule.some(s => s.facultyId === facultyId && s.day === day && (s.time === time1 || s.time === time2));
-                if (isFacultyBusy) continue;
-
-                const classroomId = findAvailableRoom('lab', day, time1, classrooms, finalSchedule);
-                if (!classroomId || findAvailableRoom('lab', day, time2, classrooms, finalSchedule) !== classroomId) continue; // Must be same room and available
-
-                // Place the lab
-                generatedSchedule.push({ id: `GEN${Date.now()}${Math.random()}`, day, time: time1, classId: classToSchedule.id, subjectId, facultyId, classroomId, batch });
-                generatedSchedule.push({ id: `GEN${Date.now()}${Math.random()}`, day, time: time2, classId: classToSchedule.id, subjectId, facultyId, classroomId, batch });
-                occupiedSlots.add(slotKey1);
-                occupiedSlots.add(slotKey2);
-                dailyLabCount.set(day, (dailyLabCount.get(day) || 0) + 1);
-                placedLabSubjects.add(`${subjectId}-${batch}`);
-                placed = true;
-                break;
-            }
-            if (placed) break;
+    const generatedSchedule = solveTimetable(lectureQueue, [], input);
+    
+    if (!generatedSchedule) {
+        return {
+             success: false,
+             message: `Could not schedule all required lectures. Placed 0 out of ${totalRequiredAcademicSlots}. This may be due to a lack of available faculty or classrooms, or overly strict constraints.`,
+             bestTimetable: [],
+             codeChefDay: CODECHEF_DAY,
         }
     }
-    
-    // 2. Place Theory Lectures
-    const theoryQueue = lectureQueue.filter(l => !l.isLab);
-    theoryQueue.forEach(theoryGene => {
-        let placed = false;
-        for (const day of DAYS) {
-            for (const time of LECTURE_TIME_SLOTS) {
-                const slotKey = `${day}-${time}`;
-                if (occupiedSlots.has(slotKey)) continue;
 
-                const facultyId = getFacultyForSubject(theoryGene.subjectId, faculty);
-                if (!facultyId) continue;
-                
-                const isFacultyBusy = [...finalSchedule, ...generatedSchedule].some(s => s.facultyId === facultyId && s.day === day && s.time === time);
-                if (isFacultyBusy) continue;
-
-                const classroomId = findAvailableRoom('classroom', day, time, classrooms, [...finalSchedule, ...generatedSchedule]);
-                if (!classroomId) continue;
-
-                // Soft constraint: avoid more than 2 lectures of same subject on a day
-                const subjectCountToday = generatedSchedule.filter(g => g.day === day && g.subjectId === theoryGene.subjectId).length;
-                if(subjectCountToday >= 2) continue;
-
-                generatedSchedule.push({ id: `GEN${Date.now()}${Math.random()}`, day, time, classId: classToSchedule.id, ...theoryGene, classroomId });
-                occupiedSlots.add(slotKey);
-                placed = true;
-                break;
-            }
-            if (placed) break;
+    const placedSlots = generatedSchedule.length;
+    if (placedSlots < totalRequiredAcademicSlots) {
+         return {
+             success: false,
+             message: `Could not schedule all required lectures. Only placed ${placedSlots} out of ${totalRequiredAcademicSlots}. This may be due to a lack of available faculty or classrooms.`,
+             bestTimetable: [],
+             codeChefDay: CODECHEF_DAY,
         }
-    });
+    }
 
-    // 3. Fill remaining slots with Library (up to 3)
+
+    // Fill remaining slots with Library (up to 3)
     let librarySlots = 0;
+    const occupiedSlots = new Set(generatedSchedule.map(g => `${g.day}-${g.time}`));
     for (const day of DAYS) {
         if(librarySlots >= 3) break;
         for (const time of LECTURE_TIME_SLOTS) {
@@ -189,41 +206,23 @@ export async function runGA(input: GenerateTimetableInput) {
         }
     }
 
-    // 4. Check if we managed to schedule all required academic lectures
-    const academicSlotsCount = generatedSchedule.filter(g => g.subjectId !== 'LIB001' && g.subjectId !== 'CODECHEF').length;
-    if (academicSlotsCount < lectureQueue.length) {
-         return {
-             success: false,
-             message: `Could not schedule all required lectures. Only placed ${academicSlotsCount} out of ${lectureQueue.length}. This may be due to a lack of available faculty or classrooms.`,
-             bestTimetable: [],
-             generations: 0,
-             fitness: -1,
-             codeChefDay: CODECHEF_DAY,
-        }
-    }
-    
-    // Add CodeChef day to the final schedule for display purposes. This doesn't go into the main DB.
+    // Add CodeChef day for display
     LECTURE_TIME_SLOTS.forEach(time => {
         generatedSchedule.push({
             id: `GEN${Date.now()}${Math.random()}`,
-            day: CODECHEF_DAY,
-            time,
-            classId: classToSchedule.id,
-            subjectId: 'CODECHEF',
-            facultyId: 'NA',
-            classroomId: 'NA',
-            isLab: false,
-            isCodeChef: true,
+            day: CODECHEF_DAY, time, classId: classToSchedule.id,
+            subjectId: 'CODECHEF', facultyId: 'NA', classroomId: 'NA', isLab: false, isCodeChef: true,
         });
     });
 
+    const finalSchedule = generatedSchedule.map(g => ({ ...g, id: g.id || `GEN${Date.now()}${Math.random()}` }));
 
     return {
         success: true,
         message: 'Successfully generated a complete and conflict-free schedule.',
-        bestTimetable: generatedSchedule,
-        generations: 1, // Not using GA generations anymore
-        fitness: 0, // No conflicts
+        bestTimetable: finalSchedule,
+        generations: 1, // N/A for this algorithm
+        fitness: 0, // 0 fitness means no conflicts
         codeChefDay: CODECHEF_DAY,
     };
 }
