@@ -23,6 +23,7 @@ interface Lecture {
     facultyId: string;
     batch?: 'A' | 'B';
     priorityValue: number; // Added for sorting
+    isDouble: boolean; // For consecutive lab slots
 }
 
 // --- Helper Functions ---
@@ -67,21 +68,18 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
         const priorityValue = getPriorityValue(sub.priority);
 
         if (sub.type === 'lab') {
-            // A lab is 2 hours. We add two genes per batch.
-            const labHours = 2;
-            for(let i=0; i<labHours; i++){
-                lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId: facultyId, batch: 'A', priorityValue });
-                lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId: facultyId, batch: 'B', priorityValue });
-            }
+            // A lab is 2 hours (2 slots). This represents ONE 2-hour session for the subject.
+            // We push one item marked as 'isDouble' to signal the placement algorithm.
+            lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: true, facultyId: facultyId, batch: 'A', priorityValue, isDouble: true });
         } else {
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
-                lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: false, facultyId: facultyId, priorityValue });
+                lectures.push({ classId: classToSchedule.id, subjectId: sub.id, isLab: false, facultyId: facultyId, priorityValue, isDouble: false });
             }
         }
     });
 
-    // Sort by priority (higher value first) and then by lab status (labs first)
+    // Sort by labs first, then by priority (higher value first)
     lectures.sort((a, b) => {
         if (a.isLab && !b.isLab) return -1;
         if (!a.isLab && b.isLab) return 1;
@@ -95,7 +93,7 @@ function createLectureList(input: GenerateTimetableInput): Lecture[] {
 export async function runGA(input: GenerateTimetableInput) {
     let lectureQueue = createLectureList(input);
     const lectureSlots = input.timeSlots;
-    const allDays = input.days;
+    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     
     // 1. Setup Environment
     const codeChefDay = allDays[Math.floor(Math.random() * allDays.length)];
@@ -117,21 +115,26 @@ export async function runGA(input: GenerateTimetableInput) {
 
     // 2. Main Placement Loop
     let attempts = 0;
-    while(lectureQueue.length > 0 && attempts < 50000) {
+    const MAX_ATTEMPTS = 50000;
+    while(lectureQueue.length > 0 && attempts < MAX_ATTEMPTS) {
         const lecture = lectureQueue.shift()!;
         attempts++;
-
         let placed = false;
         
-        if (lecture.isLab) {
+        if (lecture.isDouble) { // Handle 2-hour lab placement
             const labRooms = input.classrooms.filter(c => c.type === 'lab');
-            if (labRooms.length === 0) continue; // Skip if no lab rooms
+            if (labRooms.length === 0) continue;
 
-            // Find a 2-hour consecutive slot
+            const consecutiveSlots = [
+                ['07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM'],
+                ['10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM'],
+                ['01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'],
+            ];
+
             for (const day of workingDays) {
-                for (let i = 0; i < lectureSlots.length - 1; i++) {
-                    const time1 = lectureSlots[i];
-                    const time2 = lectureSlots[i+1];
+                for (const slotPair of consecutiveSlots) {
+                    const time1 = slotPair[0];
+                    const time2 = slotPair[1];
                     const slotKey1 = `${day}-${time1}`;
                     const slotKey2 = `${day}-${time2}`;
 
@@ -141,32 +144,39 @@ export async function runGA(input: GenerateTimetableInput) {
                     const facultyBusy = facultyTimeMap.get(lecture.facultyId)?.has(slotKey1) || facultyTimeMap.get(lecture.facultyId)?.has(slotKey2);
                     if (facultyBusy) continue;
                     
-                    const availableRoom = labRooms.find(r => !classroomTimeMap.get(r.id)?.has(slotKey1) && !classroomTimeMap.get(r.id)?.has(slotKey2));
-                    if (availableRoom) {
-                        const gene1: Gene = { ...lecture, day, time: time1, classroomId: availableRoom.id };
-                        const gene2: Gene = { ...lecture, day, time: time2, classroomId: availableRoom.id };
-                        finalSchedule.push(gene1, gene2);
+                    // Place Batch A and B in different lab rooms if possible, or the same if only one is available
+                    const availableRoomA = labRooms.find(r => !classroomTimeMap.get(r.id)?.has(slotKey1) && !classroomTimeMap.get(r.id)?.has(slotKey2));
+                    const availableRoomB = labRooms.find(r => r.id !== availableRoomA?.id && !classroomTimeMap.get(r.id)?.has(slotKey1) && !classroomTimeMap.get(r.id)?.has(slotKey2)) || availableRoomA;
 
+                    if (availableRoomA && availableRoomB) {
+                        const geneA1: Gene = { ...lecture, batch: 'A', day, time: time1, classroomId: availableRoomA.id, isDouble: true };
+                        const geneA2: Gene = { ...lecture, batch: 'A', day, time: time2, classroomId: availableRoomA.id, isDouble: true };
+                        const geneB1: Gene = { ...lecture, batch: 'B', day, time: time1, classroomId: availableRoomB.id, isDouble: true };
+                        const geneB2: Gene = { ...lecture, batch: 'B', day, time: time2, classroomId: availableRoomB.id, isDouble: true };
+
+                        finalSchedule.push(geneA1, geneA2, geneB1, geneB2);
+
+                        // Mark slots as busy for the class and faculty
                         if (!classTimeMap.has(lecture.classId)) classTimeMap.set(lecture.classId, new Set());
                         classTimeMap.get(lecture.classId)!.add(slotKey1).add(slotKey2);
                         
                         if (!facultyTimeMap.has(lecture.facultyId)) facultyTimeMap.set(lecture.facultyId, new Set());
                         facultyTimeMap.get(lecture.facultyId)!.add(slotKey1).add(slotKey2);
 
-                        if (!classroomTimeMap.has(availableRoom.id)) classroomTimeMap.set(availableRoom.id, new Set());
-                        classroomTimeMap.get(availableRoom.id)!.add(slotKey1).add(slotKey2);
-
-                        // Remove the other part of the lab from the queue
-                        const pairIndex = lectureQueue.findIndex(l => l.subjectId === lecture.subjectId && l.batch === lecture.batch);
-                        if (pairIndex !== -1) lectureQueue.splice(pairIndex, 1);
+                        // Mark slots as busy for classrooms
+                        if (!classroomTimeMap.has(availableRoomA.id)) classroomTimeMap.set(availableRoomA.id, new Set());
+                        classroomTimeMap.get(availableRoomA.id)!.add(slotKey1).add(slotKey2);
+                        if (!classroomTimeMap.has(availableRoomB.id)) classroomTimeMap.set(availableRoomB.id, new Set());
+                        classroomTimeMap.get(availableRoomB.id)!.add(slotKey1).add(slotKey2);
                         
                         placed = true;
-                        break;
+                        break; // Exit slotPair loop
                     }
                 }
-                if (placed) break;
+                if (placed) break; // Exit day loop
             }
-        } else { // Theory
+
+        } else { // Handle 1-hour theory placement
             const theoryRooms = input.classrooms.filter(c => c.type === 'classroom');
             if(theoryRooms.length === 0) continue;
 
@@ -204,28 +214,33 @@ export async function runGA(input: GenerateTimetableInput) {
         }
     }
 
-    const academicSlotsCount = finalSchedule.filter(s => s.subjectId !== 'LIB001' && !s.isCodeChef).length;
-    if (academicSlotsCount < 21) {
-        return { success: false, message: `Could not schedule all required lectures. Only placed ${academicSlotsCount} out of 21. Please check constraints (e.g., faculty availability, classroom availability).`, bestTimetable: null, generations: 0, fitness: -1, codeChefDay: null };
+    if (lectureQueue.length > 0) {
+        return { success: false, message: `Could not schedule all required lectures. Failed to place ${lectureQueue.length} lectures. Please check constraints (e.g., faculty availability, classroom availability).`, bestTimetable: null, generations: 0, fitness: -1, codeChefDay: null };
     }
-    
+
     // 3. Fill remaining slots with Library
+    const TOTAL_WEEKLY_SLOTS = workingDays.length * lectureSlots.length;
+    const LIBRARY_SLOTS = 3;
+    const expectedAcademicSlots = TOTAL_WEEKLY_SLOTS - LIBRARY_SLOTS;
+
+    // We take the schedule as is, and fill the blanks
     const openSlots: {day: string, time: string}[] = [];
     workingDays.forEach(day => {
         lectureSlots.forEach(time => {
-            const isFilled = finalSchedule.some(g => g.day === day && g.time === time);
+            const isFilled = finalSchedule.some(g => g.day === day && g.time === time && g.classId === input.classes[0].id);
             if (!isFilled) {
                 openSlots.push({ day, time });
             }
         });
     });
 
-    for (let i = 0; i < 3 && i < openSlots.length; i++) {
+    for (let i = 0; i < LIBRARY_SLOTS && i < openSlots.length; i++) {
         const { day, time } = openSlots[i];
          finalSchedule.push({
             day, time,
             classId: input.classes[0].id,
-            subjectId: 'LIB001', facultyId: 'NA', classroomId: 'NA',
+            subjectId: 'LIB001', // Special ID for Library
+            facultyId: 'NA', classroomId: 'NA',
             isLab: false,
         });
     }

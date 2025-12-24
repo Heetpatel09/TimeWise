@@ -342,7 +342,7 @@ export default function TimetableGeneratorPage() {
                                                                     </div>
                                                                 ) : (
                                                                     <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
-                                                                        <div><strong>{subject.name} {subject.type === 'lab' && '(Lab)'}</strong></div>
+                                                                        <div><strong>{subject.name}</strong></div>
                                                                         <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
                                                                         <div className='flex justify-between mt-1'>
                                                                             <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
