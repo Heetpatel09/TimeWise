@@ -320,7 +320,7 @@ export default function DepartmentsManager() {
   const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [currentSubject, setCurrentSubject] = useState<Partial<Subject> & { facultyIds?: string[] }>({});
+  const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
 
@@ -373,22 +373,20 @@ export default function DepartmentsManager() {
         priority: currentSubject.priority,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
-        facultyIds: currentSubject.facultyIds || [],
       };
 
       setIsSubmitting(true);
       try {
-        let savedSubject: Subject;
         if (currentSubject.id) {
-          savedSubject = await updateSubject({ ...subjectToSave, id: currentSubject.id });
+          await updateSubject({ ...subjectToSave, id: currentSubject.id });
         } else {
-          savedSubject = await addSubject(subjectToSave);
+          await addSubject(subjectToSave);
         }
 
         toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
         setSubjectDialogOpen(false);
         await loadData();
-      } catch (error: any) {
+      } catch (error: any) => {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
         setIsSubmitting(false);
@@ -403,7 +401,7 @@ export default function DepartmentsManager() {
       await deleteSubject(id);
       await loadData();
       toast({ title: "Subject Deleted" });
-    } catch (error: any) {
+    } catch (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
@@ -444,15 +442,12 @@ export default function DepartmentsManager() {
 
 
   const openNewSubjectDialog = () => {
-    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High', facultyIds: [] });
+    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High' });
     setSubjectDialogOpen(true);
   };
   
   const openEditSubjectDialog = (subject: Subject) => {
-    const facultyIds = allFaculty
-      .filter(f => f.allottedSubjects && f.allottedSubjects.includes(subject.id))
-      .map(f => f.id);
-    setCurrentSubject({ ...subject, facultyIds: facultyIds || [] });
+    setCurrentSubject(subject);
     setSubjectDialogOpen(true);
   };
   
@@ -603,7 +598,7 @@ export default function DepartmentsManager() {
                                     </TableHeader>
                                     <TableBody>
                                         {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
-                                            const assignedFaculty = allFaculty.filter(f => subject.facultyIds?.includes(f.id));
+                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
                                             return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>
@@ -751,15 +746,6 @@ export default function DepartmentsManager() {
                 <Label htmlFor="s-semester">Semester</Label>
                 <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
                 </div>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="s-faculty">Allot Faculty</Label>
-                 <MultiSelectFaculty
-                    options={facultyInDept.map(f => ({ value: f.id, label: f.name }))}
-                    selected={currentSubject.facultyIds || []}
-                    onChange={(selectedIds) => setCurrentSubject({...currentSubject, facultyIds: selectedIds})}
-                    placeholder="Select up to 2 faculty members"
-                />
             </div>
              {currentSubject.type === 'theory' && (
               <div className="space-y-2">
