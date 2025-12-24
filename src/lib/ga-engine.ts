@@ -206,9 +206,7 @@ export async function runGA(input: GenerateTimetableInput) {
     
     // 2. Create list of lectures to be scheduled
     const lecturesToPlace = createLectureList(input);
-    const requiredTheorySlots = lecturesToPlace.filter(l => !l.isLab).length;
-    const requiredLabSlots = lecturesToPlace.filter(l => l.isLab).length;
-    const totalAcademicSlotsRequired = requiredTheorySlots + requiredLabSlots;
+    const totalAcademicSlotsRequired = lecturesToPlace.reduce((acc, lec) => acc + (lec.hours || 1), 0);
     
     if (totalAcademicSlotsRequired > workingDays.length * LECTURE_TIME_SLOTS.length) {
          return { success: false, message: "Not enough time slots in the week to schedule all required lectures." };
@@ -255,7 +253,7 @@ export async function runGA(input: GenerateTimetableInput) {
     
     const finalAcademicCount = finalSchedule.filter(g => !g.isCodeChef && g.subjectId !== 'LIB001').length;
     
-    if (finalAcademicCount < requiredTheorySlots + requiredLabSlots) {
+    if (finalAcademicCount < totalAcademicSlotsRequired) {
          return { success: false, message: `Engine failed to place all academic slots. Placed ${finalAcademicCount} out of ${totalAcademicSlotsRequired}.` };
     }
 
@@ -268,5 +266,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay: codeChefDay,
     };
 }
-
-    
