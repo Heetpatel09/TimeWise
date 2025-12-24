@@ -191,7 +191,7 @@ export interface Faculty {
   avatar?: string;
   profileCompleted: number;
   points: number;
-  allottedSubjects?: string[];
+  allotedSubjects?: string[];
   maxWeeklyHours?: number;
   designatedYear?: number;
 }
@@ -469,3 +469,5 @@ export interface UserBadge {
 export interface EnrichedUserBadge extends UserBadge {
   badge: Badge;
 }
+
+    
