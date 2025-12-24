@@ -166,19 +166,22 @@ function FacultyForm({
                                   className="mr-1"
                                 >
                                   {sub?.name || subId}
-                                  <button
-                                    type="button"
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
                                     className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
                                     }}
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
                                       field.onChange(field.value?.filter((id) => id !== subId));
                                     }}
                                   >
                                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                  </button>
+                                  </span>
                                 </Badge>
                               )
                             })
