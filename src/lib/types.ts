@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 export const WelcomeNotificationInputSchema = z.object({
@@ -134,6 +135,7 @@ export const GenerateTimetableOutputSchema = z.object({
     day: z.string(),
     time: z.string(),
   })),
+  codeChefDay: z.string().optional(),
 });
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
 
@@ -191,7 +193,7 @@ export interface Faculty {
   avatar?: string;
   profileCompleted: number;
   points: number;
-  allotedSubjects?: string[];
+  allottedSubjects?: string[];
   maxWeeklyHours?: number;
   designatedYear?: number;
 }
@@ -469,5 +471,3 @@ export interface UserBadge {
 export interface EnrichedUserBadge extends UserBadge {
   badge: Badge;
 }
-
-    
