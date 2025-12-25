@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const PRIORITY_OPTIONS: SubjectPriority[] = ['Non Negotiable', 'High', 'Medium', 'Low'];
 const DESIGNATION_OPTIONS = ['Professor', 'Assistant Professor', 'Lecturer'];
@@ -294,15 +295,18 @@ function FacultyForm({
 
 
 export default function DepartmentsManager() {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [allFaculty, setAllFaculty] = useState<Faculty[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: subjects = [], isLoading: isSubjectsLoading } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: getSubjects });
+  const { data: classes = [], isLoading: isClassesLoading } = useQuery<Class[]>({ queryKey: ['classes'], queryFn: getClasses });
+  const { data: allFaculty = [], isLoading: isFacultyLoading } = useQuery<Faculty[]>({ queryKey: ['faculty'], queryFn: getFaculty });
   
+  const isLoading = isSubjectsLoading || isClassesLoading || isFacultyLoading;
+
   const [isSubjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [isDeptDialogOpen, setDeptDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
@@ -314,33 +318,111 @@ export default function DepartmentsManager() {
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [isRenameDeptDialogOpen, setRenameDeptDialogOpen] = useState(false);
   const [renamingDepartmentName, setRenamingDepartmentName] = useState('');
-  
-  const { toast } = useToast();
 
   const departments = useMemo(() => Array.from(new Set(classes.map(c => c.department))), [classes]);
-
-  async function loadData() {
-    setIsLoading(true);
-    try {
-      const [subjectData, classData, facultyData] = await Promise.all([getSubjects(), getClasses(), getFaculty()]);
-      setSubjects(subjectData);
-      setClasses(classData);
-      setAllFaculty(facultyData);
-      const allDepts = Array.from(new Set(classData.map(c => c.department)));
-      if(allDepts.length > 0 && !selectedDepartment){
-        setSelectedDepartment(allDepts[0]);
-      }
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to load department data.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadData();
-  }, []);
   
+  useEffect(() => {
+      if(departments.length > 0 && !selectedDepartment){
+        setSelectedDepartment(departments[0]);
+      }
+  }, [departments, selectedDepartment]);
+  
+  const subjectMutation = useMutation({
+    mutationFn: async (subjectData: Omit<Subject, 'id'> & { id?: string }) => {
+      if (subjectData.id) {
+        return updateSubject(subjectData as Subject);
+      } else {
+        return addSubject(subjectData);
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      toast({ title: variables.id ? "Subject Updated" : "Subject Added" });
+      setSubjectDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const facultyMutation = useMutation({
+    mutationFn: async ({ data, password }: { data: z.infer<typeof facultySchema>, password?: string }) => {
+      if (currentFaculty.id) {
+        return updateFaculty({ ...data, id: currentFaculty.id, allottedSubjects: data.allottedSubjects || [] });
+      } else {
+        const facultyData = {
+          ...data,
+          allottedSubjects: data.allottedSubjects || []
+        } as Omit<Faculty, 'id'>;
+        return addFaculty(facultyData, password);
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+      queryClient.invalidateQueries({ queryKey: ['subjects'] }); // Invalidate subjects to update assigned faculty
+      toast({ title: currentFaculty.id ? "Faculty Updated" : "Faculty Added" });
+      setFacultyDialogOpen(false);
+      if (result && 'initialPassword' in result && result.initialPassword) {
+        setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+    }
+  });
+  
+  const deleteSubjectMutation = useMutation({
+    mutationFn: deleteSubject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      toast({ title: "Subject Deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+  
+  const deleteFacultyMutation = useMutation({
+    mutationFn: deleteFaculty,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+      toast({ title: "Faculty Deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deptMutation = useMutation({
+      mutationFn: async ({ oldName, newName }: { oldName?: string, newName: string }) => {
+          if (oldName) {
+              return renameDepartment(oldName, newName);
+          } else {
+              return addClass({
+                  name: `Default ${newName.trim()} Class`,
+                  semester: 1,
+                  department: newName.trim()
+              });
+          }
+      },
+      onSuccess: (_, variables) => {
+          queryClient.invalidateQueries({ queryKey: ['classes'] });
+          queryClient.invalidateQueries({ queryKey: ['subjects'] });
+          queryClient.invalidateQueries({ queryKey: ['faculty'] });
+          if(variables.oldName) {
+              toast({ title: "Department Renamed" });
+              setSelectedDepartment(variables.newName);
+              setRenameDeptDialogOpen(false);
+          } else {
+              toast({ title: "Department Added" });
+              setDeptDialogOpen(false);
+          }
+      },
+      onError: (error: any) => {
+          toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
+  });
+
   const dept = selectedDepartment;
   const subjectsInDept = subjects.filter(s => s.department === dept && (semesterFilter === 'all' || s.semester.toString() === semesterFilter));
   const facultyInDept = allFaculty.filter(f => f.department === dept);
@@ -350,9 +432,7 @@ export default function DepartmentsManager() {
       toast({ title: "Missing information", description: "Please fill out all subject fields.", variant: "destructive" });
       return;
     }
-    setIsSubmitting(true);
-    try {
-      const subjectToSave: Omit<Subject, 'id'> & { id?: string } = {
+    const subjectToSave: Omit<Subject, 'id'> & { id?: string } = {
         name: currentSubject.name,
         code: currentSubject.code,
         type: currentSubject.type,
@@ -361,74 +441,12 @@ export default function DepartmentsManager() {
         priority: currentSubject.priority,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
-      };
-      
-      if(currentSubject.id) {
-          subjectToSave.id = currentSubject.id;
-      }
+    };
+    if(currentSubject.id) subjectToSave.id = currentSubject.id;
 
-      if (currentSubject.id) {
-        await updateSubject(subjectToSave as Subject);
-      } else {
-        await addSubject(subjectToSave);
-      }
-      toast({ title: currentSubject.id ? "Subject Updated" : "Subject Added" });
-      setSubjectDialogOpen(false);
-      await loadData();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-
-  const handleDeleteSubject = async (id: string) => {
-    try {
-      await deleteSubject(id);
-      await loadData();
-      toast({ title: "Subject Deleted" });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
+    subjectMutation.mutate(subjectToSave);
   };
   
-  const handleSaveFaculty = async (data: z.infer<typeof facultySchema>, password?: string) => {
-      setIsSubmitting(true);
-      try {
-        if (currentFaculty.id) {
-          await updateFaculty({ ...data, id: currentFaculty.id, allottedSubjects: data.allottedSubjects || [] });
-        } else {
-          const facultyData = {
-              ...data,
-              allottedSubjects: data.allottedSubjects || []
-          } as Omit<Faculty, 'id'>;
-          const newFacultyResult = await addFaculty(facultyData, password);
-          if (newFacultyResult.initialPassword) {
-            setNewFacultyCredentials({ email: newFacultyResult.email, initialPassword: newFacultyResult.initialPassword });
-          }
-        }
-        await loadData();
-        toast({ title: currentFaculty.id ? "Faculty Updated" : "Faculty Added" });
-        setFacultyDialogOpen(false);
-      } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
-      } finally {
-        setIsSubmitting(false);
-      }
-  };
-
-  const handleDeleteFaculty = async (id: string) => {
-    try {
-      await deleteFaculty(id);
-      await loadData();
-      toast({ title: "Faculty Deleted" });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
-
-
   const openNewSubjectDialog = () => {
     setCurrentSubject({ type: 'theory', semester: 1, priority: 'High' });
     setSubjectDialogOpen(true);
@@ -440,7 +458,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewFacultyDialog = () => {
-    setCurrentFaculty({ employmentType: 'full-time', department: selectedDepartment || '' });
+    setCurrentFaculty({ employmentType: 'full-time', department: selectedDepartment || '', maxWeeklyHours: 20, designatedYear: 1, allottedSubjects: [] });
     setFacultyDialogOpen(true);
   };
   
@@ -462,22 +480,7 @@ export default function DepartmentsManager() {
             toast({ title: "Department Exists", description: "This department name already exists.", variant: "destructive" });
             return;
         }
-        setIsSubmitting(true);
-        try {
-            await addClass({
-                name: `Default ${newDepartmentName.trim()} Class`,
-                semester: 1,
-                department: newDepartmentName.trim()
-            });
-            toast({ title: "Department Added", description: `The "${newDepartmentName.trim()}" department has been created.`});
-            await loadData();
-            setDeptDialogOpen(false);
-            setNewDepartmentName('');
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        } finally {
-            setIsSubmitting(false);
-        }
+        deptMutation.mutate({ newName: newDepartmentName.trim() });
     }
   }
 
@@ -487,19 +490,7 @@ export default function DepartmentsManager() {
             toast({ title: "Department Exists", description: "This department name already exists.", variant: "destructive" });
             return;
         }
-        setIsSubmitting(true);
-        try {
-            await renameDepartment(selectedDepartment, renamingDepartmentName.trim());
-            toast({ title: "Department Renamed", description: `"${selectedDepartment}" has been renamed to "${renamingDepartmentName.trim()}".`});
-            await loadData();
-            setSelectedDepartment(renamingDepartmentName.trim());
-            setRenameDeptDialogOpen(false);
-            setRenamingDepartmentName('');
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        } finally {
-            setIsSubmitting(false);
-        }
+        deptMutation.mutate({ oldName: selectedDepartment, newName: renamingDepartmentName.trim() });
     }
   }
 
@@ -628,7 +619,7 @@ export default function DepartmentsManager() {
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>Continue</AlertDialogAction>
+                                                                <AlertDialogAction onClick={() => deleteSubjectMutation.mutate(subject.id)}>Continue</AlertDialogAction>
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
@@ -680,7 +671,7 @@ export default function DepartmentsManager() {
                                                                     <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem></AlertDialogTrigger>
                                                                     <AlertDialogContent>
                                                                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the faculty member.</AlertDialogDescription></AlertDialogHeader>
-                                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFaculty(fac.id)}>Delete</AlertDialogAction></AlertDialogFooter>
+                                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteFacultyMutation.mutate(fac.id)}>Delete</AlertDialogAction></AlertDialogFooter>
                                                                     </AlertDialogContent>
                                                                  </AlertDialog>
                                                              </DropdownMenuContent>
@@ -707,11 +698,11 @@ export default function DepartmentsManager() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="s-name">Name</Label>
-              <Input id="s-name" value={currentSubject.name ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })} disabled={isSubmitting}/>
+              <Input id="s-name" value={currentSubject.name ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })} disabled={subjectMutation.isPending}/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-code">Code</Label>
-              <Input id="s-code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} disabled={isSubmitting}/>
+              <Input id="s-code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} disabled={subjectMutation.isPending}/>
             </div>
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -726,7 +717,7 @@ export default function DepartmentsManager() {
                 </div>
                 <div className="space-y-2">
                 <Label htmlFor="s-semester">Semester</Label>
-                <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={isSubmitting}/>
+                <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={subjectMutation.isPending}/>
                 </div>
             </div>
              {currentSubject.type === 'theory' && (
@@ -742,8 +733,8 @@ export default function DepartmentsManager() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSubjectDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button onClick={handleSaveSubject} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
+            <Button variant="outline" onClick={() => setSubjectDialogOpen(false)} disabled={subjectMutation.isPending}>Cancel</Button>
+            <Button onClick={handleSaveSubject} disabled={subjectMutation.isPending}>{subjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -755,12 +746,12 @@ export default function DepartmentsManager() {
             <div className="grid gap-4 py-4">
                 <div className="space-y-2">
                     <Label htmlFor="dept-name">Department Name</Label>
-                    <Input id="dept-name" value={newDepartmentName} onChange={(e) => setNewDepartmentName(e.target.value)} placeholder="e.g. Mechanical Engineering" disabled={isSubmitting}/>
+                    <Input id="dept-name" value={newDepartmentName} onChange={(e) => setNewDepartmentName(e.target.value)} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
                 </div>
             </div>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setDeptDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                <Button onClick={handleAddDepartment} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Add</Button>
+                <Button variant="outline" onClick={() => setDeptDialogOpen(false)} disabled={deptMutation.isPending}>Cancel</Button>
+                <Button onClick={handleAddDepartment} disabled={deptMutation.isPending}>{deptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Add</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -777,12 +768,12 @@ export default function DepartmentsManager() {
             <div className="grid gap-4 py-4">
                 <div className="space-y-2">
                     <Label htmlFor="new-dept-name">New Department Name</Label>
-                    <Input id="new-dept-name" value={renamingDepartmentName} onChange={(e) => setRenamingDepartmentName(e.target.value)} placeholder="e.g. Mechanical Engineering" disabled={isSubmitting}/>
+                    <Input id="new-dept-name" value={renamingDepartmentName} onChange={(e) => setRenamingDepartmentName(e.target.value)} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
                 </div>
             </div>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setRenameDeptDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                <Button onClick={handleRenameDepartment} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Rename</Button>
+                <Button variant="outline" onClick={() => setRenameDeptDialogOpen(false)} disabled={deptMutation.isPending}>Cancel</Button>
+                <Button onClick={handleRenameDepartment} disabled={deptMutation.isPending}>{deptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Rename</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -799,9 +790,9 @@ export default function DepartmentsManager() {
             <div className="overflow-y-auto px-6">
                 <FacultyForm
                 faculty={currentFaculty}
-                onSave={handleSaveFaculty}
+                onSave={async (data, password) => facultyMutation.mutate({ data, password })}
                 onCancel={() => setFacultyDialogOpen(false)}
-                isSubmitting={isSubmitting}
+                isSubmitting={facultyMutation.isPending}
                 departments={departments}
                 subjects={subjects}
                 />
@@ -851,3 +842,4 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
