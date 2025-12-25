@@ -359,7 +359,7 @@ export default function DepartmentsManager() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['faculty'] });
-      queryClient.invalidateQueries({ queryKey: ['subjects'] }); // Invalidate subjects to update assigned faculty
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast({ title: currentFaculty.id ? "Faculty Updated" : "Faculty Added" });
       setFacultyDialogOpen(false);
       if (result && 'initialPassword' in result && result.initialPassword) {
@@ -843,3 +843,4 @@ export default function DepartmentsManager() {
   );
 }
 
+    
