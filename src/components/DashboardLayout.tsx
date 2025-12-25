@@ -251,7 +251,7 @@ export default function DashboardLayout({
 
   return (
       <div className="relative flex flex-col h-screen">
-        <div className='absolute inset-0 bg-background/80 backdrop-blur-sm'></div>
+        <div className='absolute inset-0 bg-background/60 backdrop-blur-sm'></div>
         <div className='relative flex flex-col h-screen'>
           <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card/80 shadow-sm">
             <div className="flex items-center gap-4">
