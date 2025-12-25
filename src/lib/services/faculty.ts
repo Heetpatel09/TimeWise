@@ -106,40 +106,73 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
     if (!oldFaculty) {
         throw new Error("Faculty member not found.");
     }
-
-    // Safely parse old roles
-    let oldRoles: string[] = [];
-    if (oldFaculty.roles && typeof oldFaculty.roles === 'string') {
-        try { oldRoles = JSON.parse(oldFaculty.roles); } catch (e) { /* ignore parse error */ }
-    } else if (Array.isArray(oldFaculty.roles)) {
-        oldRoles = oldFaculty.roles;
-    }
-
-    // Determine new roles
-    let newRoles: string[];
-    if (typeof updatedItem.roles === 'string') {
-        newRoles = updatedItem.roles.split(',').map(r => r.trim()).filter(Boolean);
-    } else {
-        newRoles = updatedItem.roles || oldRoles;
+    
+    // Safely parse old subjects
+    let oldSubjects: string[] = [];
+    if (oldFaculty.allotedSubjects && typeof oldFaculty.allotedSubjects === 'string') {
+        try { oldSubjects = JSON.parse(oldFaculty.allotedSubjects); } catch(e) {}
+    } else if (Array.isArray(oldFaculty.allotedSubjects)) {
+        oldSubjects = oldFaculty.allotedSubjects;
     }
     
-    const mergedItem: Faculty = {
-        ...oldFaculty,
-        ...updatedItem,
-        roles: newRoles,
-        allotedSubjects: updatedItem.allotedSubjects || oldFaculty.allotedSubjects || [],
-    };
+    const newSubjects = updatedItem.allotedSubjects || [];
+    const subjectsToBeAssigned = newSubjects.filter(s => !oldSubjects.includes(s));
 
-    const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, department = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allotedSubjects = ?, maxWeeklyHours = ?, designatedYear = ? WHERE id = ?');
-    stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, JSON.stringify(mergedItem.allotedSubjects), mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.id);
+    db.transaction(() => {
+        // For any newly assigned subject, un-assign it from any other faculty member
+        if (subjectsToBeAssigned.length > 0) {
+            const allFaculty: Faculty[] = db.prepare('SELECT id, allotedSubjects FROM faculty WHERE id != ?').all(updatedItem.id) as any[];
+            
+            for (const otherFac of allFaculty) {
+                let otherFacSubjects: string[] = [];
+                 if (otherFac.allotedSubjects && typeof otherFac.allotedSubjects === 'string') {
+                    try { otherFacSubjects = JSON.parse(otherFac.allotedSubjects); } catch(e) {}
+                } else if (Array.isArray(otherFac.allotedSubjects)) {
+                    otherFacSubjects = otherFac.allotedSubjects;
+                }
 
-    if (oldFaculty.email !== mergedItem.email) {
-        await addCredential({
-            userId: mergedItem.id,
-            email: mergedItem.email,
-            role: 'faculty',
-        });
-    }
+                const updatedSubjects = otherFacSubjects.filter(subId => !subjectsToBeAssigned.includes(subId));
+
+                if (updatedSubjects.length < otherFacSubjects.length) {
+                    db.prepare('UPDATE faculty SET allotedSubjects = ? WHERE id = ?').run(JSON.stringify(updatedSubjects), otherFac.id);
+                }
+            }
+        }
+        
+        // Safely parse old roles
+        let oldRoles: string[] = [];
+        if (oldFaculty.roles && typeof oldFaculty.roles === 'string') {
+            try { oldRoles = JSON.parse(oldFaculty.roles); } catch (e) { /* ignore parse error */ }
+        } else if (Array.isArray(oldFaculty.roles)) {
+            oldRoles = oldFaculty.roles;
+        }
+
+        // Determine new roles
+        let newRoles: string[];
+        if (typeof updatedItem.roles === 'string') {
+            newRoles = updatedItem.roles.split(',').map(r => r.trim()).filter(Boolean);
+        } else {
+            newRoles = updatedItem.roles || oldRoles;
+        }
+        
+        const mergedItem: Faculty = {
+            ...oldFaculty,
+            ...updatedItem,
+            roles: newRoles,
+            allotedSubjects: updatedItem.allotedSubjects || oldFaculty.allotedSubjects || [],
+        };
+
+        const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, department = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allotedSubjects = ?, maxWeeklyHours = ?, designatedYear = ? WHERE id = ?');
+        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, JSON.stringify(mergedItem.allotedSubjects), mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.id);
+
+        if (oldFaculty.email !== mergedItem.email) {
+            addCredential({
+                userId: mergedItem.id,
+                email: mergedItem.email,
+                role: 'faculty',
+            });
+        }
+    })();
     
     revalidateAll();
     const finalFaculty: any = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id);
