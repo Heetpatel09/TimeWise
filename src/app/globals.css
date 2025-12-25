@@ -78,6 +78,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: url('https://media.canva.com/v2/image-resize/format:PNG/height:1024/quality:100/uri:ifs%3A%2F%2FM%2Fed9fe194-ac3d-4588-b5a3-2a39b4116d04/watermark:F/width:1536?csig=AAAAAAAAAAAAAAAAAAAAAB7ZczQT2m_Yb9-hvYnQldozws0ZsnUwJQiZnHNHgn2w&exp=1766595663&osig=AAAAAAAAAAAAAAAAAAAAABjH_dfOUcOC0IaR4BjI1c8BIIY_fMitk-pHo5XQlbjZ&signer=media-rpc&x-canva-quality=screen_2x');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
   }
 }
 

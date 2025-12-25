@@ -230,7 +230,7 @@ export default function DashboardLayout({
   if (!isClient || isLoading || !user) {
     return (
       <div className="relative flex flex-col h-screen">
-        <div className="flex items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm">
+        <div className="flex items-center justify-center min-h-screen">
             <Loader2 className="w-10 h-10 animate-spin" />
         </div>
       </div>
@@ -240,7 +240,7 @@ export default function DashboardLayout({
   if (user.role !== role) {
     return (
       <div className="relative flex flex-col h-screen">
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm">
+        <div className="flex flex-col items-center justify-center min-h-screen">
             <h1 className='text-2xl font-bold'>Access Denied</h1>
             <p className='text-muted-foreground'>You do not have permission to view this page.</p>
             <Button onClick={() => router.push('/')} className="mt-4">Go to Login</Button>
