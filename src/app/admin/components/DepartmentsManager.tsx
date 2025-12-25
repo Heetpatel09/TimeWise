@@ -63,7 +63,11 @@ function FacultyForm({
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
-    defaultValues: {
+    defaultValues: faculty,
+  });
+
+  useEffect(() => {
+    form.reset({
         name: faculty.name || '',
         email: faculty.email || '',
         code: faculty.code || '',
@@ -73,8 +77,9 @@ function FacultyForm({
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
         designatedYear: faculty.designatedYear || 1,
         allottedSubjects: faculty.allottedSubjects || [],
-    },
-  });
+    });
+  }, [faculty, form]);
+
 
   const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
   const [manualPassword, setManualPassword] = useState('');
@@ -392,9 +397,12 @@ export default function DepartmentsManager() {
       setIsSubmitting(true);
       try {
         if (currentFaculty.id) {
-          await updateFaculty({ ...data, id: currentFaculty.id });
+          await updateFaculty({ ...data, id: currentFaculty.id, allottedSubjects: data.allottedSubjects || [] });
         } else {
-          const facultyData = data as Omit<Faculty, 'id'>;
+          const facultyData = {
+              ...data,
+              allottedSubjects: data.allottedSubjects || []
+          } as Omit<Faculty, 'id'>;
           const newFacultyResult = await addFaculty(facultyData, password);
           if (newFacultyResult.initialPassword) {
             setNewFacultyCredentials({ email: newFacultyResult.email, initialPassword: newFacultyResult.initialPassword });
