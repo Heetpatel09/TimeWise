@@ -35,6 +35,7 @@ const LECTURE_TIME_SLOTS = [
     '12:20 PM - 01:15 PM',
     '01:15 PM - 02:10 PM'
 ];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
     switch (priority) {
@@ -64,8 +65,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
 
         if (sub.type === 'lab') {
-            // Labs are 2 hours long. We add 2 genes for a single lab session.
-            // One session for Batch A, one for Batch B.
+            // One 2-hour lab session for Batch A, one for Batch B.
             lectures.push({
                 classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
                 isLab: true, batch: 'A', hours: 2
@@ -85,6 +85,14 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
     }
     
+    // Add 3 library slots
+    for (let i=0; i<3; i++) {
+        lectures.push({
+            classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB',
+            isLab: false, hours: 1
+        });
+    }
+    
     // Sort by labs first, then theory
     lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
 
@@ -100,15 +108,14 @@ function isConflict(schedule: (Gene | Schedule)[], day: string, time: string, fa
 }
 
 
-function canPlaceLab(schedule: (Gene | Schedule)[], day: string, time1: string, time2: string, facultyId: string, classroomId: string, classId: string, batch: 'A' | 'B'): boolean {
+function canPlaceLab(schedule: (Gene | Schedule)[], day: string, time1: string, time2: string, facultyId: string, classroomId: string, classId: string): boolean {
     // Check conflicts for both slots in the combined schedule
     if (isConflict(schedule, day, time1, facultyId, classroomId, classId) || isConflict(schedule, day, time2, facultyId, classroomId, classId)) {
         return false;
     }
 
-    // A class can have multiple labs in a day, but one for Batch A and one for Batch B
-    // Check max one lab per day for this specific batch
-    if (schedule.some(g => g.classId === classId && g.day === day && (g as Gene).isLab && (g as Gene).batch === batch)) {
+    // A class can have only one lab session (of any subject/batch) per day
+    if (schedule.some(g => g.classId === classId && g.day === day && (g as Gene).isLab)) {
         return false;
     }
     return true;
@@ -144,21 +151,18 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
 
 export async function runGA(input: GenerateTimetableInput) {
     // 1. Setup days
-    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const codeChefDayIndex = Math.floor(Math.random() * allDays.length);
-    const codeChefDay = allDays[codeChefDayIndex];
-    const workingDays = allDays.filter(d => d !== codeChefDay);
+    const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
+    const codeChefDay = DAYS[codeChefDayIndex];
+    const workingDays = DAYS.filter(d => d !== codeChefDay);
     
     // 2. Create list of lectures to be scheduled
     const lecturesToPlace = createLectureList(input);
 
-    const requiredTheorySlots = lecturesToPlace.filter(l => !l.isLab).length;
-    const requiredLabSlots = lecturesToPlace.filter(l => l.isLab).length * 2; // Each lab lecture is 2 hours
-    const totalRequiredSlots = requiredTheorySlots + requiredLabSlots;
+    const requiredSlots = lecturesToPlace.reduce((acc, l) => acc + l.hours, 0);
     const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
 
-    if (totalRequiredSlots > totalAvailableSlots) {
-        return { success: false, message: `Cannot generate schedule. Required slots (${totalRequiredSlots}) exceed available slots (${totalAvailableSlots}). Please reduce subject hours.` };
+    if (requiredSlots > totalAvailableSlots) {
+        return { success: false, message: `Cannot generate schedule. Required slots (${requiredSlots}) exceed available slots (${totalAvailableSlots}). Please reduce subject hours or library slots.` };
     }
     
     const labLectures = lecturesToPlace.filter(l => l.isLab);
@@ -178,27 +182,20 @@ export async function runGA(input: GenerateTimetableInput) {
     labTimePairs.push([LECTURE_TIME_SLOTS[2], LECTURE_TIME_SLOTS[3]]); // Mid-day
     labTimePairs.push([LECTURE_TIME_SLOTS[4], LECTURE_TIME_SLOTS[5]]); // Afternoon
 
-    let lastDayLabSlotIndex = -1;
-
     for (const lab of labLectures) {
         let placed = false;
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
 
         for (const day of shuffledDays) {
             const shuffledPairs = labTimePairs.sort(() => Math.random() - 0.5);
-            let startIndex = (lastDayLabSlotIndex + 1) % shuffledPairs.length;
 
-            for (let i = 0; i < shuffledPairs.length; i++) {
-                const pairIndex = (startIndex + i) % shuffledPairs.length;
-                const [time1, time2] = shuffledPairs[pairIndex];
-
+            for (const [time1, time2] of shuffledPairs) {
                  for (const room of availableLabRooms) {
-                    if (canPlaceLab(fullSchedule, day, time1, time2, lab.facultyId, room.id, lab.classId, lab.batch!)) {
+                    if (canPlaceLab(fullSchedule, day, time1, time2, lab.facultyId, room.id, lab.classId)) {
                         generatedSchedule.push({ day, time: time1, ...lab, classroomId: room.id });
                         generatedSchedule.push({ day, time: time2, ...lab, classroomId: room.id });
                         fullSchedule.push(...generatedSchedule.slice(-2));
                         placed = true;
-                        lastDayLabSlotIndex = pairIndex;
                         break;
                     }
                 }
@@ -222,6 +219,18 @@ export async function runGA(input: GenerateTimetableInput) {
         for (let i = 0; i < 200; i++) { 
             const day = workingDays[Math.floor(Math.random() * workingDays.length)];
             const time = LECTURE_TIME_SLOTS[Math.floor(Math.random() * LECTURE_TIME_SLOTS.length)];
+            
+            if (theory.subjectId === 'LIB001') {
+                 // For library, we don't need a specific classroom or faculty
+                if (!fullSchedule.some(g => g.day === day && g.time === time && g.classId === theory.classId)) {
+                    const gene = { day, time, ...theory, classroomId: 'LIB_ROOM', facultyId: 'LIB_FAC' };
+                    generatedSchedule.push(gene);
+                    fullSchedule.push(gene);
+                    placed = true;
+                    break;
+                }
+                continue;
+            }
 
             const sameDayTheory = generatedSchedule.find(g => g.day === day && !g.isLab);
             const preferredRoom = sameDayTheory ? availableClassrooms.find(c => c.id === sameDayTheory.classroomId) : undefined;
@@ -241,7 +250,7 @@ export async function runGA(input: GenerateTimetableInput) {
         }
          if (!placed) {
             const subject = input.subjects.find(s => s.id === theory.subjectId);
-            return { success: false, message: `Could not schedule theory lecture for ${subject?.name}. The schedule is too constrained. Try reducing subject hours or adding more faculty/classrooms.` };
+            return { success: false, message: `Could not schedule lecture for ${subject?.name}. The schedule is too constrained. Try reducing subject hours or adding more faculty/classrooms.` };
         }
     }
     
@@ -257,7 +266,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
     return {
         success: true,
-        message: `Successfully generated a complete schedule with ${finalSchedule.length} academic slots.`,
+        message: `Successfully generated a complete schedule with ${finalSchedule.filter(s => s.subjectId !== 'LIB001').length} academic slots and 3 library slots.`,
         bestTimetable: finalSchedule,
         codeChefDay,
     };
