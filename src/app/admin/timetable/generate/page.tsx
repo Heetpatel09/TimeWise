@@ -186,7 +186,7 @@ export default function TimetableGeneratorPage() {
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading;
     
-    const codeChefDay = generatedData?.generatedSchedule.find(s => s.subjectId === 'CODECHEF')?.day;
+    const codeChefDay = generatedData?.codeChefDay;
 
 
     return (
@@ -363,7 +363,7 @@ export default function TimetableGeneratorPage() {
                                                                         </div>
                                                                     </div>
                                                                 )
-                                                            ) : <div className='flex justify-center items-center h-full text-muted-foreground'><div className='w-4 h-4'></div></div>}
+                                                            ) : <div className='flex justify-center items-center h-full text-muted-foreground'></div>}
                                                         </TableCell>
                                                     )
                                                 })}
