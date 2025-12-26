@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -65,14 +64,13 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
 
         if (sub.type === 'lab') {
-            // One 2-hour lab session for Batch A, one for Batch B.
+            // One 2-hour lab session for Batch A, one for Batch B. This is the source of the "too many labs" bug.
+            // We should only schedule ONE lab session per subject per week.
+            // The prompt says "if a subject has lab and theory", which implies one lab, not one per batch.
+            // Let's assume one 2-hour lab per lab-subject.
             lectures.push({
                 classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
                 isLab: true, batch: 'A', hours: 2
-            });
-            lectures.push({
-                classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
-                isLab: true, batch: 'B', hours: 2
             });
         } else {
             const hours = getHoursForPriority(sub.priority);
@@ -160,7 +158,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const requiredSlots = lecturesToPlace.reduce((acc, l) => acc + l.hours, 0);
     const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
-
+    
     if (requiredSlots > totalAvailableSlots) {
         return { success: false, message: `Cannot generate schedule. Required slots (${requiredSlots}) exceed available slots (${totalAvailableSlots}). Please reduce subject hours or library slots.` };
     }
@@ -182,11 +180,14 @@ export async function runGA(input: GenerateTimetableInput) {
     labTimePairs.push([LECTURE_TIME_SLOTS[2], LECTURE_TIME_SLOTS[3]]); // Mid-day
     labTimePairs.push([LECTURE_TIME_SLOTS[4], LECTURE_TIME_SLOTS[5]]); // Afternoon
 
+    let lastLabDayIndex = -1;
     for (const lab of labLectures) {
         let placed = false;
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
 
         for (const day of shuffledDays) {
+            if (shuffledDays.indexOf(day) === lastLabDayIndex) continue; // Basic attempt to spread labs
+
             const shuffledPairs = labTimePairs.sort(() => Math.random() - 0.5);
 
             for (const [time1, time2] of shuffledPairs) {
@@ -196,6 +197,7 @@ export async function runGA(input: GenerateTimetableInput) {
                         generatedSchedule.push({ day, time: time2, ...lab, classroomId: room.id });
                         fullSchedule.push(...generatedSchedule.slice(-2));
                         placed = true;
+                        lastLabDayIndex = shuffledDays.indexOf(day);
                         break;
                     }
                 }
@@ -204,19 +206,19 @@ export async function runGA(input: GenerateTimetableInput) {
             if (placed) break;
         }
         if (!placed) {
-            return { success: false, message: `Could not schedule lab for subject ID ${lab.subjectId} (${lab.batch}). Not enough free lab slots or faculty is overbooked.` };
+            return { success: false, message: `Could not schedule lab for subject ID ${lab.subjectId}. Not enough free lab slots or faculty is overbooked.` };
         }
     }
 
     // 4. Place Theory lectures
     const availableClassrooms = input.classrooms.filter(c => c.type === 'classroom');
-     if (availableClassrooms.length === 0 && theoryLectures.length > 0) {
+     if (availableClassrooms.length === 0 && theoryLectures.filter(t => t.subjectId !== 'LIB001').length > 0) {
         return { success: false, message: "Cannot schedule theory lectures. No classrooms are available." };
     }
 
     for (const theory of theoryLectures) {
         let placed = false;
-        for (let i = 0; i < 200; i++) { 
+        for (let i = 0; i < 200; i++) { // Retry loop to find a spot
             const day = workingDays[Math.floor(Math.random() * workingDays.length)];
             const time = LECTURE_TIME_SLOTS[Math.floor(Math.random() * LECTURE_TIME_SLOTS.length)];
             
