@@ -19,25 +19,33 @@ import { isToday, format } from 'date-fns';
 import AttendanceDialog from './AttendanceDialog';
 
 const ALL_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '09:30 AM - 10:00 AM', // Break
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '12:00 PM - 01:00 PM', // Break
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '07:30-08:25',
+    '08:25-09:20',
+    '09:20-09:30', // Break
+    '09:30-10:25',
+    '10:25-11:20',
+    '11:20-12:20', // Break
+    '12:20-01:15',
+    '01:15-02:10'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+const BREAK_SLOTS = ['09:20-09:30', '11:20-12:20'];
+
+function formatTime(time: string): string {
+    const [start, end] = time.split('-');
+    const formatPart = (part: string) => {
+        let [h, m] = part.split(':').map(Number);
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${suffix}`;
+    };
+    return `${formatPart(start)} - ${formatPart(end)}`;
+}
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split(' - ');
+        const [start] = time.split('-');
         let [h, m] = start.split(':').map(Number);
-        const modifier = time.slice(-2);
-        if (h === 12) h = 0;
-        if (modifier === 'PM') h += 12;
         return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
@@ -94,7 +102,7 @@ export default function TimetableView() {
     
     const tableData = facultySchedule.map(slot => [
         slot.day,
-        slot.time,
+        formatTime(slot.time),
         slot.className,
         slot.subjectName,
         slot.classroomName,
@@ -109,7 +117,7 @@ export default function TimetableView() {
     doc.save('my_schedule.pdf');
   }
 
-  const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
+  const scheduleByTime = ALL_TIME_SLOTS.map(time => {
     if (BREAK_SLOTS.includes(time)) {
         return { time: time, isBreak: true };
     }
@@ -144,10 +152,10 @@ export default function TimetableView() {
                     <TableBody>
                         {scheduleByTime.map(row => (
                             <TableRow key={row.time}>
-                                <TableCell>{row.time}</TableCell>
+                                <TableCell>{formatTime(row.time)}</TableCell>
                                 {row.isBreak ? (
                                     <TableCell colSpan={DAYS.length} className="text-center font-semibold bg-secondary">
-                                        {row.time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
+                                        {row.time === '09:20-09:30' ? 'RECESS' : 'LUNCH BREAK'}
                                     </TableCell>
                                 ) : (
                                     row.slots?.map((slot, index) => (
@@ -169,12 +177,7 @@ export default function TimetableView() {
                                                         </Button>
                                                     )}
                                                 </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-muted-foreground">
-                                                     <Library className="h-4 w-4" />
-                                                     <span>Library</span>
-                                                 </div>
-                                            )}
+                                            ) : null}
                                         </TableCell>
                                     ))
                                 )}

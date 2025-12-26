@@ -18,25 +18,35 @@ interface TimetableData {
 }
 
 const ALL_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '09:30 AM - 10:00 AM', // Break
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '12:00 PM - 01:00 PM', // Break
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '07:30-08:25',
+    '08:25-09:20',
+    '09:20-09:30', // Break
+    '09:30-10:25',
+    '10:25-11:20',
+    '11:20-12:20', // Break
+    '12:20-01:15',
+    '01:15-02:10'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const BREAK_SLOTS = ['09:20-09:30', '11:20-12:20'];
+
+
+function formatTime(time: string): string {
+    const [start, end] = time.split('-');
+    const formatPart = (part: string) => {
+        let [h, m] = part.split(':').map(Number);
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${suffix}`;
+    };
+    return `${formatPart(start)} - ${formatPart(end)}`;
+}
+
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split(' - ');
-        let [h, m] = start.split(':').map(Number);
-        const modifier = time.slice(-2);
-        if (h === 12) h = 0;
-        if (modifier === 'PM') h += 12;
+        const [start] = time.split('-');
+        const [h, m] = start.split(':').map(Number);
         return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
@@ -75,15 +85,15 @@ export default function TimetableView() {
     const tableData = DAYS.flatMap(day => {
         const daySlots = ALL_TIME_SLOTS.map(time => {
             if (BREAK_SLOTS.includes(time)) {
-                return [day, time, 'Break', '-', '-'];
+                return [day, formatTime(time), 'Break', '-', '-'];
             }
             const slot = studentSchedule.find(s => s.day === day && s.time === time);
             if (slot) {
                 const subject = subjects.find(sub => sub.id === slot.subjectId);
                 const subjectName = subject ? `${subject.name} ${subject.type === 'lab' ? '(Lab)' : ''}` : 'N/A';
-                return [day, time, subjectName, slot.facultyName, slot.classroomName];
+                return [day, formatTime(time), subjectName, slot.facultyName, slot.classroomName];
             }
-            return [day, time, 'Library Slot', '-', '-'];
+            return [day, formatTime(time), 'Library Slot', '-', '-'];
         });
         return daySlots;
     });
@@ -97,7 +107,7 @@ export default function TimetableView() {
     doc.save('my_timetable.pdf');
   }
   
-  const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
+  const scheduleByTime = ALL_TIME_SLOTS.map(time => {
     if (BREAK_SLOTS.includes(time)) {
         return {
             time: time,
@@ -146,17 +156,17 @@ export default function TimetableView() {
                             <TableRow>
                                 <TableHead className="border font-semibold">Time</TableHead>
                                 {DAYS.map(day => (
-                                    <TableHead key={day} className={cn("border font-semibold", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
+                                    <TableHead key={day} className={cn("border font-semibold text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
                                 ))}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {scheduleByTime.map(({ time, slots, isBreak }) => (
                                 <TableRow key={time}>
-                                    <TableCell className="border font-medium text-xs whitespace-nowrap">{time}</TableCell>
+                                    <TableCell className="border font-medium text-xs whitespace-nowrap">{formatTime(time)}</TableCell>
                                     {isBreak ? (
                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
-                                             {time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
+                                             {time === '09:20-09:30' ? 'RECESS' : 'LUNCH BREAK'}
                                         </TableCell>
                                     ) : (
                                         slots.map(({ day, slots: daySlots }) => {

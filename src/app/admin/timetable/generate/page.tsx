@@ -25,25 +25,34 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
 const ALL_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '09:30 AM - 10:00 AM', // Break
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '12:00 PM - 01:00 PM', // Break
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '07:30-08:25',
+    '08:25-09:20',
+    '09:20-09:30', // Break
+    '09:30-10:25',
+    '10:25-11:20',
+    '11:20-12:20', // Break
+    '12:20-01:15',
+    '01:15-02:10'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const BREAK_SLOTS = ['09:20-09:30', '11:20-12:20'];
+
+function formatTime(time: string): string {
+    const [start, end] = time.split('-');
+    const formatPart = (part: string) => {
+        let [h, m] = part.split(':').map(Number);
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${suffix}`;
+    };
+    return `${formatPart(start)} - ${formatPart(end)}`;
+}
+
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split(' - ');
-        let [h, m] = start.split(':').map(Number);
-        const modifier = time.slice(-2);
-        if (h === 12) h = 0;
-        if (modifier === 'PM') h += 12;
+        const [start] = time.split('-');
+        const [h, m] = start.split(':').map(Number);
         return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
@@ -311,25 +320,25 @@ export default function TimetableGeneratorPage() {
                                         <TableRow>
                                             <TableHead className="border font-semibold p-2">Time</TableHead>
                                             {DAYS.map(day => (
-                                                <TableHead key={day} className={cn("border font-semibold p-2", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
+                                                <TableHead key={day} className={cn("border font-semibold p-2 text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
                                             ))}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {ALL_TIME_SLOTS.sort(sortTime).map(time => {
+                                        {ALL_TIME_SLOTS.map(time => {
                                             if (BREAK_SLOTS.includes(time)) {
                                                 return (
                                                     <TableRow key={time}>
-                                                        <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
+                                                        <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{formatTime(time)}</TableCell>
                                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
-                                                             {time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
+                                                             {time === '09:20-09:30' ? 'RECESS' : 'LUNCH BREAK'}
                                                         </TableCell>
                                                     </TableRow>
                                                 )
                                             }
                                             return (
                                             <TableRow key={time}>
-                                                <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
+                                                <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{formatTime(time)}</TableCell>
                                                 {DAYS.map(day => {
                                                     const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
                                                     
@@ -347,7 +356,7 @@ export default function TimetableGeneratorPage() {
                                                     const subject = slot ? getRelationInfo(slot.subjectId, 'subject') : null;
 
                                                     return (
-                                                        <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
+                                                        <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-24">
                                                             {slot && subject ? (
                                                                 (subject.id === 'LIB001') ? (
                                                                      <div className='flex justify-center items-center h-full text-muted-foreground'>
