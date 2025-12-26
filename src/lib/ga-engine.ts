@@ -59,6 +59,9 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
+        // Skip library here, it will be added separately
+        if (sub.id === 'LIB001') continue;
+
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
             // This case is handled by the pre-check, but as a safeguard:
@@ -140,7 +143,7 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
 
     // Check for faculty assignment
     const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department)
+        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && s.id !== 'LIB001')
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
@@ -152,7 +155,7 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
     const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
 
     if (totalRequiredHours > totalAvailableSlots) {
-        return `Cannot generate schedule. Required slots (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}). Please reduce subject priorities or check constraints.`;
+        return `Cannot generate schedule. Required slots (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}). The constraints might be too tight.`;
     }
     
     return null;
@@ -248,7 +251,7 @@ export async function runGA(input: GenerateTimetableInput) {
                     // Classroom consistency check
                     const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
                     const previousSlot = fullSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime);
-                    if (previousSlot && previousSlot.classroomId !== room.id) {
+                    if (previousSlot && previousSlot.subjectId !== 'LIB001' && previousSlot.classroomId !== room.id) {
                         continue; // If there's a previous lecture, try to use the same room
                     }
 
@@ -283,6 +286,16 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const academicSlotsCount = finalSchedule.filter(s => s.subjectId !== 'LIB001').length;
     const finalLibraryCount = finalSchedule.filter(s => s.subjectId === 'LIB001').length;
+    
+    // Final check
+    if(academicSlotsCount + finalLibraryCount < lecturesToPlace.reduce((acc, l) => acc + l.hours, 0)) {
+        return {
+            success: false,
+            message: `Generation failed. Only generated ${academicSlotsCount} academic slots and ${finalLibraryCount} library slots.`,
+            bestTimetable: [],
+            codeChefDay,
+        }
+    }
 
     return {
         success: true,
