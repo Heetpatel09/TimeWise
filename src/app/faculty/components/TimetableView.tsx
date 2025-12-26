@@ -19,22 +19,25 @@ import { isToday, format } from 'date-fns';
 import AttendanceDialog from './AttendanceDialog';
 
 const ALL_TIME_SLOTS = [
-    '7:30-8:25',
-    '8:25-9:20',
-    '9:20-9:30', // break
-    '9:30-10:25',
-    '10:25-11:20',
-    '11:20-12:20', // recess
-    '12:20-1:15',
-    '1:15-2:10'
+    '07:30 AM - 08:30 AM',
+    '08:30 AM - 09:30 AM',
+    '09:30 AM - 10:00 AM', // Break
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM', // Break
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const BREAK_SLOTS = ['9:20-9:30', '11:20-12:20'];
+const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split('-');
-        const [h, m] = start.split(':').map(Number);
+        const [start] = time.split(' - ');
+        let [h, m] = start.split(':').map(Number);
+        const modifier = time.slice(-2);
+        if (h === 12) h = 0;
+        if (modifier === 'PM') h += 12;
         return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
@@ -144,7 +147,7 @@ export default function TimetableView() {
                                 <TableCell>{row.time}</TableCell>
                                 {row.isBreak ? (
                                     <TableCell colSpan={DAYS.length} className="text-center font-semibold bg-secondary">
-                                        {row.time === '9:20-9:30' ? 'BREAK' : 'RECESS'}
+                                        {row.time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
                                     </TableCell>
                                 ) : (
                                     row.slots?.map((slot, index) => (

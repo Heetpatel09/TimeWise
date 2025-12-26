@@ -63,8 +63,21 @@ export async function deleteSubject(id: string) {
         throw new Error("Cannot delete subject that is currently in use in the schedule.");
     }
     
-    const stmt = db.prepare('DELETE FROM subjects WHERE id = ?');
-    stmt.run(id);
+    db.transaction(() => {
+        // Remove the subject from any faculty that has it allotted
+        const allFaculty: Faculty[] = db.prepare('SELECT id, allottedSubjects FROM faculty').all() as any[];
+        allFaculty.forEach(fac => {
+            const subjects = JSON.parse(fac.allottedSubjects || '[]') as string[];
+            if (subjects.includes(id)) {
+                const newSubjects = subjects.filter(sId => sId !== id);
+                db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(newSubjects), fac.id);
+            }
+        });
+
+        // Delete the subject
+        const stmt = db.prepare('DELETE FROM subjects WHERE id = ?');
+        stmt.run(id);
+    })();
 
     revalidateAll();
     return Promise.resolve(id);
