@@ -64,7 +64,17 @@ function FacultyForm({
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
-    defaultValues: faculty,
+    defaultValues: {
+        name: faculty.name || '',
+        email: faculty.email || '',
+        code: faculty.code || '',
+        designation: faculty.designation || '',
+        employmentType: faculty.employmentType || 'full-time',
+        department: faculty.department || '',
+        maxWeeklyHours: faculty.maxWeeklyHours || 20,
+        designatedYear: faculty.designatedYear || 1,
+        allottedSubjects: faculty.allottedSubjects || [],
+    },
   });
 
   useEffect(() => {
