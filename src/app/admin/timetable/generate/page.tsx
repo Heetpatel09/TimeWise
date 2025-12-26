@@ -25,34 +25,25 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
 const ALL_TIME_SLOTS = [
-    '07:30-08:25',
-    '08:25-09:20',
-    '09:20-09:30', // Break
-    '09:30-10:25',
-    '10:25-11:20',
-    '11:20-12:20', // Break
-    '12:20-01:15',
-    '01:15-02:10'
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:20 AM - 09:30 AM', // Break
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '11:20 AM - 12:20 PM', // Break
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const BREAK_SLOTS = ['09:20-09:30', '11:20-12:20'];
-
-function formatTime(time: string): string {
-    const [start, end] = time.split('-');
-    const formatPart = (part: string) => {
-        let [h, m] = part.split(':').map(Number);
-        const suffix = h >= 12 ? 'PM' : 'AM';
-        h = h % 12 || 12;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${suffix}`;
-    };
-    return `${formatPart(start)} - ${formatPart(end)}`;
-}
-
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split('-');
-        const [h, m] = start.split(':').map(Number);
+        const [start] = time.split(' - ');
+        let [h, m] = start.split(':').map(Number);
+        const modifier = time.slice(-2);
+        if (h === 12) h = 0;
+        if (modifier === 'PM') h += 12;
         return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
@@ -325,20 +316,20 @@ export default function TimetableGeneratorPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {ALL_TIME_SLOTS.map(time => {
+                                        {ALL_TIME_SLOTS.sort(sortTime).map(time => {
                                             if (BREAK_SLOTS.includes(time)) {
                                                 return (
                                                     <TableRow key={time}>
-                                                        <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{formatTime(time)}</TableCell>
+                                                        <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
                                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
-                                                             {time === '09:20-09:30' ? 'RECESS' : 'LUNCH BREAK'}
+                                                             {time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}
                                                         </TableCell>
                                                     </TableRow>
                                                 )
                                             }
                                             return (
                                             <TableRow key={time}>
-                                                <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{formatTime(time)}</TableCell>
+                                                <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{time}</TableCell>
                                                 {DAYS.map(day => {
                                                     const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
                                                     

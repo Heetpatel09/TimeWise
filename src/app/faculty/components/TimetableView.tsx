@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { EnrichedSchedule, Class, Subject, Classroom } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, Library, Coffee, Star, PlusSquare, CheckSquare } from 'lucide-react';
+import { Download, Loader2, Library, Coffee, Star, PlusSquare, CheckSquare, Bot } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
@@ -17,35 +17,29 @@ import { getClassrooms } from '@/lib/services/classrooms';
 import { Badge } from '@/components/ui/badge';
 import { isToday, format } from 'date-fns';
 import AttendanceDialog from './AttendanceDialog';
+import { cn } from '@/lib/utils';
 
 const ALL_TIME_SLOTS = [
-    '07:30-08:25',
-    '08:25-09:20',
-    '09:20-09:30', // Break
-    '09:30-10:25',
-    '10:25-11:20',
-    '11:20-12:20', // Break
-    '12:20-01:15',
-    '01:15-02:10'
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:20 AM - 09:30 AM', // Break
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '11:20 AM - 12:20 PM', // Break
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const BREAK_SLOTS = ['09:20-09:30', '11:20-12:20'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 
-function formatTime(time: string): string {
-    const [start, end] = time.split('-');
-    const formatPart = (part: string) => {
-        let [h, m] = part.split(':').map(Number);
-        const suffix = h >= 12 ? 'PM' : 'AM';
-        h = h % 12 || 12;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${suffix}`;
-    };
-    return `${formatPart(start)} - ${formatPart(end)}`;
-}
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
-        const [start] = time.split('-');
+        const [start] = time.split(' - ');
         let [h, m] = start.split(':').map(Number);
+        const modifier = time.slice(-2);
+        if (h === 12) h = 0;
+        if (modifier === 'PM') h += 12;
         return h * 60 + m;
     };
     return toMinutes(a) - toMinutes(b);
@@ -102,7 +96,7 @@ export default function TimetableView() {
     
     const tableData = facultySchedule.map(slot => [
         slot.day,
-        formatTime(slot.time),
+        slot.time,
         slot.className,
         slot.subjectName,
         slot.classroomName,
@@ -117,7 +111,7 @@ export default function TimetableView() {
     doc.save('my_schedule.pdf');
   }
 
-  const scheduleByTime = ALL_TIME_SLOTS.map(time => {
+  const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
     if (BREAK_SLOTS.includes(time)) {
         return { time: time, isBreak: true };
     }
@@ -126,6 +120,8 @@ export default function TimetableView() {
   });
   
   const todayName = format(new Date(), 'EEEE');
+  const codeChefDay = facultySchedule.find(s => s.subjectId === 'CODECHEF')?.day;
+
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -146,20 +142,20 @@ export default function TimetableView() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Time</TableHead>
-                            {DAYS.map(day => <TableHead key={day}>{day}</TableHead>)}
+                            {DAYS.map(day => <TableHead key={day} className={cn("text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>)}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {scheduleByTime.map(row => (
                             <TableRow key={row.time}>
-                                <TableCell>{formatTime(row.time)}</TableCell>
+                                <TableCell>{row.time}</TableCell>
                                 {row.isBreak ? (
                                     <TableCell colSpan={DAYS.length} className="text-center font-semibold bg-secondary">
-                                        {row.time === '09:20-09:30' ? 'RECESS' : 'LUNCH BREAK'}
+                                        {row.time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}
                                     </TableCell>
                                 ) : (
                                     row.slots?.map((slot, index) => (
-                                        <TableCell key={index}>
+                                        <TableCell key={index} className={cn(DAYS[index] === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
                                             {slot ? (
                                                 <div className="space-y-1">
                                                     <p className="font-semibold">{slot.subjectName}</p>
@@ -177,7 +173,14 @@ export default function TimetableView() {
                                                         </Button>
                                                     )}
                                                 </div>
-                                            ) : null}
+                                            ) : (
+                                                (DAYS[index] === codeChefDay) && (
+                                                    <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold text-center">
+                                                         <Bot className="h-4 w-4 mr-2"/>
+                                                        <span>CodeChef</span>
+                                                    </div>
+                                                )
+                                            )}
                                         </TableCell>
                                     ))
                                 )}

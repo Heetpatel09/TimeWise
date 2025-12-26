@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -27,12 +28,12 @@ interface LectureToBePlaced {
 
 // --- Helper Functions & Configuration ---
 const LECTURE_TIME_SLOTS = [
-    '07:30-08:25',
-    '08:25-09:20',
-    '09:30-10:25',
-    '10:25-11:20',
-    '12:20-01:15',
-    '01:15-02:10'
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
 ];
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
@@ -143,7 +144,7 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
 
 export async function runGA(input: GenerateTimetableInput) {
     // 1. Setup days
-    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const codeChefDayIndex = Math.floor(Math.random() * allDays.length);
     const codeChefDay = allDays[codeChefDayIndex];
     const workingDays = allDays.filter(d => d !== codeChefDay);
@@ -152,7 +153,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const lecturesToPlace = createLectureList(input);
 
     const requiredTheorySlots = lecturesToPlace.filter(l => !l.isLab).length;
-    const requiredLabSlots = lecturesToPlace.filter(l => l.isLab).length;
+    const requiredLabSlots = lecturesToPlace.filter(l => l.isLab).length * 2; // Each lab lecture is 2 hours
     const totalRequiredSlots = requiredTheorySlots + requiredLabSlots;
     const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
 
@@ -173,19 +174,17 @@ export async function runGA(input: GenerateTimetableInput) {
     }
 
     const labTimePairs: [string, string][] = [];
-    labTimePairs.push([LECTURE_TIME_SLOTS[0], LECTURE_TIME_SLOTS[1]]); // 07:30 - 09:20
-    labTimePairs.push([LECTURE_TIME_SLOTS[2], LECTURE_TIME_SLOTS[3]]); // 09:30 - 11:20
-    labTimePairs.push([LECTURE_TIME_SLOTS[4], LECTURE_TIME_SLOTS[5]]); // 12:20 - 02:10
+    labTimePairs.push([LECTURE_TIME_SLOTS[0], LECTURE_TIME_SLOTS[1]]); // Morning
+    labTimePairs.push([LECTURE_TIME_SLOTS[2], LECTURE_TIME_SLOTS[3]]); // Mid-day
+    labTimePairs.push([LECTURE_TIME_SLOTS[4], LECTURE_TIME_SLOTS[5]]); // Afternoon
 
     let lastDayLabSlotIndex = -1;
 
     for (const lab of labLectures) {
         let placed = false;
-        // Shuffle days to get more varied schedules
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
 
         for (const day of shuffledDays) {
-            // Alternating lab slot logic
             const shuffledPairs = labTimePairs.sort(() => Math.random() - 0.5);
             let startIndex = (lastDayLabSlotIndex + 1) % shuffledPairs.length;
 
@@ -220,11 +219,10 @@ export async function runGA(input: GenerateTimetableInput) {
 
     for (const theory of theoryLectures) {
         let placed = false;
-        for (let i = 0; i < 200; i++) { // Attempt to place each lecture up to 200 times
+        for (let i = 0; i < 200; i++) { 
             const day = workingDays[Math.floor(Math.random() * workingDays.length)];
             const time = LECTURE_TIME_SLOTS[Math.floor(Math.random() * LECTURE_TIME_SLOTS.length)];
 
-            // Try to place in the same classroom as a previous theory lecture on the same day
             const sameDayTheory = generatedSchedule.find(g => g.day === day && !g.isLab);
             const preferredRoom = sameDayTheory ? availableClassrooms.find(c => c.id === sameDayTheory.classroomId) : undefined;
             
