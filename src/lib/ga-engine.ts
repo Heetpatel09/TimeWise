@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -61,11 +62,13 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
-            continue; // Pre-check handles the error message.
+            // This case is handled by the pre-check, but as a safeguard:
+            console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
+            continue;
         }
 
         if (sub.type === 'lab') {
-            // A lab session is 2 hours long. Add it as a single item.
+            // A lab session is 2 hours long, represented as one block.
             lectures.push({
                 classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
                 isLab: true, hours: 2
@@ -85,7 +88,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     // 2. Add exactly 3 Library Slots, guaranteed.
     for (let i = 0; i < 3; i++) {
         lectures.push({
-            classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB', // Placeholder IDs
+            classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB', // Use valid placeholder ID
             isLab: false, hours: 1
         });
     }
@@ -235,7 +238,8 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const gene = { day, time, ...theory, classroomId: 'LIB_ROOM', facultyId: 'FAC_LIB', isLab: false };
+                     // Use the dedicated Library classroom
+                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: 'FAC_LIB', isLab: false };
                      generatedSchedule.push(gene);
                      fullSchedule.push(gene);
                      placed = true;

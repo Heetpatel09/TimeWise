@@ -1,4 +1,5 @@
 
+
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result, GatePass, Badge, UserBadge } from './types';
 import { format, subDays, addDays } from 'date-fns';
 
@@ -31,6 +32,7 @@ export const subjects: Subject[] = [
   { id: 'SUB018', name: 'Digital Electronics', code: 'EC202', type: 'theory', semester: 3, department: 'Electronics Engineering', priority: 'High' },
   { id: 'SUB019', name: 'Signals and Systems', code: 'EC301', type: 'theory', semester: 5, department: 'Electronics Engineering', priority: 'High' },
   { id: 'SUB020', name: 'VLSI Design', code: 'EC401', type: 'theory', semester: 7, department: 'Electronics Engineering', priority: 'High' },
+  { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 0, department: 'General', isSpecial: true },
 ];
 
 export const classes: Class[] = [
@@ -99,20 +101,34 @@ export const faculty: Faculty[] = [
   { id: 'FAC018', name: 'Prof. Albus Dumbledore', email: 'dumbledore@example.com', code: 'DDR18', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 55, profileCompleted: 100, points: 6500, allotedSubjects: ['SUB007'], maxWeeklyHours: 20, designatedYear: 2 },
   { id: 'FAC019', name: 'Prof. Severus Snape', email: 'snape@example.com', code: 'SNP19', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Electronics Engineering', roles: [], streak: 5, profileCompleted: 65, points: 1500, allotedSubjects: ['SUB020'], maxWeeklyHours: 10, designatedYear: 4 },
   { id: 'FAC020', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: 'KTG20', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 14, profileCompleted: 85, points: 3200, allotedSubjects: ['SUB016'], maxWeeklyHours: 22, designatedYear: 4 },
+  { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'LIBSTAFF', designation: 'Librarian', employmentType: 'full-time', department: 'General', roles: [], streak: 0, profileCompleted: 100, points: 0, allottedSubjects: [], maxWeeklyHours: 40, designatedYear: 0 },
 ];
 
-export const classrooms: Classroom[] = Array.from({ length: 25 }, (_, i) => {
-    const num = i + 1;
-    const isLab = num > 20; // Last 5 are labs
-    return {
-        id: `CR${num.toString().padStart(3, '0')}`,
-        name: isLab ? `Lab ${String.fromCharCode(65 + (num - 21))}` : `Room ${100 + num}`,
-        type: isLab ? 'lab' : 'classroom',
-        capacity: isLab ? 30 : 60,
-        maintenanceStatus: 'available',
-        building: num <= 10 ? 'Main Building' : 'Tech Park'
-    };
-});
+export const classrooms: Classroom[] = [
+    ...Array.from({ length: 20 }, (_, i) => {
+        const num = i + 1;
+        return {
+            id: `CR${num.toString().padStart(3, '0')}`,
+            name: `Room ${100 + num}`,
+            type: 'classroom',
+            capacity: 60,
+            maintenanceStatus: 'available',
+            building: num <= 10 ? 'Main Building' : 'Tech Park'
+        };
+    }),
+    ...Array.from({ length: 5 }, (_, i) => {
+        const num = i + 21;
+        return {
+            id: `CR${num.toString().padStart(3, '0')}`,
+            name: `Lab ${String.fromCharCode(65 + (num - 21))}`,
+            type: 'lab',
+            capacity: 30,
+            maintenanceStatus: 'available',
+            building: 'Tech Park'
+        };
+    }),
+    { id: 'CR_LIB', name: 'Library Hall', type: 'classroom', capacity: 100, maintenanceStatus: 'available', building: 'Main Building' }
+];
 
 // A more robust schedule generation
 const tempSchedule: Omit<Schedule, 'id'>[] = [];
@@ -332,3 +348,4 @@ export const userBadges: UserBadge[] = [
     
 
     
+
