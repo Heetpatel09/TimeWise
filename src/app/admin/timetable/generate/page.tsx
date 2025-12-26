@@ -134,7 +134,7 @@ export default function TimetableGeneratorPage() {
             
             const result = await generateTimetableFlow({
                 days: DAYS,
-                timeSlots: ALL_TIME_SLOTS, // Pass all slots
+                timeSlots: LECTURE_TIME_SLOTS,
                 classes: [classToGenerate],
                 subjects,
                 faculty,

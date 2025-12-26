@@ -23,7 +23,6 @@ interface LectureToBePlaced {
 }
 
 // --- Helper Functions & Configuration ---
-// These are the exact time slots for lectures, excluding breaks.
 const LECTURE_TIME_SLOTS = [
     '07:30 AM - 08:25 AM',
     '08:25 AM - 09:20 AM',
@@ -32,10 +31,8 @@ const LECTURE_TIME_SLOTS = [
     '12:20 PM - 01:15 PM',
     '01:15 PM - 02:10 PM'
 ];
-// These are the full day names
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// This function now correctly maps subject priorities to weekly lecture hours.
 const getHoursForPriority = (priority?: SubjectPriority): number => {
     switch (priority) {
         case 'Non Negotiable': return 4;
@@ -282,5 +279,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
