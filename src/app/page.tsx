@@ -179,7 +179,14 @@ export default function Home() {
   const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
 
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
+    <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden"
+      style={{
+        backgroundImage: `url('https://picsum.photos/seed/1/1920/1080')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <div className="absolute inset-0 bg-background/20 backdrop-blur-sm"></div>
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">

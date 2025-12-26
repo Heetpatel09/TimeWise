@@ -250,33 +250,30 @@ export default function DashboardLayout({
   }
 
   return (
-      <div className="relative flex flex-col h-screen">
-        <div className='absolute inset-0 bg-background/20 backdrop-blur-sm'></div>
-        <div className='relative flex flex-col h-screen'>
-          <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card/80 shadow-sm">
-            <div className="flex items-center gap-4">
-              <TimeWiseLogo />
-            </div>
-            
-            <div className="absolute left-1/2 -translate-x-1/2">
-              <Link href={`/${role}`} className="hidden md:block">
-                <h1 className="text-xl font-semibold font-headline hover:text-primary transition-colors">{pageTitle}</h1>
-              </Link>
-            </div>
+      <div className="relative flex flex-col h-screen bg-background">
+        <header className="sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-card/80 backdrop-blur-sm shadow-sm">
+          <div className="flex items-center gap-4">
+            <TimeWiseLogo />
+          </div>
+          
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <Link href={`/${role}`} className="hidden md:block">
+              <h1 className="text-xl font-semibold font-headline hover:text-primary transition-colors">{pageTitle}</h1>
+            </Link>
+          </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Badge variant="outline" className="hidden sm:flex items-center text-sm">
-                  {getRoleIcon()}
-                  {getRoleName()}
-              </Badge>
-              <NotificationsBell />
-              <UserProfile />
-            </div>
-          </header>
-          <main className="flex-grow p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500 flex flex-col overflow-y-auto">
-              {children}
-          </main>
-        </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Badge variant="outline" className="hidden sm:flex items-center text-sm">
+                {getRoleIcon()}
+                {getRoleName()}
+            </Badge>
+            <NotificationsBell />
+            <UserProfile />
+          </div>
+        </header>
+        <main className="flex-grow p-4 md:p-6 lg:p-8 bg-transparent animate-in fade-in-0 duration-500 flex flex-col overflow-y-auto">
+            {children}
+        </main>
       </div>
   );
 }
