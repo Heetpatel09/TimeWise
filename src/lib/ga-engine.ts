@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -45,8 +44,7 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
 };
 
 /**
- * Creates a definitive and accurate list of all academic and library lectures that need to be scheduled.
- * This is the new, corrected, and final version of this function.
+ * Creates a definitive list of all academic and library lectures that need to be scheduled.
  */
 function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
@@ -57,24 +55,23 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        // Skip library here, it will be added separately and definitively later.
+        // Skip library here; it's added separately.
         if (sub.id === 'LIB001') continue;
 
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
-            // This case is handled by the pre-check, but as a safeguard:
             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
             continue;
         }
 
         if (sub.type === 'lab') {
-            // A lab session is 2 hours long, represented as one block.
+            // Represent a 2-hour lab as a single block to be placed.
             lectures.push({
                 classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
                 isLab: true, hours: 2
             });
         } else {
-            // Theory subjects have hours based on priority. Add one 1-hour lecture for each required hour.
+            // Add theory lectures based on priority.
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
                 lectures.push({
@@ -85,15 +82,15 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
     }
     
-    // 2. Add exactly 3 Library Slots, guaranteed.
+    // 2. Add exactly 3 Library Slots.
     for (let i = 0; i < 3; i++) {
         lectures.push({
-            classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB', // Use valid placeholder ID
+            classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB',
             isLab: false, hours: 1
         });
     }
     
-    // Sort by labs first (most constrained), then theory.
+    // Sort by labs first (most constrained).
     lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
 
     return lectures;
@@ -159,14 +156,14 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
 }
 
 
-// --- Main Deterministic Engine (New, Rewritten Logic) ---
+// --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
     // 1. Setup days.
     const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
     const codeChefDay = DAYS[codeChefDayIndex];
     const workingDays = DAYS.filter(d => d !== codeChefDay);
     
-    // 2. Create list of lectures to be scheduled using the new, correct function.
+    // 2. Create list of lectures to be scheduled.
     const lecturesToPlace = createLectureList(input);
 
     // 3. Run Pre-checks for impossible scenarios.
@@ -283,5 +280,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
