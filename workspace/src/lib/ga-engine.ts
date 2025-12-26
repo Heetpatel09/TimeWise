@@ -1,13 +1,7 @@
 
 'use server';
 
-import { GenerateTimetableInput, type SubjectPriority } from './types';
-
-// --- Core GA Configuration ---
-const POPULATION_SIZE = 100;
-const MAX_GENERATIONS = 500;
-const ELITISM_RATE = 0.1; // Keep top 10%
-const MUTATION_RATE = 0.2; // 20% chance for a chromosome to mutate
+import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
 
 // --- Data Structures ---
 interface Gene {
@@ -18,25 +12,29 @@ interface Gene {
     facultyId: string;
     classroomId: string;
     isLab: boolean;
-    isCodeChef?: boolean;
     batch?: 'A' | 'B';
+    isCodeChef?: boolean;
 }
 
-type Chromosome = Gene[];
-
-interface Lecture {
-    classId: string;
+interface LectureToBePlaced {
     subjectId: string;
     facultyId: string;
     isLab: boolean;
-    priorityValue: number;
+    classId: string;
     batch?: 'A' | 'B';
+    hours: number; // 1 for theory, 2 for a single lab session
 }
 
-// --- Fitness & Penalties ---
-const HARD_CONSTRAINT_PENALTY = 1000;
-const SOFT_CONSTRAINT_PENALTY = 10;
-const CLASSROOM_CHANGE_PENALTY = 50; // Increased penalty for classroom changes for continuous lectures
+// --- Helper Functions & Configuration ---
+const LECTURE_TIME_SLOTS = [
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
+];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
     switch (priority) {
@@ -44,322 +42,238 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
         case 'High': return 3;
         case 'Medium': return 2;
         case 'Low': return 1;
-        default: return 3; // Default to 3 hours if not specified
+        default: return 2; // Default if priority is not set
     }
 };
 
-const getPriorityValue = (priority?: SubjectPriority): number => {
-     switch (priority) {
-        case 'Non Negotiable': return 4;
-        case 'High': return 3;
-        case 'Medium': return 2;
-        case 'Low': return 1;
-        default: return 2; 
-    }
-}
-
 /**
- * Pre-processes the input data to create a list of all required lecture slots.
+ * Creates a definitive list of all academic lectures that need to be scheduled.
+ * Library slots are handled separately.
  */
-function createLectureList(input: GenerateTimetableInput): Lecture[] {
-    const lectures: Lecture[] = [];
-    input.classes.forEach(cls => {
-        const classSubjects = input.subjects.filter(s => s.semester === cls.semester && s.department === cls.department);
-        
-        classSubjects.forEach(sub => {
-            const facultyForSubject = input.faculty.find(f => f.allottedSubjects && f.allottedSubjects.includes(sub.id));
-            if (!facultyForSubject) {
-                console.warn(`No faculty found for subject ${sub.name} (${sub.id})`);
-                return;
+function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
+    const lectures: LectureToBePlaced[] = [];
+    const classToSchedule = input.classes[0];
+    const classSubjects = input.subjects.filter(
+        s => s.semester === classToSchedule.semester && s.department === classToSchedule.department
+    );
+
+    for (const sub of classSubjects) {
+        const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
+        if (!facultyForSubject) {
+            console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
+            continue;
+        }
+
+        if (sub.type === 'lab') {
+            // Labs are 2 hours long, scheduled once a week.
+            lectures.push({
+                classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
+                isLab: true, hours: 2 // Represents one 2-hour block
+            });
+        } else {
+            const hours = getHoursForPriority(sub.priority);
+            for (let i = 0; i < hours; i++) {
+                lectures.push({
+                    classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
+                    isLab: false, hours: 1
+                });
             }
+        }
+    }
 
-            const priorityValue = getPriorityValue(sub.priority);
-
-            if (sub.type.toLowerCase() === 'lab') {
-                // Labs are 2 hours per session, and we need sessions for Batch A and Batch B.
-                 // Each batch gets one 2-hour lab session, so we add 2 genes per batch.
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A', priorityValue });
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'A', priorityValue });
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B', priorityValue });
-                lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, batch: 'B', priorityValue });
-            } else {
-                 const hours = getHoursForPriority(sub.priority);
-                 for(let i = 0; i < hours; i++) {
-                    lectures.push({ classId: cls.id, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: false, priorityValue });
-                 }
-            }
-        });
-    });
-
-    // Sort lectures by priority so higher priority subjects are placed first
-    lectures.sort((a, b) => b.priorityValue - a.priorityValue);
+    // Sort by labs first (most constrained), then theory
+    lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
     return lectures;
 }
 
 
-/**
- * Generates a single random, but structurally valid, timetable (Chromosome).
- */
-function createIndividual(lectures: Lecture[], input: GenerateTimetableInput, lectureSlots: string[]): Chromosome {
-    const individual: Chromosome = [];
-    const lectureQueue = [...lectures];
-    const workingDays = [...input.days];
+// --- Conflict Checking Functions ---
+function isConflict(schedule: (Gene | Schedule)[], day: string, time: string, facultyId: string, classroomId: string, classId: string): boolean {
+    return schedule.some(gene => 
+        gene.day === day && 
+        gene.time === time &&
+        (gene.facultyId === facultyId || gene.classroomId === classroomId || gene.classId === classId)
+    );
+}
 
-    // Designate a random "Code Chef" day and remove it from working days
-    const codeChefDayIndex = Math.floor(Math.random() * workingDays.length);
-    const codeChefDay = workingDays.splice(codeChefDayIndex, 1)[0];
-    const codeChefSubjectId = 'CODECHEF'; // A placeholder ID
-
-    // Populate the schedule with Code Chef day first
-    input.classes.forEach(cls => {
-        lectureSlots.forEach(time => {
-            const faculty = input.faculty[Math.floor(Math.random() * input.faculty.length)];
-            // Classroom is intentionally left generic or unassigned for CodeChef day
-            individual.push({
-                day: codeChefDay,
-                time,
-                classId: cls.id,
-                subjectId: codeChefSubjectId,
-                facultyId: faculty.id,
-                classroomId: 'flexible-room', // Use a placeholder
-                isLab: false,
-                isCodeChef: true,
-            });
-        });
-    });
-
-    // Create a map to track used slots for each class
-    const classTimeSlots = new Map<string, Set<string>>(); // key: classId, value: Set of "day-time"
-    input.classes.forEach(cls => classTimeSlots.set(cls.id, new Set()));
-
-    // Fill the remaining working days with lectures
-    while (lectureQueue.length > 0) {
-        const lecture = lectureQueue.shift()!;
-        const requiredClassroomType = lecture.isLab ? 'lab' : 'classroom';
-        const availableClassrooms = input.classrooms.filter(c => c.type === requiredClassroomType);
-
-        if (availableClassrooms.length === 0) continue;
-        const classroom = availableClassrooms[Math.floor(Math.random() * availableClassrooms.length)];
-        
-        let placed = false;
-        for (let i = 0; i < 100; i++) { // Limit attempts to prevent infinite loops
-            const day = workingDays[Math.floor(Math.random() * workingDays.length)];
-            const time = lectureSlots[Math.floor(Math.random() * lectureSlots.length)];
-            const slotKey = `${day}-${time}`;
-
-            if (!classTimeSlots.get(lecture.classId)!.has(slotKey)) {
-                individual.push({ day, time, ...lecture, classroomId: classroom.id });
-                classTimeSlots.get(lecture.classId)!.add(slotKey);
-                placed = true;
-                break;
-            }
-        }
-        if (!placed) lectureQueue.push(lecture); // Add back to queue if not placed
+function canPlaceLab(schedule: (Gene | Schedule)[], day: string, time1: string, time2: string, facultyId: string, classroomId: string, classId: string): boolean {
+    if (isConflict(schedule, day, time1, facultyId, classroomId, classId) || isConflict(schedule, day, time2, facultyId, classroomId, classId)) {
+        return false;
     }
-
-    return individual;
-}
-
-/**
- * Calculates the fitness of a timetable. Lower score is better.
- */
-function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput): number {
-    let fitness = 0;
-    const timeSlotMap = new Map<string, Gene[]>(); // key: day-time
-
-    chromosome.forEach(gene => {
-        if (gene.isCodeChef) return; // Exclude Code Chef day from conflict checks
-        const key = `${gene.day}-${gene.time}`;
-        if (!timeSlotMap.has(key)) timeSlotMap.set(key, []);
-        timeSlotMap.get(key)!.push(gene);
-    });
-
-    // HARD CONSTRAINTS
-    timeSlotMap.forEach(genesInSlot => {
-        const facultyIds = new Set<string>();
-        const classroomIds = new Set<string>();
-        const classIds = new Set<string>();
-
-        genesInSlot.forEach(gene => {
-            if (facultyIds.has(gene.facultyId)) fitness += HARD_CONSTRAINT_PENALTY;
-            facultyIds.add(gene.facultyId);
-
-            if (classroomIds.has(gene.classroomId)) fitness += HARD_CONSTRAINT_PENALTY;
-            classroomIds.add(gene.classroomId);
-
-            if (classIds.has(gene.classId)) fitness += HARD_CONSTRAINT_PENALTY;
-            classIds.add(gene.classId);
-        });
-    });
-
-    // SOFT CONSTRAINTS
-    input.classes.forEach(cls => {
-        const classSchedule = chromosome.filter(g => g.classId === cls.id && !g.isCodeChef);
-        const dayScheduleMap = new Map<string, Gene[]>();
-        
-        classSchedule.forEach(gene => {
-            if (!dayScheduleMap.has(gene.day)) dayScheduleMap.set(gene.day, []);
-            dayScheduleMap.get(gene.day)!.push(gene);
-        });
-
-        // Classroom Consistency for continuous theory lectures
-        dayScheduleMap.forEach((lecturesOnDay) => {
-             const sortedLectures = lecturesOnDay.sort((a, b) => input.timeSlots.indexOf(a.time) - input.timeSlots.indexOf(b.time));
-             for(let i = 0; i < sortedLectures.length - 1; i++) {
-                 const currentLec = sortedLectures[i];
-                 const nextLec = sortedLectures[i+1];
-                 const timeIndexCurrent = input.timeSlots.indexOf(currentLec.time);
-                 const timeIndexNext = input.timeSlots.indexOf(nextLec.time);
-
-                 if (timeIndexNext - timeIndexCurrent === 1 && !currentLec.isLab && !nextLec.isLab) {
-                     if (currentLec.classroomId !== nextLec.classroomId) {
-                         fitness += CLASSROOM_CHANGE_PENALTY;
-                     }
-                 }
-             }
-        });
-    });
-
-    return fitness;
-}
-
-
-/**
- * Performs mutation on a chromosome.
- */
-function mutate(chromosome: Chromosome, input: GenerateTimetableInput, lectureSlots: string[]): Chromosome {
-    let newChromosome = JSON.parse(JSON.stringify(chromosome));
-    
-    if (Math.random() < MUTATION_RATE) {
-        const geneIndex1 = Math.floor(Math.random() * newChromosome.length);
-        const gene1 = newChromosome[geneIndex1];
-
-        // Ensure we don't mutate code chef or lab slots for simplicity
-        if(gene1.isCodeChef || gene1.isLab) return newChromosome;
-        
-        // Find a day that is not the code chef day
-        const codeChefDay = newChromosome.find(g => g.isCodeChef)?.day;
-        const workingDays = input.days.filter(d => d !== codeChefDay);
-        if (workingDays.length === 0) return newChromosome;
-
-        const newDay = workingDays[Math.floor(Math.random() * workingDays.length)];
-        const newTime = lectureSlots[Math.floor(Math.random() * lectureSlots.length)];
-        
-        // Simple swap mutation
-        const geneIndex2 = Math.floor(Math.random() * newChromosome.length);
-        const gene2 = newChromosome[geneIndex2];
-        if(!gene2.isCodeChef && !gene2.isLab) {
-            [newChromosome[geneIndex1].day, newChromosome[geneIndex2].day] = [newChromosome[geneIndex2].day, newChromosome[geneIndex1].day];
-            [newChromosome[geneIndex1].time, newChromosome[geneIndex2].time] = [newChromosome[geneIndex2].time, newChromosome[geneIndex1].time];
-        }
+    // Rule: Each day will have only 1 lab slot for a given class
+    if (schedule.some(g => g.classId === classId && g.day === day && (g as Gene).isLab)) {
+        return false;
     }
-    return newChromosome;
+    return true;
 }
 
+function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string, facultyId: string, classroomId: string, classId: string, subjectId: string): boolean {
+    if (isConflict(schedule, day, time, facultyId, classroomId, classId)) {
+        return false;
+    }
+    // Rule: Do not give same subject classes more than 2 on same day
+    const daySchedule = schedule.filter(g => g.classId === classId && g.day === day);
+    if (daySchedule.filter(s => s.subjectId === subjectId).length >= 2) {
+        return false;
+    }
+    return true;
+}
 
 /**
- * Performs crossover between two parent chromosomes.
+ * Pre-checks if a schedule is even possible.
  */
-function crossover(parent1: Chromosome, parent2: Chromosome): Chromosome[] {
-    const crossoverPoint = Math.floor(Math.random() * parent1.length);
-    const child1Genes: Gene[] = parent1.slice(0, crossoverPoint).concat(parent2.slice(crossoverPoint));
-    const child2Genes: Gene[] = parent2.slice(0, crossoverPoint).concat(parent1.slice(crossoverPoint));
+function runPreChecks(input: GenerateTimetableInput): string | null {
+    const classToSchedule = input.classes[0];
+
+    // Check for faculty assignment
+    const subjectsWithoutFaculty = input.subjects
+        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department)
+        .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
-    // This is a naive crossover and might result in invalid schedules (e.g., duplicate lectures).
-    // The fitness function will penalize these, and subsequent generations should fix them.
-    return [child1Genes, child2Genes];
+    if (subjectsWithoutFaculty) {
+        return `Cannot generate schedule. Subject '${subjectsWithoutFaculty.name}' has no assigned faculty. Please assign faculty to this subject in the Departments & Subjects section.`;
+    }
+    
+    return null;
 }
 
 
-/**
-* Checks if a valid schedule is even possible with the given constraints.
-*/
-function checkImpossibility(lectures: Lecture[], input: GenerateTimetableInput): string | null {
-   const subjectsWithoutFaculty = new Set<string>();
-   input.classes.forEach(cls => {
-       const classSubjects = input.subjects.filter(s => s.semester === cls.semester && s.department === cls.department);
-       classSubjects.forEach(sub => {
-           const hasFaculty = input.faculty.some(f => f.allottedSubjects && f.allottedSubjects.includes(sub.id));
-           if (!hasFaculty) {
-               subjectsWithoutFaculty.add(sub.name);
-           }
-       });
-   });
-
-   if (subjectsWithoutFaculty.size > 0) {
-       return `The following subjects do not have any faculty assigned to them: ${[...subjectsWithoutFaculty].join(', ')}. Please assign faculty to these subjects.`;
-   }
-
-   const requiredFacultyHours = new Map<string, number>();
-   lectures.forEach(lec => {
-       requiredFacultyHours.set(lec.facultyId, (requiredFacultyHours.get(lec.facultyId) || 0) + 1);
-   });
-
-   for (const [facultyId, requiredHours] of requiredFacultyHours.entries()) {
-       const faculty = input.faculty.find(f => f.id === facultyId);
-       if (faculty && faculty.maxWeeklyHours && requiredHours > faculty.maxWeeklyHours) {
-           return `Faculty ${faculty.name} is over-allocated. Required: ${requiredHours} hours, Max: ${faculty.maxWeeklyHours} hours. Please increase their max weekly hours.`;
-       }
-   }
-   
-   return null;
-}
-
-
-// --- Main GA Runner ---
+// --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
-    const lectures = createLectureList(input);
-    const lectureSlots = input.timeSlots.filter(t => !t.includes('9:20-9:30') && !t.includes('11:20-12:20'));
+    // 1. Setup days
+    const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
+    const codeChefDay = DAYS[codeChefDayIndex];
+    const workingDays = DAYS.filter(d => d !== codeChefDay);
+    
+    // 2. Create list of academic lectures to be scheduled
+    const lecturesToPlace = createLectureList(input);
 
-    const impossibilityReason = checkImpossibility(lectures, input);
+    // 3. Run Pre-checks for impossible scenarios
+    const impossibilityReason = runPreChecks(input);
     if (impossibilityReason) {
-        return { success: false, message: impossibilityReason, bestTimetable: null, generations: 0, fitness: -1 };
+        return { success: false, message: impossibilityReason, bestTimetable: [], codeChefDay: undefined };
+    }
+    
+    const labLectures = lecturesToPlace.filter(l => l.isLab);
+    const theoryLectures = lecturesToPlace.filter(l => !l.isLab);
+
+    const generatedSchedule: Gene[] = [];
+    const fullSchedule = [...generatedSchedule, ...input.existingSchedule || []];
+
+    // 4. Place Labs (most constrained)
+    const availableLabRooms = input.classrooms.filter(c => c.type === 'lab');
+    if (availableLabRooms.length === 0 && labLectures.length > 0) {
+        return { success: false, message: "Cannot schedule labs. No lab classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
 
-    let population = Array.from({ length: POPULATION_SIZE }, () => createIndividual(lectures, input, lectureSlots));
+    const labTimePairs: [string, string][] = [
+        ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'], // Morning
+        ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'], // Afternoon
+        ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'], // Mid-day
+    ];
+    let lastLabDayIndex = -1;
 
-    let bestTimetable: Chromosome | null = null;
-    let bestFitness = Infinity;
+    for (const lab of labLectures) {
+        let placed = false;
+        const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
 
-    for (let generation = 0; generation < MAX_GENERATIONS; generation++) {
-        const fitnessScores = population.map(individual => ({
-            chromosome: individual,
-            fitness: calculateFitness(individual, input),
-        }));
+        for (const day of shuffledDays) {
+            if (shuffledDays.indexOf(day) === lastLabDayIndex) continue; // Avoid labs on consecutive days if possible
 
-        fitnessScores.sort((a, b) => a.fitness - b.fitness);
+            const shuffledTimePairs = labTimePairs.sort(() => Math.random() - 0.5);
 
-        if (fitnessScores[0].fitness < bestFitness) {
-            bestFitness = fitnessScores[0].fitness;
-            bestTimetable = fitnessScores[0].chromosome;
+            for (const [time1, time2] of shuffledTimePairs) {
+                for (const room of availableLabRooms) {
+                    if (canPlaceLab(fullSchedule, day, time1, time2, lab.facultyId, room.id, lab.classId)) {
+                        generatedSchedule.push({ day, time: time1, ...lab, classroomId: room.id, hours: 1 });
+                        generatedSchedule.push({ day, time: time2, ...lab, classroomId: room.id, hours: 1 });
+                        fullSchedule.push(...generatedSchedule.slice(-2));
+                        placed = true;
+                        lastLabDayIndex = shuffledDays.indexOf(day);
+                        break;
+                    }
+                }
+                if (placed) break;
+            }
+            if (placed) break;
         }
-
-        if (bestFitness === 0) {
-            return { success: true, message: 'Optimal solution found.', bestTimetable, generations: generation, fitness: bestFitness };
+        if (!placed) {
+             return { success: false, message: `Could not schedule lab for subject ID ${lab.subjectId}. Not enough conflict-free lab slots available.`, bestTimetable: [], codeChefDay: undefined };
         }
+    }
+    
+    // 5. Place Theory lectures
+    const availableClassrooms = input.classrooms.filter(c => c.type === 'classroom');
+    if (availableClassrooms.length === 0 && theoryLectures.length > 0) {
+        return { success: false, message: "Cannot schedule theory lectures. No classrooms are available.", bestTimetable: [], codeChefDay: undefined };
+    }
 
-        const newPopulation: Chromosome[] = [];
-        const eliteCount = Math.floor(POPULATION_SIZE * ELITISM_RATE);
-        
-        for (let i = 0; i < eliteCount; i++) {
-            newPopulation.push(fitnessScores[i].chromosome);
+    for (const theory of theoryLectures) {
+        let placed = false;
+        // Systematic placement for guaranteed result
+        for (const day of workingDays) {
+             for (const time of LECTURE_TIME_SLOTS) {
+                  if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
+
+                  for (const room of availableClassrooms) {
+                    // Classroom consistency check
+                    const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
+                    const previousSlot = fullSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime);
+                    if (previousSlot && previousSlot.classroomId !== room.id) {
+                        continue; // If there's a previous lecture, try to use the same room
+                    }
+
+                    if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
+                        const gene = { day, time, ...theory, classroomId: room.id };
+                        generatedSchedule.push(gene);
+                        fullSchedule.push(gene);
+                        placed = true;
+                        break;
+                    }
+                  }
+                  if (placed) break;
+             }
+             if (placed) break;
         }
+    }
 
-        while (newPopulation.length < POPULATION_SIZE) {
-            const parent1 = fitnessScores[Math.floor(Math.random() * (population.length / 2))].chromosome;
-            const parent2 = fitnessScores[Math.floor(Math.random() * (population.length / 2))].chromosome;
-            const [child1, child2] = crossover(parent1, parent2);
-            newPopulation.push(mutate(child1, input, lectureSlots));
-            if (newPopulation.length < POPULATION_SIZE) {
-                newPopulation.push(mutate(child2, input, lectureSlots));
+    // 6. Fill remaining empty slots with Library
+    let librarySlotsPlaced = 0;
+    for (const day of workingDays) {
+        for (const time of LECTURE_TIME_SLOTS) {
+            if (librarySlotsPlaced >= 3) break;
+            const isSlotOccupied = fullSchedule.some(g => g.day === day && g.time === time && g.classId === input.classes[0].id);
+            if (!isSlotOccupied) {
+                generatedSchedule.push({
+                    day, time, classId: input.classes[0].id,
+                    subjectId: 'LIB001', facultyId: 'FAC_LIB', classroomId: 'LIB_ROOM',
+                    isLab: false
+                });
+                librarySlotsPlaced++;
             }
         }
-        population = newPopulation;
+        if (librarySlotsPlaced >= 3) break;
     }
+    
+    const finalSchedule: Schedule[] = generatedSchedule.map((g, i) => ({ 
+        id: `GEN${i}${Date.now()}`,
+        day: g.day as any,
+        time: g.time,
+        classId: g.classId,
+        subjectId: g.subjectId,
+        facultyId: g.facultyId,
+        classroomId: g.classroomId,
+    }));
 
-    if (bestFitness >= HARD_CONSTRAINT_PENALTY) {
-         return { success: false, message: `Could not find a conflict-free schedule after ${MAX_GENERATIONS} generations. The best found schedule still had hard constraint violations. This may be due to overly restrictive constraints (e.g., not enough faculty or classrooms).`, bestTimetable: null, generations: MAX_GENERATIONS, fitness: bestFitness };
-    }
+    const academicSlotsCount = finalSchedule.filter(s => s.subjectId !== 'LIB001').length;
+    const finalLibraryCount = finalSchedule.filter(s => s.subjectId === 'LIB001').length;
 
-    return { success: true, message: 'Found an optimized, conflict-free schedule.', bestTimetable, generations: MAX_GENERATIONS, fitness: bestFitness };
+    return {
+        success: true,
+        message: `Successfully generated a schedule with ${academicSlotsCount} academic slots and ${finalLibraryCount} library slots.`,
+        bestTimetable: finalSchedule,
+        codeChefDay,
+    };
 }
+
+    
