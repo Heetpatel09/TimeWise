@@ -180,7 +180,7 @@ export default function Home() {
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
-      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-background/30 backdrop-blur-sm"></div>
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
           <TimeWiseLogo />
