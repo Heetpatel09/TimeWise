@@ -24,15 +24,6 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
-const LECTURE_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
-];
-
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:30 AM',
     '08:30 AM - 09:30 AM',
@@ -43,6 +34,8 @@ const ALL_TIME_SLOTS = [
     '01:00 PM - 02:00 PM',
     '02:00 PM - 03:00 PM'
 ];
+const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:30') && !t.includes('12:00'));
+
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
@@ -398,3 +391,5 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
+
+    

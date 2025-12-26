@@ -24,12 +24,12 @@ interface LectureToBePlaced {
 
 // --- Helper Functions & Configuration ---
 const LECTURE_TIME_SLOTS = [
-    '07:30 AM - 08:25 AM',
-    '08:25 AM - 09:20 AM',
-    '09:30 AM - 10:25 AM',
-    '10:25 AM - 11:20 AM',
-    '12:20 PM - 01:15 PM',
-    '01:15 PM - 02:10 PM'
+    '07:30 AM - 08:30 AM',
+    '08:30 AM - 09:30 AM',
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -185,9 +185,9 @@ export async function runGA(input: GenerateTimetableInput) {
     }
 
     const labTimePairs: [string, string][] = [
-        ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'], // Morning
-        ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'], // Afternoon
-        ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'], // Mid-day
+        ['07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM'], // Morning
+        ['01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'], // Afternoon
+        ['10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM'], // Mid-day
     ];
     let lastLabDayIndex = -1;
 
@@ -274,8 +274,10 @@ export async function runGA(input: GenerateTimetableInput) {
 
     return {
         success: true,
-        message: `Successfully generated a schedule with ${finalSchedule.length - 3} academic slots and 3 library slots.`,
+        message: `Successfully generated a schedule with ${finalSchedule.filter(s => s.subjectId !== 'LIB001').length} academic slots and 3 library slots.`,
         bestTimetable: finalSchedule,
         codeChefDay,
     };
 }
+
+    
