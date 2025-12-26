@@ -3,21 +3,22 @@
 
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { EnrichedSchedule, Class, Subject, Classroom } from '@/lib/types';
+import type { EnrichedSchedule, Student, Subject } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, Library, Coffee, Star, PlusSquare, CheckSquare, Bot } from 'lucide-react';
+import { Download, Loader2, Library, Bot, CheckSquare } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
-import { getSchedule } from '@/lib/services/schedule';
+import { getTimetableDataForStudent, getSubjectsForStudent } from '../../student/actions';
+import { cn } from '@/lib/utils';
+import { getSchedule, getScheduleForFacultyInRange } from '@/lib/services/schedule';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { Badge } from '@/components/ui/badge';
-import { isToday, format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import AttendanceDialog from './AttendanceDialog';
-import { cn } from '@/lib/utils';
 
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:25 AM',
@@ -137,57 +138,66 @@ export default function TimetableView() {
       </div>
       <div className="space-y-6">
         <Card>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Time</TableHead>
-                            {DAYS.map(day => <TableHead key={day} className={cn("text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>)}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {scheduleByTime.map(row => (
-                            <TableRow key={row.time}>
-                                <TableCell>{row.time}</TableCell>
-                                {row.isBreak ? (
-                                    <TableCell colSpan={DAYS.length} className="text-center font-semibold bg-secondary">
-                                        {row.time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}
-                                    </TableCell>
-                                ) : (
-                                    row.slots?.map((slot, index) => (
-                                        <TableCell key={index} className={cn(DAYS[index] === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
-                                            {slot ? (
-                                                <div className="space-y-1">
-                                                    <p className="font-semibold">{slot.subjectName}</p>
-                                                    <p className="text-xs text-muted-foreground">{slot.className}</p>
-                                                    <Badge variant={slot.classroomType === 'lab' ? 'secondary' : 'outline'}>{slot.classroomName}</Badge>
-                                                    {isToday(new Date()) && slot.day === todayName && (
-                                                         <Button 
-                                                            variant="outline" 
-                                                            size="sm" 
-                                                            className="w-full mt-2"
-                                                            onClick={() => handleTakeAttendance(slot)}
-                                                        >
-                                                            <CheckSquare className="h-4 w-4 mr-2" />
-                                                            Attendance
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                (DAYS[index] === codeChefDay) && (
-                                                    <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold text-center">
-                                                         <Bot className="h-4 w-4 mr-2"/>
-                                                        <span>CodeChef</span>
-                                                    </div>
-                                                )
-                                            )}
-                                        </TableCell>
-                                    ))
-                                )}
+            <CardContent className="p-0">
+                 <div className="overflow-x-auto">
+                    <Table className="border-collapse">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="border font-semibold">Time</TableHead>
+                                {DAYS.map(day => <TableHead key={day} className={cn("border font-semibold text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>)}
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {scheduleByTime.map(row => (
+                                <TableRow key={row.time}>
+                                    <TableCell className="border font-medium text-xs whitespace-nowrap">{row.time}</TableCell>
+                                    {row.isBreak ? (
+                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
+                                            {row.time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}
+                                        </TableCell>
+                                    ) : (
+                                        row.slots?.map((slot, index) => (
+                                            <TableCell key={index} className={cn("border p-1 align-top text-xs min-w-[150px] h-28", DAYS[index] === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
+                                                {slot ? (
+                                                     slot.subjectId === 'LIB001' ? (
+                                                        <div className='flex justify-center items-center h-full text-muted-foreground'>
+                                                            <Library className="h-4 w-4 mr-2" />
+                                                            <span>Library</span>
+                                                        </div>
+                                                     ) : (
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold">{slot.subjectName}</p>
+                                                            <p className="text-xs text-muted-foreground">{slot.className}</p>
+                                                            <Badge variant={slot.classroomType === 'lab' ? 'secondary' : 'outline'}>{slot.classroomName}</Badge>
+                                                            {isToday(new Date()) && slot.day === todayName && (
+                                                                <Button 
+                                                                    variant="outline" 
+                                                                    size="sm" 
+                                                                    className="w-full mt-2"
+                                                                    onClick={() => handleTakeAttendance(slot)}
+                                                                >
+                                                                    <CheckSquare className="h-4 w-4 mr-2" />
+                                                                    Attendance
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                     )
+                                                ) : (
+                                                    (DAYS[index] === codeChefDay) && (
+                                                        <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold text-center">
+                                                            <Bot className="h-4 w-4 mr-2"/>
+                                                            <span>CodeChef Day</span>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </TableCell>
+                                        ))
+                                    )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
       </div>

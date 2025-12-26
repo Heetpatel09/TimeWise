@@ -80,10 +80,13 @@ export default function TimetableView() {
             const slot = studentSchedule.find(s => s.day === day && s.time === time);
             if (slot) {
                 const subject = subjects.find(sub => sub.id === slot.subjectId);
+                if (subject?.id === 'LIB001') {
+                    return [day, time, 'Library', '-', '-'];
+                }
                 const subjectName = subject ? `${subject.name} ${subject.type === 'lab' ? '(Lab)' : ''}` : 'N/A';
                 return [day, time, subjectName, slot.facultyName, slot.classroomName];
             }
-            return [day, time, 'Library Slot', '-', '-'];
+            return [day, time, '-', '-', '-'];
         });
     });
 

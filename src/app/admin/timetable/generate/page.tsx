@@ -134,7 +134,7 @@ export default function TimetableGeneratorPage() {
             
             const result = await generateTimetableFlow({
                 days: DAYS,
-                timeSlots: ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t)),
+                timeSlots: ALL_TIME_SLOTS, // Pass all slots
                 classes: [classToGenerate],
                 subjects,
                 faculty,
@@ -142,7 +142,7 @@ export default function TimetableGeneratorPage() {
                 existingSchedule: existingSchedule.filter(s => s.classId !== selectedClassId),
             });
 
-            if (result && result.generatedSchedule.length > 0) {
+            if (result && result.success) {
                  setGeneratedData(result);
                  setReviewDialogOpen(true);
             } else {
