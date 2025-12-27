@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -281,3 +280,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
