@@ -35,16 +35,16 @@ export const subjects: Subject[] = [
 ];
 
 export const classes: Class[] = [
-  { id: 'CLS001', name: 'AIDS 1', semester: 1, department: 'Computer Engineering' },
-  { id: 'CLS002', name: 'AIDS 2', semester: 1, department: 'Computer Engineering' },
-  { id: 'CLS003', name: 'AIDS 3', semester: 3, department: 'Computer Engineering' },
-  { id: 'CLS004', name: 'AIDS 4', semester: 3, department: 'Computer Engineering' },
-  { id: 'CLS005', name: 'AIDS 5', semester: 5, department: 'Computer Engineering' },
-  { id: 'CLS006', name: 'AIDS 6', semester: 5, department: 'Computer Engineering' },
-  { id: 'CLS007', name: 'AIDS 7', semester: 7, department: 'Computer Engineering' },
-  { id: 'CLS008', name: 'AIDS 8', semester: 7, department: 'Computer Engineering' },
-  { id: 'CLS009', name: 'AIDS 9', semester: 3, department: 'Electronics Engineering' },
-  { id: 'CLS010', name: 'AIML', semester: 5, department: 'Electronics Engineering' },
+  { id: 'CLS001', name: 'Computer Engg. 2024', semester: 1, department: 'Computer Engineering', section: 'A' },
+  { id: 'CLS002', name: 'Computer Engg. 2024', semester: 1, department: 'Computer Engineering', section: 'B' },
+  { id: 'CLS003', name: 'Computer Engg. 2023', semester: 3, department: 'Computer Engineering', section: 'A' },
+  { id: 'CLS004', name: 'Computer Engg. 2023', semester: 3, department: 'Computer Engineering', section: 'B' },
+  { id: 'CLS005', name: 'Computer Engg. 2022', semester: 5, department: 'Computer Engineering', section: 'A' },
+  { id: 'CLS006', name: 'Computer Engg. 2022', semester: 5, department: 'Computer Engineering', section: 'B' },
+  { id: 'CLS007', name: 'Computer Engg. 2021', semester: 7, department: 'Computer Engineering', section: 'A' },
+  { id: 'CLS008', name: 'Computer Engg. 2021', semester: 7, department: 'Computer Engineering', section: 'B' },
+  { id: 'CLS009', name: 'Electronics Engg. 2023', semester: 3, department: 'Electronics Engineering', section: 'A' },
+  { id: 'CLS010', name: 'Electronics Engg. 2022', semester: 5, department: 'Electronics Engineering', section: 'A' },
 ];
 
 const studentNames = [
@@ -65,7 +65,7 @@ export const students: Student[] = studentNames.map((name, index) => {
     email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
     enrollmentNumber: `ENRL${new Date().getFullYear()}${(index + 1).toString().padStart(4, '0')}`,
     rollNumber: index + 1,
-    section: (index % 2 === 0) ? 'A' : 'B',
+    section: currentClass.section,
     batch: (index % 2) + 1,
     phone: `98765432${(index + 10).toString().padStart(2, '0')}`,
     category: (index % 5 === 0) ? 'Scholarship' : 'General',
@@ -343,9 +343,4 @@ export const userBadges: UserBadge[] = [
     
 
     
-
-    
-
-
-
 

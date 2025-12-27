@@ -158,6 +158,7 @@ export interface Class {
   name: string;
   semester: number;
   department: string;
+  section: string;
 }
 
 export interface Student {

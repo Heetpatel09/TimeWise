@@ -35,7 +35,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 63; // Increment this to force re-initialization
+const schemaVersion = 64; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'workspace/db-version.txt');
 
 
@@ -100,7 +100,8 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         semester INTEGER NOT NULL,
-        department TEXT NOT NULL
+        department TEXT NOT NULL,
+        section TEXT NOT NULL
     );
      CREATE TABLE IF NOT EXISTS classrooms (
         id TEXT PRIMARY KEY,
@@ -360,23 +361,23 @@ function createSchemaAndSeed() {
   
   // Create final lists for seeding, including the placeholders
   const faculty = [
-    ...placeholderFaculty,
     { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'LIBSTAFF', designation: 'Librarian', employmentType: 'full-time', department: 'General', roles: [], streak: 0, profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'], maxWeeklyHours: 40, designatedYear: 0 } as Faculty,
+    ...placeholderFaculty,
   ];
 
   const classrooms = [
-    ...placeholderClassrooms,
     { id: 'CR_LIB', name: 'Library Hall', type: 'classroom', capacity: 100, maintenanceStatus: 'available', building: 'Main Building' },
+    ...placeholderClassrooms,
   ];
 
   const subjects = [
-    ...placeholderSubjects,
     { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 0, department: 'General', isSpecial: true },
+    ...placeholderSubjects,
   ];
 
   // Seed the database
     const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department) VALUES (?, ?, ?, ?)');
+    const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department, section) VALUES (?, ?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, section, batch, phone, category, classId, avatar, profileCompleted, sgpa, cgpa, streak, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
@@ -400,7 +401,7 @@ function createSchemaAndSeed() {
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions));
         faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear));
-        placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department));
+        placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department, c.section));
         placeholderStudents.forEach(s => {
             const scheduledClasses = placeholderClasses.filter(c => placeholderSchedule.some(sch => sch.classId === c.id));
             const assignedClass = scheduledClasses.length > 0 ? scheduledClasses[s.rollNumber % scheduledClasses.length] : placeholderClasses[0];
@@ -464,3 +465,4 @@ export { getDb as db };
     
 
     
+
