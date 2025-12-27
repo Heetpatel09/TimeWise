@@ -57,7 +57,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        if (sub.id === 'LIB001') continue;
+        if (sub.id === 'LIB001') continue; // Skip library subject here
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
@@ -127,6 +127,15 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
 
 // --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
+    // Harden the input validation
+    if (!input.faculty || input.faculty.length === 0) {
+        return { success: false, message: 'Critical Error: Faculty data is missing.', bestTimetable: [], codeChefDay: undefined };
+    }
+    if (!input.classrooms || input.classrooms.length === 0) {
+        return { success: false, message: 'Critical Error: Classroom data is missing.', bestTimetable: [], codeChefDay: undefined };
+    }
+
+
     const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
     const codeChefDay = DAYS[codeChefDayIndex];
     const workingDays = DAYS.filter(d => d !== codeChefDay);

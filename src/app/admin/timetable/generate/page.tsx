@@ -178,6 +178,13 @@ export default function TimetableGeneratorPage() {
     
     const codeChefDay = generatedData?.codeChefDay;
 
+    const getDisplayInfo = (slot: Schedule) => {
+        const subject = subjects?.find(s => s.id === slot.subjectId);
+        const facultyMember = faculty?.find(f => f.id === slot.facultyId);
+        const classroom = classrooms?.find(c => c.id === slot.classroomId);
+        return { subject, facultyMember, classroom };
+    }
+
 
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
@@ -334,9 +341,7 @@ export default function TimetableGeneratorPage() {
                                                         )
                                                     }
                                                     
-                                                    const subject = slot ? subjects?.find(s => s.id === slot.subjectId) : null;
-                                                    const facultyMember = slot ? faculty?.find(f => f.id === slot.facultyId) : null;
-                                                    const classroom = slot ? classrooms?.find(c => c.id === slot.classroomId) : null;
+                                                    const { subject, facultyMember, classroom } = slot ? getDisplayInfo(slot) : { subject: null, facultyMember: null, classroom: null };
 
                                                     return (
                                                         <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-24">
