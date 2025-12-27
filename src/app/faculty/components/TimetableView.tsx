@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { EnrichedSchedule, Student, Subject } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, Library, Bot, CheckSquare } from 'lucide-react';
+import { Download, Loader2, Library, Bot, CheckSquare, Clock } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
@@ -86,6 +86,12 @@ export default function TimetableView() {
     loadData();
   }, [user]);
 
+  const totalWorkingHours = useMemo(() => {
+    if (!facultySchedule) return 0;
+    // Each non-library slot is considered one working hour
+    return facultySchedule.filter(slot => slot.subjectId !== 'LIB001').length;
+  }, [facultySchedule]);
+
   const handleTakeAttendance = (slot: EnrichedSchedule) => {
     setSelectedSlotForAttendance(slot);
     setAttendanceDialogOpen(true);
@@ -94,7 +100,8 @@ export default function TimetableView() {
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text(`Schedule for ${user?.name}`, 14, 16);
-    
+    doc.text(`Total Weekly Hours: ${totalWorkingHours}`, 14, 22);
+
     const tableData = facultySchedule.map(slot => [
         slot.day,
         slot.time,
@@ -106,7 +113,7 @@ export default function TimetableView() {
     (doc as any).autoTable({
         head: [['Day', 'Time', 'Class', 'Subject', 'Classroom']],
         body: tableData,
-        startY: 20,
+        startY: 30,
     });
 
     doc.save('my_schedule.pdf');
@@ -130,7 +137,17 @@ export default function TimetableView() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Weekly Hours</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{totalWorkingHours} hours</div>
+                <p className="text-xs text-muted-foreground">Based on scheduled (non-library) classes</p>
+            </CardContent>
+        </Card>
         <Button onClick={exportPDF} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Download PDF
@@ -213,4 +230,3 @@ export default function TimetableView() {
     </div>
   );
 }
-
