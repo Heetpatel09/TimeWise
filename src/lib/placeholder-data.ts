@@ -1,5 +1,4 @@
 
-
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result, GatePass, Badge, UserBadge } from './types';
 import { format, subDays, addDays } from 'date-fns';
 import { randomBytes } from 'crypto';
@@ -116,13 +115,9 @@ export const leaveRequests: LeaveRequest[] = [
   { id: 'LR004', requesterId: 'STU001', requesterName: 'Aarav Sharma', requesterRole: 'student', startDate: '2024-08-02', endDate: '2024-08-03', reason: 'Medical appointment.', status: 'pending', type: 'academic' },
 ];
 
-export const scheduleChangeRequests: ScheduleChangeRequest[] = [
-  { id: 'SCR001', scheduleId: 'SCH001', facultyId: 'FAC001', reason: 'Need to swap this class with my afternoon slot.', status: 'pending' },
-];
+export const scheduleChangeRequests: ScheduleChangeRequest[] = [];
 
-export const notifications: Notification[] = [
-  { id: 'NOT001', userId: 'FAC001', message: 'Your leave request from 2024-07-20 to 2024-07-21 has been approved.', isRead: true, createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), category: 'requests' },
-];
+export const notifications: Notification[] = [];
 
 export const adminUser = { id: 'admin-user', name: 'Admin', email: 'admin@timewise.app', password: 'admin123', role: 'admin', avatar: 'https://avatar.vercel.sh/admin.png' };
 export const managerUser = { id: 'manager-user', name: 'Manager', email: 'manager@timewise.app', password: 'manager123', role: 'manager', avatar: 'https://avatar.vercel.sh/manager.png', permissions: ['manage_students', 'manage_schedule'] };
