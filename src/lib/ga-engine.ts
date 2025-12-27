@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty, Classroom } from './types';
@@ -135,10 +134,6 @@ export async function runGA(input: GenerateTimetableInput) {
     if (!input.classrooms || input.classrooms.length === 0) {
         return { success: false, message: 'Critical Error: Classroom data is missing.', bestTimetable: [], codeChefDay: undefined };
     }
-     // Final safeguard for placeholder data
-    if (!input.subjects.some(s => s.id === 'LIB001') || !input.faculty.some(f => f.id === 'FAC_LIB') || !input.classrooms.some(c => c.id === 'CR_LIB')) {
-        return { success: false, message: "Critical Error: Core placeholder data for Library/Faculty is missing. Please ensure database is seeded correctly.", bestTimetable: [], codeChefDay: undefined };
-    }
 
     const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
     const codeChefDay = DAYS[codeChefDayIndex];
@@ -251,5 +246,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
