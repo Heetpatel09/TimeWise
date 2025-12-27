@@ -34,8 +34,6 @@ const ALL_TIME_SLOTS = [
     '01:00 PM - 02:00 PM',
     '02:00 PM - 03:00 PM'
 ];
-const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:30') && !t.includes('12:00'));
-
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
 
@@ -136,7 +134,7 @@ export default function TimetableGeneratorPage() {
             
             const result = await generateTimetableFlow({
                 days: DAYS,
-                timeSlots: LECTURE_TIME_SLOTS,
+                timeSlots: ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t)),
                 classes: [classToGenerate],
                 subjects,
                 faculty,
@@ -175,16 +173,6 @@ export default function TimetableGeneratorPage() {
             setIsApplying(false);
         }
     }
-    
-    const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom') => {
-        switch (type) {
-        case 'class': return classes?.find(c => c.id === id);
-        case 'subject': return subjects?.find(s => s.id === id);
-        case 'faculty': return faculty?.find(f => f.id === id);
-        case 'classroom': return classrooms?.find(cr => cr.id === id);
-        default: return undefined;
-        }
-    };
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading;
     
@@ -346,7 +334,9 @@ export default function TimetableGeneratorPage() {
                                                         )
                                                     }
                                                     
-                                                    const subject = slot ? getRelationInfo(slot.subjectId, 'subject') : null;
+                                                    const subject = slot ? subjects?.find(s => s.id === slot.subjectId) : null;
+                                                    const facultyMember = slot ? faculty?.find(f => f.id === slot.facultyId) : null;
+                                                    const classroom = slot ? classrooms?.find(c => c.id === slot.classroomId) : null;
 
                                                     return (
                                                         <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-24">
@@ -359,9 +349,9 @@ export default function TimetableGeneratorPage() {
                                                                 ) : (
                                                                     <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
                                                                         <div><strong>{subject.name}</strong></div>
-                                                                        <div className="truncate text-muted-foreground">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                                        <div className="truncate text-muted-foreground">{facultyMember?.name}</div>
                                                                         <div className='flex justify-between mt-1'>
-                                                                            <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
+                                                                            <Badge variant="outline">{classroom?.name}</Badge>
                                                                         </div>
                                                                     </div>
                                                                 )
@@ -391,5 +381,3 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
-
-    

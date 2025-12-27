@@ -182,9 +182,15 @@ export async function runGA(input: GenerateTimetableInput) {
     }
     
     const availableClassrooms = input.classrooms.filter(c => c.type === 'classroom');
+    const libraryClassroom = input.classrooms.find(c => c.id === 'CR_LIB');
+
     if (availableClassrooms.length === 0 && theoryLectures.filter(t => t.subjectId !== 'LIB001').length > 0) {
         return { success: false, message: "Cannot schedule theory lectures. No classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
+    if (!libraryClassroom && theoryLectures.some(t => t.subjectId === 'LIB001')) {
+         return { success: false, message: "Critical Error: Library Room (CR_LIB) not found.", bestTimetable: [], codeChefDay: undefined };
+    }
+
 
     for (const theory of theoryLectures) {
         let placed = false;
@@ -193,7 +199,7 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: 'FAC_LIB', isLab: false };
+                     const gene = { day, time, ...theory, classroomId: libraryClassroom!.id, facultyId: 'FAC_LIB', isLab: false };
                      generatedSchedule.push(gene);
                      fullSchedule.push(gene);
                      placed = true;
