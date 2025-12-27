@@ -506,7 +506,10 @@ export default function DepartmentsManager() {
         .filter(s => s.department === dept && s.semester.toString() === selectedSemester)
         .map(s => s.id);
         
-    return filteredByDept.filter(f => f.allottedSubjects?.some(subId => subjectIdsInSemester.includes(subId)));
+    return filteredByDept.filter(f => 
+        (f.allottedSubjects?.some(subId => subjectIdsInSemester.includes(subId))) ||
+        (f.designatedYear && (parseInt(selectedSemester) <= f.designatedYear * 2) && (parseInt(selectedSemester) > (f.designatedYear -1) * 2))
+    );
   }, [allFaculty, dept, selectedSemester, subjects]);
 
   
@@ -651,7 +654,7 @@ export default function DepartmentsManager() {
                 <CardContent>
                     <Tabs defaultValue="classes">
                         <TabsList className='mb-4'>
-                            <TabsTrigger value="classes">Classes & Sections</TabsTrigger>
+                            <TabsTrigger value="classes">Classes &amp; Sections</TabsTrigger>
                             <TabsTrigger value="subjects">Subjects</TabsTrigger>
                             <TabsTrigger value="faculty">Faculty</TabsTrigger>
                         </TabsList>
@@ -1014,4 +1017,5 @@ export default function DepartmentsManager() {
   );
 }
 
+    
     
