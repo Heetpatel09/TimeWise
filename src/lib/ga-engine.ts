@@ -125,34 +125,6 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
     return true;
 }
 
-/**
- * Pre-checks if a schedule is even possible.
- */
-function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
-    const classToSchedule = input.classes[0];
-
-    const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && s.id !== 'LIB001')
-        .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
-    
-    if (subjectsWithoutFaculty) {
-        return `Cannot generate schedule. Subject '${subjectsWithoutFaculty.name}' has no assigned faculty. Please assign faculty to this subject in the Departments & Subjects section.`;
-    }
-
-    if (!input.faculty.find(f => f.id === 'FAC_LIB') || !input.classrooms.find(c => c.id === 'CR_LIB')) {
-        return "Critical Error: Library Staff (FAC_LIB) or Library Room (CR_LIB) not found in placeholder data. Please contact support.";
-    }
-    
-    const totalRequiredHours = lectures.reduce((acc, l) => acc + l.hours, 0);
-    const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
-
-    if (totalRequiredHours > totalAvailableSlots) {
-        return `Cannot generate schedule. Required slots (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}). The constraints are too tight.`;
-    }
-    
-    return null;
-}
-
 
 // --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
@@ -161,11 +133,6 @@ export async function runGA(input: GenerateTimetableInput) {
     const workingDays = DAYS.filter(d => d !== codeChefDay);
     
     const lecturesToPlace = createLectureList(input);
-
-    const impossibilityReason = runPreChecks(lecturesToPlace, input, workingDays);
-    if (impossibilityReason) {
-        return { success: false, message: impossibilityReason, bestTimetable: [], codeChefDay: undefined };
-    }
     
     const labLectures = lecturesToPlace.filter(l => l.isLab);
     const theoryLectures = lecturesToPlace.filter(l => !l.isLab);
@@ -270,5 +237,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
