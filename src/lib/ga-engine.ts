@@ -137,14 +137,7 @@ export async function runGA(input: GenerateTimetableInput) {
     if (!input.classrooms || input.classrooms.length === 0) {
         return { success: false, message: 'Critical Error: Classroom data is missing.', bestTimetable: [], codeChefDay: undefined };
     }
-     const libraryRoom = input.classrooms.find(c => c.id === 'CR_LIB');
-    const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB');
-    const librarySubject = input.subjects.find(s => s.id === 'LIB001');
-
-    if (!libraryRoom || !libraryFaculty || !librarySubject) {
-        return { success: false, message: 'Critical Error: Core placeholder data for Library/Faculty is missing.', bestTimetable: [], codeChefDay: undefined };
-    }
-
+     
     const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
     const codeChefDay = DAYS[codeChefDayIndex];
     const workingDays = DAYS.filter(d => d !== codeChefDay);
@@ -198,9 +191,10 @@ export async function runGA(input: GenerateTimetableInput) {
         }
     }
     
-    const availableClassrooms = input.classrooms.filter(c => c.type === 'classroom' && c.id !== 'CR_LIB');
+    const theoryClassrooms = input.classrooms.filter(c => c.type === 'classroom');
+    const libraryRoom = input.classrooms.find(c => c.id === 'CR_LIB');
 
-    if (availableClassrooms.length === 0 && theoryLectures.filter(t => t.subjectId !== 'LIB001').length > 0) {
+    if (theoryClassrooms.length === 0 && theoryLectures.filter(t => t.subjectId !== 'LIB001').length > 0) {
         return { success: false, message: "Cannot schedule theory lectures. No non-library classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
 
@@ -212,20 +206,22 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: 'FAC_LIB', isLab: false };
-                     generatedSchedule.push(gene);
-                     fullSchedule.push(gene);
-                     placed = true;
-                     break;
-                  }
-
-                  for (const room of availableClassrooms) {
-                    if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
-                        const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
+                     if (libraryRoom && canPlaceTheory(fullSchedule, day, time, theory.facultyId, libraryRoom.id, theory.classId, theory.subjectId)) {
+                        const gene = { day, time, ...theory, classroomId: libraryRoom.id, isLab: false };
                         generatedSchedule.push(gene);
                         fullSchedule.push(gene);
                         placed = true;
                         break;
+                     }
+                  } else {
+                    for (const room of theoryClassrooms) {
+                        if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
+                            const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
+                            generatedSchedule.push(gene);
+                            fullSchedule.push(gene);
+                            placed = true;
+                            break;
+                        }
                     }
                   }
                   if (placed) break;
