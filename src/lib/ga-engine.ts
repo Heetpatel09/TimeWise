@@ -1,7 +1,8 @@
 
+
 'use server';
 
-import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
+import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty, Classroom } from './types';
 
 // --- Data Structures ---
 interface Gene {
@@ -57,7 +58,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        if (sub.id === 'LIB001') continue; // Skip library subject here
+        if (sub.id === 'LIB001') continue; 
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
@@ -134,7 +135,10 @@ export async function runGA(input: GenerateTimetableInput) {
     if (!input.classrooms || input.classrooms.length === 0) {
         return { success: false, message: 'Critical Error: Classroom data is missing.', bestTimetable: [], codeChefDay: undefined };
     }
-
+     // Final safeguard for placeholder data
+    if (!input.subjects.some(s => s.id === 'LIB001') || !input.faculty.some(f => f.id === 'FAC_LIB') || !input.classrooms.some(c => c.id === 'CR_LIB')) {
+        return { success: false, message: "Critical Error: Core placeholder data for Library/Faculty is missing. Please ensure database is seeded correctly.", bestTimetable: [], codeChefDay: undefined };
+    }
 
     const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
     const codeChefDay = DAYS[codeChefDayIndex];
@@ -247,3 +251,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
