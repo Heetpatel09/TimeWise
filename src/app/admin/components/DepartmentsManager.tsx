@@ -328,6 +328,7 @@ export default function DepartmentsManager() {
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
 
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+  const [selectedSemester, setSelectedSemester] = useState('all');
   
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [isRenameDeptDialogOpen, setRenameDeptDialogOpen] = useState(false);
@@ -340,6 +341,18 @@ export default function DepartmentsManager() {
         setSelectedDepartment(departments[0]);
       }
   }, [departments, selectedDepartment]);
+
+  const semestersInDept = useMemo(() => {
+    if (!selectedDepartment) return [];
+    return ['all', ...Array.from(new Set(classes.filter(c => c.department === selectedDepartment).map(c => c.semester.toString()))).sort()];
+  }, [classes, selectedDepartment]);
+
+  useEffect(() => {
+    if (selectedDepartment && !semestersInDept.includes(selectedSemester)) {
+        setSelectedSemester('all');
+    }
+  }, [selectedDepartment, selectedSemester, semestersInDept]);
+
   
   const classMutation = useMutation({
     mutationFn: async (classData: Omit<Class, 'id'> & { id?: string }) => {
@@ -470,9 +483,32 @@ export default function DepartmentsManager() {
   });
 
   const dept = selectedDepartment;
-  const classesInDept = classes.filter(c => c.department === dept);
-  const subjectsInDept = subjects.filter(s => s.department === dept);
-  const facultyInDept = allFaculty.filter(f => f.department === dept);
+  const classesInDept = useMemo(() => {
+    if (!dept) return [];
+    const filtered = classes.filter(c => c.department === dept);
+    if (selectedSemester === 'all') return filtered;
+    return filtered.filter(c => c.semester.toString() === selectedSemester);
+  }, [classes, dept, selectedSemester]);
+
+  const subjectsInDept = useMemo(() => {
+    if (!dept) return [];
+    const filtered = subjects.filter(s => s.department === dept);
+    if (selectedSemester === 'all') return filtered;
+    return filtered.filter(s => s.semester.toString() === selectedSemester);
+  }, [subjects, dept, selectedSemester]);
+
+  const facultyInDept = useMemo(() => {
+    if (!dept) return [];
+    const filteredByDept = allFaculty.filter(f => f.department === dept);
+    if (selectedSemester === 'all') return filteredByDept;
+
+    const subjectIdsInSemester = subjects
+        .filter(s => s.department === dept && s.semester.toString() === selectedSemester)
+        .map(s => s.id);
+        
+    return filteredByDept.filter(f => f.allottedSubjects?.some(subId => subjectIdsInSemester.includes(subId)));
+  }, [allFaculty, dept, selectedSemester, subjects]);
+
   
   const handleSaveClass = async () => {
     if (!currentClass || !currentClass.name || !currentClass.semester || !currentClass.section || !selectedDepartment) {
@@ -578,7 +614,7 @@ export default function DepartmentsManager() {
   return (
     <div className="space-y-6">
         <div className="flex justify-between items-center flex-wrap gap-4">
-             <div className="flex items-center gap-2">
+             <div className="flex items-center gap-2 flex-wrap">
                 <Select value={selectedDepartment || ''} onValueChange={(val) => {setSelectedDepartment(val)}}>
                     <SelectTrigger className="w-[300px]">
                         <SelectValue placeholder="Select a Department" />
@@ -590,6 +626,14 @@ export default function DepartmentsManager() {
                 <Button variant="outline" size="icon" onClick={openRenameDialog} disabled={!selectedDepartment}>
                     <Pencil className="h-4 w-4" />
                 </Button>
+                <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedDepartment}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select a Semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {semestersInDept.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Semesters' : `Semester ${s}`}</SelectItem>)}
+                    </SelectContent>
+                </Select>
             </div>
             <Button onClick={() => setDeptDialogOpen(true)}>
                 <PlusCircle className="h-4 w-4 mr-2" />
@@ -644,7 +688,7 @@ export default function DepartmentsManager() {
                                                     </DropdownMenu>
                                                 </TableCell>
                                             </TableRow>
-                                        )) : <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No classes found in this department.</TableCell></TableRow>}
+                                        )) : <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No classes found for this selection.</TableCell></TableRow>}
                                     </TableBody>
                                     </Table>
                                 </ScrollArea>
@@ -727,7 +771,7 @@ export default function DepartmentsManager() {
                                             )
                                         }) : (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this department.</TableCell>
+                                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this selection.</TableCell>
                                             </TableRow>
                                         )}
                                     </TableBody>
@@ -779,7 +823,7 @@ export default function DepartmentsManager() {
                                                      </TableCell>
                                                  </TableRow>
                                              )) : (
-                                                 <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No faculty found in this department.</TableCell></TableRow>
+                                                 <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No faculty found for this selection.</TableCell></TableRow>
                                              )}
                                          </TableBody>
                                      </Table>

@@ -359,22 +359,6 @@ function createSchemaAndSeed() {
     );
   `);
   
-  // Create final lists for seeding, including the placeholders
-  const faculty = [
-    { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'LIBSTAFF', designation: 'Librarian', employmentType: 'full-time', department: 'General', roles: [], streak: 0, profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'], maxWeeklyHours: 40, designatedYear: 0 } as Faculty,
-    ...placeholderFaculty,
-  ];
-
-  const classrooms = [
-    { id: 'CR_LIB', name: 'Library Hall', type: 'classroom', capacity: 100, maintenanceStatus: 'available', building: 'Main Building' },
-    ...placeholderClassrooms,
-  ];
-
-  const subjects = [
-    { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 0, department: 'General', isSpecial: true },
-    ...placeholderSubjects,
-  ];
-
   // Seed the database
     const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department, section) VALUES (?, ?, ?, ?, ?)');
@@ -400,7 +384,7 @@ function createSchemaAndSeed() {
         // Step 1: Insert base data for users and other entities
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions));
-        faculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear));
+        placeholderFaculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear));
         placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department, c.section));
         placeholderStudents.forEach(s => {
             const scheduledClasses = placeholderClasses.filter(c => placeholderSchedule.some(sch => sch.classId === c.id));
@@ -408,14 +392,14 @@ function createSchemaAndSeed() {
             insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, assignedClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0);
         });
         
-        subjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering', s.priority || null));
-        classrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
+        placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering', s.priority || null));
+        placeholderClassrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
 
         // Step 2: Insert credentials for all users
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         insertUser.run(managerUser.email, managerUser.id, managerUser.password, 'admin', 0);
         
-        faculty.forEach(f => {
+        placeholderFaculty.forEach(f => {
             insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
         });
         
@@ -465,4 +449,5 @@ export { getDb as db };
     
 
     
+
 

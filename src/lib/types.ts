@@ -145,7 +145,7 @@ export interface Subject {
   id: string;
   name: string;
   code: string;
-  type: string;
+  type: 'theory' | 'lab';
   semester: number;
   syllabus?: string;
   department?: string;
