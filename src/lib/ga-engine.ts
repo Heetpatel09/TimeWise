@@ -13,7 +13,6 @@ interface Gene {
     classroomId: string;
     isLab: boolean;
     batch?: 'A' | 'B';
-    isCodeChef?: boolean;
 }
 
 interface LectureToBePlaced {
@@ -58,7 +57,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        if (sub.id === 'LIB001') continue; // Skip library here
+        if (sub.id === 'LIB001') continue;
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
