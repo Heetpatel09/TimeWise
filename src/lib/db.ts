@@ -35,7 +35,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 64; // Increment this to force re-initialization
+const schemaVersion = 65; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'workspace/db-version.txt');
 
 
@@ -381,52 +381,37 @@ function createSchemaAndSeed() {
     const insertUserBadge = db.prepare('INSERT OR IGNORE INTO user_badges (id, userId, badgeId, earnedAt) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
-        // Step 1: Insert base data for users and other entities
+        // Corrected Seeding Order
+        
+        // 1. Independent Entities
+        placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, s.department || 'Computer Engineering', s.priority || null));
+        placeholderClassrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
+        placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department, c.section));
+        placeholderFaculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear));
+        hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
+        badges.forEach(b => insertBadge.run(b.id, b.name, b.description, b.icon, b.rarity, b.category, b.points));
+
+        // 2. Dependent Entities (like students who need a classId)
+        placeholderStudents.forEach(s => insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0));
+
+        // 3. User Credentials for all roles
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
         insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions));
-        placeholderFaculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear));
-        placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department, c.section));
-        placeholderStudents.forEach(s => {
-            const scheduledClasses = placeholderClasses.filter(c => placeholderSchedule.some(sch => sch.classId === c.id));
-            const assignedClass = scheduledClasses.length > 0 ? scheduledClasses[s.rollNumber % scheduledClasses.length] : placeholderClasses[0];
-            insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, assignedClass.id, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0);
-        });
-        
-        placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, (s as any).department || 'Computer Engineering', s.priority || null));
-        placeholderClassrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
-
-        // Step 2: Insert credentials for all users
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         insertUser.run(managerUser.email, managerUser.id, managerUser.password, 'admin', 0);
-        
-        placeholderFaculty.forEach(f => {
-            insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1);
-        });
-        
-        const staticStudentEmails = ['aarav.sharma@example.com', 'vihaan.gupta@example.com', 'saanvi.sharma@example.com'];
-        
-        placeholderStudents.forEach(s => {
-            if (staticStudentEmails.includes(s.email)) {
-              insertUser.run(s.email, s.id, 'student123', 'student', 0);
-            } else {
-              const randomPassword = randomBytes(8).toString('hex');
-              insertUser.run(s.email, s.id, randomPassword, 'student', 1);
-            }
-        });
+        placeholderFaculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1));
+        placeholderStudents.forEach(s => insertUser.run(s.email, s.id, 'student123', 'student', 1));
 
-
-        // Step 3: Insert all other relational data
+        // 4. Relational Data
         placeholderSchedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status, lr.type || 'academic'));
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
         notifications.forEach(n => insertNotification.run(n.id, n.userId, n.message, n.isRead ? 1 : 0, n.createdAt, n.category || 'general'));
-        hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
         rooms.forEach(r => insertRoom.run(r.id, r.hostelId, r.roomNumber, r.block, r.studentId, r.floor));
         fees.forEach(f => insertFee.run(f.id, f.studentId, f.semester, f.feeType, f.amount, f.dueDate, f.status, f.transactionId, f.paymentDate));
         attendance.forEach(a => insertAttendance.run(a.id, a.scheduleId, a.studentId, a.date, a.status, a.isLocked ? 1 : 0, a.timestamp));
         results.forEach(r => insertResult.run(r.id, r.studentId, r.subjectId, r.semester, r.marks, r.totalMarks, r.grade, r.examType));
         gatePasses.forEach(gp => insertGatePass.run(gp.id, gp.studentId, gp.requestDate, gp.departureDate, gp.arrivalDate, gp.reason, gp.status));
-        badges.forEach(b => insertBadge.run(b.id, b.name, b.description, b.icon, b.rarity, b.category, b.points));
         userBadges.forEach(ub => insertUserBadge.run(ub.id, ub.userId, ub.badgeId, ub.earnedAt));
         
     })();
@@ -443,11 +428,3 @@ const getDb = () => {
 }
 
 export { getDb as db };
-
-    
-
-    
-
-    
-
-
