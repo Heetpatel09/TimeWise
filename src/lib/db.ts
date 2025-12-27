@@ -361,7 +361,7 @@ function createSchemaAndSeed() {
   // Create final lists for seeding, including the placeholders
   const faculty = [
     ...placeholderFaculty,
-    { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'LIBSTAFF', designation: 'Librarian', employmentType: 'full-time', department: 'General', roles: [], streak: 0, profileCompleted: 100, points: 0, allottedSubjects: [], maxWeeklyHours: 40, designatedYear: 0 } as Faculty,
+    { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'LIBSTAFF', designation: 'Librarian', employmentType: 'full-time', department: 'General', roles: [], streak: 0, profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'], maxWeeklyHours: 40, designatedYear: 0 } as Faculty,
   ];
 
   const classrooms = [

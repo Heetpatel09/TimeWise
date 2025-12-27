@@ -32,7 +32,6 @@ export const subjects: Subject[] = [
   { id: 'SUB018', name: 'Digital Electronics', code: 'EC202', type: 'theory', semester: 3, department: 'Electronics Engineering', priority: 'High' },
   { id: 'SUB019', name: 'Signals and Systems', code: 'EC301', type: 'theory', semester: 5, department: 'Electronics Engineering', priority: 'High' },
   { id: 'SUB020', name: 'VLSI Design', code: 'EC401', type: 'theory', semester: 7, department: 'Electronics Engineering', priority: 'High' },
-  { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 0, department: 'General', isSpecial: true },
 ];
 
 export const classes: Class[] = [
@@ -101,7 +100,6 @@ export const faculty: Faculty[] = [
   { id: 'FAC018', name: 'Prof. Albus Dumbledore', email: 'dumbledore@example.com', code: 'DDR18', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 55, profileCompleted: 100, points: 6500, allotedSubjects: ['SUB007'], maxWeeklyHours: 20, designatedYear: 2 },
   { id: 'FAC019', name: 'Prof. Severus Snape', email: 'snape@example.com', code: 'SNP19', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Electronics Engineering', roles: [], streak: 5, profileCompleted: 65, points: 1500, allotedSubjects: ['SUB020'], maxWeeklyHours: 10, designatedYear: 4 },
   { id: 'FAC020', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: 'KTG20', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 14, profileCompleted: 85, points: 3200, allotedSubjects: ['SUB016'], maxWeeklyHours: 22, designatedYear: 4 },
-  { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'LIBSTAFF', designation: 'Librarian', employmentType: 'full-time', department: 'General', roles: [], streak: 0, profileCompleted: 100, points: 0, allottedSubjects: [], maxWeeklyHours: 40, designatedYear: 0 },
 ];
 
 export const classrooms: Classroom[] = [
@@ -127,7 +125,6 @@ export const classrooms: Classroom[] = [
             building: 'Tech Park'
         };
     }),
-    { id: 'CR_LIB', name: 'Library Hall', type: 'classroom', capacity: 100, maintenanceStatus: 'available', building: 'Main Building' }
 ];
 
 // A more robust schedule generation
@@ -348,6 +345,7 @@ export const userBadges: UserBadge[] = [
     
 
     
+
 
 
 

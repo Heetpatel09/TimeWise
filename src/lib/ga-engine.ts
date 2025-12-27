@@ -81,11 +81,14 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     }
     
     // 2. Add exactly 3 Library Slots
-    for (let i = 0; i < 3; i++) {
-        lectures.push({
-            classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB',
-            isLab: false, hours: 1
-        });
+    const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB');
+    if (libraryFaculty) {
+        for (let i = 0; i < 3; i++) {
+            lectures.push({
+                classId: classToSchedule.id, subjectId: 'LIB001', facultyId: libraryFaculty.id,
+                isLab: false, hours: 1
+            });
+        }
     }
     
     lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
@@ -133,6 +136,13 @@ export async function runGA(input: GenerateTimetableInput) {
     }
     if (!input.classrooms || input.classrooms.length === 0) {
         return { success: false, message: 'Critical Error: Classroom data is missing.', bestTimetable: [], codeChefDay: undefined };
+    }
+     const libraryRoom = input.classrooms.find(c => c.id === 'CR_LIB');
+    const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB');
+    const librarySubject = input.subjects.find(s => s.id === 'LIB001');
+
+    if (!libraryRoom || !libraryFaculty || !librarySubject) {
+        return { success: false, message: 'Critical Error: Core placeholder data for Library/Faculty is missing.', bestTimetable: [], codeChefDay: undefined };
     }
 
     const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
@@ -188,10 +198,10 @@ export async function runGA(input: GenerateTimetableInput) {
         }
     }
     
-    const availableClassrooms = input.classrooms.filter(c => c.type === 'classroom');
+    const availableClassrooms = input.classrooms.filter(c => c.type === 'classroom' && c.id !== 'CR_LIB');
 
     if (availableClassrooms.length === 0 && theoryLectures.filter(t => t.subjectId !== 'LIB001').length > 0) {
-        return { success: false, message: "Cannot schedule theory lectures. No classrooms are available.", bestTimetable: [], codeChefDay: undefined };
+        return { success: false, message: "Cannot schedule theory lectures. No non-library classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
 
 
