@@ -103,9 +103,7 @@ export default function ScheduleManager() {
   const [generatedSchedule, setGeneratedSchedule] = useState<GenerateTimetableOutput | null>(null);
 
   // Filter states
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [selectedSemester, setSelectedSemester] = useState('all');
-  const [selectedClass, setSelectedClass] = useState('all');
+  const [selectedDay, setSelectedDay] = useState(DAYS[0]);
 
   
   const { toast } = useToast();
@@ -176,47 +174,13 @@ export default function ScheduleManager() {
       }
   }, [schedule, classes, faculty, classrooms]);
   
-  const departments = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.department)))], [classes]);
-  const semesters = useMemo(() => {
-    if (selectedDepartment === 'all') return ['all'];
-    return ['all', ...Array.from(new Set(classes.filter(c => c.department === selectedDepartment).map(c => c.semester.toString())))].sort();
-  }, [classes, selectedDepartment]);
-
-  const filteredClasses = useMemo(() => {
-    if (selectedDepartment === 'all') {
-        if(selectedClass !== 'all') setSelectedClass('all');
-        return ['all', ...classes.map(c => c.id)];
-    }
-    let filtered = classes.filter(c => c.department === selectedDepartment);
-    if (selectedSemester !== 'all') {
-      filtered = filtered.filter(c => c.semester.toString() === selectedSemester);
-    }
-    if (!filtered.some(c => c.id === selectedClass)) {
-        if (selectedClass !== 'all') setSelectedClass('all');
-    }
-    return ['all', ...filtered.map(c => c.id)];
-  }, [classes, selectedDepartment, selectedSemester]);
-
   const filteredSchedule = useMemo(() => {
-    if (selectedDepartment === 'all' && selectedClass === 'all') return schedule;
-    
-    let filteredByDept = schedule;
-    if (selectedDepartment !== 'all') {
-        const classIdsInDept = classes.filter(c => c.department === selectedDepartment).map(c => c.id);
-        filteredByDept = schedule.filter(s => classIdsInDept.includes(s.classId));
-    }
-    
-    if (selectedClass !== 'all') {
-      return filteredByDept.filter(s => s.classId === selectedClass);
-    }
-    
-    if (selectedSemester !== 'all') {
-        const classIdsInSemester = classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester).map(c => c.id);
-        return filteredByDept.filter(s => classIdsInSemester.includes(s.classId));
-    }
+    return schedule.filter(s => s.day === selectedDay);
+  }, [schedule, selectedDay]);
 
-    return filteredByDept;
-  }, [schedule, classes, selectedDepartment, selectedSemester, selectedClass]);
+  const sortedClassrooms = useMemo(() => {
+      return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
+  }, [classrooms]);
 
 
   const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom' | 'student') => {
@@ -270,7 +234,7 @@ export default function ScheduleManager() {
   };
 
   const openNewDialog = () => {
-    setCurrentSlot({});
+    setCurrentSlot({ day: selectedDay as any });
     setFormOpen(true);
   };
   
@@ -278,7 +242,7 @@ export default function ScheduleManager() {
       setIsResolvingWithAI(true);
       try {
         const resolution = await resolveScheduleConflicts({
-          schedule: filteredSchedule.map(s => ({
+          schedule: schedule.map(s => ({
             ...s,
             className: getRelationInfo(s.classId, 'class')?.name || 'N/A',
             facultyName: getRelationInfo(s.facultyId, 'faculty')?.name || 'N/A',
@@ -326,6 +290,7 @@ export default function ScheduleManager() {
         subjects,
         faculty,
         classrooms,
+        existingSchedule: [],
       });
       setGeneratedSchedule(result);
     } catch(e: any) {
@@ -354,7 +319,7 @@ export default function ScheduleManager() {
   const exportPDF = async () => {
     setIsExporting(true);
     try {
-        const {pdf, error} = await exportScheduleToPDF(filteredSchedule, classes, subjects, faculty, classrooms);
+        const {pdf, error} = await exportScheduleToPDF(schedule, classes, subjects, faculty, classrooms);
         if (error) {
             throw new Error(error);
         }
@@ -375,7 +340,7 @@ export default function ScheduleManager() {
   
   const selectedSubjectType = subjects.find(s => s.id === currentSlot?.subjectId)?.type;
   
-  const filteredClassrooms = classrooms.filter(c => {
+  const filteredClassroomsForDialog = classrooms.filter(c => {
       if (!selectedSubjectType) return false;
       if (selectedSubjectType === 'theory') {
           return c.type === 'classroom';
@@ -396,33 +361,12 @@ export default function ScheduleManager() {
         <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
-              <Label>Department:</Label>
-              <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedSemester('all'); setSelectedClass('all'); }}>
+              <Label>Day:</Label>
+              <Select value={selectedDay} onValueChange={(v) => setSelectedDay(v)}>
                 <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{departments.map(d => <SelectItem key={d} value={d} className="capitalize">{d}</SelectItem>)}</SelectContent>
+                <SelectContent>{DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-             <div className="flex items-center gap-2">
-              <Label>Semester:</Label>
-              <Select value={selectedSemester} onValueChange={(v) => { setSelectedSemester(v); setSelectedClass('all'); }} disabled={selectedDepartment === 'all'}>
-                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{semesters.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All' : s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-             <div className="flex items-center gap-2">
-              <Label>Class:</Label>
-              <Select value={selectedClass} onValueChange={setSelectedClass} disabled={selectedDepartment === 'all'}>
-                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Select a Class"/></SelectTrigger>
-                <SelectContent>
-                    {filteredClasses.map(cId => {
-                        if (cId === 'all') return <SelectItem key={cId} value={cId}>All Classes</SelectItem>;
-                        const classInfo = getRelationInfo(cId, 'class');
-                        return <SelectItem key={cId} value={cId}>{classInfo?.name}</SelectItem>;
-                    })}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="outline" onClick={() => { setSelectedDepartment('all'); setSelectedSemester('all'); setSelectedClass('all'); }}><FilterX className="h-4 w-4 mr-2"/>Clear</Button>
         </CardContent>
       </Card>
       <div className="flex justify-between items-center mb-4">
@@ -461,93 +405,69 @@ export default function ScheduleManager() {
                  <Table className="border-collapse">
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="border font-semibold p-2">Time</TableHead>
-                            {DAYS.map(day => (
-                                <TableHead key={day} className={cn("border font-semibold p-2 text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
+                            <TableHead className="border font-semibold p-2 sticky left-0 bg-background/95 z-10">Classroom</TableHead>
+                            {LECTURE_TIME_SLOTS.map(time => (
+                                <TableHead key={time} className="border font-semibold p-2 text-center">{time}</TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {ALL_TIME_SLOTS.sort(sortTime).map(time => {
-                             if (BREAK_SLOTS.includes(time)) {
-                                return (
-                                    <TableRow key={time}>
-                                        <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
-                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
-                                             {time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
+                        {sortedClassrooms.map(classroom => (
+                            <TableRow key={classroom.id}>
+                                <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24 sticky left-0 bg-background/95 z-10">{classroom.name}</TableCell>
+                                {LECTURE_TIME_SLOTS.map(time => {
+                                    const slot = filteredSchedule.find(s => s.classroomId === classroom.id && s.time === time);
+                                    const slotConflicts = slot ? conflicts[slot.id] || [] : [];
+                                    const isConflicting = slotConflicts.length > 0;
+                                    const subject = slot ? getRelationInfo(slot.subjectId, 'subject') : null;
+                                    
+                                    return (
+                                        <TableCell key={`${classroom.id}-${time}`} className={cn("border p-1 align-top text-xs min-w-[150px]", isConflicting && 'bg-destructive/10')}>
+                                            {slot ? (
+                                                 <div className={cn("p-1 rounded-sm text-[11px] leading-tight", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted', isConflicting && 'bg-destructive/20')}>
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                             <div className='font-bold'>{getRelationInfo(slot.classId, 'class')?.name}</div>
+                                                            <div className='truncate'>{subject?.name}</div>
+                                                            <div className="text-muted-foreground truncate">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                        </div>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0"><MoreHorizontal className="h-3 w-3" /></Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent>
+                                                                 <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                                                                 <AlertDialog>
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                                                            <Trash2 className="h-4 w-4 mr-2" />Delete
+                                                                        </DropdownMenuItem>
+                                                                    </AlertDialogTrigger>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this slot.</AlertDialogDescription></AlertDialogHeader>
+                                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(slot.id)}>Continue</AlertDialogAction></AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+                                                     {isConflicting && (
+                                                         <Tooltip>
+                                                            <TooltipTrigger className="w-full mt-1 flex justify-end"><AlertTriangle className="h-4 w-4 text-destructive" /></TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <ul className="list-disc pl-4 space-y-1">
+                                                                   {slotConflicts.map((c, i) => <li key={i}>{c.message}</li>)}
+                                                                </ul>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    )}
+                                                 </div>
+                                            ) : null}
                                         </TableCell>
-                                    </TableRow>
-                                )
-                            }
-                            return (
-                                <TableRow key={time}>
-                                     <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{time}</TableCell>
-                                     {DAYS.map(day => {
-                                         const slotsForCell = filteredSchedule.filter(s => s.day === day && s.time === time);
-                                          return (
-                                            <TableCell key={`${day}-${time}`} className={cn("border p-1 align-top text-xs min-w-[150px]", day === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
-                                                 {slotsForCell.length > 0 ? (
-                                                     <div className="space-y-1">
-                                                         {slotsForCell.map(slot => {
-                                                             const subject = getRelationInfo(slot.subjectId, 'subject');
-                                                             const slotConflicts = conflicts[slot.id] || [];
-                                                             const isConflicting = slotConflicts.length > 0;
-                                                             return (
-                                                                 <div key={slot.id} className={cn("p-1 rounded-sm text-[11px] leading-tight", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted', isConflicting && 'bg-destructive/20')}>
-                                                                    <div className="flex justify-between items-start">
-                                                                        <div>
-                                                                             <div className='font-bold'>{getRelationInfo(slot.classId, 'class')?.name}</div>
-                                                                            <div className='truncate'>{subject?.name}</div>
-                                                                            <div className="text-muted-foreground truncate">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
-                                                                        </div>
-                                                                        <DropdownMenu>
-                                                                            <DropdownMenuTrigger asChild>
-                                                                                <Button variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0"><MoreHorizontal className="h-3 w-3" /></Button>
-                                                                            </DropdownMenuTrigger>
-                                                                            <DropdownMenuContent>
-                                                                                 <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                                                                                 <AlertDialog>
-                                                                                    <AlertDialogTrigger asChild>
-                                                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
-                                                                                            <Trash2 className="h-4 w-4 mr-2" />Delete
-                                                                                        </DropdownMenuItem>
-                                                                                    </AlertDialogTrigger>
-                                                                                    <AlertDialogContent>
-                                                                                        <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this slot.</AlertDialogDescription></AlertDialogHeader>
-                                                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(slot.id)}>Continue</AlertDialogAction></AlertDialogFooter>
-                                                                                    </AlertDialogContent>
-                                                                                </AlertDialog>
-                                                                            </DropdownMenuContent>
-                                                                        </DropdownMenu>
-                                                                    </div>
-                                                                    <div className="flex justify-between items-center mt-1">
-                                                                        <Badge variant="outline">{getRelationInfo(slot.classroomId, 'classroom')?.name}</Badge>
-                                                                        {isConflicting && (
-                                                                             <Tooltip>
-                                                                                <TooltipTrigger><AlertTriangle className="h-4 w-4 text-destructive" /></TooltipTrigger>
-                                                                                <TooltipContent>
-                                                                                    <ul className="list-disc pl-4 space-y-1">
-                                                                                       {slotConflicts.map((c, i) => <li key={i}>{c.message}</li>)}
-                                                                                    </ul>
-                                                                                </TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
-                                                                    </div>
-                                                                 </div>
-                                                             )
-                                                         })}
-                                                     </div>
-                                                 ) : ( day === codeChefDay ? 
-                                                    <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold text-center">
-                                                        <span>CodeChef Day</span>
-                                                    </div> 
-                                                    : null)}
-                                            </TableCell>
-                                         );
-                                     })}
-                                </TableRow>
-                            )
-                        })}
+                                    );
+                                })}
+                            </TableRow>
+                        ))}
                     </TableBody>
                  </Table>
             </div>
@@ -600,7 +520,7 @@ export default function ScheduleManager() {
               <Label className="text-right">Classroom</Label>
               <Select value={currentSlot?.classroomId} onValueChange={(v) => setCurrentSlot({ ...currentSlot, classroomId: v })} disabled={!currentSlot?.subjectId}>
                 <SelectTrigger className="col-span-3"><SelectValue placeholder={currentSlot?.subjectId ? `Select a ${selectedSubjectType}` : "Select a subject first"} /></SelectTrigger>
-                <SelectContent>{filteredClassrooms.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{filteredClassroomsForDialog.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>
