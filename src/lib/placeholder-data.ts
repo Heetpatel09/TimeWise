@@ -99,21 +99,26 @@ export const faculty: Faculty[] = [
   { id: 'FAC010', name: 'Dr. Marie Curie', email: 'curie@example.com', code: 'CRE10', designation: 'Professor', employmentType: 'full-time', department: DEPARTMENTS.ECE, roles: [], streak: 33, profileCompleted: 100, points: 4800, allottedSubjects: ['SUB202', 'SUB204'], maxWeeklyHours: 20, designatedYear: 3 },
   { id: 'FAC011', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: 'KTG11', designation: 'Professor', employmentType: 'full-time', department: DEPARTMENTS.CSE, roles: [], streak: 14, profileCompleted: 85, points: 3200, allottedSubjects: ['SUB015', 'SUB017'], maxWeeklyHours: 22, designatedYear: 4 },
   { id: 'FAC012', name: 'Prof. Walter White', email: 'white@example.com', code: 'WHT12', designation: 'Lecturer', employmentType: 'contract', department: DEPARTMENTS.CSE, roles: [], streak: 1, profileCompleted: 40, points: 200, allottedSubjects: ['SUB004'], maxWeeklyHours: 12, designatedYear: 1 },
+  { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'LIB01', designation: 'Librarian', employmentType: 'full-time', department: 'Administration', roles: [], streak: 0, profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'] },
 ];
 
 export const classrooms: Classroom[] = [
   ...Array.from({ length: 15 }, (_, i) => ({ id: `CR${(i + 1).toString().padStart(3, '0')}`, name: `Room ${101 + i}`, type: 'classroom', capacity: 70, maintenanceStatus: 'available', building: 'Main Building' })),
   ...Array.from({ length: 10 }, (_, i) => ({ id: `LB${(i + 1).toString().padStart(3, '0')}`, name: `Lab ${i + 1}`, type: 'lab', capacity: 40, maintenanceStatus: 'available', building: 'Tech Park' })),
+  { id: 'CR_LIB', name: 'Library Hall', type: 'classroom', capacity: 100, maintenanceStatus: 'available', building: 'Main Building' }
 ];
 
-export const schedule: Schedule[] = [];
-
-export const leaveRequests: LeaveRequest[] = [
-  { id: 'LR001', requesterId: 'FAC002', requesterName: 'Dr. Ada Lovelace', requesterRole: 'faculty', startDate: '2024-08-01', endDate: '2024-08-05', reason: 'Family wedding.', status: 'pending', type: 'academic' },
-  { id: 'LR002', requesterId: 'FAC003', requesterName: 'Dr. Grace Hopper', requesterRole: 'faculty', startDate: '2024-08-10', endDate: '2024-08-12', reason: 'Attending a conference.', status: 'pending', type: 'academic' },
-  { id: 'LR003', requesterId: 'FAC001', requesterName: 'Dr. Alan Turing', requesterRole: 'faculty', startDate: '2024-07-20', endDate: '2024-07-21', reason: 'Personal reasons.', status: 'approved', type: 'academic' },
-  { id: 'LR004', requesterId: 'STU001', requesterName: 'Aarav Sharma', requesterRole: 'student', startDate: '2024-08-02', endDate: '2024-08-03', reason: 'Medical appointment.', status: 'pending', type: 'academic' },
+export const schedule: Schedule[] = [
+  { id: 'SCH001', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:30 AM' },
+  { id: 'SCH002', classId: 'CLS001', subjectId: 'SUB003', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '08:30 AM - 09:30 AM' },
+  { id: 'SCH003', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR003', day: 'Monday', time: '07:30 AM - 08:30 AM' },
+  { id: 'SCH004', classId: 'CLS003', subjectId: 'SUB006', facultyId: 'FAC002', classroomId: 'CR001', day: 'Tuesday', time: '10:00 AM - 11:00 AM' },
+  { id: 'SCH005', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC004', classroomId: 'CR004', day: 'Wednesday', time: '01:00 PM - 02:00 PM' },
+  { id: 'SCH006', classId: 'CLS005', subjectId: 'SUB012', facultyId: 'FAC004', classroomId: 'LB001', day: 'Wednesday', time: '02:00 PM - 03:00 PM' },
+  { id: 'SCH007', classId: 'CLS101', subjectId: 'SUB101', facultyId: 'FAC006', classroomId: 'CR005', day: 'Monday', time: '07:30 AM - 08:30 AM' },
 ];
+
+export const leaveRequests: LeaveRequest[] = [];
 
 export const scheduleChangeRequests: ScheduleChangeRequest[] = [];
 
@@ -141,7 +146,7 @@ const aaravIndex = students.findIndex(s => s.id === 'STU001');
 if (aaravIndex !== -1) rooms[0].studentId = students[aaravIndex].id;
 
 export const fees: Fee[] = [
-    { id: 'FEE001', studentId: 'STU001', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'paid' }, { id: 'FEE002', studentId: 'STU001', semester: 1, feeType: 'hostel', amount: 1200, dueDate: '2024-08-01', status: 'paid' }, { id: 'FEE003', studentId: 'STU002', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'unpaid' },
+    { id: 'FEE001', studentId: 'STU001', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'paid', transactionId: `TXN-${Date.now()}` }, { id: 'FEE002', studentId: 'STU001', semester: 1, feeType: 'hostel', amount: 1200, dueDate: '2024-08-01', status: 'paid', transactionId: `TXN-${Date.now() + 1}` }, { id: 'FEE003', studentId: 'STU002', semester: 1, feeType: 'tuition', amount: 5000, dueDate: '2024-08-01', status: 'unpaid' },
 ];
 export const attendance: Attendance[] = [];
 const aaravStudent = students.find(s => s.id === 'STU001');

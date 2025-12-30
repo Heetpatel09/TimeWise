@@ -27,7 +27,7 @@ import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getStudents } from '@/lib/services/students';
 import type { Schedule, Class, Subject, Faculty, Classroom, Notification, Student, ResolveConflictsOutput, GenerateTimetableOutput } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles, Wand2, FilterX } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Download, Star, AlertTriangle, Sparkles, Wand2, FilterX, X as XIcon } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,7 +103,10 @@ export default function ScheduleManager() {
   const [generatedSchedule, setGeneratedSchedule] = useState<GenerateTimetableOutput | null>(null);
 
   // Filter states
+  const [viewMode, setViewMode] = useState<'classroom' | 'class' | 'faculty'>('classroom');
   const [selectedDay, setSelectedDay] = useState(DAYS[0]);
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
 
   
   const { toast } = useToast();
@@ -175,8 +178,18 @@ export default function ScheduleManager() {
   }, [schedule, classes, faculty, classrooms]);
   
   const filteredSchedule = useMemo(() => {
-    return schedule.filter(s => s.day === selectedDay);
-  }, [schedule, selectedDay]);
+    let filtered = schedule;
+    if (viewMode === 'classroom') {
+        filtered = filtered.filter(s => s.day === selectedDay);
+    }
+    if (viewMode === 'class' && selectedClass) {
+        filtered = filtered.filter(s => s.classId === selectedClass);
+    }
+    if (viewMode === 'faculty' && selectedFaculty) {
+        filtered = filtered.filter(s => s.facultyId === selectedFaculty);
+    }
+    return filtered;
+  }, [schedule, viewMode, selectedDay, selectedClass, selectedFaculty]);
 
   const sortedClassrooms = useMemo(() => {
       return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
@@ -351,6 +364,59 @@ export default function ScheduleManager() {
   const hasConflicts = Object.values(conflicts).some(c => c.length > 0);
   const codeChefDay = schedule.find(s => s.subjectId === 'CODECHEF')?.day;
 
+  const renderTimetable = () => {
+    const title = viewMode === 'class' ? `Timetable for ${getRelationInfo(selectedClass!, 'class')?.name}` : viewMode === 'faculty' ? `Timetable for ${getRelationInfo(selectedFaculty!, 'faculty')?.name}` : `Master Schedule for ${selectedDay}`;
+
+    const slotsByDayAndTime = DAYS.reduce((acc, day) => {
+        acc[day] = {};
+        LECTURE_TIME_SLOTS.forEach(time => {
+            acc[day][time] = filteredSchedule.filter(s => s.day === day && s.time === time);
+        });
+        return acc;
+    }, {} as Record<string, Record<string, Schedule[]>>);
+
+    return (
+        <Card>
+            <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="border font-semibold p-2">Time</TableHead>
+                                {DAYS.map(day => <TableHead key={day} className="border font-semibold p-2 text-center">{day}</TableHead>)}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {LECTURE_TIME_SLOTS.map(time => (
+                                <TableRow key={time}>
+                                    <TableCell className="border font-medium text-xs p-2">{time}</TableCell>
+                                    {DAYS.map(day => {
+                                        const slots = slotsByDayAndTime[day][time];
+                                        return (
+                                            <TableCell key={day} className="border p-1 align-top text-xs min-w-[150px] h-24">
+                                                {slots.map(slot => (
+                                                     <div key={slot.id} className={cn("p-1 rounded-sm text-[11px] leading-tight", subjects.find(s=>s.id === slot.subjectId)?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
+                                                        <div className='font-bold'>{getRelationInfo(slot.subjectId, 'subject')?.name}</div>
+                                                        <div className="text-muted-foreground truncate">{viewMode !== 'class' && getRelationInfo(slot.classId, 'class')?.name}</div>
+                                                        <div className="text-muted-foreground truncate">{viewMode !== 'faculty' && getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                        <div className="text-muted-foreground truncate">{viewMode !== 'classroom' && getRelationInfo(slot.classroomId, 'classroom')?.name}</div>
+                                                    </div>
+                                                ))}
+                                            </TableCell>
+                                        );
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+    );
+  };
+  
+
   if (isDataLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -361,12 +427,43 @@ export default function ScheduleManager() {
         <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
-              <Label>Day:</Label>
-              <Select value={selectedDay} onValueChange={(v) => setSelectedDay(v)}>
-                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              <Label>View:</Label>
+              <Select value={viewMode} onValueChange={(v: any) => { setViewMode(v); setSelectedClass(null); setSelectedFaculty(null); }}>
+                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="classroom">By Classroom</SelectItem>
+                    <SelectItem value="class">By Class</SelectItem>
+                    <SelectItem value="faculty">By Faculty</SelectItem>
+                </SelectContent>
               </Select>
             </div>
+            {viewMode === 'classroom' && (
+                <div className="flex items-center gap-2">
+                  <Label>Day:</Label>
+                  <Select value={selectedDay} onValueChange={(v) => setSelectedDay(v)}>
+                    <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+            )}
+            {viewMode === 'class' && (
+                <div className="flex items-center gap-2">
+                    <Label>Class:</Label>
+                    <Select value={selectedClass || ''} onValueChange={v => setSelectedClass(v)}>
+                        <SelectTrigger className="w-[220px]"><SelectValue placeholder="Select a class"/></SelectTrigger>
+                        <SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            )}
+             {viewMode === 'faculty' && (
+                <div className="flex items-center gap-2">
+                    <Label>Faculty:</Label>
+                    <Select value={selectedFaculty || ''} onValueChange={v => setSelectedFaculty(v)}>
+                        <SelectTrigger className="w-[220px]"><SelectValue placeholder="Select a faculty member"/></SelectTrigger>
+                        <SelectContent>{faculty.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            )}
         </CardContent>
       </Card>
       <div className="flex justify-between items-center mb-4">
@@ -399,80 +496,84 @@ export default function ScheduleManager() {
         </Alert>
       )}
 
-    <Card>
-        <CardContent className="p-0">
-            <div className="overflow-x-auto">
-                 <Table className="border-collapse">
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="border font-semibold p-2 sticky left-0 bg-background/95 z-10">Classroom</TableHead>
-                            {LECTURE_TIME_SLOTS.map(time => (
-                                <TableHead key={time} className="border font-semibold p-2 text-center">{time}</TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sortedClassrooms.map(classroom => (
-                            <TableRow key={classroom.id}>
-                                <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24 sticky left-0 bg-background/95 z-10">{classroom.name}</TableCell>
-                                {LECTURE_TIME_SLOTS.map(time => {
-                                    const slot = filteredSchedule.find(s => s.classroomId === classroom.id && s.time === time);
-                                    const slotConflicts = slot ? conflicts[slot.id] || [] : [];
-                                    const isConflicting = slotConflicts.length > 0;
-                                    const subject = slot ? getRelationInfo(slot.subjectId, 'subject') : null;
-                                    
-                                    return (
-                                        <TableCell key={`${classroom.id}-${time}`} className={cn("border p-1 align-top text-xs min-w-[150px]", isConflicting && 'bg-destructive/10')}>
-                                            {slot ? (
-                                                 <div className={cn("p-1 rounded-sm text-[11px] leading-tight", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted', isConflicting && 'bg-destructive/20')}>
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                             <div className='font-bold'>{getRelationInfo(slot.classId, 'class')?.name}</div>
-                                                            <div className='truncate'>{subject?.name}</div>
-                                                            <div className="text-muted-foreground truncate">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
-                                                        </div>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0"><MoreHorizontal className="h-3 w-3" /></Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent>
-                                                                 <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                                                                 <AlertDialog>
-                                                                    <AlertDialogTrigger asChild>
-                                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
-                                                                            <Trash2 className="h-4 w-4 mr-2" />Delete
-                                                                        </DropdownMenuItem>
-                                                                    </AlertDialogTrigger>
-                                                                    <AlertDialogContent>
-                                                                        <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this slot.</AlertDialogDescription></AlertDialogHeader>
-                                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(slot.id)}>Continue</AlertDialogAction></AlertDialogFooter>
-                                                                    </AlertDialogContent>
-                                                                </AlertDialog>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                     {isConflicting && (
-                                                         <Tooltip>
-                                                            <TooltipTrigger className="w-full mt-1 flex justify-end"><AlertTriangle className="h-4 w-4 text-destructive" /></TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <ul className="list-disc pl-4 space-y-1">
-                                                                   {slotConflicts.map((c, i) => <li key={i}>{c.message}</li>)}
-                                                                </ul>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    )}
-                                                 </div>
-                                            ) : null}
-                                        </TableCell>
-                                    );
-                                })}
+    {viewMode === 'classroom' ? (
+        <Card>
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <Table className="border-collapse">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="border font-semibold p-2 sticky left-0 bg-background/95 z-10">Classroom</TableHead>
+                                {LECTURE_TIME_SLOTS.map(time => (
+                                    <TableHead key={time} className="border font-semibold p-2 text-center">{time}</TableHead>
+                                ))}
                             </TableRow>
-                        ))}
-                    </TableBody>
-                 </Table>
-            </div>
-        </CardContent>
-    </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedClassrooms.map(classroom => (
+                                <TableRow key={classroom.id}>
+                                    <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24 sticky left-0 bg-background/95 z-10">{classroom.name}</TableCell>
+                                    {LECTURE_TIME_SLOTS.map(time => {
+                                        const slot = filteredSchedule.find(s => s.classroomId === classroom.id && s.time === time);
+                                        const slotConflicts = slot ? conflicts[slot.id] || [] : [];
+                                        const isConflicting = slotConflicts.length > 0;
+                                        const subject = slot ? getRelationInfo(slot.subjectId, 'subject') : null;
+                                        
+                                        return (
+                                            <TableCell key={`${classroom.id}-${time}`} className={cn("border p-1 align-top text-xs min-w-[150px]", isConflicting && 'bg-destructive/10')}>
+                                                {slot ? (
+                                                    <div className={cn("p-1 rounded-sm text-[11px] leading-tight", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted', isConflicting && 'bg-destructive/20')}>
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <div className='font-bold'>{getRelationInfo(slot.classId, 'class')?.name}</div>
+                                                                <div className='truncate'>{subject?.name}</div>
+                                                                <div className="text-muted-foreground truncate">{getRelationInfo(slot.facultyId, 'faculty')?.name}</div>
+                                                            </div>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0"><MoreHorizontal className="h-3 w-3" /></Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent>
+                                                                    <DropdownMenuItem onClick={() => handleEdit(slot)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
+                                                                                <Trash2 className="h-4 w-4 mr-2" />Delete
+                                                                            </DropdownMenuItem>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent>
+                                                                            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this slot.</AlertDialogDescription></AlertDialogHeader>
+                                                                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(slot.id)}>Continue</AlertDialogAction></AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </div>
+                                                        {isConflicting && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger className="w-full mt-1 flex justify-end"><AlertTriangle className="h-4 w-4 text-destructive" /></TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <ul className="list-disc pl-4 space-y-1">
+                                                                    {slotConflicts.map((c, i) => <li key={i}>{c.message}</li>)}
+                                                                    </ul>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                    </div>
+                                                ) : null}
+                                            </TableCell>
+                                        );
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+    ) : (
+       (selectedClass || selectedFaculty) && renderTimetable()
+    )}
 
       <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
         <DialogContent>
@@ -701,4 +802,3 @@ export default function ScheduleManager() {
   );
 }
     
-
