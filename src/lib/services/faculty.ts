@@ -108,28 +108,6 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
         if (!oldFaculty) {
             throw new Error("Faculty member not found.");
         }
-
-        const oldSubjects: string[] = JSON.parse(oldFaculty.allottedSubjects || '[]');
-        const newSubjects = updatedItem.allottedSubjects || [];
-
-        // Subjects that are newly assigned to this faculty member
-        const subjectsToBeAssigned = newSubjects.filter(s => !oldSubjects.includes(s));
-
-        // If there are any subjects newly assigned, we must un-assign them from anyone else.
-        if (subjectsToBeAssigned.length > 0) {
-            const allOtherFaculty: any[] = db.prepare('SELECT id, allottedSubjects FROM faculty WHERE id != ?').all(updatedItem.id);
-            
-            for (const otherFac of allOtherFaculty) {
-                const otherFacSubjects: string[] = JSON.parse(otherFac.allottedSubjects || '[]');
-                
-                const subjectsToKeep = otherFacSubjects.filter(subId => !subjectsToBeAssigned.includes(subId));
-
-                // If subjects were removed, update that faculty member
-                if (subjectsToKeep.length < otherFacSubjects.length) {
-                    db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(subjectsToKeep), otherFac.id);
-                }
-            }
-        }
         
         let newRoles: string[];
         if (typeof updatedItem.roles === 'string') {
@@ -142,11 +120,11 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
             ...oldFaculty,
             ...updatedItem,
             roles: newRoles,
-            allottedSubjects: updatedItem.allottedSubjects || oldSubjects,
+            allottedSubjects: JSON.stringify(updatedItem.allottedSubjects || JSON.parse(oldFaculty.allottedSubjects || '[]')),
         };
 
         const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, department = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allottedSubjects = ?, maxWeeklyHours = ?, designatedYear = ? WHERE id = ?');
-        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, JSON.stringify(mergedItem.allottedSubjects), mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.id);
+        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.allottedSubjects, mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.id);
 
         if (oldFaculty.email !== mergedItem.email) {
             addCredential({
@@ -183,3 +161,5 @@ export async function deleteFaculty(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+    

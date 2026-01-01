@@ -718,7 +718,7 @@ export default function DepartmentsManager() {
                                     </TableHeader>
                                     <TableBody>
                                         {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
-                                            const assignedFaculty = allFaculty.find(f => f.allottedSubjects?.includes(subject.id));
+                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
                                             return (
                                             <TableRow key={subject.id}>
                                                 <TableCell>
@@ -726,14 +726,12 @@ export default function DepartmentsManager() {
                                                 <div className="text-xs text-muted-foreground">{subject.code}</div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {assignedFaculty ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <Avatar className="h-6 w-6">
-                                                                <AvatarImage src={assignedFaculty.avatar} alt={assignedFaculty.name} />
-                                                                <AvatarFallback>{assignedFaculty.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                                            </Avatar>
-                                                            <span className="text-xs">{assignedFaculty.name}</span>
-                                                        </div>
+                                                    {assignedFaculty.length > 0 ? (
+                                                      <div className="flex flex-wrap gap-1">
+                                                        {assignedFaculty.map(f => (
+                                                          <Badge key={f.id} variant="secondary" className="text-xs">{f.name}</Badge>
+                                                        ))}
+                                                      </div>
                                                     ) : <span className="text-xs text-muted-foreground">N/A</span>}
                                                 </TableCell>
                                                 <TableCell>{subject.semester}</TableCell>
@@ -1017,5 +1015,6 @@ export default function DepartmentsManager() {
   );
 }
 
+    
     
     

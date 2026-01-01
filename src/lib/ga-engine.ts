@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty, Classroom } from './types';
@@ -17,7 +18,7 @@ interface Gene {
 
 interface LectureToBePlaced {
     subjectId: string;
-    facultyId: string;
+    facultyIds: string[]; // Now can have multiple faculties
     isLab: boolean;
     classId: string;
     batch?: 'A' | 'B';
@@ -58,22 +59,23 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
         if (sub.id === 'LIB001') continue; 
-        const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
-        if (!facultyForSubject) {
+        
+        const facultiesForSubject = input.faculty.filter(f => f.allottedSubjects?.includes(sub.id));
+        if (facultiesForSubject.length === 0) {
             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
             continue;
         }
 
         if (sub.type === 'lab') {
             lectures.push({
-                classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
+                classId: classToSchedule.id, subjectId: sub.id, facultyIds: facultiesForSubject.map(f => f.id),
                 isLab: true, hours: 2
             });
         } else {
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
                 lectures.push({
-                    classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
+                    classId: classToSchedule.id, subjectId: sub.id, facultyIds: facultiesForSubject.map(f => f.id),
                     isLab: false, hours: 1
                 });
             }
@@ -85,7 +87,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     if (libraryFaculty) {
         for (let i = 0; i < 3; i++) {
             lectures.push({
-                classId: classToSchedule.id, subjectId: 'LIB001', facultyId: libraryFaculty.id,
+                classId: classToSchedule.id, subjectId: 'LIB001', facultyIds: [libraryFaculty.id],
                 isLab: false, hours: 1
             });
         }
@@ -127,10 +129,8 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
     return true;
 }
 
-
 // --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
-    // Harden the input validation
     if (!input.faculty || input.faculty.length === 0) {
         return { success: false, message: 'Critical Error: Faculty data is missing.', bestTimetable: [], codeChefDay: undefined };
     }
@@ -148,7 +148,23 @@ export async function runGA(input: GenerateTimetableInput) {
     const theoryLectures = lecturesToPlace.filter(l => !l.isLab);
 
     const generatedSchedule: Gene[] = [];
-    const fullSchedule = [...generatedSchedule, ...input.existingSchedule || []];
+    const fullSchedule: (Gene | Schedule)[] = [...generatedSchedule, ...input.existingSchedule || []];
+
+    // Workload tracking for faculty
+    const facultyWorkload: Record<string, number> = {};
+    input.faculty.forEach(f => facultyWorkload[f.id] = 0);
+    fullSchedule.forEach(slot => {
+        if (slot.facultyId && facultyWorkload[slot.facultyId] !== undefined) {
+            facultyWorkload[slot.facultyId]++;
+        }
+    });
+
+    const getLeastLoadedFaculty = (facultyIds: string[]): string => {
+        return facultyIds
+            .filter(id => facultyWorkload[id] < 4) // Filter out faculty who are at max workload
+            .sort((a, b) => facultyWorkload[a] - facultyWorkload[b])[0];
+    };
+
 
     const availableLabRooms = input.classrooms.filter(c => c.type === 'lab');
     if (availableLabRooms.length === 0 && labLectures.length > 0) {
@@ -170,14 +186,19 @@ export async function runGA(input: GenerateTimetableInput) {
         for (const day of shuffledDays) {
             if (shuffledDays.indexOf(day) === lastLabDayIndex) continue;
 
+            const facultyId = getLeastLoadedFaculty(lab.facultyIds);
+            if (!facultyId) continue; // Skip if no available faculty
+
             const shuffledTimePairs = labTimePairs.sort(() => Math.random() - 0.5);
 
             for (const [time1, time2] of shuffledTimePairs) {
                 const randomLabRoom = availableLabRooms[Math.floor(Math.random() * availableLabRooms.length)];
-                if (canPlaceLab(fullSchedule, day, time1, time2, lab.facultyId, randomLabRoom.id, lab.classId)) {
-                    generatedSchedule.push({ day, time: time1, ...lab, classroomId: randomLabRoom.id, hours: 1, isLab: true });
-                    generatedSchedule.push({ day, time: time2, ...lab, classroomId: randomLabRoom.id, hours: 1, isLab: true });
-                    fullSchedule.push(...generatedSchedule.slice(-2));
+                if (canPlaceLab(fullSchedule, day, time1, time2, facultyId, randomLabRoom.id, lab.classId)) {
+                    const gene1 = { day, time: time1, ...lab, facultyId, classroomId: randomLabRoom.id, hours: 1, isLab: true };
+                    const gene2 = { day, time: time2, ...lab, facultyId, classroomId: randomLabRoom.id, hours: 1, isLab: true };
+                    generatedSchedule.push(gene1, gene2);
+                    fullSchedule.push(gene1, gene2);
+                    facultyWorkload[facultyId] += 2; // Lab is 2 hours
                     placed = true;
                     lastLabDayIndex = shuffledDays.indexOf(day);
                     break;
@@ -187,7 +208,7 @@ export async function runGA(input: GenerateTimetableInput) {
         }
         if (!placed) {
              const subjectName = input.subjects.find(s => s.id === lab.subjectId)?.name || lab.subjectId;
-             return { success: false, message: `Could not schedule lab for '${subjectName}'. Not enough conflict-free lab slots available. Try adding more lab rooms or check faculty availability.`, bestTimetable: [], codeChefDay: undefined };
+             return { success: false, message: `Could not schedule lab for '${subjectName}'. Not enough conflict-free lab slots or available faculty. Try adding more lab rooms or checking faculty availability.`, bestTimetable: [], codeChefDay: undefined };
         }
     }
     
@@ -201,24 +222,31 @@ export async function runGA(input: GenerateTimetableInput) {
 
     for (const theory of theoryLectures) {
         let placed = false;
+        const facultyId = getLeastLoadedFaculty(theory.facultyIds);
+        if (!facultyId) {
+             return { success: false, message: `Could not find available faculty for subject ID ${theory.subjectId}. All are at maximum workload.`, bestTimetable: [], codeChefDay: undefined };
+        }
+
         for (const day of workingDays) {
              for (const time of LECTURE_TIME_SLOTS) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     if (libraryRoom && canPlaceTheory(fullSchedule, day, time, theory.facultyId, libraryRoom.id, theory.classId, theory.subjectId)) {
-                        const gene = { day, time, ...theory, classroomId: libraryRoom.id, isLab: false };
+                     if (libraryRoom && canPlaceTheory(fullSchedule, day, time, facultyId, libraryRoom.id, theory.classId, theory.subjectId)) {
+                        const gene = { day, time, ...theory, facultyId, classroomId: libraryRoom.id, isLab: false };
                         generatedSchedule.push(gene);
                         fullSchedule.push(gene);
+                        facultyWorkload[facultyId]++;
                         placed = true;
                         break;
                      }
                   } else {
                     for (const room of theoryClassrooms) {
-                        if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
-                            const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
+                        if (canPlaceTheory(fullSchedule, day, time, facultyId, room.id, theory.classId, theory.subjectId)) {
+                            const gene = { day, time, ...theory, facultyId, classroomId: room.id, isLab: false };
                             generatedSchedule.push(gene);
                             fullSchedule.push(gene);
+                            facultyWorkload[facultyId]++;
                             placed = true;
                             break;
                         }
@@ -231,7 +259,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
         if (!placed) {
             const subject = input.subjects.find(s => s.id === theory.subjectId);
-             const faculty = input.faculty.find(f => f.id === theory.facultyId);
+             const faculty = input.faculty.find(f => f.id === facultyId);
             return { success: false, message: `Could not schedule all lectures. Failed on '${subject?.name || 'a subject'}' with faculty '${faculty?.name || 'N/A'}'. The schedule is too constrained or resources are unavailable.`, bestTimetable: [], codeChefDay: undefined };
         }
     }
@@ -253,3 +281,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
