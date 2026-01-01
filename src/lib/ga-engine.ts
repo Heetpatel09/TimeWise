@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty, Classroom } from './types';
@@ -150,7 +149,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const generatedSchedule: Gene[] = [];
     const fullSchedule: (Gene | Schedule)[] = [...generatedSchedule, ...input.existingSchedule || []];
 
-    // Workload tracking for faculty
+    // Workload tracking for faculty, initialized with existing schedule load
     const facultyWorkload: Record<string, number> = {};
     input.faculty.forEach(f => facultyWorkload[f.id] = 0);
     fullSchedule.forEach(slot => {
@@ -159,10 +158,13 @@ export async function runGA(input: GenerateTimetableInput) {
         }
     });
 
-    const getLeastLoadedFaculty = (facultyIds: string[]): string => {
-        return facultyIds
-            .filter(id => facultyWorkload[id] < 4) // Filter out faculty who are at max workload
-            .sort((a, b) => facultyWorkload[a] - facultyWorkload[b])[0];
+    const getLeastLoadedFaculty = (facultyIds: string[], hoursToAdd: number): string | null => {
+        const availableFaculty = facultyIds
+            .map(id => ({ id, faculty: input.faculty.find(f => f.id === id) }))
+            .filter(f => f.faculty && (facultyWorkload[f.id] + hoursToAdd) <= (f.faculty.maxWeeklyHours || 20))
+            .sort((a, b) => facultyWorkload[a.id] - facultyWorkload[b.id]);
+            
+        return availableFaculty.length > 0 ? availableFaculty[0].id : null;
     };
 
 
@@ -183,11 +185,15 @@ export async function runGA(input: GenerateTimetableInput) {
         let placed = false;
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
 
+        // Find the least loaded faculty for this 2-hour lab
+        const facultyId = getLeastLoadedFaculty(lab.facultyIds, 2);
+        if (!facultyId) {
+             const subjectName = input.subjects.find(s => s.id === lab.subjectId)?.name || lab.subjectId;
+            return { success: false, message: `Could not find available faculty for lab '${subjectName}'. All are at maximum workload.`, bestTimetable: [], codeChefDay: undefined };
+        }
+
         for (const day of shuffledDays) {
             if (shuffledDays.indexOf(day) === lastLabDayIndex) continue;
-
-            const facultyId = getLeastLoadedFaculty(lab.facultyIds);
-            if (!facultyId) continue; // Skip if no available faculty
 
             const shuffledTimePairs = labTimePairs.sort(() => Math.random() - 0.5);
 
@@ -208,7 +214,7 @@ export async function runGA(input: GenerateTimetableInput) {
         }
         if (!placed) {
              const subjectName = input.subjects.find(s => s.id === lab.subjectId)?.name || lab.subjectId;
-             return { success: false, message: `Could not schedule lab for '${subjectName}'. Not enough conflict-free lab slots or available faculty. Try adding more lab rooms or checking faculty availability.`, bestTimetable: [], codeChefDay: undefined };
+             return { success: false, message: `Could not schedule lab for '${subjectName}'. Not enough conflict-free lab slots available.`, bestTimetable: [], codeChefDay: undefined };
         }
     }
     
@@ -222,9 +228,10 @@ export async function runGA(input: GenerateTimetableInput) {
 
     for (const theory of theoryLectures) {
         let placed = false;
-        const facultyId = getLeastLoadedFaculty(theory.facultyIds);
+        const facultyId = getLeastLoadedFaculty(theory.facultyIds, 1);
         if (!facultyId) {
-             return { success: false, message: `Could not find available faculty for subject ID ${theory.subjectId}. All are at maximum workload.`, bestTimetable: [], codeChefDay: undefined };
+             const subjectName = input.subjects.find(s => s.id === theory.subjectId)?.name || theory.subjectId;
+             return { success: false, message: `Could not find available faculty for subject '${subjectName}'. All are at maximum workload.`, bestTimetable: [], codeChefDay: undefined };
         }
 
         for (const day of workingDays) {
@@ -260,7 +267,7 @@ export async function runGA(input: GenerateTimetableInput) {
         if (!placed) {
             const subject = input.subjects.find(s => s.id === theory.subjectId);
              const faculty = input.faculty.find(f => f.id === facultyId);
-            return { success: false, message: `Could not schedule all lectures. Failed on '${subject?.name || 'a subject'}' with faculty '${faculty?.name || 'N/A'}'. The schedule is too constrained or resources are unavailable.`, bestTimetable: [], codeChefDay: undefined };
+            return { success: false, message: `Could not schedule all lectures. Failed on '${subject?.name || 'a subject'}'. The schedule is too constrained or resources are unavailable.`, bestTimetable: [], codeChefDay: undefined };
         }
     }
     
@@ -281,5 +288,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
