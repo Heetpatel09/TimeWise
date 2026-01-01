@@ -187,7 +187,7 @@ export async function runGA(input: GenerateTimetableInput) {
         }
         if (!placed) {
              const subjectName = input.subjects.find(s => s.id === lab.subjectId)?.name || lab.subjectId;
-             return { success: false, message: `Could not schedule lab for '${subjectName}'. Not enough conflict-free lab slots available.`, bestTimetable: [], codeChefDay: undefined };
+             return { success: false, message: `Could not schedule lab for '${subjectName}'. Not enough conflict-free lab slots available. Try adding more lab rooms or check faculty availability.`, bestTimetable: [], codeChefDay: undefined };
         }
     }
     
@@ -231,7 +231,8 @@ export async function runGA(input: GenerateTimetableInput) {
 
         if (!placed) {
             const subject = input.subjects.find(s => s.id === theory.subjectId);
-            return { success: false, message: `Could not schedule all lectures. Failed on '${subject?.name || 'a subject'}'. The schedule is too constrained.`, bestTimetable: [], codeChefDay: undefined };
+             const faculty = input.faculty.find(f => f.id === theory.facultyId);
+            return { success: false, message: `Could not schedule all lectures. Failed on '${subject?.name || 'a subject'}' with faculty '${faculty?.name || 'N/A'}'. The schedule is too constrained or resources are unavailable.`, bestTimetable: [], codeChefDay: undefined };
         }
     }
     
