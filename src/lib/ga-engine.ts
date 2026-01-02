@@ -61,6 +61,9 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
+        // Skip library subject here, it will be handled separately.
+        if (sub.id === 'LIB001') continue;
+
         // Find all faculty for a subject, and select the one with the least current workload
         const qualifiedFaculty = input.faculty
             .filter(f => f.allottedSubjects?.includes(sub.id))
@@ -93,7 +96,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
     }
     
-    // 2. Add exactly 3 Library Slots
+    // 2. Add exactly 3 "Free" Library Slots
     const libraryFaculty = input.faculty.find(f => f.department === 'Administration');
     if (libraryFaculty) {
         for (let i = 0; i < 3; i++) {
@@ -102,6 +105,8 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
                 isLab: false, hours: 1
             });
         }
+    } else {
+        console.warn("[Scheduler] Could not find Library Staff (department: Administration) to assign free slots.");
     }
     
     // Sort by labs first (most constrained), then theory
@@ -113,10 +118,13 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
 // --- Conflict Checking Functions ---
 function isConflict(schedule: (Gene | Schedule)[], day: string, time: string, facultyId: string, classroomId: string, classId: string): boolean {
+    // A library slot for a faculty does not cause a faculty conflict.
+    const isLibrarySlot = facultyId.startsWith('FAC_LIB');
+
     return schedule.some(gene => 
         gene.day === day && 
         gene.time === time &&
-        (gene.facultyId === facultyId || gene.classroomId === classroomId || gene.classId === classId)
+        ((!isLibrarySlot && gene.facultyId === facultyId) || gene.classroomId === classroomId || gene.classId === classId)
     );
 }
 
@@ -151,7 +159,7 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
 
     // Check for faculty assignment
     const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && s.id !== 'LIB001')
+        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && s.id !== 'LIB001' && !s.isSpecial)
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
@@ -234,7 +242,8 @@ export async function runGA(input: GenerateTimetableInput) {
             if (placed) break;
         }
         if (!placed) {
-             return { success: false, message: `Could not schedule lab for subject ID ${lab.subjectId}. Not enough conflict-free lab slots available.`, bestTimetable: [], codeChefDay: undefined };
+             const subject = input.subjects.find(s => s.id === lab.subjectId);
+             return { success: false, message: `Could not schedule lab for '${subject?.name || lab.subjectId}'. Not enough conflict-free lab slots available.`, bestTimetable: [], codeChefDay: undefined };
         }
     }
     
@@ -260,7 +269,7 @@ export async function runGA(input: GenerateTimetableInput) {
                   const previousSlot = fullSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime && !(g as Gene).isLab);
                   
                   let preferredClassroomOrder = shuffledClassrooms;
-                  if (previousSlot && previousSlot.classroomId && previousSlot.classroomId !== 'CR_LIB') {
+                  if (previousSlot && previousSlot.classroomId !== 'CR_LIB') {
                       const prevRoom = shuffledClassrooms.find(c => c.id === previousSlot.classroomId);
                       if (prevRoom) {
                           preferredClassroomOrder = [prevRoom, ...shuffledClassrooms.filter(c => c.id !== prevRoom.id)];
@@ -304,10 +313,10 @@ export async function runGA(input: GenerateTimetableInput) {
     const academicSlotsCount = finalSchedule.filter(s => s.subjectId !== 'LIB001').length;
     const finalLibraryCount = finalSchedule.filter(s => s.subjectId === 'LIB001').length;
 
-    if (academicSlotsCount + finalLibraryCount < 24) {
+    if (academicSlotsCount + finalLibraryCount < 24 && finalLibraryCount < 3) {
         return {
             success: false,
-            message: `Generation failed. Only generated ${academicSlotsCount} academic and ${finalLibraryCount} library slots.`,
+            message: `Generation failed. Only generated ${academicSlotsCount} academic and ${finalLibraryCount} free slots. Could not fulfill all constraints.`,
             bestTimetable: [],
             codeChefDay,
         }
@@ -315,7 +324,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
     return {
         success: true,
-        message: `Successfully generated a schedule with ${academicSlotsCount} academic slots and ${finalLibraryCount} library slots.`,
+        message: `Successfully generated a schedule with ${academicSlotsCount} academic slots and ${finalLibraryCount} free slots.`,
         bestTimetable: finalSchedule,
         codeChefDay,
     };
