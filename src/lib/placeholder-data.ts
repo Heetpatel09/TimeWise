@@ -1,4 +1,5 @@
 
+
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result, GatePass, Badge, UserBadge } from './types';
 import { format, subDays, addDays } from 'date-fns';
 import { randomBytes } from 'crypto';
@@ -110,13 +111,13 @@ export const classrooms: Classroom[] = [
 ];
 
 export const schedule: Schedule[] = [
-  { id: 'SCH001', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH002', classId: 'CLS001', subjectId: 'SUB003', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '08:30 AM - 09:30 AM' },
-  { id: 'SCH003', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR003', day: 'Monday', time: '07:30 AM - 08:30 AM' },
-  { id: 'SCH004', classId: 'CLS003', subjectId: 'SUB006', facultyId: 'FAC002', classroomId: 'CR001', day: 'Tuesday', time: '10:00 AM - 11:00 AM' },
-  { id: 'SCH005', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC004', classroomId: 'CR004', day: 'Wednesday', time: '01:00 PM - 02:00 PM' },
-  { id: 'SCH006', classId: 'CLS005', subjectId: 'SUB012', facultyId: 'FAC004', classroomId: 'LB001', day: 'Wednesday', time: '02:00 PM - 03:00 PM' },
-  { id: 'SCH007', classId: 'CLS101', subjectId: 'SUB101', facultyId: 'FAC006', classroomId: 'CR005', day: 'Monday', time: '07:30 AM - 08:30 AM' },
+  { id: 'SCH001', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:25 AM' },
+  { id: 'SCH002', classId: 'CLS001', subjectId: 'SUB003', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '08:25 AM - 09:20 AM' },
+  { id: 'SCH003', classId: 'CLS002', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR003', day: 'Monday', time: '07:30 AM - 08:25 AM' },
+  { id: 'SCH004', classId: 'CLS003', subjectId: 'SUB006', facultyId: 'FAC002', classroomId: 'CR001', day: 'Tuesday', time: '09:30 AM - 10:25 AM' },
+  { id: 'SCH005', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC004', classroomId: 'CR004', day: 'Wednesday', time: '12:20 PM - 01:15 PM' },
+  { id: 'SCH006', classId: 'CLS005', subjectId: 'SUB012', facultyId: 'FAC004', classroomId: 'LB001', day: 'Wednesday', time: '01:15 PM - 02:10 PM' },
+  { id: 'SCH007', classId: 'CLS101', subjectId: 'SUB101', facultyId: 'FAC006', classroomId: 'CR005', day: 'Monday', time: '07:30 AM - 08:25 AM' },
 ];
 
 export const leaveRequests: LeaveRequest[] = [];
@@ -175,3 +176,5 @@ export const badges: Badge[] = [
 export const userBadges: UserBadge[] = [
     { id: 'UB01', userId: 'STU001', badgeId: 'B02', earnedAt: new Date().toISOString() }, { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() }, { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
+
+    
