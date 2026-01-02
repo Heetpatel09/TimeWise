@@ -25,17 +25,17 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
 const ALL_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '09:30 AM - 10:00 AM', // Break
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '12:00 PM - 01:00 PM', // Break
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:20 AM - 09:30 AM', // Break
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '11:20 AM - 12:20 PM', // Break
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['09:30 AM - 10:00 AM', '12:00 PM - 01:00 PM'];
+const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
@@ -319,7 +319,7 @@ export default function TimetableGeneratorPage() {
                                                     <TableRow key={time}>
                                                         <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
                                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
-                                                             {time === '09:30 AM - 10:00 AM' ? 'RECESS' : 'LUNCH BREAK'}
+                                                             {time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}
                                                         </TableCell>
                                                     </TableRow>
                                                 )
@@ -386,3 +386,5 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
+
+    
