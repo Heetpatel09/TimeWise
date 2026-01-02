@@ -62,13 +62,13 @@ const getPriorityValue = (priority?: SubjectPriority): number => {
  * Creates a definitive list of all academic lectures that need to be scheduled, respecting the 30-hour weekly limit.
  */
 function createLectureList(input: GenerateTimetableInput, workingDaysCount: number): LectureToBePlaced[] {
-    const lectures: LectureToBePlaced[] = [];
+    const potentialLectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
     const classSubjects = input.subjects.filter(
         s => s.semester === classToSchedule.semester && s.department === classToSchedule.department
     );
 
-    // 1. Add Academic Lectures
+    // 1. Add all potential academic lectures to a list
     for (const sub of classSubjects) {
         if (sub.isSpecial) continue;
 
@@ -81,7 +81,7 @@ function createLectureList(input: GenerateTimetableInput, workingDaysCount: numb
         if (sub.type === 'lab') {
             const labSessions = 2; // Schedule 2 separate 2-hour lab slots
              for (let i = 0; i < labSessions; i++) {
-                lectures.push({
+                potentialLectures.push({
                     classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
                     isLab: true, hours: 2, priorityValue: 5 // Labs get highest priority
                 });
@@ -90,7 +90,7 @@ function createLectureList(input: GenerateTimetableInput, workingDaysCount: numb
         } else {
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
-                lectures.push({
+                potentialLectures.push({
                     classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
                     isLab: false, hours: 1, priorityValue: getPriorityValue(sub.priority)
                 });
@@ -98,15 +98,15 @@ function createLectureList(input: GenerateTimetableInput, workingDaysCount: numb
         }
     }
     
-    // Sort lectures by priority (labs first, then high priority theory, etc.)
-    lectures.sort((a, b) => b.priorityValue - a.priorityValue);
+    // Sort all potential lectures by priority (labs first, then high priority theory, etc.)
+    potentialLectures.sort((a, b) => b.priorityValue - a.priorityValue);
 
-    // Enforce 30-hour limit
+    // Enforce 30-hour limit by taking the highest priority lectures that fit
     const MAX_SLOTS = workingDaysCount * LECTURE_TIME_SLOTS.length;
     let totalHours = 0;
     const finalLectures: LectureToBePlaced[] = [];
 
-    for (const lecture of lectures) {
+    for (const lecture of potentialLectures) {
         const lectureDuration = lecture.isLab ? 2 : 1;
         if (totalHours + lectureDuration <= MAX_SLOTS) {
             finalLectures.push(lecture);
@@ -161,14 +161,7 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
 /**
  * Pre-checks if a schedule is even possible.
  */
-function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
-    const totalRequiredHours = lectures.reduce((acc, l) => acc + l.hours, 0);
-    const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
-
-    if (totalRequiredHours > totalAvailableSlots) {
-        return `Cannot generate schedule. Required slots (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}). The constraints might be too tight.`;
-    }
-    
+function runPreChecks(input: GenerateTimetableInput): string | null {
     const classToSchedule = input.classes[0];
      const subjectsWithoutFaculty = input.subjects
         .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && !s.isSpecial)
@@ -190,7 +183,7 @@ export async function runGA(input: GenerateTimetableInput) {
     
     const lecturesToPlace = createLectureList(input, workingDays.length);
 
-    const impossibilityReason = runPreChecks(lecturesToPlace, input, workingDays);
+    const impossibilityReason = runPreChecks(input);
     if (impossibilityReason) {
         return { success: false, message: impossibilityReason, bestTimetable: [], codeChefDay: undefined };
     }
@@ -266,7 +259,7 @@ export async function runGA(input: GenerateTimetableInput) {
                   }
               }
 
-              const roomsToTry = roomToUse ? [availableClassrooms.find(c => c.id === roomToUse)].filter(Boolean) as any[] : availableClassrooms.sort(() => Math.random() - 0.5);
+              const roomsToTry = roomToUse ? availableClassrooms.filter(c => c.id === roomToUse) : availableClassrooms.sort(() => Math.random() - 0.5);
               
               for (const room of roomsToTry) {
                  if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
