@@ -248,8 +248,11 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const libraryFaculty = input.faculty.find(f => f.allottedSubjects?.includes('LIB001'));
-                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: libraryFaculty!.id, isLab: false };
+                     const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB');
+                     if (!libraryFaculty) {
+                         return { success: false, message: "Library faculty (FAC_LIB) not found.", bestTimetable: [], codeChefDay: undefined };
+                     }
+                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: libraryFaculty.id, isLab: false };
                      generatedSchedule.push(gene);
                      fullSchedule.push(gene);
                      placed = true;
