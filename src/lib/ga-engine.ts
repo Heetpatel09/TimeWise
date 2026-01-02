@@ -237,38 +237,30 @@ export async function runGA(input: GenerateTimetableInput) {
     for (const theory of theoryLectures) {
         let placed = false;
         
+        // Iterate through all possible slots to ensure placement if possible
         for (const day of workingDays) {
-            for (const time of LECTURE_TIME_SLOTS) {
-                if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
+             for (const time of LECTURE_TIME_SLOTS) {
+                  // Skip if the slot is already taken for this class
+                  if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
 
-                // Enforce classroom consistency for consecutive lectures
-                const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
-                const previousSlot = generatedSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime && !(g as Gene).isLab);
-                const shuffledClassrooms = availableClassrooms.sort(() => Math.random() - 0.5);
-              
-                if (previousSlot) {
-                    const requiredClassroom = previousSlot.classroomId;
-                    if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, requiredClassroom, theory.classId, theory.subjectId)) {
-                        const gene = { day, time, ...theory, classroomId: requiredClassroom, isLab: false };
+                  // Find a classroom, enforcing consistency
+                  const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
+                  const previousSlot = generatedSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime && !(g as Gene).isLab);
+                  
+                  const roomsToTry = previousSlot ? [availableClassrooms.find(c => c.id === previousSlot.classroomId)].filter(Boolean) as any : availableClassrooms.sort(() => Math.random() - 0.5);
+
+                  for (const room of roomsToTry) {
+                     if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
+                        const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
                         generatedSchedule.push(gene);
                         fullSchedule.push(gene);
                         placed = true;
-                    }
-                } else {
-                    for (const room of shuffledClassrooms) {
-                        if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
-                            const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
-                            generatedSchedule.push(gene);
-                            fullSchedule.push(gene);
-                            placed = true;
-                            break; 
-                        }
-                    }
-                }
-              
-                if (placed) break;
-            }
-            if (placed) break;
+                        break;
+                     }
+                  }
+                  if (placed) break;
+             }
+             if (placed) break;
         }
 
         if (!placed) {
