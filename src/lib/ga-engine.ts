@@ -79,7 +79,6 @@ function createLectureList(input: GenerateTimetableInput, workingDaysCount: numb
         }
 
         if (sub.type === 'lab') {
-            // Create two separate 2-hour lab sessions for each lab subject
             const labSessions = 2; 
              for (let i = 0; i < labSessions; i++) {
                 potentialLectures.push({
@@ -107,10 +106,10 @@ function createLectureList(input: GenerateTimetableInput, workingDaysCount: numb
     let totalHours = 0;
     const finalLectures: LectureToBePlaced[] = [];
 
-    for (const lecture of potentialLectures) {
-        const lectureDuration = lecture.isLab ? 2 : 1;
+    for (const potentialLecture of potentialLectures) {
+        const lectureDuration = potentialLecture.isLab ? 2 : 1;
         if (totalHours + lectureDuration <= MAX_SLOTS) {
-            finalLectures.push(lecture);
+            finalLectures.push(potentialLecture);
             totalHours += lectureDuration;
         }
     }
