@@ -22,7 +22,8 @@ interface LectureToBePlaced {
     isLab: boolean;
     classId: string;
     batch?: 'A' | 'B';
-    hours: number; // 1 for theory, 2 for a single lab session
+    hours: number; 
+    priorityValue: number; // For sorting
 }
 
 // --- Helper Functions & Configuration ---
@@ -46,57 +47,74 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
     }
 };
 
+const getPriorityValue = (priority?: SubjectPriority): number => {
+     switch (priority) {
+        case 'Non Negotiable': return 4;
+        case 'High': return 3;
+        case 'Medium': return 2;
+        case 'Low': return 1;
+        default: return 0;
+    }
+}
+
+
 /**
- * Creates a definitive list of all academic lectures that need to be scheduled.
+ * Creates a definitive list of all academic lectures that need to be scheduled, respecting the 30-hour weekly limit.
  */
-function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
+function createLectureList(input: GenerateTimetableInput, workingDaysCount: number): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
     const classSubjects = input.subjects.filter(
         s => s.semester === classToSchedule.semester && s.department === classToSchedule.department
     );
-     const facultyWorkload = new Map<string, number>();
-    input.faculty.forEach(f => facultyWorkload.set(f.id, 0));
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
         if (sub.isSpecial) continue;
 
-        const qualifiedFaculty = input.faculty
-            .filter(f => f.allottedSubjects?.includes(sub.id))
-            .sort((a,b) => (facultyWorkload.get(a.id) || 0) - (facultyWorkload.get(b.id) || 0));
-        
-        const facultyForSubject = qualifiedFaculty[0];
+        const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
-             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping this subject.`);
-            continue; // CRITICAL FIX: Instead of stopping, just skip this subject
+            console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
+            continue;
         }
 
         if (sub.type === 'lab') {
-            const labHours = 2; // A lab session is 2 hours long
-            for (let i=0; i<2; i++) { // Create 2 separate 2-hour lab slots
-                 lectures.push({
+            const labSessions = 2; // Schedule 2 separate 2-hour lab slots
+             for (let i = 0; i < labSessions; i++) {
+                lectures.push({
                     classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
-                    isLab: true, hours: labHours
+                    isLab: true, hours: 2, priorityValue: 5 // Labs get highest priority
                 });
             }
-            facultyWorkload.set(facultyForSubject.id, (facultyWorkload.get(facultyForSubject.id) || 0) + (labHours * 2));
 
         } else {
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
                 lectures.push({
                     classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
-                    isLab: false, hours: 1
+                    isLab: false, hours: 1, priorityValue: getPriorityValue(sub.priority)
                 });
             }
-             facultyWorkload.set(facultyForSubject.id, (facultyWorkload.get(facultyForSubject.id) || 0) + hours);
         }
     }
     
-    lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
+    // Sort lectures by priority (labs first, then high priority theory, etc.)
+    lectures.sort((a, b) => b.priorityValue - a.priorityValue);
 
-    return lectures;
+    // Enforce 30-hour limit
+    const MAX_SLOTS = workingDaysCount * LECTURE_TIME_SLOTS.length;
+    let totalHours = 0;
+    const finalLectures: LectureToBePlaced[] = [];
+
+    for (const lecture of lectures) {
+        const lectureDuration = lecture.isLab ? 2 : 1;
+        if (totalHours + lectureDuration <= MAX_SLOTS) {
+            finalLectures.push(lecture);
+            totalHours += lectureDuration;
+        }
+    }
+
+    return finalLectures;
 }
 
 
@@ -151,6 +169,15 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
         return `Cannot generate schedule. Required slots (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}). The constraints might be too tight.`;
     }
     
+    const classToSchedule = input.classes[0];
+     const subjectsWithoutFaculty = input.subjects
+        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && !s.isSpecial)
+        .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
+    
+    if (subjectsWithoutFaculty) {
+        return `Cannot generate schedule. Subject '${subjectsWithoutFaculty.name}' has no assigned faculty. Please assign faculty to this subject in the Departments & Subjects section.`;
+    }
+
     return null;
 }
 
@@ -161,7 +188,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const codeChefDay = DAYS[codeChefDayIndex];
     const workingDays = DAYS.filter(d => d !== codeChefDay);
     
-    const lecturesToPlace = createLectureList(input);
+    const lecturesToPlace = createLectureList(input, workingDays.length);
 
     const impossibilityReason = runPreChecks(lecturesToPlace, input, workingDays);
     if (impossibilityReason) {
