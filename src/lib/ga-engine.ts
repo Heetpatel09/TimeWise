@@ -75,11 +75,14 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
         if (sub.type === 'lab') {
             const labHours = 2;
-            lectures.push({
-                classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
-                isLab: true, hours: labHours
-            });
-            facultyWorkload.set(facultyForSubject.id, (facultyWorkload.get(facultyForSubject.id) || 0) + labHours);
+            // Create two separate 2-hour lab sessions for each lab subject
+            for (let i = 0; i < 2; i++) {
+                lectures.push({
+                    classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
+                    isLab: true, hours: labHours
+                });
+            }
+            facultyWorkload.set(facultyForSubject.id, (facultyWorkload.get(facultyForSubject.id) || 0) + (labHours * 2));
 
         } else {
             const hours = getHoursForPriority(sub.priority);
@@ -125,10 +128,12 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
     
     const dayScheduleForClass = schedule.filter(g => g.classId === classId && g.day === day);
     
+    // Rule: Do not give same subject classes more than 2 on same day
     if (dayScheduleForClass.filter(s => s.subjectId === subjectId).length >= 2) {
         return false;
     }
     
+    // Rule: Strictly avoid back-to-back lectures of the same subject.
     const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
     if (previousSlotTime) {
         const previousSlot = dayScheduleForClass.find(s => s.time === previousSlotTime);
@@ -239,43 +244,41 @@ export async function runGA(input: GenerateTimetableInput) {
     for (const theory of theoryLectures) {
         let placed = false;
 
-        // Iterate through every possible day and time to find a slot
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
         for (const day of shuffledDays) {
-             const shuffledTimes = LECTURE_TIME_SLOTS.sort(() => Math.random() - 0.5);
-             for (const time of shuffledTimes) {
-                  if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
-                
-                  // Enforce classroom consistency for consecutive lectures
-                  const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
-                  const previousSlot = fullSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime && !(g as Gene).isLab);
-                
-                  if (previousSlot) {
-                      const requiredClassroom = previousSlot.classroomId;
-                      if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, requiredClassroom, theory.classId, theory.subjectId)) {
-                          const gene = { day, time, ...theory, classroomId: requiredClassroom, isLab: false };
-                          generatedSchedule.push(gene);
-                          fullSchedule.push(gene);
-                          placed = true;
-                      }
-                  } else {
-                      const shuffledClassrooms = availableClassrooms.sort(() => Math.random() - 0.5);
-                      for (const room of shuffledClassrooms) {
-                          if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
-                              const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
-                              generatedSchedule.push(gene);
-                              fullSchedule.push(gene);
-                              placed = true;
-                              break; 
-                          }
-                      }
-                  }
-                
-                  if (placed) break;
-             }
-             if (placed) break;
-        }
+            const shuffledTimes = LECTURE_TIME_SLOTS.sort(() => Math.random() - 0.5);
+            for (const time of shuffledTimes) {
+                if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
 
+                // Enforce classroom consistency for consecutive lectures
+                const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
+                const previousSlot = fullSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime && !(g as Gene).isLab);
+              
+                if (previousSlot) {
+                    const requiredClassroom = previousSlot.classroomId;
+                    if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, requiredClassroom, theory.classId, theory.subjectId)) {
+                        const gene = { day, time, ...theory, classroomId: requiredClassroom, isLab: false };
+                        generatedSchedule.push(gene);
+                        fullSchedule.push(gene);
+                        placed = true;
+                    }
+                } else {
+                    const shuffledClassrooms = availableClassrooms.sort(() => Math.random() - 0.5);
+                    for (const room of shuffledClassrooms) {
+                        if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
+                            const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
+                            generatedSchedule.push(gene);
+                            fullSchedule.push(gene);
+                            placed = true;
+                            break; 
+                        }
+                    }
+                }
+              
+                if (placed) break;
+            }
+            if (placed) break;
+        }
 
         if (!placed) {
             const subject = input.subjects.find(s => s.id === theory.subjectId);
