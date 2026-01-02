@@ -79,7 +79,8 @@ function createLectureList(input: GenerateTimetableInput, workingDaysCount: numb
         }
 
         if (sub.type === 'lab') {
-            const labSessions = 2; // Schedule 2 separate 2-hour lab slots
+            // Create two separate 2-hour lab sessions for each lab subject
+            const labSessions = 2; 
              for (let i = 0; i < labSessions; i++) {
                 potentialLectures.push({
                     classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
@@ -298,5 +299,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
