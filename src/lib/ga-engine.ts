@@ -242,7 +242,7 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const gene = { day, time, ...theory, classroomId: 'LIB_ROOM', facultyId: 'FAC_LIB', isLab: false };
+                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: 'FAC_LIB', isLab: false };
                      generatedSchedule.push(gene);
                      fullSchedule.push(gene);
                      placed = true;
