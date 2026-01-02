@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -220,13 +219,12 @@ export async function runGA(input: GenerateTimetableInput) {
         ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'],
     ];
 
-    let lastLabWasMorning = false;
     for (const lab of labLectures) {
         let placed = false;
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
 
         for (const day of shuffledDays) {
-            const timePairsToTry = lastLabWasMorning ? [...labTimePairs].reverse() : labTimePairs;
+            const timePairsToTry = labTimePairs.sort(() => Math.random() - 0.5);
             for (const [time1, time2] of timePairsToTry) {
                  for (const room of availableLabRooms.sort(() => Math.random() - 0.5)) {
                     if (canPlaceLab(fullSchedule, day, time1, time2, lab.facultyId, room.id, lab.classId)) {
@@ -235,7 +233,6 @@ export async function runGA(input: GenerateTimetableInput) {
                         generatedSchedule.push(gene1, gene2);
                         fullSchedule.push(gene1, gene2);
                         placed = true;
-                        lastLabWasMorning = !lastLabWasMorning;
                         break;
                     }
                 }
