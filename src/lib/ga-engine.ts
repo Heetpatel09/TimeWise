@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -27,12 +28,12 @@ interface LectureToBePlaced {
 
 // --- Helper Functions & Configuration ---
 const LECTURE_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -65,13 +66,12 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         const qualifiedFaculty = input.faculty
             .filter(f => f.allottedSubjects?.includes(sub.id))
             .sort((a,b) => (facultyWorkload.get(a.id) || 0) - (facultyWorkload.get(b.id) || 0));
-
-        if (qualifiedFaculty.length === 0) {
-            console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
+        
+        const facultyForSubject = qualifiedFaculty[0];
+        if (!facultyForSubject) {
+             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
             continue;
         }
-
-        const facultyForSubject = qualifiedFaculty[0];
 
         if (sub.type === 'lab') {
             const labHours = 2;
@@ -196,9 +196,9 @@ export async function runGA(input: GenerateTimetableInput) {
     }
 
     const labTimePairs: [string, string][] = [
-        ['07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM'],
-        ['01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'],
-        ['10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM'],
+        ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'],
+        ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'],
+        ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'],
     ];
     
     labLectures.sort((a, b) => a.subjectId.localeCompare(b.subjectId));
@@ -239,7 +239,6 @@ export async function runGA(input: GenerateTimetableInput) {
 
     for (const theory of theoryLectures) {
         let placed = false;
-
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
         for (const day of shuffledDays) {
             const shuffledTimes = LECTURE_TIME_SLOTS.sort(() => Math.random() - 0.5);
@@ -301,5 +300,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
