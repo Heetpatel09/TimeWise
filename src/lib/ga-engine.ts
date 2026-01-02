@@ -47,8 +47,7 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
 };
 
 /**
- * Creates a definitive list of all academic and library lectures that need to be scheduled.
- * This is the corrected, final version of this function.
+ * Creates a definitive list of all academic lectures that need to be scheduled.
  */
 function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
@@ -61,7 +60,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        // Skip library subject here, it will be handled separately.
+        // Skip library subject, it's a free slot and not explicitly scheduled.
         if (sub.id === 'LIB001') continue;
 
         // Find all faculty for a subject, and select the one with the least current workload
@@ -94,19 +93,6 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
             }
              facultyWorkload.set(facultyForSubject.id, (facultyWorkload.get(facultyForSubject.id) || 0) + hours);
         }
-    }
-    
-    // 2. Add exactly 3 "Free" Library Slots
-    const libraryFaculty = input.faculty.find(f => f.department === 'Administration');
-    if (libraryFaculty) {
-        for (let i = 0; i < 3; i++) {
-            lectures.push({
-                classId: classToSchedule.id, subjectId: 'LIB001', facultyId: libraryFaculty.id,
-                isLab: false, hours: 1
-            });
-        }
-    } else {
-        console.warn("[Scheduler] Could not find Library Staff (department: Administration) to assign free slots.");
     }
     
     // Sort by labs first (most constrained), then theory
@@ -247,9 +233,9 @@ export async function runGA(input: GenerateTimetableInput) {
         }
     }
     
-    // 5. Place Theory and Library lectures
+    // 5. Place Theory lectures
     const availableClassrooms = input.classrooms.filter(c => c.type === 'classroom');
-    if (availableClassrooms.length === 0 && theoryLectures.filter(t => t.subjectId !== 'LIB001').length > 0) {
+    if (availableClassrooms.length === 0 && theoryLectures.length > 0) {
         return { success: false, message: "Cannot schedule theory lectures. No classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
 
@@ -276,11 +262,7 @@ export async function runGA(input: GenerateTimetableInput) {
                       }
                   }
                   
-                   const roomsToTry = theory.subjectId === 'LIB001' 
-                    ? [{ id: 'CR_LIB' }] 
-                    : preferredClassroomOrder;
-
-                  for (const room of roomsToTry) {
+                  for (const room of preferredClassroomOrder) {
                     if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
                         const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
                         generatedSchedule.push(gene);
@@ -310,22 +292,14 @@ export async function runGA(input: GenerateTimetableInput) {
         classroomId: g.classroomId,
     }));
 
-    const academicSlotsCount = finalSchedule.filter(s => s.subjectId !== 'LIB001').length;
-    const finalLibraryCount = finalSchedule.filter(s => s.subjectId === 'LIB001').length;
-
-    if (academicSlotsCount + finalLibraryCount < 24 && finalLibraryCount < 3) {
-        return {
-            success: false,
-            message: `Generation failed. Only generated ${academicSlotsCount} academic and ${finalLibraryCount} free slots. Could not fulfill all constraints.`,
-            bestTimetable: [],
-            codeChefDay,
-        }
-    }
-
+    const academicSlotsCount = finalSchedule.length;
+   
     return {
         success: true,
-        message: `Successfully generated a schedule with ${academicSlotsCount} academic slots and ${finalLibraryCount} free slots.`,
+        message: `Successfully generated a schedule with ${academicSlotsCount} academic slots.`,
         bestTimetable: finalSchedule,
         codeChefDay,
     };
 }
+
+    
