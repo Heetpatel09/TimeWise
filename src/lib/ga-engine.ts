@@ -102,15 +102,16 @@ function createLectureList(input: GenerateTimetableInput, maxSlots: number): Lec
     const finalLectures: LectureToBePlaced[] = [];
     let totalHours = 0;
     for (const potentialLecture of potentialLectures) {
-         if (totalHours + potentialLecture.hours <= maxSlots) {
+         if (totalHours + 1 <= maxSlots) { // Use +1 for each 1-hour slot
             finalLectures.push(potentialLecture);
-            totalHours += potentialLecture.hours;
+            totalHours += 1;
         }
     }
     
     // Add library slots to fill up to 21 total slots
-    const academicAndLabHours = finalLectures.reduce((sum, l) => sum + l.hours, 0);
+    const academicAndLabHours = finalLectures.reduce((sum, l) => sum + (l.isLab ? 2 : l.hours), 0);
     const librarySlotsToCreate = Math.max(0, 21 - academicAndLabHours);
+
      for (let i = 0; i < librarySlotsToCreate; i++) {
         finalLectures.push({
             classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB',
@@ -317,3 +318,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
