@@ -59,7 +59,7 @@ export const subjects: Subject[] = [
   
   // Special / Common Subjects
   { id: 'CODECHEF', name: 'CodeChef', code: 'CC001', type: 'lab', semester: 3, isSpecial: true, department: DEPARTMENTS.CSE },
-  { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 1, department: DEPARTMENTS.CSE },
+  { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 1, department: DEPARTMENTS.CSE, isSpecial: false },
 ];
 
 export const classes: Class[] = [
@@ -175,5 +175,3 @@ export const badges: Badge[] = [
 export const userBadges: UserBadge[] = [
     { id: 'UB01', userId: 'STU001', badgeId: 'B02', earnedAt: new Date().toISOString() }, { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() }, { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
-
-    
