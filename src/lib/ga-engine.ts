@@ -202,15 +202,12 @@ export async function runGA(input: GenerateTimetableInput) {
     ];
     
     labLectures.sort((a, b) => a.subjectId.localeCompare(b.subjectId));
-    let lastLabDayIndex = -1;
 
     for (const lab of labLectures) {
         let placed = false;
         const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
 
         for (const day of shuffledDays) {
-            if (shuffledDays.indexOf(day) === lastLabDayIndex) continue;
-
             const shuffledTimePairs = labTimePairs.sort(() => Math.random() - 0.5);
             const shuffledLabRooms = availableLabRooms.sort(() => Math.random() - 0.5);
 
@@ -221,7 +218,6 @@ export async function runGA(input: GenerateTimetableInput) {
                         generatedSchedule.push({ day, time: time2, ...lab, classroomId: room.id, hours: 1, isLab: true });
                         fullSchedule.push(...generatedSchedule.slice(-2));
                         placed = true;
-                        lastLabDayIndex = shuffledDays.indexOf(day);
                         break;
                     }
                 }
@@ -305,3 +301,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
