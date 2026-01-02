@@ -17,6 +17,7 @@ export const subjects: Subject[] = [
   { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', type: 'theory', semester: 1, department: DEPARTMENTS.CSE, priority: 'High' },
   { id: 'SUB002', name: 'Programming Lab I', code: 'CS102', type: 'lab', semester: 1, department: DEPARTMENTS.CSE },
   { id: 'SUB003', name: 'Digital Logic Design', code: 'EC101', type: 'theory', semester: 1, department: DEPARTMENTS.CSE, priority: 'High' },
+  { id: 'SUB300', name: 'Digital Logic Design Lab', code: 'EC102', type: 'lab', semester: 1, department: DEPARTMENTS.CSE },
   { id: 'SUB004', name: 'Applied Mathematics I', code: 'AM101', type: 'theory', semester: 1, department: DEPARTMENTS.CSE, priority: 'Non Negotiable' },
   { id: 'SUB005', name: 'Communication Skills', code: 'HU101', type: 'theory', semester: 1, department: DEPARTMENTS.CSE, priority: 'Medium' },
 
@@ -88,7 +89,7 @@ export const students: Student[] = studentNames.map((name, index) => {
 
 export const faculty: Faculty[] = [
   { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: 'TNG01', designation: 'Professor', employmentType: 'full-time', department: DEPARTMENTS.CSE, roles: ['HOD'], streak: 45, profileCompleted: 90, points: 5200, allottedSubjects: ['SUB001', 'SUB008'], maxWeeklyHours: 20, designatedYear: 1 },
-  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: 'LCE02', designation: 'Professor', employmentType: 'full-time', department: DEPARTMENTS.CSE, roles: [], streak: 8, profileCompleted: 80, points: 2100, allottedSubjects: ['SUB003', 'SUB006'], maxWeeklyHours: 18, designatedYear: 1 },
+  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: 'LCE02', designation: 'Professor', employmentType: 'full-time', department: DEPARTMENTS.CSE, roles: [], streak: 8, profileCompleted: 80, points: 2100, allottedSubjects: ['SUB003', 'SUB006', 'SUB300'], maxWeeklyHours: 18, designatedYear: 1 },
   { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: 'HPR03', designation: 'Assistant Professor', employmentType: 'full-time', department: DEPARTMENTS.CSE, roles: ['Lab Incharge'], streak: 15, profileCompleted: 85, points: 3400, allottedSubjects: ['SUB002', 'SUB007'], maxWeeklyHours: 22, designatedYear: 1 },
   { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: 'NMN04', designation: 'Assistant Professor', employmentType: 'part-time', department: DEPARTMENTS.CSE, roles: [], streak: 0, profileCompleted: 50, points: 500, allottedSubjects: ['SUB013', 'SUB014'], maxWeeklyHours: 10, designatedYear: 3 },
   { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', code: 'KNH05', designation: 'Lecturer', employmentType: 'contract', department: DEPARTMENTS.CSE, roles: [], streak: 0, profileCompleted: 60, points: 800, allottedSubjects: ['SUB005', 'SUB010'], maxWeeklyHours: 15, designatedYear: 2 },
@@ -104,7 +105,7 @@ export const faculty: Faculty[] = [
 
 export const classrooms: Classroom[] = [
   ...Array.from({ length: 15 }, (_, i) => ({ id: `CR${(i + 1).toString().padStart(3, '0')}`, name: `Room ${101 + i}`, type: 'classroom', capacity: 70, maintenanceStatus: 'available', building: 'Main Building' })),
-  ...Array.from({ length: 10 }, (_, i) => ({ id: `LB${(i + 1).toString().padStart(3, '0')}`, name: `Lab ${i + 1}`, type: 'lab', capacity: 40, maintenanceStatus: 'available', building: 'Tech Park' })),
+  ...Array.from({ length: 15 }, (_, i) => ({ id: `LB${(i + 1).toString().padStart(3, '0')}`, name: `Lab ${i + 1}`, type: 'lab', capacity: 40, maintenanceStatus: 'available', building: 'Tech Park' })),
   { id: 'CR_LIB', name: 'Library Hall', type: 'classroom', capacity: 100, maintenanceStatus: 'available', building: 'Main Building' }
 ];
 
@@ -174,3 +175,5 @@ export const badges: Badge[] = [
 export const userBadges: UserBadge[] = [
     { id: 'UB01', userId: 'STU001', badgeId: 'B02', earnedAt: new Date().toISOString() }, { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() }, { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
+
+    
