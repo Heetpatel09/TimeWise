@@ -60,8 +60,8 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        // Skip library subject, it's a free slot and not explicitly scheduled.
-        if (sub.id === 'LIB001') continue;
+        // Skip special subjects that are not explicitly scheduled via this main engine part.
+        if (sub.isSpecial) continue;
 
         // Find all faculty for a subject, and select the one with the least current workload
         const qualifiedFaculty = input.faculty
@@ -104,13 +104,10 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
 // --- Conflict Checking Functions ---
 function isConflict(schedule: (Gene | Schedule)[], day: string, time: string, facultyId: string, classroomId: string, classId: string): boolean {
-    // A library slot for a faculty does not cause a faculty conflict.
-    const isLibrarySlot = facultyId.startsWith('FAC_LIB');
-
     return schedule.some(gene => 
         gene.day === day && 
         gene.time === time &&
-        ((!isLibrarySlot && gene.facultyId === facultyId) || gene.classroomId === classroomId || gene.classId === classId)
+        (gene.facultyId === facultyId || gene.classroomId === classroomId || gene.classId === classId)
     );
 }
 
@@ -129,11 +126,23 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
     if (isConflict(schedule, day, time, facultyId, classroomId, classId)) {
         return false;
     }
+    
+    const dayScheduleForClass = schedule.filter(g => g.classId === classId && g.day === day);
+    
     // Rule: Do not give same subject classes more than 2 on same day
-    const daySchedule = schedule.filter(g => g.classId === classId && g.day === day);
-    if (daySchedule.filter(s => s.subjectId === subjectId).length >= 2) {
+    if (dayScheduleForClass.filter(s => s.subjectId === subjectId).length >= 2) {
         return false;
     }
+    
+    // NEW RULE: Do not schedule the same subject back-to-back
+    const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
+    if (previousSlotTime) {
+        const previousSlot = dayScheduleForClass.find(s => s.time === previousSlotTime);
+        if (previousSlot && previousSlot.subjectId === subjectId) {
+            return false;
+        }
+    }
+    
     return true;
 }
 
@@ -145,7 +154,7 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
 
     // Check for faculty assignment
     const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && s.id !== 'LIB001' && !s.isSpecial)
+        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && !s.isSpecial)
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
@@ -248,29 +257,35 @@ export async function runGA(input: GenerateTimetableInput) {
              for (const time of shuffledTimes) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
-                  const shuffledClassrooms = availableClassrooms.sort(() => Math.random() - 0.5);
-                  
-                  // Classroom Consistency Logic
+                  // NEW Classroom Consistency Logic
                   const previousSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
                   const previousSlot = fullSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime && !(g as Gene).isLab);
                   
-                  let preferredClassroomOrder = shuffledClassrooms;
-                  if (previousSlot && previousSlot.classroomId !== 'CR_LIB') {
-                      const prevRoom = shuffledClassrooms.find(c => c.id === previousSlot.classroomId);
-                      if (prevRoom) {
-                          preferredClassroomOrder = [prevRoom, ...shuffledClassrooms.filter(c => c.id !== prevRoom.id)];
+                  let classroomToTry: string | null = null;
+                  if (previousSlot && previousSlot.subjectId !== 'LIB001') {
+                      // If there's a previous lecture, we MUST use the same classroom.
+                      classroomToTry = previousSlot.classroomId;
+                      if (!canPlaceTheory(fullSchedule, day, time, theory.facultyId, classroomToTry, theory.classId, theory.subjectId)) {
+                          continue; // Cannot place in same room, so this time slot is invalid for this theory. Try next time slot.
+                      }
+                      const gene = { day, time, ...theory, classroomId: classroomToTry, isLab: false };
+                      generatedSchedule.push(gene);
+                      fullSchedule.push(gene);
+                      placed = true;
+                  } else {
+                      // No previous lecture, so try any available shuffled classroom
+                      const shuffledClassrooms = availableClassrooms.sort(() => Math.random() - 0.5);
+                      for (const room of shuffledClassrooms) {
+                        if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
+                            const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
+                            generatedSchedule.push(gene);
+                            fullSchedule.push(gene);
+                            placed = true;
+                            break;
+                        }
                       }
                   }
                   
-                  for (const room of preferredClassroomOrder) {
-                    if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
-                        const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
-                        generatedSchedule.push(gene);
-                        fullSchedule.push(gene);
-                        placed = true;
-                        break;
-                    }
-                  }
                   if (placed) break;
              }
              if (placed) break;
@@ -301,5 +316,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
