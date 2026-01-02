@@ -94,7 +94,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     }
     
     // 2. Add exactly 3 Library Slots
-    const libraryFaculty = input.faculty.find(f => f.allottedSubjects?.includes('LIB001'));
+    const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB');
     if (libraryFaculty) {
         for (let i = 0; i < 3; i++) {
             lectures.push({
@@ -322,3 +322,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
