@@ -56,29 +56,32 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const classSubjects = input.subjects.filter(
         s => s.semester === classToSchedule.semester && s.department === classToSchedule.department
     );
+     const facultyWorkload = new Map<string, number>();
+    input.faculty.forEach(f => facultyWorkload.set(f.id, 0));
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
         // Find all faculty for a subject, and select the one with the least current workload
-        const qualifiedFaculty = input.faculty.filter(f => f.allottedSubjects?.includes(sub.id));
+        const qualifiedFaculty = input.faculty
+            .filter(f => f.allottedSubjects?.includes(sub.id))
+            .sort((a,b) => (facultyWorkload.get(a.id) || 0) - (facultyWorkload.get(b.id) || 0));
+
         if (qualifiedFaculty.length === 0) {
-             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
+            console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
             continue;
         }
 
-        // Simple load balancing: just pick one for now. The engine will balance later.
-        const facultyForSubject = qualifiedFaculty[0];
+        const facultyForSubject = qualifiedFaculty[0]; // The one with the least work so far
 
         if (sub.type === 'lab') {
-            // A lab session is 2 hours long, scheduled once a week.
-            // It consists of two 1-hour genes that must be consecutive.
-            // We represent this as a single lecture item that the engine will handle.
+            const labHours = 2;
             lectures.push({
                 classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
-                isLab: true, hours: 2
+                isLab: true, hours: labHours
             });
+            facultyWorkload.set(facultyForSubject.id, (facultyWorkload.get(facultyForSubject.id) || 0) + labHours);
+
         } else {
-            // Theory subjects have hours based on priority. Add one 1-hour lecture for each required hour.
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
                 lectures.push({
@@ -86,11 +89,12 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
                     isLab: false, hours: 1
                 });
             }
+             facultyWorkload.set(facultyForSubject.id, (facultyWorkload.get(facultyForSubject.id) || 0) + hours);
         }
     }
     
     // 2. Add exactly 3 Library Slots
-     const libraryFaculty = input.faculty.find(f => f.allottedSubjects?.includes('LIB001'));
+    const libraryFaculty = input.faculty.find(f => f.allottedSubjects?.includes('LIB001'));
     if (libraryFaculty) {
         for (let i = 0; i < 3; i++) {
             lectures.push({
@@ -248,11 +252,7 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB');
-                     if (!libraryFaculty) {
-                         return { success: false, message: "Library faculty (FAC_LIB) not found.", bestTimetable: [], codeChefDay: undefined };
-                     }
-                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: libraryFaculty.id, isLab: false };
+                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', isLab: false };
                      generatedSchedule.push(gene);
                      fullSchedule.push(gene);
                      placed = true;
@@ -267,7 +267,6 @@ export async function runGA(input: GenerateTimetableInput) {
                   
                   let preferredClassroomOrder = shuffledClassrooms;
                   if (previousSlot && previousSlot.classroomId) {
-                      // Move the previously used classroom to the front of the list to try it first
                       const prevRoom = shuffledClassrooms.find(c => c.id === previousSlot.classroomId);
                       if (prevRoom) {
                           preferredClassroomOrder = [prevRoom, ...shuffledClassrooms.filter(c => c.id !== prevRoom.id)];
