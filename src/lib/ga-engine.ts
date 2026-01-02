@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
@@ -207,7 +208,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const theoryLectures = lecturesToPlace.filter(l => !l.isLab);
 
     const generatedSchedule: Gene[] = [];
-    let fullSchedule: (Gene | Schedule)[] = [...input.existingSchedule || []];
+    const fullSchedule: (Gene | Schedule)[] = [...input.existingSchedule || []];
 
     const availableLabRooms = input.classrooms.filter(c => c.type === 'lab');
     if (availableLabRooms.length === 0 && labLectures.length > 0) {
@@ -229,12 +230,12 @@ export async function runGA(input: GenerateTimetableInput) {
             for (const [time1, time2] of timePairsToTry) {
                  for (const room of availableLabRooms.sort(() => Math.random() - 0.5)) {
                     if (canPlaceLab(fullSchedule, day, time1, time2, lab.facultyId, room.id, lab.classId)) {
-                        const gene1 = { day, time: time1, ...lab, classroomId: room.id, isLab: true };
-                        const gene2 = { day, time: time2, ...lab, classroomId: room.id, isLab: true };
+                        const gene1: Gene = { day, time: time1, ...lab, classroomId: room.id, isLab: true };
+                        const gene2: Gene = { day, time: time2, ...lab, classroomId: room.id, isLab: true };
                         generatedSchedule.push(gene1, gene2);
                         fullSchedule.push(gene1, gene2);
                         placed = true;
-                        lastLabWasMorning = labTimePairs.indexOf(timePairsToTry[0]) === 0;
+                        lastLabWasMorning = !lastLabWasMorning;
                         break;
                     }
                 }

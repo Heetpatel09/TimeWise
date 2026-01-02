@@ -113,7 +113,6 @@ export const classrooms: Classroom[] = [
 export const schedule: Schedule[] = [
   { id: 'SCH001', classId: 'CLS001', subjectId: 'SUB001', facultyId: 'FAC001', classroomId: 'CR001', day: 'Monday', time: '07:30 AM - 08:25 AM' },
   { id: 'SCH002', classId: 'CLS001', subjectId: 'SUB003', facultyId: 'FAC002', classroomId: 'CR002', day: 'Monday', time: '08:25 AM - 09:20 AM' },
-  { id: 'SCH003', classId: 'CLS002', subjectId: 'SUB300', facultyId: 'FAC003', classroomId: 'LB003', day: 'Monday', time: '07:30 AM - 08:25 AM' },
   { id: 'SCH004', classId: 'CLS003', subjectId: 'SUB006', facultyId: 'FAC002', classroomId: 'CR001', day: 'Tuesday', time: '09:30 AM - 10:25 AM' },
   { id: 'SCH005', classId: 'CLS005', subjectId: 'SUB011', facultyId: 'FAC004', classroomId: 'CR004', day: 'Wednesday', time: '12:20 PM - 01:15 PM' },
   { id: 'SCH006', classId: 'CLS005', subjectId: 'SUB012', facultyId: 'FAC004', classroomId: 'LB001', day: 'Wednesday', time: '01:15 PM - 02:10 PM' },
