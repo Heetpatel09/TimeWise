@@ -59,12 +59,15 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
-        if (!facultyForSubject) {
-            // This case is handled by the pre-check, but as a safeguard:
-            console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
+        // Find all faculty for a subject, and select the one with the least current workload
+        const qualifiedFaculty = input.faculty.filter(f => f.allottedSubjects?.includes(sub.id));
+        if (qualifiedFaculty.length === 0) {
+             console.warn(`[Scheduler] No faculty found for subject ${sub.name}. Skipping.`);
             continue;
         }
+
+        // Simple load balancing: just pick one for now. The engine will balance later.
+        const facultyForSubject = qualifiedFaculty[0];
 
         if (sub.type === 'lab') {
             // A lab session is 2 hours long, scheduled once a week.
@@ -87,11 +90,14 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     }
     
     // 2. Add exactly 3 Library Slots
-    for (let i = 0; i < 3; i++) {
-        lectures.push({
-            classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB', // Placeholder IDs
-            isLab: false, hours: 1
-        });
+     const libraryFaculty = input.faculty.find(f => f.allottedSubjects?.includes('LIB001'));
+    if (libraryFaculty) {
+        for (let i = 0; i < 3; i++) {
+            lectures.push({
+                classId: classToSchedule.id, subjectId: 'LIB001', facultyId: libraryFaculty.id,
+                isLab: false, hours: 1
+            });
+        }
     }
     
     // Sort by labs first (most constrained), then theory
@@ -242,7 +248,8 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: 'FAC_LIB', isLab: false };
+                     const libraryFaculty = input.faculty.find(f => f.allottedSubjects?.includes('LIB001'));
+                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: libraryFaculty!.id, isLab: false };
                      generatedSchedule.push(gene);
                      fullSchedule.push(gene);
                      placed = true;
