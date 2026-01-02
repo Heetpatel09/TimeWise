@@ -94,7 +94,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     }
     
     // 2. Add exactly 3 Library Slots
-    const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB');
+    const libraryFaculty = input.faculty.find(f => f.department === 'Administration');
     if (libraryFaculty) {
         for (let i = 0; i < 3; i++) {
             lectures.push({
@@ -159,7 +159,7 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
     }
     
     // Check if total required slots exceed available slots
-    const totalRequiredHours = lectures.reduce((acc, l) => acc + (l.hours === 2 ? 2 : l.hours), 0);
+    const totalRequiredHours = lectures.reduce((acc, l) => acc + l.hours, 0);
     const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
 
     if (totalRequiredHours > totalAvailableSlots) {
@@ -246,18 +246,12 @@ export async function runGA(input: GenerateTimetableInput) {
 
     for (const theory of theoryLectures) {
         let placed = false;
-        // Systematic placement for guaranteed result
-        for (const day of workingDays) {
-             for (const time of LECTURE_TIME_SLOTS) {
+        const shuffledDays = workingDays.sort(() => Math.random() - 0.5);
+        
+        for (const day of shuffledDays) {
+             const shuffledTimes = LECTURE_TIME_SLOTS.sort(() => Math.random() - 0.5);
+             for (const time of shuffledTimes) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
-                  
-                  if (theory.subjectId === 'LIB001') {
-                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', isLab: false };
-                     generatedSchedule.push(gene);
-                     fullSchedule.push(gene);
-                     placed = true;
-                     break;
-                  }
                   
                   const shuffledClassrooms = availableClassrooms.sort(() => Math.random() - 0.5);
                   
@@ -266,14 +260,18 @@ export async function runGA(input: GenerateTimetableInput) {
                   const previousSlot = fullSchedule.find(g => g.classId === theory.classId && g.day === day && g.time === previousSlotTime && !(g as Gene).isLab);
                   
                   let preferredClassroomOrder = shuffledClassrooms;
-                  if (previousSlot && previousSlot.classroomId) {
+                  if (previousSlot && previousSlot.classroomId && previousSlot.classroomId !== 'CR_LIB') {
                       const prevRoom = shuffledClassrooms.find(c => c.id === previousSlot.classroomId);
                       if (prevRoom) {
                           preferredClassroomOrder = [prevRoom, ...shuffledClassrooms.filter(c => c.id !== prevRoom.id)];
                       }
                   }
+                  
+                   const roomsToTry = theory.subjectId === 'LIB001' 
+                    ? [{ id: 'CR_LIB' }] 
+                    : preferredClassroomOrder;
 
-                  for (const room of preferredClassroomOrder) {
+                  for (const room of roomsToTry) {
                     if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
                         const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
                         generatedSchedule.push(gene);
@@ -322,5 +320,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
