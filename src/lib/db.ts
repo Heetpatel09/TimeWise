@@ -150,10 +150,8 @@ function createSchemaAndSeed() {
         email TEXT NOT NULL UNIQUE,
         enrollmentNumber TEXT NOT NULL,
         rollNumber INTEGER,
-        section TEXT NOT NULL,
         batch INTEGER,
         phone TEXT,
-        category TEXT,
         classId TEXT NOT NULL,
         avatar TEXT,
         profileCompleted INTEGER NOT NULL DEFAULT 0,
@@ -161,6 +159,7 @@ function createSchemaAndSeed() {
         cgpa REAL NOT NULL DEFAULT 0,
         streak INTEGER NOT NULL DEFAULT 0,
         points INTEGER NOT NULL DEFAULT 0,
+        category TEXT,
         FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS schedule (
@@ -371,7 +370,7 @@ function createSchemaAndSeed() {
     const insertDepartment = db.prepare('INSERT OR IGNORE INTO departments (id, name, code) VALUES (?, ?, ?)');
     const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, departmentId, section) VALUES (?, ?, ?, ?, ?)');
-    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
     const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
