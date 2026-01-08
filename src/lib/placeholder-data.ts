@@ -5,10 +5,10 @@ import { randomBytes } from 'crypto';
 
 // --- DEPARTMENTS ---
 export const departments: Department[] = [
-  { id: 'DEPT_CSE', name: 'Computer Engineering', code: 'CSE' },
-  { id: 'DEPT_AIML', name: 'Artificial Intelligence & ML', code: 'AIML' },
-  { id: 'DEPT_ECE', name: 'Electronics Engineering', code: 'ECE' },
-  { id: 'DEPT_MECH', name: 'Mechanical Engineering', code: 'MECH' },
+  { id: 'DEPT_CSE', name: 'Computer Engineering', code: '001' },
+  { id: 'DEPT_AIML', name: 'Artificial Intelligence & ML', code: '002' },
+  { id: 'DEPT_ECE', name: 'Electronics Engineering', code: '003' },
+  { id: 'DEPT_MECH', name: 'Mechanical Engineering', code: '004' },
 ];
 
 // --- SUBJECTS ---
@@ -183,3 +183,5 @@ export const badges: Badge[] = [
 export const userBadges: UserBadge[] = [
     { id: 'UB01', userId: 'STU001', badgeId: 'B02', earnedAt: new Date().toISOString() }, { id: 'UB02', userId: 'STU001', badgeId: 'B04', earnedAt: new Date().toISOString() }, { id: 'UB03', userId: 'FAC001', badgeId: 'B01', earnedAt: new Date().toISOString() },
 ];
+
+    

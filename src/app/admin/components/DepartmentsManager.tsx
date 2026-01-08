@@ -84,14 +84,14 @@ function FacultyForm({
   });
 
   const [isCodeManuallyEdited, setIsCodeManuallyEdited] = useState(!!faculty.code);
-  const watchedCode = form.watch('code');
   
   useEffect(() => {
+    const watchedCode = form.watch('code');
     const currentEmail = form.getValues('email');
-    if (watchedCode && !currentEmail) {
+    if (watchedCode && !isCodeManuallyEdited && !currentEmail) {
         form.setValue('email', `${watchedCode.toLowerCase()}@timewise.app`, { shouldValidate: true });
     }
-  }, [watchedCode, form]);
+  }, [form.watch('code'), form, isCodeManuallyEdited]);
 
   useEffect(() => {
     form.reset({
@@ -120,7 +120,9 @@ function FacultyForm({
   
   const generateStaffId = () => {
     const { designatedYear, designation, departmentId } = form.getValues();
-    if (!designatedYear || !designation || !departmentId) {
+    const department = departments.find(d => d.id === departmentId);
+
+    if (!designatedYear || !designation || !department) {
         toast({ title: "Missing Information", description: "Please select Designated Year, Designation, and Department to generate an ID.", variant: "destructive" });
         return;
     }
@@ -133,9 +135,7 @@ function FacultyForm({
     else if (designation === 'Assistant Professor') positionCode = '02';
     else if (designation === 'Lecturer') positionCode = '03';
     
-    // Create a numerical mapping for departments
-    const departmentIndex = departments.findIndex(d => d.id === departmentId);
-    const deptCode = (departmentIndex + 1).toString().padStart(3, '0'); // GHI
+    const deptCode = department.code.padStart(3, '0'); // GHI
     
     const sequentialPart = (facultyCount + 1).toString().padStart(3, '0'); // JKL
 
@@ -983,7 +983,8 @@ export default function DepartmentsManager() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="dept-code">Department Code</Label>
-                    <Input id="dept-code" value={newDepartment.code} onChange={(e) => setNewDepartment({...newDepartment, code: e.target.value})} placeholder="e.g., MECH" disabled={deptMutation.isPending}/>
+                    <Input id="dept-code" value={newDepartment.code} onChange={(e) => setNewDepartment({...newDepartment, code: e.target.value})} placeholder="e.g., 004" disabled={deptMutation.isPending}/>
+                    <p className='text-xs text-muted-foreground'>This should be a unique 3-digit numerical code.</p>
                 </div>
             </div>
             <DialogFooter>
@@ -1009,7 +1010,8 @@ export default function DepartmentsManager() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="new-dept-code">New Department Code</Label>
-                    <Input id="new-dept-code" value={renamingDepartment.code} onChange={(e) => setRenamingDepartment({...renamingDepartment, code: e.target.value})} placeholder="e.g., MECH" disabled={deptMutation.isPending}/>
+                    <Input id="new-dept-code" value={renamingDepartment.code} onChange={(e) => setRenamingDepartment({...renamingDepartment, code: e.target.value})} placeholder="e.g., 004" disabled={deptMutation.isPending}/>
+                     <p className='text-xs text-muted-foreground'>This should be a unique 3-digit numerical code.</p>
                 </div>
             </div>
             <DialogFooter>
@@ -1084,3 +1086,5 @@ export default function DepartmentsManager() {
     </div>
   );
 }
+
+    
