@@ -803,6 +803,7 @@ export default function DepartmentsManager() {
                                                             <div>
                                                                 <div className="font-bold">{fac.name}</div>
                                                                 <div className="text-sm text-muted-foreground">{fac.email}</div>
+                                                                <div className="text-xs text-muted-foreground">ID: {fac.code}</div>
                                                             </div>
                                                          </div>
                                                      </TableCell>
