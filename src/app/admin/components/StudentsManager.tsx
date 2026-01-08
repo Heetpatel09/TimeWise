@@ -11,7 +11,7 @@ import { getStudents, addStudent, updateStudent, deleteStudent } from '@/lib/ser
 import { getClasses } from '@/lib/services/classes';
 import { getAllAttendanceRecords } from '@/lib/services/attendance';
 import type { Student, Class, EnrichedAttendance } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, FilterX } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,7 @@ import {
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function StudentsManager() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -43,6 +44,13 @@ export default function StudentsManager() {
   const [manualPassword, setManualPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+
+  const [filters, setFilters] = useState({
+    department: 'all',
+    semester: 'all',
+    classId: 'all',
+    batch: 'all',
+  });
 
   async function loadData() {
     setIsLoading(true);
@@ -61,6 +69,59 @@ export default function StudentsManager() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const departments = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.department)))], [classes]);
+  const semesters = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.semester.toString()))).sort((a,b) => parseInt(a) - parseInt(b))], [classes]);
+  const batches = useMemo(() => ['all', ...Array.from(new Set(students.map(s => s.batch.toString()))).sort()], [students]);
+  
+  const filteredClasses = useMemo(() => {
+    let tempClasses = classes;
+    if (filters.department !== 'all') {
+      tempClasses = tempClasses.filter(c => c.department === filters.department);
+    }
+    if (filters.semester !== 'all') {
+      tempClasses = tempClasses.filter(c => c.semester.toString() === filters.semester);
+    }
+    return tempClasses;
+  }, [classes, filters.department, filters.semester]);
+
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
+        const studentClass = classes.find(c => c.id === student.classId);
+        if (!studentClass) return false;
+        
+        if (filters.department !== 'all' && studentClass.department !== filters.department) return false;
+        if (filters.semester !== 'all' && studentClass.semester.toString() !== filters.semester) return false;
+        if (filters.classId !== 'all' && student.classId !== filters.classId) return false;
+        if (filters.batch !== 'all' && student.batch.toString() !== filters.batch) return false;
+        
+        return true;
+    });
+  }, [students, classes, filters]);
+  
+  const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
+    setFilters(prev => {
+      const newFilters = { ...prev, [filterName]: value };
+      // Reset dependent filters
+      if (filterName === 'department') {
+        newFilters.semester = 'all';
+        newFilters.classId = 'all';
+      }
+      if (filterName === 'semester') {
+        newFilters.classId = 'all';
+      }
+      return newFilters;
+    });
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      department: 'all',
+      semester: 'all',
+      classId: 'all',
+      batch: 'all',
+    });
+  }
 
   const studentAttendanceStats = useMemo(() => {
     const stats: Record<string, { present: number, total: number, percentage: number }> = {};
@@ -147,6 +208,33 @@ export default function StudentsManager() {
 
   return (
     <div>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-4">
+          <Select value={filters.department} onValueChange={(v) => handleFilterChange('department', v)}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Department" /></SelectTrigger>
+            <SelectContent>{departments.map(d => <SelectItem key={d} value={d} className="capitalize">{d === 'all' ? 'All Departments' : d}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filters.semester} onValueChange={(v) => handleFilterChange('semester', v)}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Semester" /></SelectTrigger>
+            <SelectContent>{semesters.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Semesters' : `Semester ${s}`}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filters.classId} onValueChange={(v) => handleFilterChange('classId', v)}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Class" /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {filteredClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filters.batch} onValueChange={(v) => handleFilterChange('batch', v)}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Year/Batch" /></SelectTrigger>
+            <SelectContent>{batches.map(b => <SelectItem key={b} value={b}>{b === 'all' ? 'All Years' : b}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button variant="ghost" onClick={resetFilters}><FilterX className="mr-2 h-4 w-4" /> Reset</Button>
+        </CardContent>
+      </Card>
       <div className="flex justify-end mb-4">
         <Button onClick={openNewDialog}>
           <PlusCircle className="h-4 w-4 mr-2" />
@@ -166,7 +254,7 @@ export default function StudentsManager() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map((student) => {
+            {filteredStudents.map((student) => {
               const attendance = studentAttendanceStats[student.id];
               const className = classes.find(c => c.id === student.classId)?.name || 'N/A';
               return (
@@ -370,5 +458,3 @@ export default function StudentsManager() {
     </div>
   );
 }
-
-    
