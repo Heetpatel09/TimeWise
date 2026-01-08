@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import Database from 'better-sqlite3';
@@ -23,6 +22,7 @@ import {
   gatePasses,
   badges,
   userBadges,
+  departments as placeholderDepartments,
 } from './placeholder-data';
 import type { Faculty, Student } from './types';
 import fs from 'fs';
@@ -35,7 +35,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 65; // Increment this to force re-initialization
+const schemaVersion = 66; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'workspace/db-version.txt');
 
 
@@ -85,6 +85,11 @@ function initializeDb() {
 function createSchemaAndSeed() {
    // Use "IF NOT EXISTS" for every table to make initialization idempotent
   db.exec(`
+    CREATE TABLE IF NOT EXISTS departments (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        code TEXT NOT NULL UNIQUE
+    );
     CREATE TABLE IF NOT EXISTS subjects (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -93,15 +98,17 @@ function createSchemaAndSeed() {
         semester INTEGER NOT NULL,
         syllabus TEXT,
         isSpecial BOOLEAN,
-        department TEXT,
-        priority TEXT
+        departmentId TEXT NOT NULL,
+        priority TEXT,
+        FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS classes (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         semester INTEGER NOT NULL,
-        department TEXT NOT NULL,
-        section TEXT NOT NULL
+        departmentId TEXT NOT NULL,
+        section TEXT NOT NULL,
+        FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE CASCADE
     );
      CREATE TABLE IF NOT EXISTS classrooms (
         id TEXT PRIMARY KEY,
@@ -124,7 +131,7 @@ function createSchemaAndSeed() {
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         code TEXT,
-        department TEXT NOT NULL,
+        departmentId TEXT NOT NULL,
         designation TEXT,
         employmentType TEXT,
         roles TEXT,
@@ -134,7 +141,8 @@ function createSchemaAndSeed() {
         points INTEGER NOT NULL DEFAULT 0,
         allottedSubjects TEXT,
         maxWeeklyHours INTEGER,
-        designatedYear INTEGER
+        designatedYear INTEGER,
+        FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE CASCADE
     );
      CREATE TABLE IF NOT EXISTS students (
         id TEXT PRIMARY KEY,
@@ -145,7 +153,7 @@ function createSchemaAndSeed() {
         section TEXT NOT NULL,
         batch INTEGER,
         phone TEXT,
-        category TEXT NOT NULL,
+        category TEXT,
         classId TEXT NOT NULL,
         avatar TEXT,
         profileCompleted INTEGER NOT NULL DEFAULT 0,
@@ -360,10 +368,11 @@ function createSchemaAndSeed() {
   `);
   
   // Seed the database
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, department, section) VALUES (?, ?, ?, ?, ?)');
-    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, section, batch, phone, category, classId, avatar, profileCompleted, sgpa, cgpa, streak, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertDepartment = db.prepare('INSERT OR IGNORE INTO departments (id, name, code) VALUES (?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, departmentId, section) VALUES (?, ?, ?, ?, ?)');
+    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
     const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -381,18 +390,17 @@ function createSchemaAndSeed() {
     const insertUserBadge = db.prepare('INSERT OR IGNORE INTO user_badges (id, userId, badgeId, earnedAt) VALUES (?, ?, ?, ?)');
 
     db.transaction(() => {
-        // Corrected Seeding Order
-        
         // 1. Independent Entities
-        placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, s.department || 'Computer Engineering', s.priority || null));
+        placeholderDepartments.forEach(d => insertDepartment.run(d.id, d.name, d.code));
+        placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, s.departmentId, s.priority || null));
         placeholderClassrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
-        placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.department, c.section));
-        placeholderFaculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.department, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear));
+        placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.departmentId, c.section));
+        placeholderFaculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.departmentId, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear));
         hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
         badges.forEach(b => insertBadge.run(b.id, b.name, b.description, b.icon, b.rarity, b.category, b.points));
 
         // 2. Dependent Entities (like students who need a classId)
-        placeholderStudents.forEach(s => insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.section, s.batch, s.phone, s.category, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0));
+        placeholderStudents.forEach(s => insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.batch, s.phone, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0, s.category || 'general'));
 
         // 3. User Credentials for all roles
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');

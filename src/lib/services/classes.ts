@@ -19,8 +19,8 @@ export async function getClasses(): Promise<Class[]> {
 export async function addClass(item: Omit<Class, 'id'>) {
     const db = getDb();
     const id = `CLS${Date.now()}`;
-    const stmt = db.prepare('INSERT INTO classes (id, name, semester, department, section) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(id, item.name, item.semester, item.department, item.section);
+    const stmt = db.prepare('INSERT INTO classes (id, name, semester, departmentId, section) VALUES (?, ?, ?, ?, ?)');
+    stmt.run(id, item.name, item.semester, item.departmentId, item.section);
     revalidateAll();
     const newItem: Class = { ...item, id };
     return Promise.resolve(newItem);
@@ -28,8 +28,8 @@ export async function addClass(item: Omit<Class, 'id'>) {
 
 export async function updateClass(updatedItem: Class) {
     const db = getDb();
-    const stmt = db.prepare('UPDATE classes SET name = ?, semester = ?, department = ?, section = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.semester, updatedItem.department, updatedItem.section, updatedItem.id);
+    const stmt = db.prepare('UPDATE classes SET name = ?, semester = ?, departmentId = ?, section = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.semester, updatedItem.departmentId, updatedItem.section, updatedItem.id);
     revalidateAll();
     return Promise.resolve(updatedItem);
 }
@@ -37,13 +37,11 @@ export async function updateClass(updatedItem: Class) {
 export async function deleteClass(id: string) {
     const db = getDb();
     
-    // Before deleting a class, ensure there are no students in it.
     const studentCheck = db.prepare('SELECT 1 FROM students WHERE classId = ? LIMIT 1').get(id);
     if (studentCheck) {
         throw new Error("Cannot delete class. Please re-assign or delete students in this class first.");
     }
     
-    // Also delete associated schedule slots
     const scheduleStmt = db.prepare('DELETE FROM schedule WHERE classId = ?');
     scheduleStmt.run(id);
 
@@ -52,20 +50,4 @@ export async function deleteClass(id: string) {
     
     revalidateAll();
     return Promise.resolve(id);
-}
-
-export async function renameDepartment(oldName: string, newName: string) {
-    const db = getDb();
-
-    db.transaction(() => {
-        // Update classes
-        db.prepare('UPDATE classes SET department = ? WHERE department = ?').run(newName, oldName);
-        // Update subjects
-        db.prepare('UPDATE subjects SET department = ? WHERE department = ?').run(newName, oldName);
-        // Update faculty
-        db.prepare('UPDATE faculty SET department = ? WHERE department = ?').run(newName, oldName);
-    })();
-
-    revalidateAll();
-    return Promise.resolve({ success: true, oldName, newName });
 }

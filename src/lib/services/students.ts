@@ -1,9 +1,10 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Student } from '@/lib/types';
+import type { Student, Class } from '@/lib/types';
 import { addCredential } from './auth';
 import { generateWelcomeNotificationFlow as generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
@@ -16,9 +17,13 @@ function revalidateAll() {
     revalidatePath('/faculty', 'layout');
 }
 
-export async function getStudents(): Promise<Student[]> {
+export async function getStudents(): Promise<(Student & { className: string })[]> {
   const db = getDb();
-  const stmt = db.prepare('SELECT * FROM students');
+  const stmt = db.prepare(`
+    SELECT s.*, c.name as className 
+    FROM students s
+    LEFT JOIN classes c ON s.classId = c.id
+  `);
   const results = stmt.all() as any[];
   // Ensure plain objects are returned
   return JSON.parse(JSON.stringify(results.map(s => ({ ...s, avatar: s.avatar || `https://avatar.vercel.sh/${s.email}.png` }))));
@@ -53,8 +58,8 @@ export async function addStudent(
         points: item.points || 0,
     };
 
-    const stmt = db.prepare('INSERT INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.enrollmentNumber, newItem.rollNumber, newItem.batch, newItem.phone, newItem.classId, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa, newItem.streak, newItem.points);
+    const stmt = db.prepare('INSERT INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.enrollmentNumber, newItem.rollNumber, newItem.batch, newItem.phone, newItem.classId, newItem.avatar, newItem.profileCompleted, newItem.sgpa, newItem.cgpa, newItem.streak, newItem.points, newItem.category);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -65,9 +70,8 @@ export async function addStudent(
       requiresPasswordChange: !password
     });
     
-    // Generate welcome notification
     try {
-        const classes = await getClasses();
+        const classes: Class[] = await getClasses();
         const className = classes.find(c => c.id === newItem.classId)?.name || 'their new class';
         const notificationResult = await generateWelcomeNotification({
             name: newItem.name,
@@ -95,8 +99,8 @@ export async function updateStudent(updatedItem: Student): Promise<Student> {
         throw new Error("Student not found.");
     }
     
-    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, enrollmentNumber = ?, rollNumber = ?, batch = ?, phone = ?, classId = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ?, streak = ?, points = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.email, updatedItem.enrollmentNumber, updatedItem.rollNumber, updatedItem.batch, updatedItem.phone, updatedItem.classId, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.streak, updatedItem.points, updatedItem.id);
+    const stmt = db.prepare('UPDATE students SET name = ?, email = ?, enrollmentNumber = ?, rollNumber = ?, batch = ?, phone = ?, classId = ?, avatar = ?, profileCompleted = ?, sgpa = ?, cgpa = ?, streak = ?, points = ?, category = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.email, updatedItem.enrollmentNumber, updatedItem.rollNumber, updatedItem.batch, updatedItem.phone, updatedItem.classId, updatedItem.avatar, updatedItem.profileCompleted, updatedItem.sgpa, updatedItem.cgpa, updatedItem.streak, updatedItem.points, updatedItem.category, updatedItem.id);
     
     if (oldStudent.email !== updatedItem.email) {
          await addCredential({
@@ -123,5 +127,3 @@ export async function deleteStudent(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    

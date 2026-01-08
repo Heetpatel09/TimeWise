@@ -33,8 +33,8 @@ export async function addSubject(item: Omit<Subject, 'id'>): Promise<Subject> {
 
     const newItem: Subject = { ...item, id, name: finalName };
     
-    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, department, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.department, item.priority);
+    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.departmentId, item.priority);
     
     revalidateAll();
     return Promise.resolve(newItem);
@@ -49,8 +49,8 @@ export async function updateSubject(updatedItem: Subject): Promise<Subject> {
     }
     const finalItem = { ...updatedItem, name: finalName };
 
-    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, department = ?, priority = ? WHERE id = ?');
-    stmt.run(finalItem.name, finalItem.code, (finalItem.isSpecial || false) ? 1 : 0, finalItem.type, finalItem.semester, finalItem.syllabus, finalItem.department, finalItem.priority, finalItem.id);
+    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, departmentId = ?, priority = ? WHERE id = ?');
+    stmt.run(finalItem.name, finalItem.code, (finalItem.isSpecial || false) ? 1 : 0, finalItem.type, finalItem.semester, finalItem.syllabus, finalItem.departmentId, finalItem.priority, finalItem.id);
     
     revalidateAll();
     return Promise.resolve(finalItem);

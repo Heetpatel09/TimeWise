@@ -140,6 +140,12 @@ export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSche
 
 export type SubjectPriority = 'Non Negotiable' | 'High' | 'Medium' | 'Low';
 
+export interface Department {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export interface Subject {
   id: string;
   name: string;
@@ -147,7 +153,7 @@ export interface Subject {
   type: 'theory' | 'lab';
   semester: number;
   syllabus?: string;
-  department?: string;
+  departmentId: string;
   isSpecial?: boolean;
   priority?: SubjectPriority;
 }
@@ -156,8 +162,12 @@ export interface Class {
   id: string;
   name: string;
   semester: number;
-  department: string;
+  departmentId: string;
   section: string;
+}
+
+export interface EnrichedClass extends Class {
+    departmentName: string;
 }
 
 export interface Student {
@@ -166,8 +176,9 @@ export interface Student {
   email: string;
   enrollmentNumber: string;
   rollNumber: number;
-  batch: number;
-  phone: string;
+  batch?: number;
+  phone?: string;
+  category?: string;
   classId: string;
   avatar?: string;
   className?: string; // Optional: can be added when joining with classes table
@@ -183,7 +194,7 @@ export interface Faculty {
   name: string;
   email: string;
   code: string; // Used as Staff ID
-  department: string;
+  departmentId: string;
   designation: string;
   employmentType: 'full-time' | 'part-time' | 'contract';
   roles: string[];
@@ -469,5 +480,3 @@ export interface UserBadge {
 export interface EnrichedUserBadge extends UserBadge {
   badge: Badge;
 }
-
-    

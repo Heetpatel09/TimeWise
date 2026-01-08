@@ -4,7 +4,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Faculty } from '@/lib/types';
+import type { Faculty, Department } from '@/lib/types';
 import { addCredential } from './auth';
 import { generateWelcomeNotificationFlow as generateWelcomeNotification } from '@/ai/flows/generate-welcome-notification-flow';
 import { addNotification } from './notifications';
@@ -66,8 +66,8 @@ export async function addFaculty(
         allottedSubjects: item.allottedSubjects || [],
     };
     
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, department, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.department, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.points, JSON.stringify(newItem.allottedSubjects), newItem.maxWeeklyHours, newItem.designatedYear);
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.departmentId, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.points, JSON.stringify(newItem.allottedSubjects), newItem.maxWeeklyHours, newItem.designatedYear);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -80,10 +80,11 @@ export async function addFaculty(
 
     // Generate welcome notification
     try {
+        const department = db.prepare('SELECT name FROM departments WHERE id = ?').get(newItem.departmentId) as Department | undefined;
         const notificationResult = await generateWelcomeNotification({
             name: newItem.name,
             role: 'faculty',
-            context: newItem.department
+            context: department?.name || 'the university'
         });
         await addNotification({
             userId: newItem.id,
@@ -123,8 +124,8 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
             allottedSubjects: JSON.stringify(updatedItem.allottedSubjects || JSON.parse(oldFaculty.allottedSubjects || '[]')),
         };
 
-        const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, department = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allottedSubjects = ?, maxWeeklyHours = ?, designatedYear = ? WHERE id = ?');
-        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.department, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.allottedSubjects, mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.id);
+        const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, departmentId = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allottedSubjects = ?, maxWeeklyHours = ?, designatedYear = ? WHERE id = ?');
+        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.departmentId, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.allottedSubjects, mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.id);
 
         if (oldFaculty.email !== mergedItem.email) {
             addCredential({
@@ -146,20 +147,15 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
 export async function deleteFaculty(id: string) {
     const db = getDb();
 
-    // Check if faculty is in use
     const inUse = db.prepare('SELECT 1 FROM schedule WHERE facultyId = ? LIMIT 1').get(id);
     if (inUse) {
         throw new Error("Cannot delete faculty that is currently assigned to a schedule. Please re-assign their classes first.");
     }
     
-    // Also delete from user_credentials
     db.prepare('DELETE FROM user_credentials WHERE userId = ?').run(id);
-
     const stmt = db.prepare('DELETE FROM faculty WHERE id = ?');
     stmt.run(id);
 
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    
