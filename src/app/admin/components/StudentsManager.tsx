@@ -84,7 +84,7 @@ export default function StudentsManager() {
   }
 
   const handleSave = async () => {
-    if (currentStudent && currentStudent.classId && currentStudent.name && currentStudent.email && currentStudent.enrollmentNumber && currentStudent.section && currentStudent.category) {
+    if (currentStudent && currentStudent.classId && currentStudent.name && currentStudent.email && currentStudent.enrollmentNumber) {
        if (!currentStudent.id && passwordOption === 'manual' && !manualPassword) {
         toast({ title: "Password Required", description: "Please enter a password for the new student.", variant: "destructive" });
         return;
@@ -159,8 +159,7 @@ export default function StudentsManager() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Enrollment No.</TableHead>
-              <TableHead>Section</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead>Class</TableHead>
               <TableHead>CGPA</TableHead>
               <TableHead>Attendance</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -169,6 +168,7 @@ export default function StudentsManager() {
           <TableBody>
             {students.map((student) => {
               const attendance = studentAttendanceStats[student.id];
+              const className = classes.find(c => c.id === student.classId)?.name || 'N/A';
               return (
               <TableRow key={student.id}>
                 <TableCell className="font-medium">
@@ -184,8 +184,7 @@ export default function StudentsManager() {
                   </div>
                 </TableCell>
                 <TableCell>{student.enrollmentNumber}</TableCell>
-                <TableCell>{student.section}</TableCell>
-                <TableCell>{student.category}</TableCell>
+                <TableCell>{className}</TableCell>
                 <TableCell>{student.cgpa.toFixed(2)}</TableCell>
                 <TableCell>
                   {attendance && attendance.total > 0 ? (
@@ -266,16 +265,6 @@ export default function StudentsManager() {
             <div className="space-y-2">
               <Label htmlFor="enrollmentNumber">Enrollment Number</Label>
               <Input id="enrollmentNumber" value={currentStudent.enrollmentNumber ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, enrollmentNumber: e.target.value })} disabled={isSubmitting} />
-            </div>
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="section">Section</Label>
-                  <Input id="section" value={currentStudent.section ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, section: e.target.value })} disabled={isSubmitting} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input id="category" value={currentStudent.category ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, category: e.target.value })} disabled={isSubmitting} />
-                </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="class">Class</Label>
@@ -381,3 +370,5 @@ export default function StudentsManager() {
     </div>
   );
 }
+
+    

@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 
 export const WelcomeNotificationInputSchema = z.object({
@@ -167,10 +166,8 @@ export interface Student {
   email: string;
   enrollmentNumber: string;
   rollNumber: number;
-  section: string;
   batch: number;
   phone: string;
-  category: string;
   classId: string;
   avatar?: string;
   className?: string; // Optional: can be added when joining with classes table
@@ -472,3 +469,5 @@ export interface UserBadge {
 export interface EnrichedUserBadge extends UserBadge {
   badge: Badge;
 }
+
+    

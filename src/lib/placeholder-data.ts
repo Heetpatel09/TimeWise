@@ -1,5 +1,4 @@
 
-
 import type { Subject, Class, Student, Faculty, Schedule, LeaveRequest, ScheduleChangeRequest, Notification, Classroom, Hostel, Room, Fee, Attendance, Result, GatePass, Badge, UserBadge } from './types';
 import { format, subDays, addDays } from 'date-fns';
 import { randomBytes } from 'crypto';
@@ -84,7 +83,7 @@ export const students: Student[] = studentNames.map((name, index) => {
   const classList = classes;
   const currentClass = classList[index % classList.length];
   return {
-    id: `STU${(index + 1).toString().padStart(3, '0')}`, name, email: `${name.toLowerCase().replace(' ', '.')}@example.com`, enrollmentNumber: `ENRL24${(index + 1).toString().padStart(4, '0')}`, rollNumber: index + 1, section: currentClass.section, batch: (index % 2) + 1, phone: `98765432${(index + 10).toString().padStart(2, '0')}`, category: (index % 5 === 0) ? 'Scholarship' : 'General', classId: currentClass.id, profileCompleted: 50 + Math.floor(Math.random() * 51), sgpa: parseFloat((7 + Math.random() * 3).toFixed(2)), cgpa: parseFloat((7 + Math.random() * 3).toFixed(2)), streak: name === 'Aarav Sharma' ? 50 : Math.floor(Math.random() * 30), points: Math.floor(Math.random() * 5000)
+    id: `STU${(index + 1).toString().padStart(3, '0')}`, name, email: `${name.toLowerCase().replace(' ', '.')}@example.com`, enrollmentNumber: `ENRL24${(index + 1).toString().padStart(4, '0')}`, rollNumber: index + 1, batch: (index % 2) + 1, phone: `98765432${(index + 10).toString().padStart(2, '0')}`, classId: currentClass.id, profileCompleted: 50 + Math.floor(Math.random() * 51), sgpa: parseFloat((7 + Math.random() * 3).toFixed(2)), cgpa: parseFloat((7 + Math.random() * 3).toFixed(2)), streak: name === 'Aarav Sharma' ? 50 : Math.floor(Math.random() * 30), points: Math.floor(Math.random() * 5000)
   };
 });
 
