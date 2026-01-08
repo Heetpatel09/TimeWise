@@ -72,7 +72,7 @@ export default function StudentsManager() {
 
   const departments = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.department)))], [classes]);
   const semesters = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.semester.toString()))).sort((a,b) => parseInt(a) - parseInt(b))], [classes]);
-  const batches = useMemo(() => ['all', ...Array.from(new Set(students.map(s => s.batch.toString()))).sort()], [students]);
+  const batches = useMemo(() => ['all', ...Array.from(new Set(students.map(s => s.batch?.toString()).filter(Boolean) as string[]))], [students]);
   
   const filteredClasses = useMemo(() => {
     let tempClasses = classes;
@@ -93,7 +93,7 @@ export default function StudentsManager() {
         if (filters.department !== 'all' && studentClass.department !== filters.department) return false;
         if (filters.semester !== 'all' && studentClass.semester.toString() !== filters.semester) return false;
         if (filters.classId !== 'all' && student.classId !== filters.classId) return false;
-        if (filters.batch !== 'all' && student.batch.toString() !== filters.batch) return false;
+        if (filters.batch !== 'all' && student.batch?.toString() !== filters.batch) return false;
         
         return true;
     });
