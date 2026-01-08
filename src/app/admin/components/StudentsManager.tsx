@@ -52,6 +52,16 @@ export default function StudentsManager() {
     batch: 'all',
   });
 
+  useEffect(() => {
+    if (isDialogOpen && currentStudent.enrollmentNumber && !currentStudent.email) {
+      setCurrentStudent(prev => ({
+        ...prev,
+        email: `${prev.enrollmentNumber}@timewise.app`
+      }));
+    }
+  }, [currentStudent.enrollmentNumber, isDialogOpen, currentStudent.email]);
+
+
   async function loadData() {
     setIsLoading(true);
     try {
@@ -72,7 +82,7 @@ export default function StudentsManager() {
 
   const departments = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.department)))], [classes]);
   const semesters = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.semester.toString()))).sort((a,b) => parseInt(a) - parseInt(b))], [classes]);
-  const batches = useMemo(() => ['all', ...Array.from(new Set(students.map(s => s.batch?.toString()).filter(Boolean) as string[]))], [students]);
+  const batches = useMemo(() => ['all', ...Array.from(new Set(students.map(s => s.batch?.toString()).filter(Boolean) as string[]))].sort(), [students]);
   
   const filteredClasses = useMemo(() => {
     let tempClasses = classes;
@@ -346,13 +356,13 @@ export default function StudentsManager() {
               <Label htmlFor="name">Name</Label>
               <Input id="name" value={currentStudent.name ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })} disabled={isSubmitting} />
             </div>
+             <div className="space-y-2">
+              <Label htmlFor="enrollmentNumber">Enrollment Number</Label>
+              <Input id="enrollmentNumber" value={currentStudent.enrollmentNumber ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, enrollmentNumber: e.target.value })} disabled={isSubmitting} />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={currentStudent.email ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })} disabled={isSubmitting} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="enrollmentNumber">Enrollment Number</Label>
-              <Input id="enrollmentNumber" value={currentStudent.enrollmentNumber ?? ''} onChange={(e) => setCurrentStudent({ ...currentStudent, enrollmentNumber: e.target.value })} disabled={isSubmitting} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="class">Class</Label>
