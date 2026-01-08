@@ -80,6 +80,16 @@ function FacultyForm({
     },
   });
 
+  const watchedCode = form.watch('code');
+  
+  useEffect(() => {
+    const currentEmail = form.getValues('email');
+    if (watchedCode && !currentEmail) {
+        form.setValue('email', `${watchedCode.toLowerCase()}@timewise.app`, { shouldValidate: true });
+    }
+  }, [watchedCode, form]);
+
+
   useEffect(() => {
     form.reset({
         name: faculty.name || '',
@@ -1019,3 +1029,4 @@ export default function DepartmentsManager() {
     
     
     
+
