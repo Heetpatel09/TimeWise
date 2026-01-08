@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
-import { getClasses, addClass, updateClass, deleteClass, renameDepartment } from '@/lib/services/classes';
+import { getClasses, addClass, updateClass, deleteClass } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
-import type { Subject, Class, Faculty, SubjectPriority } from '@/lib/types';
+import { getDepartments, addDepartment, updateDepartment, deleteDepartment } from '@/lib/services/departments';
+import type { Subject, Class, Faculty, SubjectPriority, Department } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, Beaker, Pencil, ChevronsUpDown, Check, X, Eye, EyeOff, Copy, UserCheck, Users, GraduationCap, Wand2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +43,7 @@ const facultySchema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email(),
     code: z.string().min(1, "Staff ID is required"),
-    department: z.string().min(1, "Department is required"),
+    departmentId: z.string().min(1, "Department is required"),
     designation: z.string().min(1, "Designation is required"),
     employmentType: z.enum(['full-time', 'part-time', 'contract']),
     maxWeeklyHours: z.coerce.number().min(1, "Required").max(48, "Cannot exceed 48"),
@@ -63,7 +64,7 @@ function FacultyForm({
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
-  departments: string[];
+  departments: Department[];
   subjects: Subject[];
   facultyCount: number;
 }) {
@@ -75,7 +76,7 @@ function FacultyForm({
         code: faculty.code || '',
         designation: faculty.designation || '',
         employmentType: faculty.employmentType || 'full-time',
-        department: faculty.department || '',
+        departmentId: faculty.departmentId || '',
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
         designatedYear: faculty.designatedYear || 1,
         allottedSubjects: faculty.allottedSubjects || [],
@@ -99,7 +100,7 @@ function FacultyForm({
         code: faculty.code || '',
         designation: faculty.designation || '',
         employmentType: faculty.employmentType || 'full-time',
-        department: faculty.department || '',
+        departmentId: faculty.departmentId || '',
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
         designatedYear: faculty.designatedYear || 1,
         allottedSubjects: faculty.allottedSubjects || [],
@@ -114,12 +115,12 @@ function FacultyForm({
   const [isSubjectPopoverOpen, setSubjectPopoverOpen] = useState(false);
   const { toast } = useToast();
   
-  const selectedDepartment = form.watch('department');
-  const availableSubjects = useMemo(() => subjects.filter(s => s.department === selectedDepartment), [subjects, selectedDepartment]);
+  const selectedDepartmentId = form.watch('departmentId');
+  const availableSubjects = useMemo(() => subjects.filter(s => s.departmentId === selectedDepartmentId), [subjects, selectedDepartmentId]);
   
   const generateStaffId = () => {
-    const { designatedYear, designation, department } = form.getValues();
-    if (!designatedYear || !designation || !department) {
+    const { designatedYear, designation, departmentId } = form.getValues();
+    if (!designatedYear || !designation || !departmentId) {
         toast({ title: "Missing Information", description: "Please select Designated Year, Designation, and Department to generate an ID.", variant: "destructive" });
         return;
     }
@@ -133,7 +134,7 @@ function FacultyForm({
     else if (designation === 'Lecturer') positionCode = '03';
     
     // Create a numerical mapping for departments
-    const departmentIndex = departments.findIndex(d => d === department);
+    const departmentIndex = departments.findIndex(d => d.id === departmentId);
     const deptCode = (departmentIndex + 1).toString().padStart(3, '0'); // GHI
     
     const sequentialPart = (facultyCount + 1).toString().padStart(3, '0'); // JKL
@@ -189,7 +190,7 @@ function FacultyForm({
 
         <FormField
           control={form.control}
-          name="department"
+          name="departmentId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
@@ -201,8 +202,8 @@ function FacultyForm({
                 </FormControl>
                 <SelectContent>
                   {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -368,8 +369,9 @@ export default function DepartmentsManager() {
   const { data: subjects = [], isLoading: isSubjectsLoading } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: getSubjects });
   const { data: classes = [], isLoading: isClassesLoading } = useQuery<Class[]>({ queryKey: ['classes'], queryFn: getClasses });
   const { data: allFaculty = [], isLoading: isFacultyLoading } = useQuery<Faculty[]>({ queryKey: ['faculty'], queryFn: getFaculty });
+  const { data: departments = [], isLoading: isDepartmentsLoading } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments });
   
-  const isLoading = isSubjectsLoading || isClassesLoading || isFacultyLoading;
+  const isLoading = isSubjectsLoading || isClassesLoading || isFacultyLoading || isDepartmentsLoading;
 
   const [isClassDialogOpen, setClassDialogOpen] = useState(false);
   const [isSubjectDialogOpen, setSubjectDialogOpen] = useState(false);
@@ -381,31 +383,29 @@ export default function DepartmentsManager() {
   const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
   const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
 
-  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
   const [selectedSemester, setSelectedSemester] = useState('all');
   
-  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [newDepartment, setNewDepartment] = useState({ name: '', code: ''});
   const [isRenameDeptDialogOpen, setRenameDeptDialogOpen] = useState(false);
-  const [renamingDepartmentName, setRenamingDepartmentName] = useState('');
-
-  const departments = useMemo(() => Array.from(new Set(classes.map(c => c.department))), [classes]);
+  const [renamingDepartment, setRenamingDepartment] = useState({ id: '', name: '', code: ''});
   
   useEffect(() => {
-      if(departments.length > 0 && !selectedDepartment){
-        setSelectedDepartment(departments[0]);
+      if(departments.length > 0 && !selectedDepartmentId){
+        setSelectedDepartmentId(departments[0].id);
       }
-  }, [departments, selectedDepartment]);
+  }, [departments, selectedDepartmentId]);
 
   const semestersInDept = useMemo(() => {
-    if (!selectedDepartment) return [];
-    return ['all', ...Array.from(new Set(classes.filter(c => c.department === selectedDepartment).map(c => c.semester.toString()))).sort()];
-  }, [classes, selectedDepartment]);
+    if (!selectedDepartmentId || !classes) return [];
+    return ['all', ...Array.from(new Set(classes.filter(c => c.departmentId === selectedDepartmentId).map(c => c.semester.toString()))).sort()];
+  }, [classes, selectedDepartmentId]);
 
   useEffect(() => {
-    if (selectedDepartment && !semestersInDept.includes(selectedSemester)) {
+    if (selectedDepartmentId && !semestersInDept.includes(selectedSemester)) {
         setSelectedSemester('all');
     }
-  }, [selectedDepartment, selectedSemester, semestersInDept]);
+  }, [selectedDepartmentId, selectedSemester, semestersInDept]);
 
   
   const classMutation = useMutation({
@@ -504,71 +504,77 @@ export default function DepartmentsManager() {
   });
 
   const deptMutation = useMutation({
-      mutationFn: async ({ oldName, newName }: { oldName?: string, newName: string }) => {
-          if (oldName) {
-              return renameDepartment(oldName, newName);
-          } else {
-              // Add a default class when a new department is created
-              return addClass({
-                  name: `${newName.trim()} Year 1`,
-                  semester: 1,
-                  section: 'A',
-                  department: newName.trim()
-              });
-          }
-      },
-      onSuccess: (_, variables) => {
-          queryClient.invalidateQueries({ queryKey: ['classes'] });
-          queryClient.invalidateQueries({ queryKey: ['subjects'] });
-          queryClient.invalidateQueries({ queryKey: ['faculty'] });
-          if(variables.oldName) {
-              toast({ title: "Department Renamed" });
-              setSelectedDepartment(variables.newName);
-              setRenameDeptDialogOpen(false);
-          } else {
-              toast({ title: "Department Added" });
-              setDeptDialogOpen(false);
-              setSelectedDepartment(variables.newName);
-          }
-      },
-      onError: (error: any) => {
-          toast({ title: "Error", description: error.message, variant: "destructive" });
+    mutationFn: async ({ id, name, code }: { id?: string, name: string, code: string }) => {
+      if (id) {
+        return updateDepartment({ id, name, code });
+      } else {
+        await addDepartment({ name, code });
+        // Add a default class when a new department is created
+        const newDept = await queryClient.fetchQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments }).then(depts => depts.find(d => d.name === name));
+        if (newDept) {
+            return addClass({
+                name: `${name.trim()} Year 1`,
+                semester: 1,
+                section: 'A',
+                departmentId: newDept.id,
+            });
+        }
       }
+    },
+    onSuccess: (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['departments'] });
+        queryClient.invalidateQueries({ queryKey: ['classes'] });
+        queryClient.invalidateQueries({ queryKey: ['subjects'] });
+        queryClient.invalidateQueries({ queryKey: ['faculty'] });
+        
+        if (variables.id) {
+            toast({ title: "Department Updated" });
+            setRenameDeptDialogOpen(false);
+        } else {
+            toast({ title: "Department Added" });
+            setDeptDialogOpen(false);
+            // Don't auto-select, let user find it.
+        }
+    },
+    onError: (error: any) => {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   });
 
-  const dept = selectedDepartment;
+  const selectedDepartment = useMemo(() => departments.find(d => d.id === selectedDepartmentId), [departments, selectedDepartmentId]);
+
   const classesInDept = useMemo(() => {
-    if (!dept) return [];
-    const filtered = classes.filter(c => c.department === dept);
+    if (!selectedDepartmentId) return [];
+    const filtered = classes.filter(c => c.departmentId === selectedDepartmentId);
     if (selectedSemester === 'all') return filtered;
     return filtered.filter(c => c.semester.toString() === selectedSemester);
-  }, [classes, dept, selectedSemester]);
+  }, [classes, selectedDepartmentId, selectedSemester]);
 
   const subjectsInDept = useMemo(() => {
-    if (!dept) return [];
-    const filtered = subjects.filter(s => s.department === dept);
+    if (!selectedDepartmentId) return [];
+    const filtered = subjects.filter(s => s.departmentId === selectedDepartmentId);
     if (selectedSemester === 'all') return filtered;
     return filtered.filter(s => s.semester.toString() === selectedSemester);
-  }, [subjects, dept, selectedSemester]);
+  }, [subjects, selectedDepartmentId, selectedSemester]);
 
   const facultyInDept = useMemo(() => {
-    if (!dept) return [];
-    const filteredByDept = allFaculty.filter(f => f.department === dept);
+    if (!selectedDepartmentId) return [];
+    const filteredByDept = allFaculty.filter(f => f.departmentId === selectedDepartmentId);
     if (selectedSemester === 'all') return filteredByDept;
 
     const subjectIdsInSemester = subjects
-        .filter(s => s.department === dept && s.semester.toString() === selectedSemester)
+        .filter(s => s.departmentId === selectedDepartmentId && s.semester.toString() === selectedSemester)
         .map(s => s.id);
         
     return filteredByDept.filter(f => 
         (f.allottedSubjects?.some(subId => subjectIdsInSemester.includes(subId))) ||
         (f.designatedYear && (parseInt(selectedSemester) <= f.designatedYear * 2) && (parseInt(selectedSemester) > (f.designatedYear -1) * 2))
     );
-  }, [allFaculty, dept, selectedSemester, subjects]);
+  }, [allFaculty, selectedDepartmentId, selectedSemester, subjects]);
 
   
   const handleSaveClass = async () => {
-    if (!currentClass || !currentClass.name || !currentClass.semester || !currentClass.section || !selectedDepartment) {
+    if (!currentClass || !currentClass.name || !currentClass.semester || !currentClass.section || !selectedDepartmentId) {
       toast({ title: "Missing information", description: "Please fill out all class fields.", variant: "destructive" });
       return;
     }
@@ -576,14 +582,14 @@ export default function DepartmentsManager() {
         name: currentClass.name,
         semester: currentClass.semester,
         section: currentClass.section,
-        department: selectedDepartment
+        departmentId: selectedDepartmentId
     };
     if(currentClass.id) classToSave.id = currentClass.id;
     classMutation.mutate(classToSave);
   };
   
   const handleSaveSubject = async () => {
-    if (!currentSubject || !currentSubject.name || !currentSubject.code || !currentSubject.type || !currentSubject.semester || !selectedDepartment) {
+    if (!currentSubject || !currentSubject.name || !currentSubject.code || !currentSubject.type || !currentSubject.semester || !selectedDepartmentId) {
       toast({ title: "Missing information", description: "Please fill out all subject fields.", variant: "destructive" });
       return;
     }
@@ -592,7 +598,7 @@ export default function DepartmentsManager() {
         code: currentSubject.code,
         type: currentSubject.type,
         semester: currentSubject.semester,
-        department: selectedDepartment,
+        departmentId: selectedDepartmentId,
         priority: currentSubject.priority,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
@@ -623,7 +629,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewFacultyDialog = () => {
-    setCurrentFaculty({ employmentType: 'full-time', department: selectedDepartment || '', maxWeeklyHours: 20, designatedYear: 1, allottedSubjects: [] });
+    setCurrentFaculty({ employmentType: 'full-time', departmentId: selectedDepartmentId || '', maxWeeklyHours: 20, designatedYear: 1, allottedSubjects: [] });
     setFacultyDialogOpen(true);
   };
   
@@ -634,28 +640,28 @@ export default function DepartmentsManager() {
   
   const openRenameDialog = () => {
       if (selectedDepartment) {
-          setRenamingDepartmentName(selectedDepartment);
+          setRenamingDepartment(selectedDepartment);
           setRenameDeptDialogOpen(true);
       }
   }
 
   const handleAddDepartment = async () => {
-    if (newDepartmentName.trim()) {
-        if (departments.find(d => d.toLowerCase() === newDepartmentName.trim().toLowerCase())) {
-            toast({ title: "Department Exists", description: "This department name already exists.", variant: "destructive" });
+    if (newDepartment.name.trim() && newDepartment.code.trim()) {
+        if (departments.find(d => d.name.toLowerCase() === newDepartment.name.trim().toLowerCase() || d.code.toLowerCase() === newDepartment.code.trim().toLowerCase())) {
+            toast({ title: "Department Exists", description: "This department name or code already exists.", variant: "destructive" });
             return;
         }
-        deptMutation.mutate({ newName: newDepartmentName.trim() });
+        deptMutation.mutate({ name: newDepartment.name.trim(), code: newDepartment.code.trim() });
     }
   }
 
   const handleRenameDepartment = async () => {
-    if (renamingDepartmentName.trim() && selectedDepartment) {
-        if (departments.find(d => d.toLowerCase() === renamingDepartmentName.trim().toLowerCase())) {
-            toast({ title: "Department Exists", description: "This department name already exists.", variant: "destructive" });
+    if (renamingDepartment.name.trim() && renamingDepartment.code.trim() && renamingDepartment.id) {
+        if (departments.find(d => (d.name.toLowerCase() === renamingDepartment.name.trim().toLowerCase() || d.code.toLowerCase() === renamingDepartment.code.trim().toLowerCase()) && d.id !== renamingDepartment.id )) {
+            toast({ title: "Department Exists", description: "This department name or code already exists.", variant: "destructive" });
             return;
         }
-        deptMutation.mutate({ oldName: selectedDepartment, newName: renamingDepartmentName.trim() });
+        deptMutation.mutate({ id: renamingDepartment.id, name: renamingDepartment.name.trim(), code: renamingDepartment.code.trim() });
     }
   }
 
@@ -672,18 +678,18 @@ export default function DepartmentsManager() {
     <div className="space-y-6">
         <div className="flex justify-between items-center flex-wrap gap-4">
              <div className="flex items-center gap-2 flex-wrap">
-                <Select value={selectedDepartment || ''} onValueChange={(val) => {setSelectedDepartment(val)}}>
+                <Select value={selectedDepartmentId || ''} onValueChange={(val) => {setSelectedDepartmentId(val)}}>
                     <SelectTrigger className="w-[300px]">
                         <SelectValue placeholder="Select a Department" />
                     </SelectTrigger>
                     <SelectContent>
-                        {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" onClick={openRenameDialog} disabled={!selectedDepartment}>
+                <Button variant="outline" size="icon" onClick={openRenameDialog} disabled={!selectedDepartmentId}>
                     <Pencil className="h-4 w-4" />
                 </Button>
-                <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedDepartment}>
+                <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedDepartmentId}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select a Semester" />
                     </SelectTrigger>
@@ -698,11 +704,11 @@ export default function DepartmentsManager() {
             </Button>
         </div>
 
-       {selectedDepartment && dept && (
-           <Card key={dept}>
+       {selectedDepartmentId && selectedDepartment && (
+           <Card key={selectedDepartment.id}>
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className='space-y-1.5'>
-                        <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{dept}</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{selectedDepartment.name}</CardTitle>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -894,7 +900,7 @@ export default function DepartmentsManager() {
       {/* Class Dialog */}
        <Dialog open={isClassDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentClass({}); } setClassDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{currentClass?.id ? 'Edit Class' : 'Add Class to ' + selectedDepartment}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{currentClass?.id ? 'Edit Class' : `Add Class to ${selectedDepartment?.name}`}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="c-name">Class Name</Label>
@@ -921,7 +927,7 @@ export default function DepartmentsManager() {
       {/* Subject Dialog */}
       <Dialog open={isSubjectDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentSubject({}); } setSubjectDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : 'Add Subject to ' + selectedDepartment}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : `Add Subject to ${selectedDepartment?.name}`}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="s-name">Name</Label>
@@ -967,13 +973,17 @@ export default function DepartmentsManager() {
       </Dialog>
       
       {/* Add Department Dialog */}
-      <Dialog open={isDeptDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setNewDepartmentName(''); setDeptDialogOpen(isOpen); }}>
+      <Dialog open={isDeptDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setNewDepartment({ name: '', code: ''}); setDeptDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader><DialogTitle>Add New Department</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
                 <div className="space-y-2">
                     <Label htmlFor="dept-name">Department Name</Label>
-                    <Input id="dept-name" value={newDepartmentName} onChange={(e) => setNewDepartmentName(e.target.value)} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
+                    <Input id="dept-name" value={newDepartment.name} onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="dept-code">Department Code</Label>
+                    <Input id="dept-code" value={newDepartment.code} onChange={(e) => setNewDepartment({...newDepartment, code: e.target.value})} placeholder="e.g., MECH" disabled={deptMutation.isPending}/>
                 </div>
             </div>
             <DialogFooter>
@@ -987,20 +997,24 @@ export default function DepartmentsManager() {
       <Dialog open={isRenameDeptDialogOpen} onOpenChange={setRenameDeptDialogOpen}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle>Rename Department</DialogTitle>
+                <DialogTitle>Update Department</DialogTitle>
                 <DialogDescription>
-                    This will update the department name for all associated classes, subjects, and faculty.
+                    Update the department name and code.
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
                 <div className="space-y-2">
                     <Label htmlFor="new-dept-name">New Department Name</Label>
-                    <Input id="new-dept-name" value={renamingDepartmentName} onChange={(e) => setRenamingDepartmentName(e.target.value)} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
+                    <Input id="new-dept-name" value={renamingDepartment.name} onChange={(e) => setRenamingDepartment({...renamingDepartment, name: e.target.value})} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="new-dept-code">New Department Code</Label>
+                    <Input id="new-dept-code" value={renamingDepartment.code} onChange={(e) => setRenamingDepartment({...renamingDepartment, code: e.target.value})} placeholder="e.g., MECH" disabled={deptMutation.isPending}/>
                 </div>
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setRenameDeptDialogOpen(false)} disabled={deptMutation.isPending}>Cancel</Button>
-                <Button onClick={handleRenameDepartment} disabled={deptMutation.isPending}>{deptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Rename</Button>
+                <Button onClick={handleRenameDepartment} disabled={deptMutation.isPending}>{deptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Update</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1070,12 +1084,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
-    
-    
-
-
-
-
-    
