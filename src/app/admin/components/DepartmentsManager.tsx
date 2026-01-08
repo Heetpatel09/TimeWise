@@ -14,7 +14,7 @@ import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/ser
 import { getClasses, addClass, updateClass, deleteClass, renameDepartment } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import type { Subject, Class, Faculty, SubjectPriority } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, Beaker, Pencil, ChevronsUpDown, Check, X, Eye, EyeOff, Copy, UserCheck, Users, GraduationCap } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, Beaker, Pencil, ChevronsUpDown, Check, X, Eye, EyeOff, Copy, UserCheck, Users, GraduationCap, Wand2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -84,9 +84,6 @@ function FacultyForm({
 
   const [isCodeManuallyEdited, setIsCodeManuallyEdited] = useState(!!faculty.code);
   const watchedCode = form.watch('code');
-  const watchedDesignation = form.watch('designation');
-  const watchedDepartment = form.watch('department');
-  const watchedDesignatedYear = form.watch('designatedYear');
   
   useEffect(() => {
     const currentEmail = form.getValues('email');
@@ -94,28 +91,6 @@ function FacultyForm({
         form.setValue('email', `${watchedCode.toLowerCase()}@timewise.app`, { shouldValidate: true });
     }
   }, [watchedCode, form]);
-
-  useEffect(() => {
-      // Only auto-generate for new faculty members and if the code has not been manually edited.
-      if (!faculty.id && !isCodeManuallyEdited) {
-          const yearOfJoining = new Date().getFullYear().toString().slice(-2); // AB
-          const designatedYear = watchedDesignatedYear.toString().padStart(2, '0'); // CD
-
-          let positionCode = '00'; // EF
-          if (watchedDesignation === 'Professor') positionCode = '01';
-          else if (watchedDesignation === 'Assistant Professor') positionCode = '02';
-          else if (watchedDesignation === 'Lecturer') positionCode = '03';
-          
-          const deptCode = watchedDepartment ? watchedDepartment.substring(0, 3).toUpperCase().padEnd(3, 'X') : 'XXX'; // GHI
-          
-          const sequentialPart = (facultyCount + 1).toString().padStart(3, '0'); // JKL
-
-          if (watchedDesignation && watchedDepartment && watchedDesignatedYear) {
-              const newCode = `${yearOfJoining}${designatedYear}${positionCode}${deptCode}${sequentialPart}`;
-              form.setValue('code', newCode, { shouldValidate: true });
-          }
-      }
-  }, [watchedDesignatedYear, watchedDesignation, watchedDepartment, faculty.id, isCodeManuallyEdited, facultyCount, form]);
 
   useEffect(() => {
     form.reset({
@@ -141,6 +116,33 @@ function FacultyForm({
   
   const selectedDepartment = form.watch('department');
   const availableSubjects = useMemo(() => subjects.filter(s => s.department === selectedDepartment), [subjects, selectedDepartment]);
+  
+  const generateStaffId = () => {
+    const { designatedYear, designation, department } = form.getValues();
+    if (!designatedYear || !designation || !department) {
+        toast({ title: "Missing Information", description: "Please select Designated Year, Designation, and Department to generate an ID.", variant: "destructive" });
+        return;
+    }
+
+    const yearOfJoining = new Date().getFullYear().toString().slice(-2); // AB
+    const desYear = designatedYear.toString().padStart(2, '0'); // CD
+
+    let positionCode = '00'; // EF
+    if (designation === 'Professor') positionCode = '01';
+    else if (designation === 'Assistant Professor') positionCode = '02';
+    else if (designation === 'Lecturer') positionCode = '03';
+    
+    // Create a numerical mapping for departments
+    const departmentIndex = departments.findIndex(d => d === department);
+    const deptCode = (departmentIndex + 1).toString().padStart(3, '0'); // GHI
+    
+    const sequentialPart = (facultyCount + 1).toString().padStart(3, '0'); // JKL
+
+    const newCode = `${yearOfJoining}${desYear}${positionCode}${deptCode}${sequentialPart}`;
+    form.setValue('code', newCode, { shouldValidate: true });
+    setIsCodeManuallyEdited(true); // Mark as manually edited to prevent email override
+    toast({ title: "Staff ID Generated!", description: `ID: ${newCode}` });
+  };
 
   const handleSubmit = async (data: z.infer<typeof facultySchema>) => {
     if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
@@ -165,10 +167,25 @@ function FacultyForm({
             <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
         
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                <FormField control={form.control} name="code" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Staff ID</FormLabel>
+                        <FormControl>
+                            <Input {...field} disabled={isSubmitting} onChange={(e) => { field.onChange(e); setIsCodeManuallyEdited(true); }} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <Button type="button" variant="outline" onClick={generateStaffId} disabled={isSubmitting || faculty.id !== undefined}>
+                    <Wand2 className="h-4 w-4" />
+                </Button>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} onChange={(e) => { field.onChange(e); setIsCodeManuallyEdited(true); }} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="designation" render={({ field }) => (<FormItem><FormLabel>Designation</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger></FormControl><SelectContent>{DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-        </div>
+                 <FormField control={form.control} name="designation" render={({ field }) => (<FormItem><FormLabel>Designation</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger></FormControl><SelectContent>{DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                 <FormField control={form.control} name="designatedYear" render={({ field }) => (<FormItem><FormLabel>Designated Year</FormLabel><Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl><SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger></FormControl><SelectContent>{YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>Year {y}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+            </div>
 
         <FormField
           control={form.control}
@@ -290,11 +307,10 @@ function FacultyForm({
         />
 
         <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="designatedYear" render={({ field }) => (<FormItem><FormLabel>Designated Year</FormLabel><Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl><SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger></FormControl><SelectContent>{YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>Year {y}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>Employment Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger></FormControl><SelectContent><SelectItem value="full-time">Full-time</SelectItem><SelectItem value="part-time">Part-time</SelectItem><SelectItem value="contract">Contract</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="maxWeeklyHours" render={({ field }) => (<FormItem><FormLabel>Max Working Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
         </div>
 
-            <FormField control={form.control} name="maxWeeklyHours" render={({ field }) => (<FormItem><FormLabel>Max Working Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
 
         {!faculty.id && (
             <>
@@ -828,7 +844,7 @@ export default function DepartmentsManager() {
                              <div className="border rounded-lg">
                                  <ScrollArea className="h-96">
                                      <Table>
-                                         <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Designation</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                         <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Staff ID</TableHead><TableHead>Designation</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                          <TableBody>
                                              {facultyInDept.length > 0 ? facultyInDept.map(fac => (
                                                  <TableRow key={fac.id}>
@@ -841,10 +857,10 @@ export default function DepartmentsManager() {
                                                             <div>
                                                                 <div className="font-bold">{fac.name}</div>
                                                                 <div className="text-sm text-muted-foreground">{fac.email}</div>
-                                                                <div className="text-xs text-muted-foreground">ID: {fac.code}</div>
                                                             </div>
                                                          </div>
                                                      </TableCell>
+                                                      <TableCell><Badge variant="outline">{fac.code}</Badge></TableCell>
                                                      <TableCell>{fac.designation}</TableCell>
                                                      <TableCell className="text-right">
                                                          <DropdownMenu>
@@ -1060,3 +1076,6 @@ export default function DepartmentsManager() {
     
 
 
+
+
+    
