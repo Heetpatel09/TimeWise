@@ -57,6 +57,7 @@ function FacultyForm({
   isSubmitting,
   departments,
   subjects,
+  facultyCount,
 }: {
   faculty: Partial<Faculty>;
   onSave: (data: z.infer<typeof facultySchema>, password?: string) => Promise<void>;
@@ -64,6 +65,7 @@ function FacultyForm({
   isSubmitting: boolean;
   departments: string[];
   subjects: Subject[];
+  facultyCount: number;
 }) {
   const form = useForm<z.infer<typeof facultySchema>>({
     resolver: zodResolver(facultySchema),
@@ -80,7 +82,11 @@ function FacultyForm({
     },
   });
 
+  const [isCodeManuallyEdited, setIsCodeManuallyEdited] = useState(!!faculty.code);
   const watchedCode = form.watch('code');
+  const watchedDesignation = form.watch('designation');
+  const watchedDepartment = form.watch('department');
+  const watchedDesignatedYear = form.watch('designatedYear');
   
   useEffect(() => {
     const currentEmail = form.getValues('email');
@@ -89,6 +95,27 @@ function FacultyForm({
     }
   }, [watchedCode, form]);
 
+  useEffect(() => {
+      // Only auto-generate for new faculty members and if the code has not been manually edited.
+      if (!faculty.id && !isCodeManuallyEdited) {
+          const yearOfJoining = new Date().getFullYear().toString().slice(-2); // AB
+          const designatedYear = watchedDesignatedYear.toString().padStart(2, '0'); // CD
+
+          let positionCode = '00'; // EF
+          if (watchedDesignation === 'Professor') positionCode = '01';
+          else if (watchedDesignation === 'Assistant Professor') positionCode = '02';
+          else if (watchedDesignation === 'Lecturer') positionCode = '03';
+          
+          const deptCode = watchedDepartment ? watchedDepartment.substring(0, 3).toUpperCase().padEnd(3, 'X') : 'XXX'; // GHI
+          
+          const sequentialPart = (facultyCount + 1).toString().padStart(3, '0'); // JKL
+
+          if (watchedDesignation && watchedDepartment && watchedDesignatedYear) {
+              const newCode = `${yearOfJoining}${designatedYear}${positionCode}${deptCode}${sequentialPart}`;
+              form.setValue('code', newCode, { shouldValidate: true });
+          }
+      }
+  }, [watchedDesignatedYear, watchedDesignation, watchedDepartment, faculty.id, isCodeManuallyEdited, facultyCount, form]);
 
   useEffect(() => {
     form.reset({
@@ -102,6 +129,7 @@ function FacultyForm({
         designatedYear: faculty.designatedYear || 1,
         allottedSubjects: faculty.allottedSubjects || [],
     });
+    setIsCodeManuallyEdited(!!faculty.code);
   }, [faculty, form]);
 
 
@@ -138,7 +166,7 @@ function FacultyForm({
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
         
             <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Staff ID</FormLabel><FormControl><Input {...field} disabled={isSubmitting} onChange={(e) => { field.onChange(e); setIsCodeManuallyEdited(true); }} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="designation" render={({ field }) => (<FormItem><FormLabel>Designation</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger></FormControl><SelectContent>{DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
         </div>
 
@@ -978,6 +1006,7 @@ export default function DepartmentsManager() {
                 isSubmitting={facultyMutation.isPending}
                 departments={departments}
                 subjects={subjects}
+                facultyCount={allFaculty.length}
                 />
             </div>
         </DialogContent>
@@ -1029,4 +1058,5 @@ export default function DepartmentsManager() {
     
     
     
+
 
