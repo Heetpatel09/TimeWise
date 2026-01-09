@@ -13,7 +13,8 @@ import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getSchedule, replaceSchedule } from '@/lib/services/schedule';
 import { getStudents } from '@/lib/services/students';
-import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOutput, Student } from '@/lib/types';
+import { getDepartments } from '@/lib/services/departments';
+import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOutput, Student, Department } from '@/lib/types';
 import { Loader2, ArrowLeft, Bot, Users, BookOpen, Library } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -59,8 +60,9 @@ export default function TimetableGeneratorPage() {
     const { data: classrooms, isLoading: classroomsLoading } = useQuery<Classroom[]>({ queryKey: ['classrooms'], queryFn: getClassrooms });
     const { data: existingSchedule, isLoading: scheduleLoading } = useQuery<Schedule[]>({ queryKey: ['schedule'], queryFn: getSchedule });
     const { data: students, isLoading: studentsLoading } = useQuery<Student[]>({ queryKey: ['students'], queryFn: getStudents });
+    const { data: departments, isLoading: departmentsLoading } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments });
     
-    const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
     const [selectedSemester, setSelectedSemester] = useState<string>('');
     const [selectedClassId, setSelectedClassId] = useState<string>('');
     
@@ -68,19 +70,17 @@ export default function TimetableGeneratorPage() {
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
     const [generatedData, setGeneratedData] = useState<GenerateTimetableOutput | null>(null);
     const [isApplying, setIsApplying] = useState(false);
-
-    const departments = useMemo(() => classes ? [...new Set(classes.map(c => c.department))] : [], [classes]);
     
     const semestersInDept = useMemo(() => {
-        if (!classes || !selectedDepartment) return [];
-        const semesters = new Set(classes.filter(c => c.department === selectedDepartment).map(c => c.semester));
+        if (!classes || !selectedDepartmentId) return [];
+        const semesters = new Set(classes.filter(c => c.departmentId === selectedDepartmentId).map(c => c.semester));
         return Array.from(semesters).sort((a,b) => a-b);
-    }, [classes, selectedDepartment]);
+    }, [classes, selectedDepartmentId]);
 
     const classesInSemester = useMemo(() => {
-        if (!classes || !selectedDepartment || !selectedSemester) return [];
-        return classes.filter(c => c.department === selectedDepartment && c.semester.toString() === selectedSemester);
-    }, [classes, selectedDepartment, selectedSemester]);
+        if (!classes || !selectedDepartmentId || !selectedSemester) return [];
+        return classes.filter(c => c.departmentId === selectedDepartmentId && c.semester.toString() === selectedSemester);
+    }, [classes, selectedDepartmentId, selectedSemester]);
     
     const selectedClassDetails = useMemo(() => {
         if (!selectedClassId || !classes || !students || !subjects || !faculty) return null;
@@ -88,7 +88,7 @@ export default function TimetableGeneratorPage() {
         if (!cls) return null;
         
         const studentCount = students.filter(s => s.classId === selectedClassId).length;
-        const classSubjects = subjects.filter(s => s.department === cls.department && s.semester === cls.semester)
+        const classSubjects = subjects.filter(s => s.departmentId === cls.departmentId && s.semester === cls.semester)
             .map(sub => ({
                 ...sub,
                 facultyName: faculty.find(f => f.allottedSubjects?.includes(sub.id))?.name || 'N/A'
@@ -101,10 +101,10 @@ export default function TimetableGeneratorPage() {
     }, [selectedClassId, classes, students, subjects, faculty]);
 
     useEffect(() => {
-        if (departments.length > 0 && !selectedDepartment) {
-            setSelectedDepartment(departments[0]);
+        if (departments && departments.length > 0 && !selectedDepartmentId) {
+            setSelectedDepartmentId(departments[0].id);
         }
-    }, [departments, selectedDepartment]);
+    }, [departments, selectedDepartmentId]);
     
     useEffect(() => {
         if (semestersInDept.length > 0 && !semestersInDept.includes(parseInt(selectedSemester))) {
@@ -174,7 +174,7 @@ export default function TimetableGeneratorPage() {
         }
     }
 
-    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading;
+    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || studentsLoading || departmentsLoading;
     
     const codeChefDay = generatedData?.codeChefDay;
 
@@ -206,14 +206,14 @@ export default function TimetableGeneratorPage() {
                                 <>
                                     <div className="space-y-2">
                                         <Label>1. Select Department</Label>
-                                        <Select value={selectedDepartment} onValueChange={(val) => { setSelectedDepartment(val); setSelectedSemester(''); setSelectedClassId('') }}>
+                                        <Select value={selectedDepartmentId} onValueChange={(val) => { setSelectedDepartmentId(val); setSelectedSemester(''); setSelectedClassId('') }}>
                                             <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
-                                            <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                                            <SelectContent>{departments?.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
                                         <Label>2. Select Semester</Label>
-                                        <Select value={selectedSemester} onValueChange={(val) => { setSelectedSemester(val); setSelectedClassId(''); }} disabled={!selectedDepartment}>
+                                        <Select value={selectedSemester} onValueChange={(val) => { setSelectedSemester(val); setSelectedClassId(''); }} disabled={!selectedDepartmentId}>
                                             <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
                                             <SelectContent>{semestersInDept.map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}</SelectContent>
                                         </Select>
@@ -386,5 +386,3 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
-
-    
