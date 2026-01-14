@@ -9,9 +9,10 @@ import { getStudentAttendance } from '@/lib/services/attendance';
 export async function getStudentDashboardData(studentId: string) {
     const db = getDb();
     const student: (Student & { className: string, department: string }) | undefined = db.prepare(`
-        SELECT s.*, c.name as className, c.department
+        SELECT s.*, c.name as className, d.name as department
         FROM students s
         JOIN classes c ON s.classId = c.id
+        JOIN departments d ON c.departmentId = d.id
         WHERE s.id = ?
     `).get(studentId) as any;
 

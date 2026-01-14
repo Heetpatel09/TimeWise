@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getStudents, addStudent, updateStudent, deleteStudent } from '@/lib/services/students';
 import { getClasses } from '@/lib/services/classes';
 import { getAllAttendanceRecords } from '@/lib/services/attendance';
-import type { Student, Class, EnrichedAttendance } from '@/lib/types';
+import type { Student, Class, EnrichedAttendance, Department } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Copy, Eye, EyeOff, FilterX } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,10 +31,12 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getDepartments } from '@/lib/services/departments';
 
 export default function StudentsManager() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<EnrichedAttendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
@@ -46,7 +49,7 @@ export default function StudentsManager() {
   const { toast } = useToast();
 
   const [filters, setFilters] = useState({
-    department: 'all',
+    departmentId: 'all',
     semester: 'all',
     classId: 'all',
     batch: 'all',
@@ -65,10 +68,11 @@ export default function StudentsManager() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const [studentData, classData, attendanceData] = await Promise.all([getStudents(), getClasses(), getAllAttendanceRecords()]);
+      const [studentData, classData, attendanceData, departmentData] = await Promise.all([getStudents(), getClasses(), getAllAttendanceRecords(), getDepartments()]);
       setStudents(studentData);
       setClasses(classData);
       setAttendanceRecords(attendanceData);
+      setDepartments(departmentData);
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to load data.", variant: "destructive" });
     } finally {
@@ -80,27 +84,27 @@ export default function StudentsManager() {
     loadData();
   }, []);
 
-  const departments = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.department)))], [classes]);
+  const departmentOptions = useMemo(() => [{id: 'all', name: 'All Departments', code: ''}, ...departments], [departments]);
   const semesters = useMemo(() => ['all', ...Array.from(new Set(classes.map(c => c.semester.toString()))).sort((a,b) => parseInt(a) - parseInt(b))], [classes]);
   const batches = useMemo(() => ['all', ...Array.from(new Set(students.map(s => s.batch?.toString()).filter(Boolean) as string[]))].sort(), [students]);
   
   const filteredClasses = useMemo(() => {
     let tempClasses = classes;
-    if (filters.department !== 'all') {
-      tempClasses = tempClasses.filter(c => c.department === filters.department);
+    if (filters.departmentId !== 'all') {
+      tempClasses = tempClasses.filter(c => c.departmentId === filters.departmentId);
     }
     if (filters.semester !== 'all') {
       tempClasses = tempClasses.filter(c => c.semester.toString() === filters.semester);
     }
     return tempClasses;
-  }, [classes, filters.department, filters.semester]);
+  }, [classes, filters.departmentId, filters.semester]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
         const studentClass = classes.find(c => c.id === student.classId);
         if (!studentClass) return false;
         
-        if (filters.department !== 'all' && studentClass.department !== filters.department) return false;
+        if (filters.departmentId !== 'all' && studentClass.departmentId !== filters.departmentId) return false;
         if (filters.semester !== 'all' && studentClass.semester.toString() !== filters.semester) return false;
         if (filters.classId !== 'all' && student.classId !== filters.classId) return false;
         if (filters.batch !== 'all' && student.batch?.toString() !== filters.batch) return false;
@@ -112,8 +116,7 @@ export default function StudentsManager() {
   const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
     setFilters(prev => {
       const newFilters = { ...prev, [filterName]: value };
-      // Reset dependent filters
-      if (filterName === 'department') {
+      if (filterName === 'departmentId') {
         newFilters.semester = 'all';
         newFilters.classId = 'all';
       }
@@ -126,7 +129,7 @@ export default function StudentsManager() {
 
   const resetFilters = () => {
     setFilters({
-      department: 'all',
+      departmentId: 'all',
       semester: 'all',
       classId: 'all',
       batch: 'all',
@@ -223,9 +226,9 @@ export default function StudentsManager() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-4">
-          <Select value={filters.department} onValueChange={(v) => handleFilterChange('department', v)}>
+          <Select value={filters.departmentId} onValueChange={(v) => handleFilterChange('departmentId', v)}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Department" /></SelectTrigger>
-            <SelectContent>{departments.map(d => <SelectItem key={d} value={d} className="capitalize">{d === 'all' ? 'All Departments' : d}</SelectItem>)}</SelectContent>
+            <SelectContent>{departmentOptions.map(d => <SelectItem key={d.id} value={d.id} className="capitalize">{d.name}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={filters.semester} onValueChange={(v) => handleFilterChange('semester', v)}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Semester" /></SelectTrigger>
