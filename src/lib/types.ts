@@ -58,7 +58,7 @@ const ScheduleSlotSchema = z.object({
 export const ResolveConflictsInputSchema = z.object({
   schedule: z.array(ScheduleSlotSchema),
   conflicts: z.record(z.array(ScheduleConflictSchema)),
-  faculty: z.array(z.object({ id: z.string(), name: z.string(), department: z.string() })),
+  faculty: z.array(z.object({ id: z.string(), name: z.string(), department: z.string(), allottedSubjects: z.array(z.string()).optional() })),
   classrooms: z.array(z.object({ id: z.string(), name: z.string(), type: z.string(), capacity: z.number() })),
   students: z.array(z.object({ id: z.string(), name: z.string(), classId: z.string() })),
 });
