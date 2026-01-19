@@ -64,7 +64,7 @@ function createLectureList(input: GenerateTimetableInput, maxSlots: number): Lec
     const potentialLectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
     const classSubjects = input.subjects.filter(
-        s => s.semester === classToSchedule.semester && s.department === classToSchedule.department
+        s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId
     );
 
     for (const sub of classSubjects) {
@@ -166,7 +166,7 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
 function runPreChecks(input: GenerateTimetableInput): string | null {
     const classToSchedule = input.classes[0];
      const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.department === classToSchedule.department && !s.isSpecial && s.id !== 'LIB001')
+        .filter(s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId && !s.isSpecial && s.id !== 'LIB001')
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
@@ -183,7 +183,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const codeChefSubject = input.subjects.find(s => s.id === 'CODECHEF');
     const classTakesCodeChef = codeChefSubject && 
-                               codeChefSubject.department === classToSchedule.department &&
+                               codeChefSubject.departmentId === classToSchedule.departmentId &&
                                codeChefSubject.semester === classToSchedule.semester;
     
     let codeChefDay: string | undefined = undefined;
@@ -318,5 +318,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    

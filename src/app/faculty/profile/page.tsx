@@ -23,7 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 export default function FacultyProfilePage() {
   const { user, setUser: setAuthUser } = useAuth();
   const { toast } = useToast();
-  const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
+  const [facultyMember, setFacultyMember] = useState<(Faculty & { department: string }) | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +38,7 @@ export default function FacultyProfilePage() {
       let completion = 0;
       if (currentFaculty.name) completion += 20;
       if (currentFaculty.email) completion += 20;
-      if (currentFaculty.department) completion += 20;
+      if ((currentFaculty as any).department) completion += 20;
       if (currentFaculty.avatar && !currentFaculty.avatar.includes('vercel.sh')) completion += 20;
       if (!requiresPasswordChange) completion += 20;
       setProfileCompletion(Math.min(completion, 100));
@@ -50,7 +50,7 @@ export default function FacultyProfilePage() {
             setIsLoading(true);
             const allFaculty = await getFaculty();
             const member = allFaculty.find((f) => f.id === user.id);
-            setFacultyMember(member || null);
+            setFacultyMember(member as (Faculty & { department: string }) || null);
             setIsLoading(false);
         }
     }
@@ -63,7 +63,7 @@ export default function FacultyProfilePage() {
     }
   }, [facultyMember, user?.requiresPasswordChange, calculateProfileCompletion]);
   
-  const handleFieldChange = (field: keyof Omit<Faculty, 'id' | 'avatar' | 'profileCompleted'>, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Faculty, 'id' | 'avatar' | 'profileCompleted' | 'departmentId'>, value: any) => {
     if (facultyMember) {
         setFacultyMember({ ...facultyMember, [field]: value });
     }
@@ -102,13 +102,13 @@ export default function FacultyProfilePage() {
         let completion = 0;
         if (facultyMember.name) completion += 20;
         if (facultyMember.email) completion += 20;
-        if (facultyMember.department) completion += 20;
+        if ((facultyMember as any).department) completion += 20;
         if (facultyMember.avatar && !facultyMember.avatar.includes('vercel.sh')) completion += 20;
         if (!requiresPasswordChange) completion += 20;
 
         const updatedFacultyData = { ...facultyMember, profileCompleted: Math.min(completion, 100) };
         const updatedFacultyResult = await updateFaculty(updatedFacultyData);
-        setFacultyMember(updatedFacultyResult);
+        setFacultyMember(updatedFacultyResult as any);
 
         if (newPassword || updatedFacultyResult.email !== user.email) {
             await addCredential({
@@ -255,8 +255,7 @@ export default function FacultyProfilePage() {
                     <Input
                         id="department"
                         value={facultyMember.department}
-                        onChange={(e) => handleFieldChange('department', e.target.value)}
-                        disabled={isSaving}
+                        disabled
                     />
                     </div>
                     <div className="space-y-2">

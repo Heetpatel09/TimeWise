@@ -4,7 +4,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { db as getDb } from '@/lib/db';
-import type { Class } from '@/lib/types';
+import type { Class, EnrichedClass } from '@/lib/types';
 
 function revalidateAll() {
     revalidatePath('/admin', 'layout');

@@ -91,13 +91,14 @@ export async function getLeaderboardData(filter: 'student' | 'faculty', departme
 
     if (filter === 'student') {
         query = `
-            SELECT s.id, s.name, s.avatar, s.points, c.department
+            SELECT s.id, s.name, s.avatar, s.points, d.name as department
             FROM students s 
             JOIN classes c ON s.classId = c.id
+            JOIN departments d ON c.departmentId = d.id
         `;
         const whereClauses = [];
         if (department && department !== 'all') {
-            whereClauses.push('c.department = ?');
+            whereClauses.push('d.name = ?');
             params.push(department);
         }
         if (batch && batch !== 'all') {
@@ -109,12 +110,16 @@ export async function getLeaderboardData(filter: 'student' | 'faculty', departme
         }
         query += ' ORDER BY s.points DESC';
     } else { // faculty
-        query = 'SELECT id, name, avatar, points, department FROM faculty';
+        query = `
+            SELECT f.id, f.name, f.avatar, f.points, d.name as department 
+            FROM faculty f
+            JOIN departments d on f.departmentId = d.id
+        `;
         if (department && department !== 'all') {
-            query += ' WHERE department = ?';
+            query += ' WHERE d.name = ?';
             params.push(department);
         }
-        query += ' ORDER BY points DESC';
+        query += ' ORDER BY f.points DESC';
     }
 
     return db.prepare(query).all(...params);

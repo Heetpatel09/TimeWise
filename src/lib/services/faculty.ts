@@ -18,7 +18,11 @@ function revalidateAll() {
 
 export async function getFaculty(): Promise<Faculty[]> {
   const db = getDb();
-  const stmt = db.prepare('SELECT * FROM faculty');
+  const stmt = db.prepare(`
+    SELECT f.*, d.name as department
+    FROM faculty f
+    LEFT JOIN departments d ON f.departmentId = d.id
+  `);
   const results = stmt.all() as any[];
   // Ensure plain objects are returned
   return JSON.parse(JSON.stringify(results.map(f => ({ 

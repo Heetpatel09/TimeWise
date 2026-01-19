@@ -1,13 +1,13 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Trophy } from 'lucide-react';
 import { getLeaderboardData } from '@/lib/services/streaks';
-import { getClasses } from '@/lib/services/classes';
-import type { Student, Faculty, Class } from '@/lib/types';
+import { getDepartments } from '@/lib/services/departments';
+import type { Student, Faculty, Department } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -71,26 +71,25 @@ function LeaderboardTable({ users }: { users: UserData[] }) {
 export default function LeaderboardsPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [faculty, setFaculty] = useState<Faculty[]>([]);
-    const [classes, setClasses] = useState<Class[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const [department, setDepartment] = useState('all');
     const [batch, setBatch] = useState('all');
     
-    const departments = ['all', ...new Set(classes.map(c => c.department))];
-    const batches = ['all', ...new Set(students.map(s => String(s.batch)))];
+    const batches = useMemo(() => ['all', ...new Set(students.map(s => String(s.batch)))], [students]);
 
     useEffect(() => {
         async function loadData() {
             setIsLoading(true);
-            const [studentData, facultyData, classData] = await Promise.all([
+            const [studentData, facultyData, departmentData] = await Promise.all([
                 getLeaderboardData('student', department === 'all' ? undefined : department, batch === 'all' ? undefined : batch),
                 getLeaderboardData('faculty', department === 'all' ? undefined : department),
-                getClasses(),
+                getDepartments(),
             ]);
             setStudents(studentData as Student[]);
             setFaculty(facultyData as Faculty[]);
-            setClasses(classData);
+            setDepartments(departmentData);
             setIsLoading(false);
         }
         loadData();
@@ -130,7 +129,8 @@ export default function LeaderboardsPage() {
                                         <SelectValue placeholder="Department" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {departments.map(d => <SelectItem key={d} value={d} className="capitalize">{d}</SelectItem>)}
+                                        <SelectItem value="all">All Departments</SelectItem>
+                                        {departments.map(d => <SelectItem key={d.id} value={d.name} className="capitalize">{d.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                  <Select value={batch} onValueChange={setBatch}>
@@ -156,4 +156,3 @@ export default function LeaderboardsPage() {
         </DashboardLayout>
     );
 }
-
