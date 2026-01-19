@@ -134,48 +134,134 @@ export default function ScheduleManager() {
     loadAllData();
   }, [])
   
+  const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom' | 'student') => {
+    switch (type) {
+      case 'class': return classes.find(c => c.id === id);
+      case 'subject': return subjects.find(s => s.id === id);
+      case 'faculty': return faculty.find(f => f.id === id);
+      case 'classroom': return classrooms.find(cr => cr.id === id);
+      case 'student': return students.find(st => st.id === id);
+      default: return undefined;
+    }
+  };
+
   useEffect(() => {
       const findConflicts = () => {
           const newConflicts: Record<string, Conflict[]> = {};
+          if (!schedule || !classes || !subjects || !faculty || !classrooms) return;
+
+          // Initialize conflicts for all slots
+          for (const slot of schedule) {
+              newConflicts[slot.id] = [];
+          }
+
+          // --- Check 1: Double Bookings (Faculty, Classroom, Class) ---
           const timeDayMap = new Map<string, Schedule[]>();
-          
           schedule.forEach(slot => {
-            if (slot.time === 'Unassigned') return;
-            const key = `${slot.day}-${slot.time}`;
-            if (!timeDayMap.has(key)) {
-                timeDayMap.set(key, []);
-            }
-            timeDayMap.get(key)!.push(slot);
+              if (slot.time === 'Unassigned') return;
+              const key = `${slot.day}-${slot.time}`;
+              if (!timeDayMap.has(key)) timeDayMap.set(key, []);
+              timeDayMap.get(key)!.push(slot);
           });
 
-          for (const slot of schedule) {
-              if (slot.time === 'Unassigned') continue;
-              if (!newConflicts[slot.id]) newConflicts[slot.id] = [];
-              
-              const key = `${slot.day}-${slot.time}`;
-              const conflictingSlots = timeDayMap.get(key)?.filter(s => s.id !== slot.id) || [];
-              
-              for (const otherSlot of conflictingSlots) {
-                  // Faculty conflict
-                  if (slot.facultyId === otherSlot.facultyId) {
-                      newConflicts[slot.id].push({ type: 'faculty', message: `Faculty Conflict: ${getRelationInfo(slot.facultyId, 'faculty')?.name} is double-booked.`});
-                  }
-                  // Classroom conflict
-                  if (slot.classroomId === otherSlot.classroomId) {
-                       newConflicts[slot.id].push({ type: 'classroom', message: `Classroom Conflict: ${getRelationInfo(slot.classroomId, 'classroom')?.name} is double-booked.`});
-                  }
-                   // Class conflict
-                  if (slot.classId === otherSlot.classId) {
-                       newConflicts[slot.id].push({ type: 'class', message: `Class Conflict: ${getRelationInfo(slot.classId, 'class')?.name} has multiple activities.`});
+          timeDayMap.forEach((slots) => {
+              if (slots.length > 1) {
+                  for (let i = 0; i < slots.length; i++) {
+                      for (let j = i + 1; j < slots.length; j++) {
+                          const s1 = slots[i];
+                          const s2 = slots[j];
+
+                          if (s1.facultyId === s2.facultyId) {
+                              const msg = `Faculty Conflict: ${getRelationInfo(s1.facultyId, 'faculty')?.name} is double-booked.`;
+                              newConflicts[s1.id].push({ type: 'faculty', message: msg });
+                              newConflicts[s2.id].push({ type: 'faculty', message: msg });
+                          }
+                          if (s1.classroomId === s2.classroomId) {
+                              const msg = `Classroom Conflict: ${getRelationInfo(s1.classroomId, 'classroom')?.name} is double-booked.`;
+                              newConflicts[s1.id].push({ type: 'classroom', message: msg });
+                              newConflicts[s2.id].push({ type: 'classroom', message: msg });
+                          }
+                          if (s1.classId === s2.classId) {
+                              const msg = `Class Conflict: ${getRelationInfo(s1.classId, 'class')?.name} has multiple activities.`;
+                              newConflicts[s1.id].push({ type: 'class', message: msg });
+                              newConflicts[s2.id].push({ type: 'class', message: msg });
+                          }
+                      }
                   }
               }
+          });
+
+          // --- Check 2: Other Logical Conflicts (per slot) ---
+          const sortedTimeSlots = [...LECTURE_TIME_SLOTS].sort(sortTime);
+          for (const slot of schedule) {
+              if (slot.time === 'Unassigned') continue;
+              
+              // Check for invalid classroom type
+              const subject = getRelationInfo(slot.subjectId, 'subject');
+              const classroom = getRelationInfo(slot.classroomId, 'classroom');
+              if (subject && classroom) {
+                  if (subject.type === 'lab' && classroom.type !== 'lab') {
+                      newConflicts[slot.id].push({ type: 'classroom', message: `Invalid Assignment: Lab subject '${subject.name}' scheduled in a non-lab room.` });
+                  }
+                  if (subject.type === 'theory' && classroom.type === 'lab') {
+                      newConflicts[slot.id].push({ type: 'classroom', message: `Invalid Assignment: Theory subject '${subject.name}' scheduled in a lab.` });
+                  }
+              }
+
+              // Check for back-to-back lectures of the same subject
+              if (subject && subject.type === 'theory') {
+                const currentTimeIndex = sortedTimeSlots.indexOf(slot.time);
+                if (currentTimeIndex > 0) {
+                    const previousTime = sortedTimeSlots[currentTimeIndex - 1];
+                    const previousSlot = schedule.find(s => s.day === slot.day && s.time === previousTime && s.classId === slot.classId);
+                    if (previousSlot && previousSlot.subjectId === slot.subjectId) {
+                        const msg = `Consecutive Lectures: '${subject.name}' is scheduled back-to-back for this class.`;
+                        newConflicts[slot.id].push({ type: 'class', message: msg });
+                        if(newConflicts[previousSlot.id]) newConflicts[previousSlot.id].push({ type: 'class', message: msg });
+                    }
+                }
+              }
           }
+          
+           // --- Check 3: Faculty Overload ---
+          const facultyHours = new Map<string, number>();
+          schedule.forEach(slot => {
+              if (slot.subjectId !== 'LIB001') { // Assuming LIB001 is library and doesn't count
+                facultyHours.set(slot.facultyId, (facultyHours.get(slot.facultyId) || 0) + 1);
+              }
+          });
+          
+          facultyHours.forEach((hours, facultyId) => {
+              const fac = getRelationInfo(facultyId, 'faculty');
+              if (fac && fac.maxWeeklyHours && hours > fac.maxWeeklyHours) {
+                  const msg = `Faculty Overload: ${fac.name} is scheduled for ${hours} hours, exceeding their max of ${fac.maxWeeklyHours}.`;
+                  // Add this conflict to all slots for this faculty member
+                  schedule.forEach(slot => {
+                      if (slot.facultyId === facultyId) {
+                          newConflicts[slot.id].push({ type: 'faculty', message: msg });
+                      }
+                  });
+              }
+          });
+          
+          // Remove duplicates
+          Object.keys(newConflicts).forEach(slotId => {
+              const uniqueMessages = new Set<string>();
+              newConflicts[slotId] = newConflicts[slotId].filter(conflict => {
+                  if (uniqueMessages.has(conflict.message)) {
+                      return false;
+                  }
+                  uniqueMessages.add(conflict.message);
+                  return true;
+              });
+          });
+
           setConflicts(newConflicts);
       }
       if (schedule.length > 0) {
           findConflicts();
       }
-  }, [schedule, classes, faculty, classrooms]);
+  }, [schedule, classes, subjects, faculty, classrooms]);
   
   const filteredSchedule = useMemo(() => {
     let filtered = schedule;
@@ -195,17 +281,6 @@ export default function ScheduleManager() {
       return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
   }, [classrooms]);
 
-
-  const getRelationInfo = (id: string, type: 'class' | 'subject' | 'faculty' | 'classroom' | 'student') => {
-    switch (type) {
-      case 'class': return classes.find(c => c.id === id);
-      case 'subject': return subjects.find(s => s.id === id);
-      case 'faculty': return faculty.find(f => f.id === id);
-      case 'classroom': return classrooms.find(cr => cr.id === id);
-      case 'student': return students.find(st => st.id === id);
-      default: return undefined;
-    }
-  };
 
   const handleSave = async () => {
     if (currentSlot) {
