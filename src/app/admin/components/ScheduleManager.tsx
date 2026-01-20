@@ -51,18 +51,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { exportScheduleToPDF } from '../actions';
 import { Badge } from '@/components/ui/badge';
 
-const ALL_TIME_SLOTS = [
+const LECTURE_TIME_SLOTS = [
     '07:30 AM - 08:25 AM',
     '08:25 AM - 09:20 AM',
-    '09:20 AM - 09:30 AM', // Break
     '09:30 AM - 10:25 AM',
     '10:25 AM - 11:20 AM',
-    '11:20 AM - 12:20 PM', // Break
     '12:20 PM - 01:15 PM',
     '01:15 PM - 02:10 PM'
 ];
-const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:20') && !t.includes('11:20'));
-const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function sortTime(a: string, b: string) {
@@ -875,5 +871,7 @@ export default function ScheduleManager() {
     </TooltipProvider>
   );
 }
+
+    
 
     
