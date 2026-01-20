@@ -57,8 +57,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     let academicHours = 0;
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        // Skip special subjects like CodeChef, which is handled separately
-        if (sub.isSpecial || sub.id === 'LIB001') continue;
+        if (sub.isSpecial) continue; // Skip special subjects like CodeChef
 
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
@@ -182,12 +181,10 @@ export async function runGA(input: GenerateTimetableInput) {
     let workingDays: string[];
 
     if (classTakesCodeChef) {
-      // Pick a random day from Monday to Saturday for CodeChef
       codeChefDay = DAYS[Math.floor(Math.random() * DAYS.length)];
-      // The working days are all other days
       workingDays = DAYS.filter(d => d !== codeChefDay);
     } else {
-      // For regular classes, use a 5-day week (Saturday off)
+      // For regular classes, use a 5-day week and leave Saturday free.
       workingDays = DAYS.filter(d => d !== 'Saturday');
     }
     
