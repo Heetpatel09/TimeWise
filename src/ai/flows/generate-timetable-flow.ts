@@ -24,12 +24,11 @@ const generateTimetable = ai.defineFlow(
         codeChefDay: result.codeChefDay,
       };
     } else {
-      // If the engine fails, return a structured error response that matches the schema.
-      // This prevents the "unexpected response" on the client.
       return {
         summary: result.message || "Failed to generate a valid timetable. The constraints might be too restrictive.",
         generatedSchedule: [],
         codeChefDay: undefined,
+        error: result.message || "An unknown engine error occurred.",
       };
     }
   }
@@ -39,3 +38,5 @@ const generateTimetable = ai.defineFlow(
 export async function generateTimetableFlow(input: GenerateTimetableInput): Promise<GenerateTimetableOutput> {
     return generateTimetable(input);
 }
+
+    
