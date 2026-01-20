@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for resolving schedule conflicts.
@@ -36,7 +37,7 @@ const resolveConflicts = ai.defineFlow(
         When re-assigning a faculty member, the substitute faculty's 'allottedSubjects' array MUST contain the 'subjectId' of the conflicting class slot. This is a strict, mandatory requirement.
 
         **Rule 4: Output Structure**
-        1.  **resolvedSchedule**: Your output must contain the ENTIRE schedule, including both the modified and unmodified slots. It must be a complete and valid schedule with all original slots present.
+        1.  **resolvedSchedule**: Your output must contain the ENTIRE schedule, including both the modified and unmodified slots. It must be a complete and valid schedule with all original slots present. The fields MUST be spelled correctly: "id", "classId", "className", "subjectId", "subjectName", "facultyId", "facultyName", "classroomId", "classroomName", "day", "time".
         2.  **summary**: Create a concise, human-readable summary of the changes you made. (e.g., "Resolved 2 conflicts. Re-assigned Dr. Smith's CS101 class to Prof. Davis. Moved Dr. Jones's lecture to Room 102.")
         3.  **notifications**: For each change, create a notification object.
             - If a faculty member's class is moved to a new classroom, the notification 'userId' should be that faculty member's ID.
@@ -57,12 +58,12 @@ const resolveConflicts = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: googleAI.model('gemini-pro'),
+      model: googleAI.model('gemini-1.5-flash-latest'),
       output: {
         schema: ResolveConflictsOutputSchema,
       },
       config: {
-        temperature: 0.3,
+        temperature: 0.2,
       },
     });
 
