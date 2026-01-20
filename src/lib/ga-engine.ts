@@ -244,7 +244,13 @@ export async function runGA(input: GenerateTimetableInput) {
                   
                   // Handle library slots
                   if (theory.subjectId === 'LIB001') {
-                     if (!isConflict(fullSchedule, day, time, theory.facultyId, 'CR_LIB', theory.classId)) {
+                     const isClassBusy = fullSchedule.some(g =>
+                        g.day === day &&
+                        g.time === time &&
+                        g.classId === theory.classId
+                     );
+
+                     if (!isClassBusy) {
                         const gene = { day, time, ...theory, classroomId: 'CR_LIB', isLab: false };
                         generatedSchedule.push(gene);
                         fullSchedule.push(gene);
