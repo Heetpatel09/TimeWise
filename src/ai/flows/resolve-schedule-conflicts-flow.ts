@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow for resolving schedule conflicts.
@@ -58,7 +57,7 @@ const resolveConflicts = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: googleAI.model('gemini-2.5-flash'),
+      model: googleAI.model('gemini-pro'),
       output: {
         schema: ResolveConflictsOutputSchema,
       },
