@@ -38,5 +38,3 @@ const generateTimetable = ai.defineFlow(
 export async function generateTimetableFlow(input: GenerateTimetableInput): Promise<GenerateTimetableOutput> {
     return generateTimetable(input);
 }
-
-    
