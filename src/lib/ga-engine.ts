@@ -52,6 +52,8 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
 function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
+    if (!classToSchedule) return [];
+
     // Correctly filter subjects by department ID AND semester
     const classSubjects = input.subjects.filter(
         s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
