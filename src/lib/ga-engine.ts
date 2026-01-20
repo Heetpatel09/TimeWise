@@ -158,8 +158,9 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
     );
 
     if (classSubjects.length === 0) {
-        const departmentName = input.departments?.find(d => d.id === classToSchedule.departmentId)?.name || 'the selected';
-        return `No subjects found for semester ${classToSchedule.semester} in ${departmentName} department. Please add subjects before generating a timetable.`;
+        // The 'departments' array is optional in the input schema, so we must handle its potential absence.
+        const departmentName = input.departments?.find(d => d.id === classToSchedule.departmentId)?.name || `department ID ${classToSchedule.departmentId}`;
+        return `No subjects found for semester ${classToSchedule.semester} in ${departmentName}. Please add subjects before generating a timetable.`;
     }
     
      const subjectsWithoutFaculty = classSubjects
@@ -333,5 +334,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
