@@ -230,8 +230,8 @@ export async function runGA(input: GenerateTimetableInput) {
         return { success: false, message: "Cannot schedule theory lectures. No classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
     
-    // Sort lectures to fill the schedule more compactly
-    theoryLectures.sort((a,b) => (a.subjectId === 'LIB001' ? 1 : -1));
+    // Shuffle the theory/library lectures to give library a fair chance of being placed
+    theoryLectures.sort(() => Math.random() - 0.5);
 
     for (const theory of theoryLectures) {
         let placed = false;
