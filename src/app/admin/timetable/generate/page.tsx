@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:25 AM',
     '08:25 AM - 09:20 AM',
@@ -35,7 +36,6 @@ const ALL_TIME_SLOTS = [
     '12:20 PM - 01:15 PM',
     '01:15 PM - 02:10 PM'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t));
 
@@ -232,7 +232,7 @@ export default function TimetableGeneratorPage() {
                             )}
                         </CardContent>
                     </Card>
-                    <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId || isLoading || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments || !students} size="lg" className="w-full">
+                    <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId || isLoading} size="lg" className="w-full">
                         {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
                         Generate Timetable
                     </Button>
@@ -331,20 +331,14 @@ export default function TimetableGeneratorPage() {
                                             <TableRow key={time}>
                                                 <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{time}</TableCell>
                                                 {DAYS.map(day => {
-                                                    if (day === codeChefDay) {
-                                                        return (
-                                                            <TableCell key={`${time}-${day}`} className="border p-1 align-middle text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center font-semibold text-purple-700 dark:text-purple-300">
-                                                                CODE CHEF
-                                                            </TableCell>
-                                                        )
-                                                    }
-                                                    
                                                     const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
                                                     const { subject, facultyMember, classroom } = slot ? getDisplayInfo(slot) : { subject: null, facultyMember: null, classroom: null };
 
                                                     return (
-                                                        <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-24">
-                                                            {slot && subject ? (
+                                                        <TableCell key={`${time}-${day}`} className={cn("border p-1 align-top text-xs min-w-[150px] h-24", day === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
+                                                            {day === codeChefDay ? (
+                                                                <div className="flex justify-center items-center h-full text-center font-semibold text-purple-700 dark:text-purple-300">CODE CHEF</div>
+                                                            ) : slot && subject ? (
                                                                 (subject.id === 'LIB001') ? (
                                                                      <div className='flex justify-center items-center h-full text-muted-foreground'>
                                                                         <Library className="h-4 w-4 mr-2" />
