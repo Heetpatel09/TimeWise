@@ -125,8 +125,8 @@ export default function TimetableGeneratorPage() {
     }, [classesInSemester, selectedClassId]);
 
     const handleGenerate = async () => {
-        if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
-            toast({ title: 'Data not loaded yet. Please wait.', variant: 'destructive' });
+        if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments || !students) {
+            toast({ title: 'Data not loaded yet', description: 'Please wait a moment for all data to load before generating a timetable.', variant: 'destructive' });
             return;
         }
         setIsGenerating(true);
@@ -232,7 +232,7 @@ export default function TimetableGeneratorPage() {
                             )}
                         </CardContent>
                     </Card>
-                    <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId} size="lg" className="w-full">
+                    <Button onClick={handleGenerate} disabled={isGenerating || !selectedClassId || isLoading || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments || !students} size="lg" className="w-full">
                         {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
                         Generate Timetable
                     </Button>
@@ -386,4 +386,3 @@ export default function TimetableGeneratorPage() {
     );
 }
 
-    
