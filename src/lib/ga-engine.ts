@@ -51,9 +51,9 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
 function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
-    // A class takes all subjects for its semester from its own department.
+    // A class takes all subjects for its semester.
     const classSubjects = input.subjects.filter(
-        s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
+        s => s.semester === classToSchedule.semester
     );
 
     let academicHours = 0;
@@ -152,15 +152,13 @@ function canPlaceLibrary(schedule: (Gene | Schedule)[], day: string, time: strin
 
 function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
     const classToSchedule = input.classes[0];
-    // Filter subjects for the specific class's department and semester.
+    // Filter subjects for the specific class's semester.
     const classSubjects = input.subjects.filter(
-        s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
+        s => s.semester === classToSchedule.semester
     );
 
     if (classSubjects.length === 0) {
-        // The 'departments' array is optional in the input schema, so we must handle its potential absence.
-        const departmentName = input.departments?.find(d => d.id === classToSchedule.departmentId)?.name || `department ID ${classToSchedule.departmentId}`;
-        return `No subjects found for semester ${classToSchedule.semester} in ${departmentName}. Please add subjects before generating a timetable.`;
+        return `No subjects found for semester ${classToSchedule.semester}. Please add subjects for this semester before generating a timetable.`;
     }
     
      const subjectsWithoutFaculty = classSubjects
@@ -191,7 +189,6 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const classTakesCodeChef = input.subjects.some(s => 
         s.id === 'CODECHEF' && 
-        s.departmentId === classToSchedule.departmentId &&
         s.semester === classToSchedule.semester
     );
 
@@ -334,3 +331,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
