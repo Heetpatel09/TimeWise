@@ -209,9 +209,9 @@ export async function runGA(input: GenerateTimetableInput) {
 
     // Valid 2-hour lab slots that don't cross breaks
     const labTimePairs: [string, string][] = [
-        [LECTURE_TIME_SLOTS[0], LECTURE_TIME_SLOTS[1]],
-        [LECTURE_TIME_SLOTS[2], LECTURE_TIME_SLOTS[3]],
-        [LECTURE_TIME_SLOTS[4], LECTURE_TIME_SLOTS[5]],
+        ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'],
+        ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'],
+        ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'],
     ];
 
     // Alternate lab slots to distribute them across the day
