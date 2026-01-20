@@ -35,6 +35,7 @@ const ALL_TIME_SLOTS = [
 ];
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:20') && !t.includes('11:20'));
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
@@ -57,7 +58,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     let academicHours = 0;
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        if (sub.isSpecial || sub.id === 'CODECHEF') continue; // Skip special subjects like CodeChef or Library for now
+        if (sub.isSpecial || sub.id === 'CODECHEF' || sub.id === 'LIB001') continue;
 
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
@@ -66,14 +67,12 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
 
         if (sub.type === 'lab') {
-            // Labs are 2 hours long, scheduled once a week.
             lectures.push({
                 classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
                 isLab: true, hours: 2
             });
             academicHours += 2;
         } else {
-            // Theory subjects have hours based on priority.
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
                 lectures.push({
