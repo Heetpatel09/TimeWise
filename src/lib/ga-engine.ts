@@ -35,6 +35,7 @@ const ALL_TIME_SLOTS = [
 ];
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:20') && !t.includes('11:20'));
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
