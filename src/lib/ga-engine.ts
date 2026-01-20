@@ -23,7 +23,6 @@ interface LectureToBePlaced {
 }
 
 // --- Helper Functions & Configuration ---
-// Strict time slots as per user request
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:25 AM',
     '08:25 AM - 09:20 AM',
@@ -87,9 +86,9 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
     }
     
-    // 2. Add Library slots to fill up the week, with a max of 4 empty slots
-    const totalWeeklySlots = 21; // 7 slots * 3 days = 21 non-break slots per 3 working days is wrong. 7 slots * 5 days = 35. This needs to be 21 as per user
-    const librarySlotsToCreate = Math.max(0, totalWeeklySlots - academicHours);
+    // 2. Add Library slots to reach 21 total slots.
+    const totalSlotsTarget = 21;
+    const librarySlotsToCreate = Math.max(0, totalSlotsTarget - academicHours);
     
     for (let i = 0; i < librarySlotsToCreate; i++) {
         lectures.push({
@@ -107,6 +106,14 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
 
 // --- Conflict Checking Functions ---
 function isConflict(schedule: (Gene | Schedule)[], day: string, time: string, facultyId: string, classroomId: string, classId: string): boolean {
+    // For library, only check class conflict
+    if (classroomId === 'CR_LIB') {
+        return schedule.some(gene => 
+            gene.day === day && 
+            gene.time === time &&
+            gene.classId === classId
+        );
+    }
     return schedule.some(gene => 
         gene.day === day && 
         gene.time === time &&
@@ -175,13 +182,12 @@ export async function runGA(input: GenerateTimetableInput) {
     let workingDays: string[];
 
     if (classTakesCodeChef) {
-      // Pick a random weekday (Mon-Fri) for CodeChef
-      const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-      codeChefDay = weekdays[Math.floor(Math.random() * weekdays.length)];
-      // The working days are all days EXCEPT the chosen CodeChef day
+      // Pick a random day from Monday to Saturday for CodeChef
+      codeChefDay = DAYS[Math.floor(Math.random() * DAYS.length)];
+      // The working days are all other days
       workingDays = DAYS.filter(d => d !== codeChefDay);
     } else {
-      // For regular classes, the working week is Monday to Friday
+      // For regular classes, use a 5-day week (Saturday off)
       workingDays = DAYS.filter(d => d !== 'Saturday');
     }
     
