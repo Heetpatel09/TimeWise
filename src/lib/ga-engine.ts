@@ -36,7 +36,6 @@ const ALL_TIME_SLOTS = [
 
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !t.includes('09:20') && !t.includes('11:20'));
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
@@ -162,17 +161,18 @@ function runPreChecks(input: GenerateTimetableInput): string | null {
 export async function runGA(input: GenerateTimetableInput) {
     const classToSchedule = input.classes[0];
 
-    const codeChefSubject = input.subjects.find(s => s.id === 'CODECHEF');
-    const classTakesCodeChef = codeChefSubject && 
-                               codeChefSubject.departmentId === classToSchedule.departmentId &&
-                               codeChefSubject.semester === classToSchedule.semester;
+    const classTakesCodeChef = input.subjects.some(s => 
+        s.id === 'CODECHEF' && 
+        s.departmentId === classToSchedule.departmentId && 
+        s.semester === classToSchedule.semester
+    );
     
     let codeChefDay: string | undefined = undefined;
     let workingDays = [...DAYS];
 
     if (classTakesCodeChef) {
-      const codeChefDayIndex = Math.floor(Math.random() * (DAYS.length - 1)); // Exclude Saturday
-      codeChefDay = DAYS[codeChefDayIndex];
+      const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      codeChefDay = weekdays[Math.floor(Math.random() * weekdays.length)];
       workingDays = DAYS.filter(d => d !== codeChefDay);
     }
     
@@ -189,7 +189,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const theoryLectures = lecturesToPlace.filter(l => !l.isLab);
 
     const generatedSchedule: Gene[] = [];
-    const fullSchedule: (Gene | Schedule)[] = [...input.existingSchedule || []];
+    const fullSchedule: (Gene | Schedule)[] = [...(input.existingSchedule || [])];
 
     const availableLabRooms = input.classrooms.filter(c => c.type === 'lab');
     if (availableLabRooms.length === 0 && labLectures.length > 0) {
@@ -198,6 +198,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const labTimePairs: [string, string][] = [
         ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'],
+        ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'],
         ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'],
     ];
 
@@ -242,39 +243,23 @@ export async function runGA(input: GenerateTimetableInput) {
     for (const theory of theoryLectures) {
         let placed = false;
         
-        // Create a scored list of all possible slots
         const possibleSlots = [];
         for (const day of workingDays) {
             for (const time of LECTURE_TIME_SLOTS) {
-                // Check if slot is already occupied for this class
-                if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) {
-                    continue;
-                }
+                if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                 
                 let score = 0;
-                // Penalize days that are already full to encourage spreading out
                 score -= lecturesPerDay[day] * 10;
-                
-                // Prefer morning slots
-                if (LECTURE_TIME_SLOTS.indexOf(time) < 4) { // Before lunch break
-                    score += 5;
-                }
-                
-                // Heavily prefer slots adjacent to existing ones to reduce gaps
-                const daySchedule = fullSchedule.filter(s => s.classId === theory.classId && s.day === day);
+                if (LECTURE_TIME_SLOTS.indexOf(time) < 4) score += 5;
                 const timeIndex = LECTURE_TIME_SLOTS.indexOf(time);
-                if (timeIndex > 0 && daySchedule.some(s => s.time === LECTURE_TIME_SLOTS[timeIndex - 1])) {
-                    score += 20;
-                }
-                if (timeIndex < LECTURE_TIME_SLOTS.length - 1 && daySchedule.some(s => s.time === LECTURE_TIME_SLOTS[timeIndex + 1])) {
-                    score += 20;
-                }
+                const daySchedule = fullSchedule.filter(s => s.classId === theory.classId && s.day === day);
+                if (timeIndex > 0 && daySchedule.some(s => s.time === LECTURE_TIME_SLOTS[timeIndex - 1])) score += 20;
+                if (timeIndex < LECTURE_TIME_SLOTS.length - 1 && daySchedule.some(s => s.time === LECTURE_TIME_SLOTS[timeIndex + 1])) score += 20;
                 
                 possibleSlots.push({ day, time, score });
             }
         }
         
-        // Sort slots by score (highest first), with some randomness to vary schedules
         possibleSlots.sort((a, b) => b.score - a.score + (Math.random() - 0.5) * 5);
 
         for (const { day, time } of possibleSlots) {
@@ -287,9 +272,7 @@ export async function runGA(input: GenerateTimetableInput) {
                  break;
             }
             
-            const roomsToTry = availableClassrooms.sort(() => Math.random() - 0.5);
-
-            for (const room of roomsToTry) {
+            for (const room of availableClassrooms.sort(() => Math.random() - 0.5)) {
                  if (canPlaceTheory(fullSchedule, day, time, theory.facultyId, room.id, theory.classId, theory.subjectId)) {
                     const gene = { day, time, ...theory, classroomId: room.id, isLab: false };
                     generatedSchedule.push(gene);

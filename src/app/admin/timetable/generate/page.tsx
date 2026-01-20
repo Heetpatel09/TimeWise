@@ -328,8 +328,6 @@ export default function TimetableGeneratorPage() {
                                             <TableRow key={time}>
                                                 <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{time}</TableCell>
                                                 {DAYS.map(day => {
-                                                    const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
-                                                    
                                                     if (day === codeChefDay) {
                                                         return (
                                                              <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center">
@@ -341,6 +339,7 @@ export default function TimetableGeneratorPage() {
                                                         )
                                                     }
                                                     
+                                                    const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
                                                     const { subject, facultyMember, classroom } = slot ? getDisplayInfo(slot) : { subject: null, facultyMember: null, classroom: null };
 
                                                     return (
