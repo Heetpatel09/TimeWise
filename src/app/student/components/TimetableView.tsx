@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { EnrichedSchedule, Student, Subject } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, Library, Bot, Star } from 'lucide-react';
+import { Download, Loader2, Library, Bot } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useAuth } from '@/context/AuthContext';
@@ -67,12 +67,27 @@ export default function TimetableView() {
   const studentSchedule = data?.schedule || [];
   const className = data?.student?.className || '';
 
+  const codeChefDay = useMemo(() => {
+    const hasCodeChef = subjects.some(s => s.id === 'CODECHEF');
+    if (!hasCodeChef) return undefined;
+
+    const scheduledDays = new Set(studentSchedule.map(s => s.day));
+    return DAYS.find(day => !scheduledDays.has(day));
+  }, [subjects, studentSchedule]);
+
+
   const exportPDF = () => {
     if (!data?.student) return;
     const doc = new jsPDF();
     doc.text(`Timetable for ${data.student.name} (${className})`, 14, 16);
     
     const tableData = DAYS.flatMap(day => {
+        if (day === codeChefDay) {
+             return ALL_TIME_SLOTS.sort(sortTime).map(time => {
+                if (BREAK_SLOTS.includes(time)) return [day, time, 'Break', '-', '-'];
+                return [day, time, 'CodeChef Day', '-', '-'];
+            });
+        }
         return ALL_TIME_SLOTS.sort(sortTime).map(time => {
             if (BREAK_SLOTS.includes(time)) {
                 return [day, time, 'Break', '-', '-'];
@@ -82,9 +97,6 @@ export default function TimetableView() {
                 const subject = subjects.find(sub => sub.id === slot.subjectId);
                 if (subject?.id === 'LIB001') {
                     return [day, time, 'Library', '-', '-'];
-                }
-                if (subject?.id === 'CODECHEF') {
-                    return [day, time, 'CodeChef Day', '-', '-'];
                 }
                 const subjectName = subject ? `${subject.name} ${subject.type === 'lab' ? '(Lab)' : ''}` : 'N/A';
                 return [day, time, subjectName, slot.facultyName, slot.classroomName];
@@ -101,21 +113,10 @@ export default function TimetableView() {
 
     doc.save('my_timetable.pdf');
   }
-
-  const codeChefDay = useMemo(() => {
-    const hasCodeChef = subjects.some(s => s.id === 'CODECHEF');
-    if (!hasCodeChef) return undefined;
-    const scheduledDays = new Set(studentSchedule.map(s => s.day));
-    return DAYS.find(day => !scheduledDays.has(day));
-  }, [subjects, studentSchedule]);
   
   const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
     if (BREAK_SLOTS.includes(time)) {
-        return {
-            time: time,
-            isBreak: true,
-            slots: [],
-        };
+        return { time: time, isBreak: true };
     }
     const dailySlots = DAYS.map(day => {
       const slotsForDayAndTime = studentSchedule.filter(
@@ -172,11 +173,8 @@ export default function TimetableView() {
                                         slots.map(({ day, slots: daySlots }) => {
                                              if (day === codeChefDay) {
                                                 return (
-                                                    <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center">
-                                                        <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold">
-                                                            <Bot className="h-4 w-4 mr-2"/>
-                                                            <span>CodeChef Day</span>
-                                                        </div>
+                                                    <TableCell key={`${time}-${day}`} className="border p-1 align-middle text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center font-semibold text-purple-700 dark:text-purple-300">
+                                                        CODE CHEF
                                                     </TableCell>
                                                 )
                                             }

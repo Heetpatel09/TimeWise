@@ -330,12 +330,9 @@ export default function TimetableGeneratorPage() {
                                                 {DAYS.map(day => {
                                                     if (day === codeChefDay) {
                                                         return (
-                                                             <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center">
-                                                                <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold">
-                                                                    <Bot className="h-4 w-4 mr-2"/>
-                                                                    <span>CodeChef Day</span>
-                                                                </div>
-                                                             </TableCell>
+                                                            <TableCell key={`${time}-${day}`} className="border p-1 align-middle text-xs min-w-[150px] h-20 bg-purple-100/50 dark:bg-purple-900/20 text-center font-semibold text-purple-700 dark:text-purple-300">
+                                                                CODE CHEF
+                                                            </TableCell>
                                                         )
                                                     }
                                                     

@@ -57,7 +57,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     let academicHours = 0;
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        if (sub.isSpecial) continue; // Skip special subjects like CodeChef or Library for now
+        if (sub.isSpecial || sub.id === 'CODECHEF') continue; // Skip special subjects like CodeChef or Library for now
 
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
@@ -160,7 +160,7 @@ function canPlaceLibrary(schedule: (Gene | Schedule)[], day: string, time: strin
 function runPreChecks(input: GenerateTimetableInput): string | null {
     const classToSchedule = input.classes[0];
      const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId && !s.isSpecial && s.id !== 'LIB001')
+        .filter(s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId && !s.isSpecial && s.id !== 'LIB001' && s.id !== 'CODECHEF')
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
@@ -210,9 +210,9 @@ export async function runGA(input: GenerateTimetableInput) {
 
     // Valid 2-hour lab slots that don't cross breaks
     const labTimePairs: [string, string][] = [
-        ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'],
-        ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'],
-        ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'],
+        [LECTURE_TIME_SLOTS[0], LECTURE_TIME_SLOTS[1]],
+        [LECTURE_TIME_SLOTS[2], LECTURE_TIME_SLOTS[3]],
+        [LECTURE_TIME_SLOTS[4], LECTURE_TIME_SLOTS[5]],
     ];
 
     // Alternate lab slots to distribute them across the day
