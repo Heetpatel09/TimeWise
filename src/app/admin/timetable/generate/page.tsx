@@ -385,7 +385,7 @@ export default function TimetableGeneratorPage() {
                                                                         </div>
                                                                     </div>
                                                                 );
-                                                            })() : <div className='flex justify-center items-center h-full text-muted-foreground'></div>}
+                                                            })() : null}
                                                         </TableCell>
                                                     )
                                                 })}
