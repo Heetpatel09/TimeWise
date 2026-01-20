@@ -106,10 +106,10 @@ export const faculty: (Omit<Faculty, 'departmentId'> & { department: string })[]
   { id: 'FAC010', name: 'Dr. Marie Curie', email: 'curie@example.com', code: '220301003010', designation: 'Professor', employmentType: 'full-time', department: 'Electronics Engineering', roles: [], streak: 33, avatar: 'https://avatar.vercel.sh/curie@example.com.png', profileCompleted: 100, points: 4800, allottedSubjects: [], maxWeeklyHours: 18, designatedYear: 3 },
   { id: 'FAC011', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: '210401001011', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 14, avatar: 'https://avatar.vercel.sh/keating@example.com.png', profileCompleted: 85, points: 3200, allottedSubjects: ['SUB015', 'SUB017'], maxWeeklyHours: 22, designatedYear: 4 },
   { id: 'FAC012', name: 'Prof. Walter White', email: 'white@example.com', code: '240103001012', designation: 'Lecturer', employmentType: 'contract', department: 'Computer Engineering', roles: [], streak: 1, avatar: 'https://avatar.vercel.sh/white@example.com.png', profileCompleted: 40, points: 200, allottedSubjects: ['SUB004'], maxWeeklyHours: 12, designatedYear: 1 },
-  { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'ADMIN01', designation: 'Librarian', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/library@example.com.png', profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'], departmentId: 'DEPT_CSE' },
+  { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'ADMIN01', designation: 'Librarian', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/library@example.com.png', profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'] },
 ].map(fac => ({
   ...fac,
-  departmentId: departments.find(d => d.name === fac.department)?.id || 'DEPT_CSE'
+  departmentId: departments.find(d => d.name === fac.department)!.id
 }));
 
 export const classrooms: Classroom[] = [
