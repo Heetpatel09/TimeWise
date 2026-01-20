@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const WelcomeNotificationInputSchema = z.object({
@@ -165,8 +164,8 @@ export const GenerateTimetableInputSchema = z.object({
   subjects: z.array(SubjectSchema),
   faculty: z.array(FacultySchema),
   classrooms: z.array(z.any()),
-  departments: z.array(DepartmentSchema).optional(),
-  existingSchedule: z.array(z.any()).optional().describe("The existing schedule for all other classes to avoid conflicts."),
+  departments: z.array(DepartmentSchema),
+  existingSchedule: z.array(z.any()).describe("The existing schedule for all other classes to avoid conflicts."),
 });
 export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema>;
 

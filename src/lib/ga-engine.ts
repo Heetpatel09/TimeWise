@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty } from './types';
@@ -40,7 +39,6 @@ const LAB_SLOT_PAIRS: [number, number][] = [
 // --- PENALTY VALUES ---
 const HARD_PENALTY = 1000;
 const SOFT_PENALTY = 10;
-const PREFERENCE_REWARD = -5;
 
 
 // --- HELPER FUNCTIONS ---
@@ -149,7 +147,7 @@ function createInitialPopulation(input: GenerateTimetableInput, lectures: Lectur
             const labA = batchA_Labs.pop()!;
             const labB = batchB_Labs.find(l => l.subjectId !== labA.subjectId);
             if (!labB) continue;
-            batchB_Labs = batchB_Labs.filter(l => l.id !== labB.id);
+            batchB_Labs = batchB_Labs.filter(l => l.subjectId !== labB.subjectId);
 
             const dayIndex = Math.floor(Math.random() * workingDays.length);
             const day = workingDays[dayIndex];
@@ -294,12 +292,12 @@ function mutate(chromosome: Chromosome, input: GenerateTimetableInput): Chromoso
  */
 export async function runGA(input: GenerateTimetableInput) {
     if (!input.days || input.days.length === 0 || !input.timeSlots || input.timeSlots.length === 0) {
-        return { success: false, message: "Invalid input: Days and time slots must be provided.", bestTimetable: [] };
+        return { success: false, message: "Invalid input: Days and time slots must be provided.", bestTimetable: [], error: "Invalid input provided to the engine." };
     }
     
     // --- Setup ---
     const classToSchedule = input.classes[0];
-    if (!classToSchedule) return { success: false, message: "No class selected for timetable generation.", bestTimetable: [] };
+    if (!classToSchedule) return { success: false, message: "No class selected for timetable generation.", bestTimetable: [], error: "No class specified." };
     
     const lectures = createLectureList(input, classToSchedule.id);
     
@@ -308,9 +306,9 @@ export async function runGA(input: GenerateTimetableInput) {
     let codeChefDay: string | undefined = undefined;
 
     // --- Pre-Checks ---
-    const preCheckError = runPreChecks(input, lectures, workingDays.filter(d => d !== codeChefDay), input.timeSlots);
+    const preCheckError = runPreChecks(input, lectures, workingDays, input.timeSlots);
     if (preCheckError) {
-        return { success: false, message: preCheckError, bestTimetable: [], codeChefDay };
+        return { success: false, message: preCheckError, bestTimetable: [], error: preCheckError, codeChefDay };
     }
 
     // --- GA Execution ---
@@ -375,6 +373,7 @@ export async function runGA(input: GenerateTimetableInput) {
         success: false,
         message: "Could not generate a valid timetable after all attempts. The constraints may be too restrictive.",
         bestTimetable: [],
-        codeChefDay
+        codeChefDay,
+        error: "Failed to find a valid solution within the generation limit."
     };
 }

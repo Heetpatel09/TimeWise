@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ALL_TIME_SLOTS = [
@@ -326,6 +327,12 @@ export default function TimetableGeneratorPage() {
                         <DialogTitle>Review Generated Timetable for {classes?.find(c => c.id === selectedClassId)?.name}</DialogTitle>
                         <DialogDescription>{generatedData?.summary}</DialogDescription>
                     </DialogHeader>
+                    {generatedData && generatedData.error && (
+                         <Alert variant="destructive">
+                            <AlertTitle>Generation Error</AlertTitle>
+                            <AlertDescription>{generatedData.error}</AlertDescription>
+                        </Alert>
+                    )}
                     {generatedData && (
                         <div>
                             {generatedData.generatedSchedule.length > 0 ? (
