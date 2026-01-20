@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority } from './types';
+import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Department } from './types';
 
 // --- Data Structures ---
 interface Gene {
@@ -51,9 +51,8 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
 function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
-    // A class takes all subjects for its semester.
     const classSubjects = input.subjects.filter(
-        s => s.semester === classToSchedule.semester
+        s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
     );
 
     let academicHours = 0;
@@ -152,13 +151,17 @@ function canPlaceLibrary(schedule: (Gene | Schedule)[], day: string, time: strin
 
 function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
     const classToSchedule = input.classes[0];
-    // Filter subjects for the specific class's semester.
+    if (!input.subjects) {
+        return "Internal Engine Error: Subjects data not found.";
+    }
+
     const classSubjects = input.subjects.filter(
-        s => s.semester === classToSchedule.semester
+        s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
     );
 
     if (classSubjects.length === 0) {
-        return `No subjects found for semester ${classToSchedule.semester}. Please add subjects for this semester before generating a timetable.`;
+        const departmentName = input.departments?.find(d => d.id === classToSchedule.departmentId)?.name || `Dept ID: ${classToSchedule.departmentId}`;
+        return `No subjects found for Semester ${classToSchedule.semester} in the ${departmentName} department. Please add subjects before generating a timetable.`;
     }
     
      const subjectsWithoutFaculty = classSubjects
@@ -182,6 +185,10 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
 
 // --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
+    if (!input || !input.classes || !input.subjects || !input.faculty || !input.classrooms) {
+        return { success: false, message: "Internal Engine Error: Incomplete data received. Please try again.", bestTimetable: [], codeChefDay: undefined };
+    }
+
     const classToSchedule = input.classes[0];
     if (!classToSchedule) {
         return { success: false, message: "Class for generation was not provided.", bestTimetable: [], codeChefDay: undefined };
@@ -331,5 +338,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    

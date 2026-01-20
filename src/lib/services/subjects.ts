@@ -82,5 +82,3 @@ export async function deleteSubject(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
-
-    
