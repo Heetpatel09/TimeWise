@@ -25,7 +25,7 @@ const generateTimetable = ai.defineFlow(
       };
     } else {
       // If the engine fails, return a structured error response that matches the schema.
-      // This prevents the "unexpected response" error on the client.
+      // This prevents the "unexpected response" on the client.
       return {
         summary: result.message || "Failed to generate a valid timetable. The constraints might be too restrictive.",
         generatedSchedule: [],
