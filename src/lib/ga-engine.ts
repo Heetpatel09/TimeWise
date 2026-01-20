@@ -85,7 +85,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
     }
     
-    // 2. Add Library slots to reach 21 total slots.
+    // 2. Add Library slots to make up the rest of the 21 weekly slots.
     const totalSlotsTarget = 21;
     const librarySlotsToCreate = Math.max(0, totalSlotsTarget - academicHours);
     
@@ -177,16 +177,7 @@ export async function runGA(input: GenerateTimetableInput) {
         s.semester === classToSchedule.semester
     );
     
-    let codeChefDay: string | undefined = undefined;
-    let workingDays: string[];
-
-    if (classTakesCodeChef) {
-      codeChefDay = DAYS[Math.floor(Math.random() * DAYS.length)];
-      workingDays = DAYS.filter(d => d !== codeChefDay);
-    } else {
-      // For regular classes, use a 5-day week and leave Saturday free.
-      workingDays = DAYS.filter(d => d !== 'Saturday');
-    }
+    const workingDays = [...DAYS];
     
     const impossibilityReason = runPreChecks(input);
     if (impossibilityReason) {
@@ -196,7 +187,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const lecturesToPlace = createLectureList(input);
     
     const labLectures = lecturesToPlace.filter(l => l.isLab);
-    const theoryAndLibraryLectures = lecturesToPlace.filter(l => !l.isLab).sort(() => Math.random() - 0.5);;
+    const theoryAndLibraryLectures = lecturesToPlace.filter(l => !l.isLab).sort(() => Math.random() - 0.5);
 
     const generatedSchedule: Gene[] = [];
     const fullSchedule: (Gene | Schedule)[] = [...(input.existingSchedule || [])];
@@ -300,6 +291,15 @@ export async function runGA(input: GenerateTimetableInput) {
             const subject = input.subjects.find(s => s.id === theory.subjectId);
             return { success: false, message: `Could not schedule all lectures. Failed on '${subject?.name || 'a subject'}'. The schedule is too constrained. Try generating again.`, bestTimetable: [], codeChefDay: undefined };
         }
+    }
+
+    let codeChefDay: string | undefined = undefined;
+    if (classTakesCodeChef) {
+      const scheduledDays = new Set(generatedSchedule.map(g => g.day));
+      // Find a day from Monday-Friday that is empty
+      const potentialCodeChefDays = DAYS.filter(d => d !== 'Saturday');
+      const emptyDay = potentialCodeChefDays.find(day => !scheduledDays.has(day));
+      codeChefDay = emptyDay;
     }
     
     const finalSchedule: Schedule[] = generatedSchedule.map((g, i) => ({ 
