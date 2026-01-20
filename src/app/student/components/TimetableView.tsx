@@ -68,12 +68,12 @@ export default function TimetableView() {
   const className = data?.student?.className || '';
 
   const codeChefDay = useMemo(() => {
+    // If CodeChef isn't a subject for this student's class, there's no CodeChef day.
     const hasCodeChef = subjects.some(s => s.id === 'CODECHEF');
     if (!hasCodeChef) return undefined;
 
-    const scheduledDays = new Set(studentSchedule.map(s => s.day));
     // Find a day from Mon-Sat that has no scheduled classes
-    return DAYS.find(day => !scheduledDays.has(day));
+    return DAYS.find(day => !studentSchedule.some(s => s.day === day));
   }, [subjects, studentSchedule]);
 
 
