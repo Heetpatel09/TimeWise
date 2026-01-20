@@ -166,6 +166,9 @@ function runPreChecks(input: GenerateTimetableInput): string | null {
 // --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
     const classToSchedule = input.classes[0];
+    if (!classToSchedule) {
+        return { success: false, message: "Class for generation was not provided.", bestTimetable: [], codeChefDay: undefined };
+    }
 
     const classTakesCodeChef = input.subjects.some(s => 
         s.id === 'CODECHEF' && 
@@ -178,8 +181,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
     if (classTakesCodeChef) {
       const dayIndex = Math.floor(Math.random() * workingDays.length);
-      codeChefDay = workingDays[dayIndex];
-      workingDays = workingDays.filter(d => d !== codeChefDay);
+      codeChefDay = workingDays.splice(dayIndex, 1)[0]; // Remove the day and store it
     }
     
     const impossibilityReason = runPreChecks(input);
