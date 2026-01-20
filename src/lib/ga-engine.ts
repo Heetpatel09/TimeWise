@@ -20,7 +20,6 @@ interface LectureToBePlaced {
     isLab: boolean;
     classId: string;
     hours: number;
-    priorityValue: number;
 }
 
 // --- Helper Functions & Configuration ---
@@ -50,27 +49,17 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
     }
 };
 
-const getPriorityValue = (priority?: SubjectPriority): number => {
-     switch (priority) {
-        case 'Non Negotiable': return 4;
-        case 'High': return 3;
-        case 'Medium': return 2;
-        case 'Low': return 1;
-        default: return 0;
-    }
-}
-
 function createLectureList(input: GenerateTimetableInput, maxSlots: number): LectureToBePlaced[] {
-    const potentialLectures: LectureToBePlaced[] = [];
+    const lectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
     const classSubjects = input.subjects.filter(
         s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId
     );
 
+    // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        // Skip special subjects from normal lecture creation; they are handled separately or might not be user-schedulable
-        if (sub.isSpecial) continue;
-        
+        if (sub.isSpecial || sub.id === 'LIB001') continue;
+
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
             console.warn(`[Scheduler] No faculty for subject ${sub.name}. Skipping.`);
@@ -78,48 +67,40 @@ function createLectureList(input: GenerateTimetableInput, maxSlots: number): Lec
         }
 
         if (sub.type === 'lab') {
-            potentialLectures.push({
+            // Labs are 2 hours long, scheduled once a week.
+            lectures.push({
                 classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
-                isLab: true, hours: 2, priorityValue: 5 // Labs get highest priority
+                isLab: true, hours: 2
             });
         } else {
+            // Theory subjects have hours based on priority.
             const hours = getHoursForPriority(sub.priority);
             for (let i = 0; i < hours; i++) {
-                potentialLectures.push({
+                lectures.push({
                     classId: classToSchedule.id, subjectId: sub.id, facultyId: facultyForSubject.id,
-                    isLab: false, hours: 1, priorityValue: getPriorityValue(sub.priority)
+                    isLab: false, hours: 1
                 });
             }
         }
     }
     
-    potentialLectures.sort((a, b) => {
-        if (a.isLab && !b.isLab) return -1;
-        if (!a.isLab && b.isLab) return 1;
-        return b.priorityValue - a.priorityValue;
-    });
+    // Sort by labs first (most constrained), then theory
+    lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
 
-    const finalLectures: LectureToBePlaced[] = [];
-    let totalHours = 0;
-    for (const potentialLecture of potentialLectures) {
-         if (totalHours + 1 <= maxSlots) { // Use +1 for each 1-hour slot
-            finalLectures.push(potentialLecture);
-            totalHours += 1;
-        }
-    }
+    // 2. Calculate remaining slots to meet the "at most 4 empty slots" goal and fill with Library
+    const academicHours = lectures.reduce((sum, l) => sum + l.hours, 0);
+    const targetFilledSlots = maxSlots - 4;
     
-    // Add library slots to fill up to 21 total slots
-    const academicAndLabHours = finalLectures.reduce((sum, l) => sum + (l.isLab ? 2 : l.hours), 0);
-    const librarySlotsToCreate = Math.max(0, 21 - academicAndLabHours);
-
-     for (let i = 0; i < librarySlotsToCreate; i++) {
-        finalLectures.push({
+    const librarySlotsToCreate = Math.max(0, targetFilledSlots - academicHours);
+    
+    for (let i = 0; i < librarySlotsToCreate; i++) {
+        lectures.push({
             classId: classToSchedule.id, subjectId: 'LIB001', facultyId: 'FAC_LIB',
-            isLab: false, hours: 1, priorityValue: -1 // Lowest priority
+            isLab: false, hours: 1
         });
     }
 
-    return finalLectures;
+    return lectures;
 }
 
 
