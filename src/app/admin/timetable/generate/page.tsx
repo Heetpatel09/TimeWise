@@ -35,7 +35,7 @@ const ALL_TIME_SLOTS = [
     '12:20 PM - 01:15 PM',
     '01:15 PM - 02:10 PM'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
 const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t));
 
