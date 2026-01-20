@@ -34,7 +34,6 @@ const LECTURE_TIME_SLOTS = [
     '12:20 PM - 01:15 PM',
     '01:15 PM - 02:10 PM'
 ];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const getHoursForPriority = (priority?: SubjectPriority): number => {
     switch (priority) {
@@ -157,7 +156,7 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
     const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
 
     if (totalRequiredHours > totalAvailableSlots) {
-        return `Cannot generate schedule. Required slots (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}). The constraints might be too tight.`;
+        return `Cannot generate schedule. Required slots (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}) for a ${workingDays.length}-day week. The constraints are too tight.`;
     }
     
     return null;
@@ -166,14 +165,22 @@ function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInp
 
 // --- Main Deterministic Engine ---
 export async function runGA(input: GenerateTimetableInput) {
+    // --- Input Validation ---
+    if (!input.days || input.days.length === 0) {
+        return { success: false, message: "Invalid input: The list of working days cannot be empty.", bestTimetable: [], codeChefDay: undefined };
+    }
+
     // 1. Setup days
     const hasCodeChef = input.subjects.some(s => s.id === 'CODECHEF' && s.departmentId === input.classes[0]?.departmentId && s.semester === input.classes[0]?.semester);
     let codeChefDay: string | undefined = undefined;
-    let workingDays = [...DAYS];
+    let workingDays = [...input.days];
     if (hasCodeChef) {
-        const codeChefDayIndex = Math.floor(Math.random() * DAYS.length);
-        codeChefDay = DAYS[codeChefDayIndex];
-        workingDays = DAYS.filter(d => d !== codeChefDay);
+         if (input.days.length <= 1) {
+            return { success: false, message: "Cannot schedule CodeChef day with only one working day provided.", bestTimetable: [], codeChefDay: undefined };
+        }
+        const codeChefDayIndex = Math.floor(Math.random() * input.days.length);
+        codeChefDay = input.days[codeChefDayIndex];
+        workingDays = input.days.filter(d => d !== codeChefDay);
     }
     
     // 2. Create list of lectures to be scheduled
