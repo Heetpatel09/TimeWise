@@ -149,14 +149,21 @@ function canPlaceLibrary(schedule: (Gene | Schedule)[], day: string, time: strin
 }
 
 
-function runPreChecks(input: GenerateTimetableInput): string | null {
+function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
     const classToSchedule = input.classes[0];
      const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId && !s.isSpecial && s.id !== 'LIB001' && s.id !== 'CODECHEF')
+        .filter(s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester && !s.isSpecial && s.id !== 'LIB001' && s.id !== 'CODECHEF')
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
         return `Cannot generate schedule. Subject '${subjectsWithoutFaculty.name}' has no assigned faculty. Please assign faculty to this subject in the Departments & Subjects section.`;
+    }
+
+    const totalRequiredHours = lectures.reduce((acc, l) => acc + l.hours, 0);
+    const totalAvailableSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
+
+    if (totalRequiredHours > totalAvailableSlots) {
+        return `Cannot generate schedule. Required lecture hours (${totalRequiredHours}) exceed available slots (${totalAvailableSlots}) in the 5-day week. The constraints might be too tight.`;
     }
 
     return null;
@@ -184,13 +191,13 @@ export async function runGA(input: GenerateTimetableInput) {
       codeChefDay = workingDays.splice(dayIndex, 1)[0]; 
     }
     
-    const impossibilityReason = runPreChecks(input);
+    const lecturesToPlace = createLectureList(input);
+    
+    const impossibilityReason = runPreChecks(lecturesToPlace, input, workingDays);
     if (impossibilityReason) {
         return { success: false, message: impossibilityReason, bestTimetable: [], codeChefDay: undefined };
     }
 
-    const lecturesToPlace = createLectureList(input);
-    
     const labLectures = lecturesToPlace.filter(l => l.isLab);
     const theoryAndLibraryLectures = lecturesToPlace.filter(l => !l.isLab);
 
@@ -315,5 +322,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
