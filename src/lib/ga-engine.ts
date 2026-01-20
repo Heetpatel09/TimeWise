@@ -87,9 +87,9 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
     }
     
-    // 2. Add Library slots to reach the 21 slot target
-    const weeklySlots = 21;
-    const librarySlotsToCreate = Math.max(0, weeklySlots - academicHours);
+    // 2. Add Library slots to fill up the week, with a max of 4 empty slots
+    const totalWeeklySlots = 21; // 7 slots * 3 days = 21 non-break slots per 3 working days is wrong. 7 slots * 5 days = 35. This needs to be 21 as per user
+    const librarySlotsToCreate = Math.max(0, totalWeeklySlots - academicHours);
     
     for (let i = 0; i < librarySlotsToCreate; i++) {
         lectures.push({
@@ -172,15 +172,16 @@ export async function runGA(input: GenerateTimetableInput) {
     );
     
     let codeChefDay: string | undefined = undefined;
-    let workingDays = [...DAYS];
+    let workingDays: string[];
 
-    // If it's a codechef class, pick a random weekday and remove it from working days.
-    // Otherwise, just remove Saturday to make it a 5-day week for non-codechef classes.
     if (classTakesCodeChef) {
+      // Pick a random weekday (Mon-Fri) for CodeChef
       const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
       codeChefDay = weekdays[Math.floor(Math.random() * weekdays.length)];
+      // The working days are all days EXCEPT the chosen CodeChef day
       workingDays = DAYS.filter(d => d !== codeChefDay);
     } else {
+      // For regular classes, the working week is Monday to Friday
       workingDays = DAYS.filter(d => d !== 'Saturday');
     }
     
@@ -192,7 +193,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const lecturesToPlace = createLectureList(input);
     
     const labLectures = lecturesToPlace.filter(l => l.isLab);
-    const theoryAndLibraryLectures = lecturesToPlace.filter(l => !l.isLab);
+    const theoryAndLibraryLectures = lecturesToPlace.filter(l => !l.isLab).sort(() => Math.random() - 0.5);;
 
     const generatedSchedule: Gene[] = [];
     const fullSchedule: (Gene | Schedule)[] = [...(input.existingSchedule || [])];
@@ -246,9 +247,6 @@ export async function runGA(input: GenerateTimetableInput) {
         return { success: false, message: "Cannot schedule theory lectures. No classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
     
-    // Randomize to give library slots a fair chance
-    theoryAndLibraryLectures.sort(() => Math.random() - 0.5);
-
     for (const theory of theoryAndLibraryLectures) {
         let placed = false;
         
@@ -320,5 +318,3 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
-
-    
