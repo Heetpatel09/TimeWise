@@ -27,12 +27,12 @@ interface LectureToBePlaced {
 
 // --- Helper Functions & Configuration ---
 const LECTURE_TIME_SLOTS = [
-    '07:30 AM - 08:30 AM',
-    '08:30 AM - 09:30 AM',
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '01:00 PM - 02:00 PM',
-    '02:00 PM - 03:00 PM'
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -138,10 +138,20 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
  */
 function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
     const classToSchedule = input.classes[0];
+    if (!classToSchedule || !input.subjects) {
+        return "Internal error: Class or subjects data is missing.";
+    }
 
     // Check for faculty assignment
-    const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId && s.id !== 'LIB001')
+    const subjectsForClass = input.subjects
+        .filter(s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId && s.id !== 'LIB001');
+
+    if (subjectsForClass.length === 0) {
+        const department = input.departments?.find(d => d.id === classToSchedule.departmentId);
+        return `No subjects found for Semester ${classToSchedule.semester} in the ${department?.name || 'selected'} department. Please add subjects before generating a timetable.`
+    }
+
+    const subjectsWithoutFaculty = subjectsForClass
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
@@ -189,9 +199,9 @@ export async function runGA(input: GenerateTimetableInput) {
     }
 
     const labTimePairs: [string, string][] = [
-        ['07:30 AM - 08:30 AM', '08:30 AM - 09:30 AM'], // Morning
-        ['01:00 PM - 02:00 PM', '02:00 PM - 03:00 PM'], // Afternoon
-        ['10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM'], // Mid-day
+        ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'], // Morning
+        ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'], // Afternoon
+        ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'], // Mid-day
     ];
     
     // Sort lab lectures to handle different labs for the same class (e.g., different batches)
@@ -241,7 +251,7 @@ export async function runGA(input: GenerateTimetableInput) {
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
                   if (theory.subjectId === 'LIB001') {
-                     const gene = { day, time, ...theory, classroomId: 'LIB_ROOM', facultyId: 'FAC_LIB', isLab: false };
+                     const gene = { day, time, ...theory, classroomId: 'CR_LIB', facultyId: 'FAC_LIB', isLab: false };
                      generatedSchedule.push(gene);
                      fullSchedule.push(gene);
                      placed = true;
