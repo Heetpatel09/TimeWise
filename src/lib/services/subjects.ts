@@ -65,10 +65,11 @@ export async function deleteSubject(id: string) {
     
     db.transaction(() => {
         // Remove the subject from any faculty that has it allotted
-        const allFaculty: Faculty[] = db.prepare('SELECT id, allottedSubjects FROM faculty').all() as any[];
+        const allFaculty: {id: string, allottedSubjects: string | null}[] = db.prepare('SELECT id, allottedSubjects FROM faculty').all() as any[];
         allFaculty.forEach(fac => {
-            const subjects = JSON.parse(fac.allottedSubjects || '[]') as string[];
-            if (subjects.includes(id)) {
+            if (!fac.allottedSubjects) return;
+            const subjects = JSON.parse(fac.allottedSubjects);
+            if (Array.isArray(subjects) && subjects.includes(id)) {
                 const newSubjects = subjects.filter(sId => sId !== id);
                 db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(newSubjects), fac.id);
             }
