@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +23,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ALL_TIME_SLOTS = [
@@ -67,7 +67,8 @@ export default function TimetableGeneratorPage() {
     const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
     const [selectedSemester, setSelectedSemester] = useState<string>('');
     const [selectedClassId, setSelectedClassId] = useState<string>('');
-    
+    const [workingDays, setWorkingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
     const [generatedData, setGeneratedData] = useState<GenerateTimetableOutput | null>(null);
@@ -124,18 +125,34 @@ export default function TimetableGeneratorPage() {
         }
     }, [classesInSemester, selectedClassId]);
 
+    const handleDayChange = (day: string, checked: boolean) => {
+        setWorkingDays(prev => {
+            if (checked) {
+                return [...prev, day].sort((a, b) => DAYS.indexOf(a) - DAYS.indexOf(b));
+            } else {
+                return prev.filter(d => d !== day);
+            }
+        });
+    };
+
     const handleGenerate = async () => {
         if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments || !students) {
             toast({ title: 'Data not loaded yet', description: 'Please wait a moment for all data to load before generating a timetable.', variant: 'destructive' });
             return;
         }
+
+        if (workingDays.length === 0) {
+            toast({ title: 'No Days Selected', description: 'Please select at least one working day.', variant: 'destructive'});
+            return;
+        }
+
         setIsGenerating(true);
         try {
             const classToGenerate = classes.find(c => c.id === selectedClassId);
             if (!classToGenerate) throw new Error("Selected class not found.");
             
             const result = await generateTimetableFlow({
-                days: DAYS,
+                days: workingDays,
                 timeSlots: LECTURE_TIME_SLOTS,
                 classes: [classToGenerate],
                 subjects,
@@ -149,7 +166,7 @@ export default function TimetableGeneratorPage() {
                  setGeneratedData(result);
                  setReviewDialogOpen(true);
             } else {
-                toast({ title: 'Generation Failed', description: result.summary || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
+                toast({ title: 'Generation Failed', description: result.summary || result.error || "Could not generate a valid timetable.", variant: 'destructive', duration: 10000 });
             }
         } catch (e: any) {
             toast({ title: 'Engine Error', description: e.message || "An unexpected error occurred from the server.", variant: 'destructive' });
@@ -194,7 +211,7 @@ export default function TimetableGeneratorPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Configuration</CardTitle>
-                            <CardDescription>Select a class to generate a timetable for.</CardDescription>
+                            <CardDescription>Select a class and working days to generate a timetable.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {isLoading ? <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div> : (
@@ -219,6 +236,21 @@ export default function TimetableGeneratorPage() {
                                             <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
                                             <SelectContent>{classesInSemester.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                         </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>4. Select Working Days</Label>
+                                        <div className="grid grid-cols-3 gap-2 rounded-lg border p-4">
+                                            {DAYS.map(day => (
+                                                <div key={day} className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        id={`day-${day}`}
+                                                        checked={workingDays.includes(day)}
+                                                        onCheckedChange={(checked) => handleDayChange(day, !!checked)}
+                                                    />
+                                                    <Label htmlFor={`day-${day}`} className="text-sm font-normal">{day}</Label>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </>
                             )}
@@ -302,7 +334,7 @@ export default function TimetableGeneratorPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="border font-semibold p-2">Time</TableHead>
-                                            {DAYS.map(day => (
+                                            {workingDays.map(day => (
                                                 <TableHead key={day} className={cn("border font-semibold p-2 text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
                                             ))}
                                         </TableRow>
@@ -313,7 +345,7 @@ export default function TimetableGeneratorPage() {
                                                 return (
                                                     <TableRow key={time}>
                                                         <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
-                                                        <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
+                                                        <TableCell colSpan={workingDays.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
                                                              {time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}
                                                         </TableCell>
                                                     </TableRow>
@@ -322,7 +354,7 @@ export default function TimetableGeneratorPage() {
                                             return (
                                             <TableRow key={time}>
                                                 <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{time}</TableCell>
-                                                {DAYS.map(day => {
+                                                {workingDays.map(day => {
                                                     const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
                                                     return (
                                                         <TableCell key={`${time}-${day}`} className={cn("border p-1 align-top text-xs min-w-[150px] h-24", day === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
