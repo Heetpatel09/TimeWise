@@ -18,7 +18,7 @@ const generateWelcomeNotification = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt,
-      model: googleAI.model('gemini-2.5-flash'),
+      model: googleAI.model('gemini-1.5-flash'),
       config: {
         temperature: 0.7,
       },
@@ -31,5 +31,3 @@ const generateWelcomeNotification = ai.defineFlow(
 export async function generateWelcomeNotificationFlow(input: WelcomeNotificationInput): Promise<string> {
     return generateWelcomeNotification(input);
 }
-
-    
