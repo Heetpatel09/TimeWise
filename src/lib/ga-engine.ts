@@ -23,6 +23,7 @@ interface LectureToBePlaced {
 }
 
 // --- Helper Functions & Configuration ---
+// Strict time slots as per user request
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:25 AM',
     '08:25 AM - 09:20 AM',
@@ -86,11 +87,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         }
     }
     
-    // Sort by labs first (most constrained), then theory
-    lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
-
     // 2. Add Library slots to reach the 21 slot target
-    // We aim for 21 total slots. (3.5 hours * 6 days = 21 hours). On a 5 day schedule, it's 4.2 hours a day. Let's aim for 21 total slots on the 5 working days.
     const weeklySlots = 21;
     const librarySlotsToCreate = Math.max(0, weeklySlots - academicHours);
     
@@ -101,6 +98,9 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         });
     }
 
+    // Sort by labs first (most constrained), then theory
+    lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
+    
     return lectures;
 }
 
@@ -129,6 +129,7 @@ function canPlaceTheory(schedule: (Gene | Schedule)[], day: string, time: string
     
     const dayScheduleForClass = schedule.filter(g => g.classId === classId && g.day === day);
     
+    // Rule: Do not give same subject classes more than 2 on same day.
     if (dayScheduleForClass.filter(s => s.subjectId === subjectId).length >= 2) {
         return false;
     }
@@ -173,13 +174,14 @@ export async function runGA(input: GenerateTimetableInput) {
     let codeChefDay: string | undefined = undefined;
     let workingDays = [...DAYS];
 
-    // Correctly handle the CodeChef day designation.
+    // If it's a codechef class, pick a random weekday and remove it from working days.
+    // Otherwise, just remove Saturday to make it a 5-day week for non-codechef classes.
     if (classTakesCodeChef) {
       const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-      // Randomly designate one weekday as the CodeChef day.
       codeChefDay = weekdays[Math.floor(Math.random() * weekdays.length)];
-      // The remaining days are the working days for academic scheduling.
       workingDays = DAYS.filter(d => d !== codeChefDay);
+    } else {
+      workingDays = DAYS.filter(d => d !== 'Saturday');
     }
     
     const impossibilityReason = runPreChecks(input);
@@ -207,13 +209,12 @@ export async function runGA(input: GenerateTimetableInput) {
         ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'],
     ];
 
-    // Alternate lab slots
+    // Alternate lab slots to distribute them across the day
     const alternateTimePairs = [labTimePairs[0], labTimePairs[2], labTimePairs[1]].sort(() => Math.random() - 0.5);
     let timePairIndex = 0;
 
     for (const lab of labLectures) {
         let placed = false;
-        // Start from a random day to vary schedules
         const dayStartIndex = Math.floor(Math.random() * workingDays.length);
 
         for (let i = 0; i < workingDays.length; i++) {
@@ -245,22 +246,19 @@ export async function runGA(input: GenerateTimetableInput) {
         return { success: false, message: "Cannot schedule theory lectures. No classrooms are available.", bestTimetable: [], codeChefDay: undefined };
     }
     
-    // Shuffle the theory/library lectures to give library a fair chance of being placed
+    // Randomize to give library slots a fair chance
     theoryAndLibraryLectures.sort(() => Math.random() - 0.5);
 
     for (const theory of theoryAndLibraryLectures) {
         let placed = false;
         
-        // Start from morning slots
-        for (const day of workingDays) {
-             // Prefer mornings
+        for (const day of workingDays.sort(() => Math.random() - 0.5)) {
              const timeSlotsToTry = LECTURE_TIME_SLOTS.sort(() => Math.random() - 0.5);
 
              for (const time of timeSlotsToTry) {
                   // Skip if slot is already taken for this class
                   if (fullSchedule.some(g => g.classId === theory.classId && g.day === day && g.time === time)) continue;
                   
-                  // Handle library slots
                   if (theory.subjectId === 'LIB001') {
                      if (canPlaceLibrary(fullSchedule, day, time, theory.classId)) {
                         const gene = { day, time, ...theory, classroomId: 'CR_LIB', isLab: false };
@@ -272,15 +270,15 @@ export async function runGA(input: GenerateTimetableInput) {
                      continue; 
                   }
 
-                  // Handle theory slots
                   const shuffledRooms = availableClassrooms.sort(() => Math.random() - 0.5);
                   for (const room of shuffledRooms) {
-                     // Check for classroom consistency in consecutive slots
+                     // Classroom consistency check
                      const prevSlotTime = LECTURE_TIME_SLOTS[LECTURE_TIME_SLOTS.indexOf(time) - 1];
                      if(prevSlotTime) {
                         const previousSlot = fullSchedule.find(s => s.day === day && s.time === prevSlotTime && s.classId === theory.classId);
-                        if (previousSlot && previousSlot.subjectId !== 'LIB001' && previousSlot.classroomId !== room.id) {
-                           continue; // Prefer same room for back-to-back classes
+                        // If previous slot was theory, try to use same room
+                        if (previousSlot && (previousSlot as Gene).isLab === false && previousSlot.subjectId !== 'LIB001' && previousSlot.classroomId !== room.id) {
+                           continue;
                         }
                      }
 
@@ -322,3 +320,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    
