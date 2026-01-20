@@ -23,7 +23,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -68,7 +67,8 @@ export default function TimetableGeneratorPage() {
     const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
     const [selectedSemester, setSelectedSemester] = useState<string>('');
     const [selectedClassId, setSelectedClassId] = useState<string>('');
-    const [workingDays, setWorkingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+    
+    const workingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -126,24 +126,9 @@ export default function TimetableGeneratorPage() {
         }
     }, [classesInSemester, selectedClassId]);
 
-    const handleDayChange = (day: string, checked: boolean) => {
-        setWorkingDays(prev => {
-            if (checked) {
-                return [...prev, day].sort((a, b) => DAYS.indexOf(a) - DAYS.indexOf(b));
-            } else {
-                return prev.filter(d => d !== day);
-            }
-        });
-    };
-
     const handleGenerate = async () => {
         if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments || !students) {
             toast({ title: 'Data not loaded yet', description: 'Please wait a moment for all data to load before generating a timetable.', variant: 'destructive' });
-            return;
-        }
-
-        if (workingDays.length === 0) {
-            toast({ title: 'No Days Selected', description: 'Please select at least one working day.', variant: 'destructive'});
             return;
         }
 
@@ -212,7 +197,7 @@ export default function TimetableGeneratorPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Configuration</CardTitle>
-                            <CardDescription>Select a class and working days to generate a timetable.</CardDescription>
+                            <CardDescription>Select a class to generate a timetable for a 6-day week (Mon-Sat).</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {isLoading ? <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div> : (
@@ -237,21 +222,6 @@ export default function TimetableGeneratorPage() {
                                             <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
                                             <SelectContent>{classesInSemester.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                         </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>4. Select Working Days</Label>
-                                        <div className="grid grid-cols-3 gap-2 rounded-lg border p-4">
-                                            {DAYS.map(day => (
-                                                <div key={day} className="flex items-center gap-2">
-                                                    <Checkbox
-                                                        id={`day-${day}`}
-                                                        checked={workingDays.includes(day)}
-                                                        onCheckedChange={(checked) => handleDayChange(day, !!checked)}
-                                                    />
-                                                    <Label htmlFor={`day-${day}`} className="text-sm font-normal">{day}</Label>
-                                                </div>
-                                            ))}
-                                        </div>
                                     </div>
                                 </>
                             )}
