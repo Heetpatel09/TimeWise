@@ -51,9 +51,9 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
 function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
-    // A class takes all subjects for its semester.
+    // A class takes all subjects for its semester from its own department.
     const classSubjects = input.subjects.filter(
-        s => s.semester === classToSchedule.semester
+        s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
     );
 
     let academicHours = 0;
@@ -152,7 +152,15 @@ function canPlaceLibrary(schedule: (Gene | Schedule)[], day: string, time: strin
 
 function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
     const classToSchedule = input.classes[0];
-    const classSubjects = input.subjects.filter(s => s.semester === classToSchedule.semester);
+    // Filter subjects for the specific class's department and semester.
+    const classSubjects = input.subjects.filter(
+        s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
+    );
+
+    if (classSubjects.length === 0) {
+        const departmentName = input.departments?.find(d => d.id === classToSchedule.departmentId)?.name || 'the selected';
+        return `No subjects found for semester ${classToSchedule.semester} in ${departmentName} department. Please add subjects before generating a timetable.`;
+    }
     
      const subjectsWithoutFaculty = classSubjects
         .filter(s => !s.isSpecial && s.id !== 'LIB001' && s.id !== 'CODECHEF')
@@ -182,6 +190,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const classTakesCodeChef = input.subjects.some(s => 
         s.id === 'CODECHEF' && 
+        s.departmentId === classToSchedule.departmentId &&
         s.semester === classToSchedule.semester
     );
 
@@ -324,3 +333,5 @@ export async function runGA(input: GenerateTimetableInput) {
         codeChefDay,
     };
 }
+
+    

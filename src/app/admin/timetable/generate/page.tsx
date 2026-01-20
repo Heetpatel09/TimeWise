@@ -90,7 +90,7 @@ export default function TimetableGeneratorPage() {
         if (!cls) return null;
         
         const studentCount = students.filter(s => s.classId === selectedClassId).length;
-        const classSubjects = subjects.filter(s => s.semester === cls.semester) // Simplified: show all subjects for that semester
+        const classSubjects = subjects.filter(s => s.departmentId === cls.departmentId && s.semester === cls.semester)
             .map(sub => ({
                 ...sub,
                 facultyName: faculty.find(f => f.allottedSubjects?.includes(sub.id))?.name || 'N/A'
@@ -125,7 +125,7 @@ export default function TimetableGeneratorPage() {
     }, [classesInSemester, selectedClassId]);
 
     const handleGenerate = async () => {
-        if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule) {
+        if (!selectedClassId || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
             toast({ title: 'Data not loaded yet. Please wait.', variant: 'destructive' });
             return;
         }
@@ -138,9 +138,10 @@ export default function TimetableGeneratorPage() {
                 days: DAYS,
                 timeSlots: LECTURE_TIME_SLOTS,
                 classes: [classToGenerate],
-                subjects, // Pass all subjects
+                subjects,
                 faculty,
                 classrooms,
+                departments,
                 existingSchedule: existingSchedule.filter(s => s.classId !== selectedClassId),
             });
 
@@ -384,3 +385,5 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
+
+    

@@ -113,13 +113,59 @@ export const GenerateSeatingArrangementOutputSchema = z.object({
 });
 export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
 
+
+const DepartmentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string()
+});
+
+const ClassSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    semester: z.number(),
+    departmentId: z.string(),
+    section: z.string(),
+});
+
+const SubjectSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    code: z.string(),
+    type: z.enum(['theory', 'lab']),
+    semester: z.number(),
+    syllabus: z.string().optional().nullable(),
+    departmentId: z.string(),
+    isSpecial: z.boolean().optional(),
+    priority: z.enum(['Non Negotiable', 'High', 'Medium', 'Low']).optional(),
+});
+
+const FacultySchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    code: z.string(),
+    departmentId: z.string(),
+    designation: z.string(),
+    employmentType: z.enum(['full-time', 'part-time', 'contract']),
+    roles: z.array(z.string()),
+    streak: z.number(),
+    avatar: z.string().optional(),
+    profileCompleted: z.number(),
+    points: z.number(),
+    allottedSubjects: z.array(z.string()).optional(),
+    maxWeeklyHours: z.number().optional(),
+    designatedYear: z.number().optional(),
+});
+
 export const GenerateTimetableInputSchema = z.object({
   days: z.array(z.string()),
   timeSlots: z.array(z.string()),
-  classes: z.array(z.any()),
-  subjects: z.array(z.any()),
-  faculty: z.array(z.any()),
+  classes: z.array(ClassSchema),
+  subjects: z.array(SubjectSchema),
+  faculty: z.array(FacultySchema),
   classrooms: z.array(z.any()),
+  departments: z.array(DepartmentSchema).optional(),
   existingSchedule: z.array(z.any()).optional().describe("The existing schedule for all other classes to avoid conflicts."),
 });
 export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema>;
@@ -480,3 +526,5 @@ export interface UserBadge {
 export interface EnrichedUserBadge extends UserBadge {
   badge: Badge;
 }
+
+    
