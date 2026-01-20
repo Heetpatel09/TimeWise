@@ -51,8 +51,9 @@ const getHoursForPriority = (priority?: SubjectPriority): number => {
 function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     const lectures: LectureToBePlaced[] = [];
     const classToSchedule = input.classes[0];
+    // A class takes all subjects for its semester.
     const classSubjects = input.subjects.filter(
-        s => s.semester === classToSchedule.semester && s.departmentId === classToSchedule.departmentId
+        s => s.semester === classToSchedule.semester
     );
 
     let academicHours = 0;
@@ -151,8 +152,10 @@ function canPlaceLibrary(schedule: (Gene | Schedule)[], day: string, time: strin
 
 function runPreChecks(lectures: LectureToBePlaced[], input: GenerateTimetableInput, workingDays: string[]): string | null {
     const classToSchedule = input.classes[0];
-     const subjectsWithoutFaculty = input.subjects
-        .filter(s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester && !s.isSpecial && s.id !== 'LIB001' && s.id !== 'CODECHEF')
+    const classSubjects = input.subjects.filter(s => s.semester === classToSchedule.semester);
+    
+     const subjectsWithoutFaculty = classSubjects
+        .filter(s => !s.isSpecial && s.id !== 'LIB001' && s.id !== 'CODECHEF')
         .find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     
     if (subjectsWithoutFaculty) {
@@ -179,7 +182,6 @@ export async function runGA(input: GenerateTimetableInput) {
 
     const classTakesCodeChef = input.subjects.some(s => 
         s.id === 'CODECHEF' && 
-        s.departmentId === classToSchedule.departmentId && 
         s.semester === classToSchedule.semester
     );
 

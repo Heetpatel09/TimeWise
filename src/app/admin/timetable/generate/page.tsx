@@ -37,6 +37,8 @@ const ALL_TIME_SLOTS = [
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
+const LECTURE_TIME_SLOTS = ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t));
+
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
@@ -88,7 +90,7 @@ export default function TimetableGeneratorPage() {
         if (!cls) return null;
         
         const studentCount = students.filter(s => s.classId === selectedClassId).length;
-        const classSubjects = subjects.filter(s => s.departmentId === cls.departmentId && s.semester === cls.semester)
+        const classSubjects = subjects.filter(s => s.semester === cls.semester) // Simplified: show all subjects for that semester
             .map(sub => ({
                 ...sub,
                 facultyName: faculty.find(f => f.allottedSubjects?.includes(sub.id))?.name || 'N/A'
@@ -132,13 +134,11 @@ export default function TimetableGeneratorPage() {
             const classToGenerate = classes.find(c => c.id === selectedClassId);
             if (!classToGenerate) throw new Error("Selected class not found.");
             
-            const relevantSubjects = subjects.filter(s => s.departmentId === classToGenerate.departmentId);
-
             const result = await generateTimetableFlow({
                 days: DAYS,
                 timeSlots: LECTURE_TIME_SLOTS,
                 classes: [classToGenerate],
-                subjects: relevantSubjects,
+                subjects, // Pass all subjects
                 faculty,
                 classrooms,
                 existingSchedule: existingSchedule.filter(s => s.classId !== selectedClassId),
