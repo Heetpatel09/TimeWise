@@ -57,7 +57,7 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
     let academicHours = 0;
     // 1. Add Academic Lectures
     for (const sub of classSubjects) {
-        if (sub.isSpecial) continue; // Skip special subjects like CodeChef
+        if (sub.isSpecial) continue; // Skip special subjects like CodeChef or Library for now
 
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) {
@@ -96,8 +96,12 @@ function createLectureList(input: GenerateTimetableInput): LectureToBePlaced[] {
         });
     }
 
-    // Sort by labs first (most constrained), then theory
-    lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
+    // Sort by labs first (most constrained), then randomize theory/library
+    lectures.sort((a, b) => {
+        if (a.isLab && !b.isLab) return -1;
+        if (!a.isLab && b.isLab) return 1;
+        return Math.random() - 0.5;
+    });
     
     return lectures;
 }
@@ -176,8 +180,15 @@ export async function runGA(input: GenerateTimetableInput) {
         s.departmentId === classToSchedule.departmentId && 
         s.semester === classToSchedule.semester
     );
-    
-    const workingDays = [...DAYS];
+
+    let codeChefDay: string | undefined = undefined;
+    let workingDays = [...DAYS];
+
+    if (classTakesCodeChef) {
+      const dayIndex = Math.floor(Math.random() * DAYS.length);
+      codeChefDay = DAYS[dayIndex];
+      workingDays = DAYS.filter(d => d !== codeChefDay);
+    }
     
     const impossibilityReason = runPreChecks(input);
     if (impossibilityReason) {
@@ -187,7 +198,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const lecturesToPlace = createLectureList(input);
     
     const labLectures = lecturesToPlace.filter(l => l.isLab);
-    const theoryAndLibraryLectures = lecturesToPlace.filter(l => !l.isLab).sort(() => Math.random() - 0.5);
+    const theoryAndLibraryLectures = lecturesToPlace.filter(l => !l.isLab);
 
     const generatedSchedule: Gene[] = [];
     const fullSchedule: (Gene | Schedule)[] = [...(input.existingSchedule || [])];
@@ -269,7 +280,7 @@ export async function runGA(input: GenerateTimetableInput) {
                      if(prevSlotTime) {
                         const previousSlot = fullSchedule.find(s => s.day === day && s.time === prevSlotTime && s.classId === theory.classId);
                         // If previous slot was theory, try to use same room
-                        if (previousSlot && (previousSlot as Gene).isLab === false && previousSlot.subjectId !== 'LIB001' && previousSlot.classroomId !== room.id) {
+                        if (previousSlot && !(previousSlot as Gene).isLab && previousSlot.subjectId !== 'LIB001' && previousSlot.classroomId !== room.id) {
                            continue;
                         }
                      }
@@ -291,15 +302,6 @@ export async function runGA(input: GenerateTimetableInput) {
             const subject = input.subjects.find(s => s.id === theory.subjectId);
             return { success: false, message: `Could not schedule all lectures. Failed on '${subject?.name || 'a subject'}'. The schedule is too constrained. Try generating again.`, bestTimetable: [], codeChefDay: undefined };
         }
-    }
-
-    let codeChefDay: string | undefined = undefined;
-    if (classTakesCodeChef) {
-      const scheduledDays = new Set(generatedSchedule.map(g => g.day));
-      // Find a day from Monday-Friday that is empty
-      const potentialCodeChefDays = DAYS.filter(d => d !== 'Saturday');
-      const emptyDay = potentialCodeChefDays.find(day => !scheduledDays.has(day));
-      codeChefDay = emptyDay;
     }
     
     const finalSchedule: Schedule[] = generatedSchedule.map((g, i) => ({ 

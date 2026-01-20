@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { EnrichedSchedule, Student, Subject } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,6 +83,9 @@ export default function TimetableView() {
                 if (subject?.id === 'LIB001') {
                     return [day, time, 'Library', '-', '-'];
                 }
+                if (subject?.id === 'CODECHEF') {
+                    return [day, time, 'CodeChef Day', '-', '-'];
+                }
                 const subjectName = subject ? `${subject.name} ${subject.type === 'lab' ? '(Lab)' : ''}` : 'N/A';
                 return [day, time, subjectName, slot.facultyName, slot.classroomName];
             }
@@ -98,6 +101,13 @@ export default function TimetableView() {
 
     doc.save('my_timetable.pdf');
   }
+
+  const codeChefDay = useMemo(() => {
+    const hasCodeChef = subjects.some(s => s.id === 'CODECHEF');
+    if (!hasCodeChef) return undefined;
+    const scheduledDays = new Set(studentSchedule.map(s => s.day));
+    return DAYS.find(day => !scheduledDays.has(day));
+  }, [subjects, studentSchedule]);
   
   const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
     if (BREAK_SLOTS.includes(time)) {
@@ -125,8 +135,6 @@ export default function TimetableView() {
     });
     return { time, slots: dailySlots, isBreak: false };
   });
-
-  const codeChefDay = data?.schedule.find(s => s.subjectId === 'CODECHEF')?.day;
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;

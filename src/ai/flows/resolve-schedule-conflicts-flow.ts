@@ -57,7 +57,7 @@ const resolveConflicts = ai.defineFlow(
 
     const llmResponse = await ai.generate({
       prompt: prompt,
-      model: googleAI.model('gemini-pro'),
+      model: googleAI.model('gemini-2.5-flash'),
       output: {
         schema: ResolveConflictsOutputSchema,
       },

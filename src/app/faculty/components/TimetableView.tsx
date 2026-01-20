@@ -128,7 +128,6 @@ export default function TimetableView() {
   });
   
   const todayName = format(new Date(), 'EEEE');
-  const codeChefDay = facultySchedule.find(s => s.subjectId === 'CODECHEF')?.day;
 
 
   if (isLoading) {
@@ -161,7 +160,7 @@ export default function TimetableView() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="border font-semibold">Time</TableHead>
-                                {DAYS.map(day => <TableHead key={day} className={cn("border font-semibold text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>)}
+                                {DAYS.map(day => <TableHead key={day} className="border font-semibold text-center">{day}</TableHead>)}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -174,7 +173,7 @@ export default function TimetableView() {
                                         </TableCell>
                                     ) : (
                                         row.slots?.map((slot, index) => (
-                                            <TableCell key={index} className={cn("border p-1 align-top text-xs min-w-[150px] h-28", DAYS[index] === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
+                                            <TableCell key={index} className="border p-1 align-top text-xs min-w-[150px] h-28">
                                                 {slot ? (
                                                      slot.subjectId === 'LIB001' ? (
                                                         <div className='flex justify-center items-center h-full text-muted-foreground'>
@@ -199,14 +198,7 @@ export default function TimetableView() {
                                                             )}
                                                         </div>
                                                      )
-                                                ) : (
-                                                    (DAYS[index] === codeChefDay) && (
-                                                        <div className="flex items-center justify-center h-full text-purple-600 dark:text-purple-300 font-semibold text-center">
-                                                            <Bot className="h-4 w-4 mr-2"/>
-                                                            <span>CodeChef Day</span>
-                                                        </div>
-                                                    )
-                                                )}
+                                                ) : null}
                                             </TableCell>
                                         ))
                                     )}
