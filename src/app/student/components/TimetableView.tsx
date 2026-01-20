@@ -72,6 +72,7 @@ export default function TimetableView() {
     if (!hasCodeChef) return undefined;
 
     const scheduledDays = new Set(studentSchedule.map(s => s.day));
+    // Find a day from Mon-Sat that has no scheduled classes
     return DAYS.find(day => !scheduledDays.has(day));
   }, [subjects, studentSchedule]);
 
