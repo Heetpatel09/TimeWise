@@ -181,14 +181,6 @@ export default function TimetableGeneratorPage() {
     
     const codeChefDay = generatedData?.codeChefDay;
 
-    const getDisplayInfo = (slot: Schedule) => {
-        const subject = subjects?.find(s => s.id === slot.subjectId);
-        const facultyMember = faculty?.find(f => f.id === slot.facultyId);
-        const classroom = classrooms?.find(c => c.id === slot.classroomId);
-        return { subject, facultyMember, classroom };
-    }
-
-
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
             <Button asChild variant="outline" size="sm" className="mb-4">
@@ -332,28 +324,36 @@ export default function TimetableGeneratorPage() {
                                                 <TableCell className="border font-medium text-xs whitespace-nowrap p-2 align-top h-24">{time}</TableCell>
                                                 {DAYS.map(day => {
                                                     const slot = (generatedData.generatedSchedule as Schedule[]).find(s => s.day === day && s.time === time);
-                                                    const { subject, facultyMember, classroom } = slot ? getDisplayInfo(slot) : { subject: null, facultyMember: null, classroom: null };
-
                                                     return (
                                                         <TableCell key={`${time}-${day}`} className={cn("border p-1 align-top text-xs min-w-[150px] h-24", day === codeChefDay && "bg-purple-100/50 dark:bg-purple-900/20")}>
                                                             {day === codeChefDay ? (
                                                                 <div className="flex justify-center items-center h-full text-center font-semibold text-purple-700 dark:text-purple-300">CODE CHEF</div>
-                                                            ) : slot && subject ? (
-                                                                (subject.id === 'LIB001') ? (
-                                                                     <div className='flex justify-center items-center h-full text-muted-foreground'>
-                                                                        <Library className="h-4 w-4 mr-2" />
-                                                                        <span>Library</span>
-                                                                    </div>
-                                                                ) : (
+                                                            ) : slot ? (() => {
+                                                                const subject = subjects?.find(s => s.id === slot.subjectId);
+                                                                const facultyMember = faculty?.find(f => f.id === slot.facultyId);
+                                                                const classroom = classrooms?.find(c => c.id === slot.classroomId);
+
+                                                                if (!subject) return null;
+
+                                                                if (subject.id === 'LIB001') {
+                                                                    return (
+                                                                        <div className='flex justify-center items-center h-full text-muted-foreground'>
+                                                                            <Library className="h-4 w-4 mr-2" />
+                                                                            <span>Library</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                
+                                                                return (
                                                                     <div className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", subject?.isSpecial ? 'bg-primary/20' : 'bg-muted')}>
                                                                         <div><strong>{subject.name}</strong></div>
-                                                                        <div className="truncate text-muted-foreground">{facultyMember?.name}</div>
+                                                                        <div className="truncate text-muted-foreground">{facultyMember?.name || 'N/A'}</div>
                                                                         <div className='flex justify-between mt-1'>
-                                                                            <Badge variant="outline">{classroom?.name}</Badge>
+                                                                            <Badge variant="outline">{classroom?.name || 'N/A'}</Badge>
                                                                         </div>
                                                                     </div>
-                                                                )
-                                                            ) : <div className='flex justify-center items-center h-full text-muted-foreground'></div>}
+                                                                );
+                                                            })() : <div className='flex justify-center items-center h-full text-muted-foreground'></div>}
                                                         </TableCell>
                                                     )
                                                 })}
