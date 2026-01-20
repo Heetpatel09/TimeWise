@@ -121,7 +121,7 @@ export default function TimetableView() {
 
   const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
     if (BREAK_SLOTS.includes(time)) {
-        return { time: time, isBreak: true };
+        return { time: time, isBreak: true, slots: [] };
     }
     const dailySlots = DAYS.map(day => facultySchedule.find(s => s.day === day && s.time === time));
     return { time, slots: dailySlots };
@@ -159,14 +159,14 @@ export default function TimetableView() {
                     <Table className="border-collapse">
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="border font-semibold">Time</TableHead>
-                                {DAYS.map(day => <TableHead key={day} className="border font-semibold text-center">{day}</TableHead>)}
+                                <TableHead className="border font-semibold p-2">Time</TableHead>
+                                {DAYS.map(day => <TableHead key={day} className="border font-semibold text-center p-2">{day}</TableHead>)}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {scheduleByTime.map(row => (
                                 <TableRow key={row.time}>
-                                    <TableCell className="border font-medium text-xs whitespace-nowrap">{row.time}</TableCell>
+                                    <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{row.time}</TableCell>
                                     {row.isBreak ? (
                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
                                             {row.time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}

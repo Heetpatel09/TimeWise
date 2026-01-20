@@ -68,11 +68,9 @@ export default function TimetableView() {
   const className = data?.student?.className || '';
 
   const codeChefDay = useMemo(() => {
-    // If CodeChef isn't a subject for this student's class, there's no CodeChef day.
     const hasCodeChef = subjects.some(s => s.id === 'CODECHEF');
     if (!hasCodeChef) return undefined;
-
-    // Find a day from Mon-Sat that has no scheduled classes
+    // Find the day with no scheduled academic or library classes
     return DAYS.find(day => !studentSchedule.some(s => s.day === day));
   }, [subjects, studentSchedule]);
 
@@ -117,7 +115,7 @@ export default function TimetableView() {
   
   const scheduleByTime = ALL_TIME_SLOTS.sort(sortTime).map(time => {
     if (BREAK_SLOTS.includes(time)) {
-        return { time: time, isBreak: true };
+        return { time: time, isBreak: true, slots: [] };
     }
     const dailySlots = DAYS.map(day => {
       const slotsForDayAndTime = studentSchedule.filter(
@@ -156,16 +154,16 @@ export default function TimetableView() {
                     <Table className="border-collapse">
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="border font-semibold">Time</TableHead>
+                                <TableHead className="border font-semibold p-2">Time</TableHead>
                                 {DAYS.map(day => (
-                                    <TableHead key={day} className={cn("border font-semibold text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
+                                    <TableHead key={day} className={cn("border font-semibold p-2 text-center", day === codeChefDay && "bg-purple-100 dark:bg-purple-900/30")}>{day}</TableHead>
                                 ))}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {scheduleByTime.map(({ time, slots, isBreak }) => (
                                 <TableRow key={time}>
-                                    <TableCell className="border font-medium text-xs whitespace-nowrap">{time}</TableCell>
+                                    <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
                                     {isBreak ? (
                                         <TableCell colSpan={DAYS.length} className="border text-center font-semibold bg-secondary text-muted-foreground">
                                              {time === '09:20 AM - 09:30 AM' ? 'RECESS' : 'LUNCH BREAK'}
@@ -180,7 +178,7 @@ export default function TimetableView() {
                                                 )
                                             }
                                             return (
-                                            <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-20">
+                                            <TableCell key={`${time}-${day}`} className="border p-1 align-top text-xs min-w-[150px] h-24">
                                                 {daySlots.length > 0 ? (
                                                     daySlots.map(slot => (
                                                          slot.subjectId === 'LIB001' ? (
@@ -191,8 +189,8 @@ export default function TimetableView() {
                                                          ) : (
                                                             <div key={slot.id} className={cn("p-1 rounded-sm text-[11px] leading-tight mb-1", slot.subjectIsSpecial ? 'bg-primary/20' : 'bg-muted')}>
                                                                 <div><strong>{slot.subjectName} {slot.subjectType === 'lab' && '(Lab)'}</strong></div>
-                                                                <div>{slot.facultyName}</div>
-                                                                <div>{slot.classroomName}</div>
+                                                                <div className="text-muted-foreground">{slot.facultyName}</div>
+                                                                <div className="text-muted-foreground">{slot.classroomName}</div>
                                                             </div>
                                                          )
                                                     ))

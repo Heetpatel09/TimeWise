@@ -132,12 +132,11 @@ export default function TimetableGeneratorPage() {
             const classToGenerate = classes.find(c => c.id === selectedClassId);
             if (!classToGenerate) throw new Error("Selected class not found.");
             
-            // Pre-filter subjects for the flow to reduce payload and be more specific
             const relevantSubjects = subjects.filter(s => s.departmentId === classToGenerate.departmentId);
 
             const result = await generateTimetableFlow({
                 days: DAYS,
-                timeSlots: ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t)),
+                timeSlots: LECTURE_TIME_SLOTS,
                 classes: [classToGenerate],
                 subjects: relevantSubjects,
                 faculty,
