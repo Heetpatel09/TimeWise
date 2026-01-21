@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty } from './types';
@@ -64,13 +65,13 @@ function createLectureList(input: GenerateTimetableInput, classId: string): Lect
         s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester
     );
     
-    // Labs (Two batches of each lab)
+    // Labs
     const labSubjects = classSubjects.filter(s => s.type === 'lab');
     for (const sub of labSubjects) {
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) continue;
+        // A lab session is 2 hours long. The class can be split into batches during this time.
         lectures.push({ classId, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, hours: 2 });
-        lectures.push({ classId, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, hours: 2 }); // Second batch
     }
 
     // Theory
@@ -117,7 +118,7 @@ function runPreChecks(input: GenerateTimetableInput, lectures: Lecture[], workin
     if(theoryClassrooms.length === 0 && lectures.some(l => !l.isLab && l.subjectId !== 'LIB001')) return "Cannot schedule theory classes. No classrooms are available.";
 
     const labClassrooms = input.classrooms.filter(c => c.type === 'lab');
-    if(labClassrooms.length < 2 && lectures.some(l => l.isLab)) return "Cannot schedule labs. At least two lab classrooms are required for simultaneous batches.";
+    if(labClassrooms.length < 1 && lectures.some(l => l.isLab)) return "Cannot schedule labs. At least one lab classroom is required.";
 
     return null;
 }
@@ -140,28 +141,19 @@ function createInitialPopulation(input: GenerateTimetableInput, lectures: Lectur
         let lecturesToPlace = [...lectures];
         
         // Labs first
-        let batchA_Labs = lecturesToPlace.filter(l => l.isLab).slice(0, lecturesToPlace.filter(l => l.isLab).length / 2);
-        let batchB_Labs = lecturesToPlace.filter(l => l.isLab).slice(lecturesToPlace.filter(l => l.isLab).length / 2);
+        let labLectures = lecturesToPlace.filter(l => l.isLab);
 
-        while (batchA_Labs.length > 0) {
-            const labA = batchA_Labs.pop()!;
-            const labB = batchB_Labs.find(l => l.subjectId !== labA.subjectId);
-            if (!labB) continue;
-            batchB_Labs = batchB_Labs.filter(l => l.subjectId !== labB.subjectId);
+        for (const lab of labLectures) {
+             if (labClassrooms.length === 0) continue;
+             const dayIndex = Math.floor(Math.random() * workingDays.length);
+             const day = workingDays[dayIndex];
+             const [slot1Index, slot2Index] = LAB_SLOT_PAIRS[Math.floor(Math.random() * LAB_SLOT_PAIRS.length)];
+             const time1 = slots[slot1Index];
+             const time2 = slots[slot2Index];
+             const room = labClassrooms[Math.floor(Math.random() * labClassrooms.length)];
 
-            const dayIndex = Math.floor(Math.random() * workingDays.length);
-            const day = workingDays[dayIndex];
-            const [slot1Index, slot2Index] = LAB_SLOT_PAIRS[Math.floor(Math.random() * LAB_SLOT_PAIRS.length)];
-            const time1 = slots[slot1Index];
-            const time2 = slots[slot2Index];
-            
-            const roomA = labClassrooms[Math.floor(Math.random() * labClassrooms.length)];
-            const roomB = labClassrooms.find(r => r.id !== roomA.id) || labClassrooms[0];
-            
-            chromosome.push({ day, time: time1, ...labA, classroomId: roomA.id, batch: 'A' });
-            chromosome.push({ day, time: time2, ...labA, classroomId: roomA.id, batch: 'A' });
-            chromosome.push({ day, time: time1, ...labB, classroomId: roomB.id, batch: 'B' });
-            chromosome.push({ day, time: time2, ...labB, classroomId: roomB.id, batch: 'B' });
+             chromosome.push({ day, time: time1, ...lab, classroomId: room.id, batch: 'A' });
+             chromosome.push({ day, time: time2, ...lab, classroomId: room.id, batch: 'A' });
         }
         
         // Theory & Library
@@ -209,7 +201,7 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
 
     // Lab constraints
     const labs = chromosome.filter(g => g.isLab);
-    const labGroups = Object.groupBy(labs, (l: Gene) => `${l.day}-${l.subjectId}-${l.batch}`);
+    const labGroups = Object.groupBy(labs, (l: Gene) => `${l.day}-${l.subjectId}`);
     for (const group of Object.values(labGroups)) {
         if (group!.length !== 2) {
             penalty += HARD_PENALTY; // Must be exactly 2 slots
@@ -232,11 +224,8 @@ function calculateFitness(chromosome: Chromosome, input: GenerateTimetableInput)
         }
     }
     
-    // Idle gaps & non-compact days
+    // Idle gaps
     const daysWithLectures = new Set(chromosome.map(g => g.day));
-    if (daysWithLectures.size > input.days.length -1) {
-        penalty += SOFT_PENALTY * 5; // Penalize not having an idle day
-    }
     daysWithLectures.forEach(day => {
         const daySlots = chromosome.filter(g => g.day === day).map(g => input.timeSlots.indexOf(g.time)).sort((a,b) => a - b);
         if(daySlots.length > 0) {
@@ -300,10 +289,8 @@ export async function runGA(input: GenerateTimetableInput) {
     if (!classToSchedule) return { success: false, message: "No class selected for timetable generation.", bestTimetable: [], error: "No class specified." };
     
     const lectures = createLectureList(input, classToSchedule.id);
-    
-    const hasCodeChef = input.subjects.some(s => s.id === 'CODECHEF' && s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester);
-    let workingDays = [...input.days];
-    let codeChefDay: string | undefined = undefined;
+    const workingDays = [...input.days];
+    const codeChefDay = undefined;
 
     // --- Pre-Checks ---
     const preCheckError = runPreChecks(input, lectures, workingDays, input.timeSlots);
@@ -330,11 +317,6 @@ export async function runGA(input: GenerateTimetableInput) {
         }
 
         if (bestFitness === 1) { // Perfect solution found
-             // Identify idle day for CodeChef if applicable
-            if (hasCodeChef) {
-                const usedDays = new Set(bestSolution.map(g => g.day));
-                codeChefDay = workingDays.find(d => !usedDays.has(d));
-            }
             break;
         }
 
