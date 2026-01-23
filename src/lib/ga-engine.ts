@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty } from './types';
@@ -30,6 +31,7 @@ const MAX_GENERATIONS = 200;
 const ELITISM_RATE = 0.1;
 const MUTATION_RATE = 0.15;
 
+// These are the only slots available for labs, ensuring they are continuous 2-hour blocks
 const LAB_SLOT_PAIRS: [number, number][] = [
     [0, 1], // 7:30 - 9:20
     [2, 3], // 9:30 - 11:20
@@ -87,8 +89,10 @@ function createLectureList(input: GenerateTimetableInput, classId: string): Lect
     // Library
     const librarySubject = input.subjects.find(s => s.id === 'LIB001');
     if (librarySubject) {
+        // Find a generic library staff member
+        const libraryFaculty = input.faculty.find(f => f.id === 'FAC_LIB') || input.faculty[0];
         for (let i = 0; i < 3; i++) { // Exactly 3 library slots
-            lectures.push({ classId, subjectId: 'LIB001', facultyId: 'FAC_LIB', isLab: false, hours: 1 });
+            lectures.push({ classId, subjectId: 'LIB001', facultyId: libraryFaculty.id, isLab: false, hours: 1 });
         }
     }
     
@@ -106,7 +110,7 @@ function runPreChecks(input: GenerateTimetableInput, lectures: Lecture[], workin
     const subjectsForClass = input.subjects.filter(s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester);
     if (subjectsForClass.length === 0) return `No subjects found for Semester ${classToSchedule.semester}. Please add subjects before generating a timetable.`
 
-    const subjectsWithoutFaculty = subjectsForClass.filter(sub => sub.id !== 'LIB001' && sub.type !== 'lab').find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
+    const subjectsWithoutFaculty = subjectsForClass.filter(sub => sub.id !== 'LIB001').find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     if (subjectsWithoutFaculty) return `Cannot generate schedule. Subject '${subjectsWithoutFaculty.name}' has no assigned faculty.`;
 
     const totalRequiredHours = lectures.reduce((acc, l) => acc + l.hours, 0);
