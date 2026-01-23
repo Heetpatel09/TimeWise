@@ -12,77 +12,71 @@ export const departments: Department[] = [
 ];
 
 // --- SUBJECTS ---
-export const subjects: (Omit<Subject, 'departmentId'> & { department: string })[] = [
+export const subjects: Subject[] = [
   // CSE Semester 1
-  { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', type: 'theory', semester: 1, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB002', name: 'Programming Lab I', code: 'CS102', type: 'lab', semester: 1, department: 'Computer Engineering' },
-  { id: 'SUB003', name: 'Digital Logic Design', code: 'EC101', type: 'theory', semester: 1, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB300', name: 'Digital Logic Design Lab', code: 'EC102', type: 'lab', semester: 1, department: 'Computer Engineering' },
-  { id: 'SUB004', name: 'Applied Mathematics I', code: 'AM101', type: 'theory', semester: 1, department: 'Computer Engineering', priority: 'Non Negotiable' },
-  { id: 'SUB005', name: 'Communication Skills', code: 'HU101', type: 'theory', semester: 1, department: 'Computer Engineering', priority: 'Medium' },
+  { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB002', name: 'Programming Lab I', code: 'CS102', type: 'lab', semester: 1, departmentId: 'DEPT_CSE' },
+  { id: 'SUB003', name: 'Digital Logic Design', code: 'EC101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB300', name: 'Digital Logic Design Lab', code: 'EC102', type: 'lab', semester: 1, departmentId: 'DEPT_CSE' },
+  { id: 'SUB004', name: 'Applied Mathematics I', code: 'AM101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'Non Negotiable' },
+  { id: 'SUB005', name: 'Communication Skills', code: 'HU101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'Medium' },
 
   // CSE Semester 3
-  { id: 'SUB006', name: 'Data Structures', code: 'CS201', type: 'theory', semester: 3, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB007', name: 'Data Structures Lab', code: 'CS202', type: 'lab', semester: 3, department: 'Computer Engineering' },
-  { id: 'SUB008', name: 'Object Oriented Programming', code: 'CS203', type: 'theory', semester: 3, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB009', name: 'Applied Mathematics III', code: 'AM201', type: 'theory', semester: 3, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB010', name: 'Computer Architecture', code: 'CS204', type: 'theory', semester: 3, department: 'Computer Engineering', priority: 'Medium' },
+  { id: 'SUB006', name: 'Data Structures', code: 'CS201', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB007', name: 'Data Structures Lab', code: 'CS202', type: 'lab', semester: 3, departmentId: 'DEPT_CSE' },
+  { id: 'SUB008', name: 'Object Oriented Programming', code: 'CS203', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB009', name: 'Applied Mathematics III', code: 'AM201', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB010', name: 'Computer Architecture', code: 'CS204', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'Medium' },
 
   // CSE Semester 5
-  { id: 'SUB011', name: 'Database Management Systems', code: 'CS301', type: 'theory', semester: 5, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB012', name: 'DBMS Lab', code: 'CS302', type: 'lab', semester: 5, department: 'Computer Engineering' },
-  { id: 'SUB013', name: 'Operating Systems', code: 'CS303', type: 'theory', semester: 5, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB014', name: 'Operating Systems Lab', code: 'CS304', type: 'lab', semester: 5, department: 'Computer Engineering' },
-  { id: 'SUB015', name: 'Computer Networks', code: 'CS305', type: 'theory', semester: 5, department: 'Computer Engineering', priority: 'High' },
+  { id: 'SUB011', name: 'Database Management Systems', code: 'CS301', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB012', name: 'DBMS Lab', code: 'CS302', type: 'lab', semester: 5, departmentId: 'DEPT_CSE' },
+  { id: 'SUB013', name: 'Operating Systems', code: 'CS303', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB014', name: 'Operating Systems Lab', code: 'CS304', type: 'lab', semester: 5, departmentId: 'DEPT_CSE' },
+  { id: 'SUB015', name: 'Computer Networks', code: 'CS305', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', priority: 'High' },
 
   // CSE Semester 7
-  { id: 'SUB016', name: 'Cryptography and Security', code: 'CS402', type: 'theory', semester: 7, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB017', name: 'Cloud Computing', code: 'CS403', type: 'theory', semester: 7, department: 'Computer Engineering', priority: 'High' },
-  { id: 'SUB018', name: 'Project I', code: 'CS450', type: 'lab', semester: 7, department: 'Computer Engineering' },
+  { id: 'SUB016', name: 'Cryptography and Security', code: 'CS402', type: 'theory', semester: 7, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB017', name: 'Cloud Computing', code: 'CS403', type: 'theory', semester: 7, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB018', name: 'Project I', code: 'CS450', type: 'lab', semester: 7, departmentId: 'DEPT_CSE' },
   
   // AI & ML Semester 5
-  { id: 'SUB101', name: 'Intro to AI', code: 'AI301', type: 'theory', semester: 5, department: 'Artificial Intelligence & ML', priority: 'High' },
-  { id: 'SUB102', name: 'Python for ML', code: 'AI302', type: 'lab', semester: 5, department: 'Artificial Intelligence & ML' },
-  { id: 'SUB103', name: 'Linear Algebra for ML', code: 'AI303', type: 'theory', semester: 5, department: 'Artificial Intelligence & ML', priority: 'High' },
+  { id: 'SUB101', name: 'Intro to AI', code: 'AI301', type: 'theory', semester: 5, departmentId: 'DEPT_AIML', priority: 'High' },
+  { id: 'SUB102', name: 'Python for ML', code: 'AI302', type: 'lab', semester: 5, departmentId: 'DEPT_AIML' },
+  { id: 'SUB103', name: 'Linear Algebra for ML', code: 'AI303', type: 'theory', semester: 5, departmentId: 'DEPT_AIML', priority: 'High' },
 
   // AI & ML Semester 7
-  { id: 'SUB104', name: 'Machine Learning', code: 'AI401', type: 'theory', semester: 7, department: 'Artificial Intelligence & ML', priority: 'High' },
-  { id: 'SUB105', name: 'Deep Learning', code: 'AI402', type: 'theory', semester: 7, department: 'Artificial Intelligence & ML', priority: 'High' },
-  { id: 'SUB106', name: 'Natural Language Processing', code: 'AI403', type: 'theory', semester: 7, department: 'Artificial Intelligence & ML', priority: 'High' },
-  { id: 'SUB107', name: 'AI Lab', code: 'AI404', type: 'lab', semester: 7, department: 'Artificial Intelligence & ML' },
+  { id: 'SUB104', name: 'Machine Learning', code: 'AI401', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', priority: 'High' },
+  { id: 'SUB105', name: 'Deep Learning', code: 'AI402', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', priority: 'High' },
+  { id: 'SUB106', name: 'Natural Language Processing', code: 'AI403', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', priority: 'High' },
+  { id: 'SUB107', name: 'AI Lab', code: 'AI404', type: 'lab', semester: 7, departmentId: 'DEPT_AIML' },
   
   // ECE Subjects
-  { id: 'SUB201', name: 'Analog Circuits', code: 'EC201', type: 'theory', semester: 3, department: 'Electronics Engineering', priority: 'High' },
-  { id: 'SUB202', name: 'Digital Electronics', code: 'EC202', type: 'theory', semester: 3, department: 'Electronics Engineering', priority: 'High' },
-  { id: 'SUB203', name: 'Signals and Systems', code: 'EC301', type: 'theory', semester: 5, department: 'Electronics Engineering', priority: 'High' },
-  { id: 'SUB204', name: 'VLSI Design', code: 'EC401', type: 'theory', semester: 7, department: 'Electronics Engineering', priority: 'High' },
+  { id: 'SUB201', name: 'Analog Circuits', code: 'EC201', type: 'theory', semester: 3, departmentId: 'DEPT_ECE', priority: 'High' },
+  { id: 'SUB202', name: 'Digital Electronics', code: 'EC202', type: 'theory', semester: 3, departmentId: 'DEPT_ECE', priority: 'High' },
+  { id: 'SUB203', name: 'Signals and Systems', code: 'EC301', type: 'theory', semester: 5, departmentId: 'DEPT_ECE', priority: 'High' },
+  { id: 'SUB204', name: 'VLSI Design', code: 'EC401', type: 'theory', semester: 7, departmentId: 'DEPT_ECE', priority: 'High' },
   
   // Special / Common Subjects
-  { id: 'CODECHEF', name: 'CodeChef', code: 'CC001', type: 'lab', semester: 3, isSpecial: true, department: 'Computer Engineering' },
-  { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 1, department: 'Computer Engineering', isSpecial: false },
-].map(sub => ({
-  ...sub,
-  departmentId: departments.find(d => d.name === sub.department)!.id
-}));
+  { id: 'CODECHEF', name: 'CodeChef', code: 'CC001', type: 'lab', semester: 3, isSpecial: true, departmentId: 'DEPT_CSE' },
+  { id: 'LIB001', name: 'Library', code: 'LIB001', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', isSpecial: false },
+];
 
-export const classes: (Omit<Class, 'departmentId'> & { department: string })[] = [
+export const classes: Class[] = [
   // Computer Engineering
-  { id: 'CLS001', name: 'CE 2024 (A)', semester: 1, department: 'Computer Engineering', section: 'A' },
-  { id: 'CLS002', name: 'CE 2024 (B)', semester: 1, department: 'Computer Engineering', section: 'B' },
-  { id: 'CLS003', name: 'CE 2023 (A)', semester: 3, department: 'Computer Engineering', section: 'A' },
-  { id: 'CLS004', name: 'CE 2023 (B)', semester: 3, department: 'Computer Engineering', section: 'B' },
-  { id: 'CLS005', name: 'CE 2022 (A)', semester: 5, department: 'Computer Engineering', section: 'A' },
-  { id: 'CLS006', name: 'CE 2021 (A)', semester: 7, department: 'Computer Engineering', section: 'A' },
+  { id: 'CLS001', name: 'CE 2024 (A)', semester: 1, departmentId: 'DEPT_CSE', section: 'A' },
+  { id: 'CLS002', name: 'CE 2024 (B)', semester: 1, departmentId: 'DEPT_CSE', section: 'B' },
+  { id: 'CLS003', name: 'CE 2023 (A)', semester: 3, departmentId: 'DEPT_CSE', section: 'A' },
+  { id: 'CLS004', name: 'CE 2023 (B)', semester: 3, departmentId: 'DEPT_CSE', section: 'B' },
+  { id: 'CLS005', name: 'CE 2022 (A)', semester: 5, departmentId: 'DEPT_CSE', section: 'A' },
+  { id: 'CLS006', name: 'CE 2021 (A)', semester: 7, departmentId: 'DEPT_CSE', section: 'A' },
   // AI & ML
-  { id: 'CLS101', name: 'AIML 2022 (A)', semester: 5, department: 'Artificial Intelligence & ML', section: 'A' },
-  { id: 'CLS102', name: 'AIML 2021 (A)', semester: 7, department: 'Artificial Intelligence & ML', section: 'A' },
+  { id: 'CLS101', name: 'AIML 2022 (A)', semester: 5, departmentId: 'DEPT_AIML', section: 'A' },
+  { id: 'CLS102', name: 'AIML 2021 (A)', semester: 7, departmentId: 'DEPT_AIML', section: 'A' },
   // Electronics
-  { id: 'CLS201', name: 'ECE 2023 (A)', semester: 3, department: 'Electronics Engineering', section: 'A' },
-  { id: 'CLS202', name: 'ECE 2022 (A)', semester: 5, department: 'Electronics Engineering', section: 'A' },
-].map(cls => ({
-  ...cls,
-  departmentId: departments.find(d => d.name === cls.department)!.id
-}));
+  { id: 'CLS201', name: 'ECE 2023 (A)', semester: 3, departmentId: 'DEPT_ECE', section: 'A' },
+  { id: 'CLS202', name: 'ECE 2022 (A)', semester: 5, departmentId: 'DEPT_ECE', section: 'A' },
+];
 
 const studentNames = ["Aarav Sharma", "Vivaan Singh", "Aditya Kumar", "Vihaan Gupta", "Arjun Patel", "Sai Joshi", "Reyansh Reddy", "Ayaan Verma", "Krishna Mehta", "Ishaan Shah", "Saanvi Sharma", "Aanya Singh", "Aadhya Kumar", "Ananya Gupta", "Diya Patel", "Pari Joshi", "Myra Reddy", "Anika Verma", "Navya Mehta", "Kiara Shah", "Liam Smith", "Olivia Johnson", "Noah Williams", "Emma Brown", "Oliver Jones", "Ava Garcia", "Elijah Miller", "Charlotte Davis", "James Rodriguez", "Amelia Martinez"];
 export const students: Student[] = studentNames.map((name, index) => {
@@ -93,24 +87,21 @@ export const students: Student[] = studentNames.map((name, index) => {
   } as Student;
 });
 
-export const faculty: (Omit<Faculty, 'departmentId'> & { department: string })[] = [
-  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: '240101001001', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['HOD'], streak: 45, avatar: 'https://avatar.vercel.sh/turing@example.com.png', profileCompleted: 90, points: 5200, allottedSubjects: ['SUB001', 'SUB008'], maxWeeklyHours: 20, designatedYear: 1 },
-  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: '240101001002', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 8, avatar: 'https://avatar.vercel.sh/lovelace@example.com.png', profileCompleted: 80, points: 2100, allottedSubjects: ['SUB003', 'SUB006'], maxWeeklyHours: 18, designatedYear: 1 },
-  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: '240102001003', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: ['Lab Incharge'], streak: 15, avatar: 'https://avatar.vercel.sh/hopper@example.com.png', profileCompleted: 85, points: 3400, allottedSubjects: ['SUB002', 'SUB007', 'SUB300'], maxWeeklyHours: 22, designatedYear: 1 },
-  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: '220302001004', designation: 'Assistant Professor', employmentType: 'part-time', department: 'Computer Engineering', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/neumann@example.com.png', profileCompleted: 50, points: 500, allottedSubjects: ['SUB013', 'SUB014'], maxWeeklyHours: 10, designatedYear: 3 },
-  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', code: '230203001005', designation: 'Lecturer', employmentType: 'contract', department: 'Computer Engineering', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/knuth@example.com.png', profileCompleted: 60, points: 800, allottedSubjects: ['SUB005', 'SUB010'], maxWeeklyHours: 15, designatedYear: 2 },
-  { id: 'FAC006', name: 'Dr. Andrew Ng', email: 'ng@example.com', code: '210401002006', designation: 'Professor', employmentType: 'full-time', department: 'Artificial Intelligence & ML', roles: ['HOD'], streak: 40, avatar: 'https://avatar.vercel.sh/ng@example.com.png', profileCompleted: 98, points: 6000, allottedSubjects: ['SUB101', 'SUB104'], maxWeeklyHours: 20, designatedYear: 4 },
-  { id: 'FAC007', name: 'Dr. Fei-Fei Li', email: 'li@example.com', code: '210401002007', designation: 'Professor', employmentType: 'full-time', department: 'Artificial Intelligence & ML', roles: [], streak: 35, avatar: 'https://avatar.vercel.sh/li@example.com.png', profileCompleted: 95, points: 5500, allottedSubjects: ['SUB105', 'SUB107'], maxWeeklyHours: 20, designatedYear: 4 },
-  { id: 'FAC008', name: 'Prof. Yann LeCun', email: 'lecun@example.com', code: '220302002008', designation: 'Assistant Professor', employmentType: 'full-time', department: 'Artificial Intelligence & ML', roles: [], streak: 28, avatar: 'https://avatar.vercel.sh/lecun@example.com.png', profileCompleted: 90, points: 4500, allottedSubjects: ['SUB102', 'SUB106'], maxWeeklyHours: 22, designatedYear: 3 },
-  { id: 'FAC009', name: 'Dr. Nikola Tesla', email: 'tesla@example.com', code: '230201003009', designation: 'Professor', employmentType: 'full-time', department: 'Electronics Engineering', roles: ['HOD'], streak: 40, avatar: 'https://avatar.vercel.sh/tesla@example.com.png', profileCompleted: 90, points: 5500, allottedSubjects: ['SUB201', 'SUB203'], maxWeeklyHours: 20, designatedYear: 2 },
-  { id: 'FAC010', name: 'Dr. Marie Curie', email: 'curie@example.com', code: '220301003010', designation: 'Professor', employmentType: 'full-time', department: 'Electronics Engineering', roles: [], streak: 33, avatar: 'https://avatar.vercel.sh/curie@example.com.png', profileCompleted: 100, points: 4800, allottedSubjects: [], maxWeeklyHours: 18, designatedYear: 3 },
-  { id: 'FAC011', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: '210401001011', designation: 'Professor', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 14, avatar: 'https://avatar.vercel.sh/keating@example.com.png', profileCompleted: 85, points: 3200, allottedSubjects: ['SUB015', 'SUB017'], maxWeeklyHours: 22, designatedYear: 4 },
-  { id: 'FAC012', name: 'Prof. Walter White', email: 'white@example.com', code: '240103001012', designation: 'Lecturer', employmentType: 'contract', department: 'Computer Engineering', roles: [], streak: 1, avatar: 'https://avatar.vercel.sh/white@example.com.png', profileCompleted: 40, points: 200, allottedSubjects: ['SUB004'], maxWeeklyHours: 12, designatedYear: 1 },
-  { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'ADMIN01', designation: 'Librarian', employmentType: 'full-time', department: 'Computer Engineering', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/library@example.com.png', profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'] },
-].map(fac => ({
-  ...fac,
-  departmentId: departments.find(d => d.name === fac.department)!.id
-}));
+export const faculty: Faculty[] = [
+  { id: 'FAC001', name: 'Dr. Alan Turing', email: 'turing@example.com', code: '240101001001', designation: 'Professor', employmentType: 'full-time', departmentId: 'DEPT_CSE', roles: ['HOD'], streak: 45, avatar: 'https://avatar.vercel.sh/turing@example.com.png', profileCompleted: 90, points: 5200, allottedSubjects: ['SUB001', 'SUB008'], maxWeeklyHours: 20, designatedYear: 1 },
+  { id: 'FAC002', name: 'Dr. Ada Lovelace', email: 'lovelace@example.com', code: '240101001002', designation: 'Professor', employmentType: 'full-time', departmentId: 'DEPT_CSE', roles: [], streak: 8, avatar: 'https://avatar.vercel.sh/lovelace@example.com.png', profileCompleted: 80, points: 2100, allottedSubjects: ['SUB003', 'SUB006'], maxWeeklyHours: 18, designatedYear: 1 },
+  { id: 'FAC003', name: 'Dr. Grace Hopper', email: 'hopper@example.com', code: '240102001003', designation: 'Assistant Professor', employmentType: 'full-time', departmentId: 'DEPT_CSE', roles: ['Lab Incharge'], streak: 15, avatar: 'https://avatar.vercel.sh/hopper@example.com.png', profileCompleted: 85, points: 3400, allottedSubjects: ['SUB002', 'SUB007', 'SUB300'], maxWeeklyHours: 22, designatedYear: 1 },
+  { id: 'FAC004', name: 'Dr. John von Neumann', email: 'neumann@example.com', code: '220302001004', designation: 'Assistant Professor', employmentType: 'part-time', departmentId: 'DEPT_CSE', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/neumann@example.com.png', profileCompleted: 50, points: 500, allottedSubjects: ['SUB013', 'SUB014'], maxWeeklyHours: 10, designatedYear: 3 },
+  { id: 'FAC005', name: 'Dr. Donald Knuth', email: 'knuth@example.com', code: '230203001005', designation: 'Lecturer', employmentType: 'contract', departmentId: 'DEPT_CSE', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/knuth@example.com.png', profileCompleted: 60, points: 800, allottedSubjects: ['SUB005', 'SUB010'], maxWeeklyHours: 15, designatedYear: 2 },
+  { id: 'FAC006', name: 'Dr. Andrew Ng', email: 'ng@example.com', code: '210401002006', designation: 'Professor', employmentType: 'full-time', departmentId: 'DEPT_AIML', roles: ['HOD'], streak: 40, avatar: 'https://avatar.vercel.sh/ng@example.com.png', profileCompleted: 98, points: 6000, allottedSubjects: ['SUB101', 'SUB104'], maxWeeklyHours: 20, designatedYear: 4 },
+  { id: 'FAC007', name: 'Dr. Fei-Fei Li', email: 'li@example.com', code: '210401002007', designation: 'Professor', employmentType: 'full-time', departmentId: 'DEPT_AIML', roles: [], streak: 35, avatar: 'https://avatar.vercel.sh/li@example.com.png', profileCompleted: 95, points: 5500, allottedSubjects: ['SUB105', 'SUB107'], maxWeeklyHours: 20, designatedYear: 4 },
+  { id: 'FAC008', name: 'Prof. Yann LeCun', email: 'lecun@example.com', code: '220302002008', designation: 'Assistant Professor', employmentType: 'full-time', departmentId: 'DEPT_AIML', roles: [], streak: 28, avatar: 'https://avatar.vercel.sh/lecun@example.com.png', profileCompleted: 90, points: 4500, allottedSubjects: ['SUB102', 'SUB106'], maxWeeklyHours: 22, designatedYear: 3 },
+  { id: 'FAC009', name: 'Dr. Nikola Tesla', email: 'tesla@example.com', code: '230201003009', designation: 'Professor', employmentType: 'full-time', departmentId: 'DEPT_ECE', roles: ['HOD'], streak: 40, avatar: 'https://avatar.vercel.sh/tesla@example.com.png', profileCompleted: 90, points: 5500, allottedSubjects: ['SUB201', 'SUB203'], maxWeeklyHours: 20, designatedYear: 2 },
+  { id: 'FAC010', name: 'Dr. Marie Curie', email: 'curie@example.com', code: '220301003010', designation: 'Professor', employmentType: 'full-time', departmentId: 'DEPT_ECE', roles: [], streak: 33, avatar: 'https://avatar.vercel.sh/curie@example.com.png', profileCompleted: 100, points: 4800, allottedSubjects: [], maxWeeklyHours: 18, designatedYear: 3 },
+  { id: 'FAC011', name: 'Prof. Annalise Keating', email: 'keating@example.com', code: '210401001011', designation: 'Professor', employmentType: 'full-time', departmentId: 'DEPT_CSE', roles: [], streak: 14, avatar: 'https://avatar.vercel.sh/keating@example.com.png', profileCompleted: 85, points: 3200, allottedSubjects: ['SUB015', 'SUB017'], maxWeeklyHours: 22, designatedYear: 4 },
+  { id: 'FAC012', name: 'Prof. Walter White', email: 'white@example.com', code: '240103001012', designation: 'Lecturer', employmentType: 'contract', departmentId: 'DEPT_CSE', roles: [], streak: 1, avatar: 'https://avatar.vercel.sh/white@example.com.png', profileCompleted: 40, points: 200, allottedSubjects: ['SUB004'], maxWeeklyHours: 12, designatedYear: 1 },
+  { id: 'FAC_LIB', name: 'Library Staff', email: 'library@example.com', code: 'ADMIN01', designation: 'Librarian', employmentType: 'full-time', departmentId: 'DEPT_CSE', roles: [], streak: 0, avatar: 'https://avatar.vercel.sh/library@example.com.png', profileCompleted: 100, points: 0, allottedSubjects: ['LIB001'] },
+];
 
 export const classrooms: Classroom[] = [
   ...Array.from({ length: 15 }, (_, i) => ({ id: `CR${(i + 1).toString().padStart(3, '0')}`, name: `Room ${101 + i}`, type: 'classroom', capacity: 70, maintenanceStatus: 'available', building: 'Main Building' })),
