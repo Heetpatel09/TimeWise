@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Subject, SubjectPriority, Faculty } from './types';
@@ -32,9 +31,9 @@ const ELITISM_RATE = 0.1;
 const MUTATION_RATE = 0.15;
 
 const LAB_SLOT_PAIRS: [number, number][] = [
-    [0, 1], // Slots 1 & 2
-    [2, 3], // Slots 3 & 4
-    [4, 5], // Slots 5 & 6
+    [0, 1], // 7:30 - 9:20
+    [2, 3], // 9:30 - 11:20
+    [4, 5], // 12:20 - 2:10
 ];
 
 // --- PENALTY VALUES ---
@@ -70,7 +69,7 @@ function createLectureList(input: GenerateTimetableInput, classId: string): Lect
     for (const sub of labSubjects) {
         const facultyForSubject = input.faculty.find(f => f.allottedSubjects?.includes(sub.id));
         if (!facultyForSubject) continue;
-        // A lab session is 2 hours long. The class can be split into batches during this time.
+        // A lab session is 2 hours long.
         lectures.push({ classId, subjectId: sub.id, facultyId: facultyForSubject.id, isLab: true, hours: 2 });
     }
 
@@ -107,7 +106,7 @@ function runPreChecks(input: GenerateTimetableInput, lectures: Lecture[], workin
     const subjectsForClass = input.subjects.filter(s => s.departmentId === classToSchedule.departmentId && s.semester === classToSchedule.semester);
     if (subjectsForClass.length === 0) return `No subjects found for Semester ${classToSchedule.semester}. Please add subjects before generating a timetable.`
 
-    const subjectsWithoutFaculty = subjectsForClass.filter(sub => sub.id !== 'LIB001').find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
+    const subjectsWithoutFaculty = subjectsForClass.filter(sub => sub.id !== 'LIB001' && sub.type !== 'lab').find(sub => !input.faculty.some(f => f.allottedSubjects?.includes(sub.id)));
     if (subjectsWithoutFaculty) return `Cannot generate schedule. Subject '${subjectsWithoutFaculty.name}' has no assigned faculty.`;
 
     const totalRequiredHours = lectures.reduce((acc, l) => acc + l.hours, 0);
@@ -288,9 +287,12 @@ export async function runGA(input: GenerateTimetableInput) {
     const classToSchedule = input.classes[0];
     if (!classToSchedule) return { success: false, message: "No class selected for timetable generation.", bestTimetable: [], error: "No class specified." };
     
+    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const codeChefDayIndex = Math.floor(Math.random() * allDays.length);
+    const codeChefDay = allDays[codeChefDayIndex];
+    const workingDays = allDays.filter(d => d !== codeChefDay);
+    
     const lectures = createLectureList(input, classToSchedule.id);
-    const workingDays = [...input.days];
-    const codeChefDay = undefined;
 
     // --- Pre-Checks ---
     const preCheckError = runPreChecks(input, lectures, workingDays, input.timeSlots);

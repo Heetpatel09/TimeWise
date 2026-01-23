@@ -74,6 +74,7 @@ const ManagementCard = ({ href, title, icon: Icon, isLocked }: { href: string, t
 
 const academicLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
   { href: "/admin/schedule", title: "Master Schedule", icon: Calendar, permission: 'manage_schedule' },
+  { href: "/admin/timetable/generate", title: "Timetable Generator", icon: Bot, permission: 'manage_schedule' },
   { href: "/admin/exams", title: "Exams", icon: FileText, permission: 'manage_exams' },
   { href: "/admin/attendance", title: "Attendance", icon: CheckSquare, permission: 'manage_attendance' },
   { href: "/admin/results", title: "Results", icon: BarChart3, permission: 'manage_results' },
