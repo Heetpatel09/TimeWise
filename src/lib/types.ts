@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const WelcomeNotificationInputSchema = z.object({
@@ -136,7 +137,8 @@ const SubjectSchema = z.object({
     syllabus: z.string().optional().nullable(),
     departmentId: z.string(),
     isSpecial: z.boolean().optional(),
-    priority: z.enum(['Non Negotiable', 'High', 'Medium', 'Low']).optional(),
+    priority: z.enum(['Non Negotiable', 'High', 'Medium', 'Low']).nullable().optional(),
+    weeklyHours: z.number().optional(),
 });
 
 const FacultySchema = z.object({
@@ -155,6 +157,7 @@ const FacultySchema = z.object({
     allottedSubjects: z.array(z.string()).optional(),
     maxWeeklyHours: z.number().optional(),
     designatedYear: z.number().optional(),
+    dateOfJoining: z.string().optional(),
 });
 
 export const GenerateTimetableInputSchema = z.object({
@@ -171,15 +174,26 @@ export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema
 
 export const GenerateTimetableOutputSchema = z.object({
   summary: z.string(),
-  generatedSchedule: z.array(z.object({
-    classId: z.string(),
-    subjectId: z.string(),
+  facultyWorkload: z.array(z.object({
     facultyId: z.string(),
-    classroomId: z.string(),
-    day: z.string(),
-    time: z.string(),
+    facultyName: z.string(),
+    experience: z.number(),
+    level: z.string(),
+    maxHours: z.number(),
+    assignedHours: z.number(),
   })),
-  codeChefDay: z.string().optional(),
+  semesterTimetables: z.array(z.object({
+    semester: z.number(),
+    timetable: z.array(z.object({
+        day: z.string(),
+        time: z.string(),
+        classId: z.string(),
+        subjectId: z.string(),
+        facultyId: z.string(),
+        classroomId: z.string(),
+    }))
+  })),
+  codeChefDay: z.string(),
   error: z.string().optional(),
 });
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
@@ -202,6 +216,7 @@ export interface Subject {
   departmentId: string;
   isSpecial?: boolean;
   priority?: SubjectPriority;
+  weeklyHours?: number;
 }
 
 export interface Class {
@@ -251,6 +266,7 @@ export interface Faculty {
   allottedSubjects?: string[];
   maxWeeklyHours?: number;
   designatedYear?: number;
+  dateOfJoining?: string;
 }
 
 export type Permission = 

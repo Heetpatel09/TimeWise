@@ -41,15 +41,25 @@ export default function TimetableGeneratorPage() {
     const { data: classrooms, isLoading: classroomsLoading } = useQuery<Classroom[]>({ queryKey: ['classrooms'], queryFn: getClassrooms });
     const { data: existingSchedule, isLoading: scheduleLoading } = useQuery<Schedule[]>({ queryKey: ['schedule'], queryFn: getSchedule });
     const { data: departments, isLoading: departmentsLoading } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments });
+
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
+    const [selectedClassId, setSelectedClassId] = useState<string>('');
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
     const [generatedData, setGeneratedData] = useState<GenerateTimetableOutput | null>(null);
     const [isApplying, setIsApplying] = useState(false);
 
+    const filteredClasses = useMemo(() => {
+        if (!selectedDepartmentId || !classes) return [];
+        return classes.filter(c => c.departmentId === selectedDepartmentId);
+    }, [selectedDepartmentId, classes]);
+
     const handleGenerate = async () => {
-        if (isLoading || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
-            toast({ title: 'Data not loaded yet', description: 'Please wait for all data to load.', variant: 'destructive' });
+        const classToGenerate = classes?.find(c => c.id === selectedClassId);
+
+        if (isLoading || !classToGenerate || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
+            toast({ title: 'Data not loaded or selection missing', description: 'Please select a department and class, and wait for all data to load.', variant: 'destructive' });
             return;
         }
 
@@ -58,7 +68,7 @@ export default function TimetableGeneratorPage() {
             const result = await generateTimetableFlow({
                 days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
                 timeSlots: ALL_TIME_SLOTS,
-                classes,
+                classes: [classToGenerate], // Pass only the selected class
                 subjects,
                 faculty,
                 classrooms,
@@ -122,19 +132,40 @@ export default function TimetableGeneratorPage() {
                         Generate an optimized, conflict-free timetable for all semesters based on faculty experience, workload, and subject priorities.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                      {isLoading ? (
                          <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
                      ) : (
-                        <div className="text-center">
-                            <p className="text-muted-foreground">All data loaded. Ready to generate the master timetable for all semesters.</p>
+                        <div className="flex flex-wrap gap-4">
+                           <div className="space-y-2">
+                                <Label htmlFor="department">Department</Label>
+                                <Select value={selectedDepartmentId} onValueChange={(v) => { setSelectedDepartmentId(v); setSelectedClassId(''); }}>
+                                    <SelectTrigger className="w-[250px]" id="department">
+                                        <SelectValue placeholder="Select a Department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {departments?.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="class">Class</Label>
+                                <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedDepartmentId}>
+                                    <SelectTrigger className="w-[250px]" id="class">
+                                        <SelectValue placeholder="Select a Class" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {filteredClasses?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                      )}
                 </CardContent>
                 <CardFooter>
-                     <Button onClick={handleGenerate} disabled={isGenerating || isLoading} size="lg">
+                     <Button onClick={handleGenerate} disabled={isGenerating || isLoading || !selectedClassId} size="lg">
                         {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
-                        Generate Master Timetable
+                        Generate Timetable
                     </Button>
                 </CardFooter>
             </Card>
