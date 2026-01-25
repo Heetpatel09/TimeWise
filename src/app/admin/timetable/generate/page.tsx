@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +49,8 @@ export default function TimetableGeneratorPage() {
     const [generatedData, setGeneratedData] = useState<GenerateTimetableOutput | null>(null);
     const [isApplying, setIsApplying] = useState(false);
 
+    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || departmentsLoading;
+
     const filteredClasses = useMemo(() => {
         if (!selectedDepartmentId || !classes) return [];
         return classes.filter(c => c.departmentId === selectedDepartmentId);
@@ -58,19 +59,33 @@ export default function TimetableGeneratorPage() {
     const handleGenerate = async () => {
         const classToGenerate = classes?.find(c => c.id === selectedClassId);
 
-        if (isLoading || !classToGenerate || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
+        if (!classToGenerate || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
             toast({ title: 'Data not loaded or selection missing', description: 'Please select a department and class, and wait for all data to load.', variant: 'destructive' });
             return;
         }
 
         setIsGenerating(true);
+
+        // Data Cleaning: Remove null properties that cause schema validation errors.
+        const cleanSubjects = JSON.parse(JSON.stringify(subjects)).map((sub: any) => {
+            if (sub.priority === null) delete sub.priority;
+            return sub;
+        });
+
+        const cleanFaculty = JSON.parse(JSON.stringify(faculty)).map((fac: any) => {
+            if (fac.maxWeeklyHours === null) delete fac.maxWeeklyHours;
+            if (fac.designatedYear === null) delete fac.designatedYear;
+            if (fac.dateOfJoining === null) delete fac.dateOfJoining;
+            return fac;
+        });
+
         try {
             const result = await generateTimetableFlow({
                 days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
                 timeSlots: ALL_TIME_SLOTS,
-                classes: [classToGenerate], // Pass only the selected class
-                subjects,
-                faculty,
+                classes: [classToGenerate],
+                subjects: cleanSubjects,
+                faculty: cleanFaculty,
                 classrooms,
                 departments,
                 existingSchedule,
@@ -78,11 +93,11 @@ export default function TimetableGeneratorPage() {
             
             if (result && result.error) {
                 toast({ title: 'Generation Failed', description: result.error, variant: 'destructive', duration: 10000 });
-            } else if (result && result.semesterTimetables) {
+            } else if (result && result.semesterTimetables && result.semesterTimetables.length > 0) {
                 setGeneratedData(result);
                 setReviewDialogOpen(true);
             } else {
-                 toast({ title: 'Generation Failed', description: 'The AI engine returned an unexpected response.', variant: 'destructive' });
+                 toast({ title: 'Generation Failed', description: 'The AI engine returned an unexpected response or could not generate a timetable with the given constraints.', variant: 'destructive' });
             }
         } catch (e: any) {
             console.error("Timetable generation caught error:", e);
@@ -103,6 +118,7 @@ export default function TimetableGeneratorPage() {
 
         setIsApplying(true);
         try {
+            // This will replace the entire schedule with the newly generated one.
             await replaceSchedule(newFullSchedule);
             toast({ title: "Schedule Applied!", description: `The new university-wide timetable has been created.` });
             queryClient.invalidateQueries({ queryKey: ['schedule'] });
@@ -115,7 +131,6 @@ export default function TimetableGeneratorPage() {
         }
     }
 
-    const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || departmentsLoading;
 
     return (
         <DashboardLayout pageTitle="Admin / Timetable Generator" role="admin">
@@ -182,8 +197,8 @@ export default function TimetableGeneratorPage() {
                             <AlertDescription>{generatedData.error}</AlertDescription>
                         </Alert>
                     )}
-                    {generatedData && (
-                        <Tabs defaultValue="faculty">
+                    {generatedData && generatedData.semesterTimetables && (
+                        <Tabs defaultValue="timetables">
                             <TabsList className="grid grid-cols-2 w-full">
                                 <TabsTrigger value="timetables">Semester Timetables</TabsTrigger>
                                 <TabsTrigger value="faculty">Faculty Workload</TabsTrigger>
@@ -191,9 +206,11 @@ export default function TimetableGeneratorPage() {
                              <TabsContent value="timetables">
                                 <ScrollArea className="h-[60vh] p-1">
                                     <div className="space-y-6">
+                                    {generatedData.codeChefDay && (
                                         <div className='text-center font-semibold p-2 bg-purple-100 dark:bg-purple-900 rounded-md'>
                                             CodeChef Day is on <span className="font-bold">{generatedData.codeChefDay}</span>. No classes are scheduled on this day.
                                         </div>
+                                    )}
                                     {generatedData.semesterTimetables.map(st => (
                                         <Card key={st.semester}>
                                             <CardHeader><CardTitle>Semester {st.semester}</CardTitle></CardHeader>
@@ -206,7 +223,7 @@ export default function TimetableGeneratorPage() {
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].filter(d => d !== generatedData.codeChefDay).map(day => (
+                                                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].filter(d => d !== generatedData?.codeChefDay).map(day => (
                                                         <TableRow key={day}>
                                                             <TableCell className="font-semibold">{day}</TableCell>
                                                             {ALL_TIME_SLOTS.map(time => {
@@ -244,7 +261,7 @@ export default function TimetableGeneratorPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {generatedData.facultyWorkload.sort((a,b) => b.experience - a.experience).map(fw => (
+                                            {generatedData.facultyWorkload?.sort((a,b) => b.experience - a.experience).map(fw => (
                                                 <TableRow key={fw.facultyId}>
                                                     <TableCell>{fw.facultyName}</TableCell>
                                                     <TableCell>{fw.experience.toFixed(1)} yrs ({fw.level})</TableCell>
