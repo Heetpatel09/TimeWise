@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -12,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { UserCheck, Loader2, Eye, EyeOff, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getFaculty, updateFaculty } from '@/lib/services/faculty';
-import type { Faculty } from '@/lib/types';
+import { getDepartments } from '@/lib/services/departments';
+import type { Faculty, Department } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { addCredential } from '@/lib/services/auth';
 import Link from 'next/link';
@@ -23,7 +23,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 export default function FacultyProfilePage() {
   const { user, setUser: setAuthUser } = useAuth();
   const { toast } = useToast();
-  const [facultyMember, setFacultyMember] = useState<(Faculty & { department: string }) | null>(null);
+  const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -38,23 +39,27 @@ export default function FacultyProfilePage() {
       let completion = 0;
       if (currentFaculty.name) completion += 20;
       if (currentFaculty.email) completion += 20;
-      if ((currentFaculty as any).department) completion += 20;
+      if (currentFaculty.departmentId) completion += 20;
       if (currentFaculty.avatar && !currentFaculty.avatar.includes('vercel.sh')) completion += 20;
       if (!requiresPasswordChange) completion += 20;
       setProfileCompletion(Math.min(completion, 100));
   }, []);
   
   useEffect(() => {
-    async function loadFaculty() {
+    async function loadData() {
         if (user) {
             setIsLoading(true);
-            const allFaculty = await getFaculty();
+            const [allFaculty, departmentData] = await Promise.all([
+                getFaculty(),
+                getDepartments()
+            ]);
             const member = allFaculty.find((f) => f.id === user.id);
-            setFacultyMember(member as (Faculty & { department: string }) || null);
+            setFacultyMember(member || null);
+            setDepartments(departmentData);
             setIsLoading(false);
         }
     }
-    loadFaculty();
+    loadData();
   }, [user]);
 
   useEffect(() => {
@@ -63,7 +68,7 @@ export default function FacultyProfilePage() {
     }
   }, [facultyMember, user?.requiresPasswordChange, calculateProfileCompletion]);
   
-  const handleFieldChange = (field: keyof Omit<Faculty, 'id' | 'avatar' | 'profileCompleted' | 'departmentId'>, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Faculty, 'id' | 'avatar' | 'profileCompleted'>, value: any) => {
     if (facultyMember) {
         setFacultyMember({ ...facultyMember, [field]: value });
     }
@@ -102,7 +107,7 @@ export default function FacultyProfilePage() {
         let completion = 0;
         if (facultyMember.name) completion += 20;
         if (facultyMember.email) completion += 20;
-        if ((facultyMember as any).department) completion += 20;
+        if (facultyMember.departmentId) completion += 20;
         if (facultyMember.avatar && !facultyMember.avatar.includes('vercel.sh')) completion += 20;
         if (!requiresPasswordChange) completion += 20;
 
@@ -165,6 +170,8 @@ export default function FacultyProfilePage() {
       </DashboardLayout>
     );
   }
+
+  const departmentName = departments.find(d => d.id === facultyMember.departmentId)?.name || 'N/A';
 
   return (
     <DashboardLayout pageTitle="My Profile" role="faculty">
@@ -254,7 +261,7 @@ export default function FacultyProfilePage() {
                     <Label htmlFor="department">Department</Label>
                     <Input
                         id="department"
-                        value={facultyMember.department}
+                        value={departmentName}
                         disabled
                     />
                     </div>

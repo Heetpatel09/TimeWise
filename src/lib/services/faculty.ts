@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -18,26 +17,25 @@ function revalidateAll() {
 
 export async function getFaculty(): Promise<Faculty[]> {
   const db = getDb();
-  const stmt = db.prepare(`
-    SELECT f.*, d.name as department
-    FROM faculty f
-    LEFT JOIN departments d ON f.departmentId = d.id
-  `);
+  // REMOVED the JOIN to prevent inconsistent data shapes.
+  const stmt = db.prepare('SELECT * FROM faculty');
   const results = stmt.all() as any[];
-  // Ensure plain objects are returned
-  return JSON.parse(JSON.stringify(results.map(f => ({ 
-      ...f, 
-      avatar: f.avatar || `https://avatar.vercel.sh/${f.email}.png`, 
+
+  return JSON.parse(JSON.stringify(results.map(f => ({
+      ...f,
+      avatar: f.avatar || `https://avatar.vercel.sh/${f.email}.png`,
       roles: JSON.parse(f.roles || '[]'),
       allottedSubjects: JSON.parse(f.allottedSubjects || '[]'),
+      dateOfJoining: f.dateOfJoining || '2022-01-01T00:00:00.000Z', // Add fallback
     }))));
 }
 
+
 export async function addFaculty(
-    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted' | 'roles' | 'points' | 'allottedSubjects'> & { 
-        streak?: number, 
-        profileCompleted?: number, 
-        roles?: string[] | string, 
+    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted' | 'roles' | 'points' | 'allottedSubjects'> & {
+        streak?: number,
+        profileCompleted?: number,
+        roles?: string[] | string,
         points?: number,
         allottedSubjects?: string[],
     },
@@ -51,7 +49,7 @@ export async function addFaculty(
     }
 
     const id = `FAC${Date.now()}`;
-    
+
     let roles: string[];
     if (typeof item.roles === 'string') {
         roles = item.roles.split(',').map(r => r.trim()).filter(Boolean);
@@ -68,10 +66,11 @@ export async function addFaculty(
         profileCompleted: item.profileCompleted || 0,
         points: item.points || 0,
         allottedSubjects: item.allottedSubjects || [],
+        dateOfJoining: item.dateOfJoining || new Date().toISOString(),
     };
-    
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.departmentId, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.points, JSON.stringify(newItem.allottedSubjects), newItem.maxWeeklyHours, newItem.designatedYear);
+
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear, dateOfJoining) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.departmentId, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.points, JSON.stringify(newItem.allottedSubjects), newItem.maxWeeklyHours, newItem.designatedYear, newItem.dateOfJoining);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -82,7 +81,6 @@ export async function addFaculty(
       requiresPasswordChange: !password,
     });
 
-    // Generate welcome notification
     try {
         const department = db.prepare('SELECT name FROM departments WHERE id = ?').get(newItem.departmentId) as Department | undefined;
         const notificationResult = await generateWelcomeNotification({
@@ -97,7 +95,6 @@ export async function addFaculty(
         });
     } catch (e: any) {
         console.error("Failed to generate welcome notification for faculty:", e.message);
-        // Don't block user creation if notification fails
     }
 
 
@@ -107,29 +104,30 @@ export async function addFaculty(
 
 export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string }): Promise<Faculty> {
     const db = getDb();
-    
+
     db.transaction(() => {
         const oldFaculty: any = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id);
         if (!oldFaculty) {
             throw new Error("Faculty member not found.");
         }
-        
+
         let newRoles: string[];
         if (typeof updatedItem.roles === 'string') {
             newRoles = updatedItem.roles.split(',').map(r => r.trim()).filter(Boolean);
         } else {
             newRoles = updatedItem.roles || JSON.parse(oldFaculty.roles || '[]');
         }
-        
+
         const mergedItem = {
             ...oldFaculty,
             ...updatedItem,
             roles: newRoles,
             allottedSubjects: JSON.stringify(updatedItem.allottedSubjects || JSON.parse(oldFaculty.allottedSubjects || '[]')),
+            dateOfJoining: updatedItem.dateOfJoining || oldFaculty.dateOfJoining || new Date().toISOString(),
         };
 
-        const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, departmentId = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allottedSubjects = ?, maxWeeklyHours = ?, designatedYear = ? WHERE id = ?');
-        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.departmentId, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.allottedSubjects, mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.id);
+        const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, departmentId = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allottedSubjects = ?, maxWeeklyHours = ?, designatedYear = ?, dateOfJoining = ? WHERE id = ?');
+        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.departmentId, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.allottedSubjects, mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.dateOfJoining, mergedItem.id);
 
         if (oldFaculty.email !== mergedItem.email) {
             addCredential({
@@ -139,9 +137,9 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
             });
         }
     })();
-    
+
     revalidateAll();
-    
+
     const finalFaculty: any = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id);
     finalFaculty.roles = JSON.parse(finalFaculty.roles || '[]');
     finalFaculty.allottedSubjects = JSON.parse(finalFaculty.allottedSubjects || '[]');
@@ -155,7 +153,7 @@ export async function deleteFaculty(id: string) {
     if (inUse) {
         throw new Error("Cannot delete faculty that is currently assigned to a schedule. Please re-assign their classes first.");
     }
-    
+
     db.prepare('DELETE FROM user_credentials WHERE userId = ?').run(id);
     const stmt = db.prepare('DELETE FROM faculty WHERE id = ?');
     stmt.run(id);
