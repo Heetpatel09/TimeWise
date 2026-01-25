@@ -155,9 +155,9 @@ const FacultySchema = z.object({
     profileCompleted: z.number(),
     points: z.number(),
     allottedSubjects: z.array(z.string()).optional(),
-    maxWeeklyHours: z.number().optional(),
-    designatedYear: z.number().optional(),
-    dateOfJoining: z.string().optional(),
+    maxWeeklyHours: z.number().optional().nullable(),
+    designatedYear: z.number().optional().nullable(),
+    dateOfJoining: z.string().optional().nullable(),
 });
 
 export const GenerateTimetableInputSchema = z.object({
@@ -195,6 +195,7 @@ export const GenerateTimetableOutputSchema = z.object({
   })),
   codeChefDay: z.string(),
   error: z.string().optional(),
+  optimizationExplanation: z.string().optional(),
 });
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
 
