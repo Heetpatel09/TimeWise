@@ -29,6 +29,7 @@ const ALL_TIME_SLOTS = [
     '09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM',
     '12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'
 ];
+const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function TimetableGeneratorPage() {
     const { toast } = useToast();
@@ -42,7 +43,6 @@ export default function TimetableGeneratorPage() {
     const { data: departments, isLoading: departmentsLoading } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments });
 
     const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
-    const [selectedClassId, setSelectedClassId] = useState<string>('');
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -51,24 +51,20 @@ export default function TimetableGeneratorPage() {
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || departmentsLoading;
 
-    const filteredClasses = useMemo(() => {
-        if (!selectedDepartmentId || !classes) return [];
-        return classes.filter(c => c.departmentId === selectedDepartmentId);
-    }, [selectedDepartmentId, classes]);
-
     const handleGenerate = async () => {
-        const classToGenerate = classes?.find(c => c.id === selectedClassId);
-
-        if (!classToGenerate || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
-            toast({ title: 'Data not loaded or selection missing', description: 'Please select a department and class, and wait for all data to load.', variant: 'destructive' });
+        if (!selectedDepartmentId || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
+            toast({ title: 'Data not loaded or selection missing', description: 'Please select a department and wait for all data to load.', variant: 'destructive' });
             return;
         }
 
         setIsGenerating(true);
 
+        const relevantClasses = classes.filter(c => c.departmentId === selectedDepartmentId);
+        
         // Data Cleaning: Remove null properties that cause schema validation errors.
         const cleanSubjects = JSON.parse(JSON.stringify(subjects)).map((sub: any) => {
             if (sub.priority === null) delete sub.priority;
+            if (sub.weeklyHours === null) delete sub.weeklyHours;
             return sub;
         });
 
@@ -76,14 +72,18 @@ export default function TimetableGeneratorPage() {
             if (fac.maxWeeklyHours === null) delete fac.maxWeeklyHours;
             if (fac.designatedYear === null) delete fac.designatedYear;
             if (fac.dateOfJoining === null) delete fac.dateOfJoining;
+            if (fac.code === null) delete fac.code;
+            if (fac.designation === null) delete fac.designation;
+            if (fac.employmentType === null) delete fac.employmentType;
+            if (fac.roles === null) delete fac.roles;
             return fac;
         });
 
         try {
             const result = await generateTimetableFlow({
-                days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                days: ALL_DAYS,
                 timeSlots: ALL_TIME_SLOTS,
-                classes: [classToGenerate],
+                classes: relevantClasses,
                 subjects: cleanSubjects,
                 faculty: cleanFaculty,
                 classrooms,
@@ -118,7 +118,6 @@ export default function TimetableGeneratorPage() {
 
         setIsApplying(true);
         try {
-            // This will replace the entire schedule with the newly generated one.
             await replaceSchedule(newFullSchedule);
             toast({ title: "Schedule Applied!", description: `The new university-wide timetable has been created.` });
             queryClient.invalidateQueries({ queryKey: ['schedule'] });
@@ -144,7 +143,7 @@ export default function TimetableGeneratorPage() {
                 <CardHeader>
                     <CardTitle>University Timetable Generator</CardTitle>
                     <CardDescription>
-                        Generate an optimized, conflict-free timetable for all semesters based on faculty experience, workload, and subject priorities.
+                        Generate an optimized, conflict-free timetable for all semesters within a department based on faculty experience, workload, and subject priorities.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -154,7 +153,7 @@ export default function TimetableGeneratorPage() {
                         <div className="flex flex-wrap gap-4">
                            <div className="space-y-2">
                                 <Label htmlFor="department">Department</Label>
-                                <Select value={selectedDepartmentId} onValueChange={(v) => { setSelectedDepartmentId(v); setSelectedClassId(''); }}>
+                                <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
                                     <SelectTrigger className="w-[250px]" id="department">
                                         <SelectValue placeholder="Select a Department" />
                                     </SelectTrigger>
@@ -163,24 +162,13 @@ export default function TimetableGeneratorPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="class">Class</Label>
-                                <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedDepartmentId}>
-                                    <SelectTrigger className="w-[250px]" id="class">
-                                        <SelectValue placeholder="Select a Class" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {filteredClasses?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
                         </div>
                      )}
                 </CardContent>
                 <CardFooter>
-                     <Button onClick={handleGenerate} disabled={isGenerating || isLoading || !selectedClassId} size="lg">
+                     <Button onClick={handleGenerate} disabled={isGenerating || isLoading || !selectedDepartmentId} size="lg">
                         {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Bot className="mr-2 h-4 w-4" />}
-                        Generate Timetable
+                        Generate Timetable for Department
                     </Button>
                 </CardFooter>
             </Card>
@@ -211,9 +199,19 @@ export default function TimetableGeneratorPage() {
                                             CodeChef Day is on <span className="font-bold">{generatedData.codeChefDay}</span>. No classes are scheduled on this day.
                                         </div>
                                     )}
+                                     {generatedData.optimizationExplanation && (
+                                        <Alert>
+                                            <AlertTitle>Optimization Notes</AlertTitle>
+                                            <AlertDescription>{generatedData.optimizationExplanation}</AlertDescription>
+                                        </Alert>
+                                    )}
                                     {generatedData.semesterTimetables.map(st => (
                                         <Card key={st.semester}>
-                                            <CardHeader><CardTitle>Semester {st.semester}</CardTitle></CardHeader>
+                                            <CardHeader>
+                                                <CardTitle>
+                                                    {classes?.find(c => c.semester === st.semester && c.departmentId === selectedDepartmentId)?.name || `Semester ${st.semester}`}
+                                                </CardTitle>
+                                            </CardHeader>
                                             <CardContent>
                                                 <Table>
                                                     <TableHeader>
@@ -223,7 +221,7 @@ export default function TimetableGeneratorPage() {
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].filter(d => d !== generatedData?.codeChefDay).map(day => (
+                                                    {ALL_DAYS.filter(d => d !== generatedData?.codeChefDay).map(day => (
                                                         <TableRow key={day}>
                                                             <TableCell className="font-semibold">{day}</TableCell>
                                                             {ALL_TIME_SLOTS.map(time => {
@@ -235,6 +233,7 @@ export default function TimetableGeneratorPage() {
                                                                             <div className="text-xs">
                                                                                 <div>{subject.name}</div>
                                                                                 <div className="text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</div>
+                                                                                <div className="text-muted-foreground font-bold">{classrooms?.find(c=>c.id === slot.classroomId)?.name}</div>
                                                                             </div>
                                                                         ) : null}
                                                                     </TableCell>

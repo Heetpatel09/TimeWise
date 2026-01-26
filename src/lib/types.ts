@@ -145,11 +145,11 @@ const FacultySchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string(),
-    code: z.string(),
+    code: z.string().optional(),
     departmentId: z.string(),
-    designation: z.string(),
-    employmentType: z.enum(['full-time', 'part-time', 'contract']),
-    roles: z.array(z.string()),
+    designation: z.string().optional(),
+    employmentType: z.enum(['full-time', 'part-time', 'contract']).optional(),
+    roles: z.array(z.string()).optional(),
     streak: z.number(),
     avatar: z.string().optional(),
     profileCompleted: z.number(),
@@ -193,7 +193,7 @@ export const GenerateTimetableOutputSchema = z.object({
         classroomId: z.string(),
     }))
   })),
-  codeChefDay: z.string(),
+  codeChefDay: z.string().optional(),
   error: z.string().optional(),
   optimizationExplanation: z.string().optional(),
 });
@@ -216,7 +216,7 @@ export interface Subject {
   syllabus?: string;
   departmentId: string;
   isSpecial?: boolean;
-  priority?: SubjectPriority;
+  priority?: SubjectPriority | null;
   weeklyHours?: number;
 }
 
@@ -255,11 +255,11 @@ export interface Faculty {
   id:string;
   name: string;
   email: string;
-  code: string; // Used as Staff ID
+  code?: string; // Used as Staff ID
   departmentId: string;
-  designation: string;
-  employmentType: 'full-time' | 'part-time' | 'contract';
-  roles: string[];
+  designation?: string;
+  employmentType?: 'full-time' | 'part-time' | 'contract';
+  roles?: string[];
   streak: number;
   avatar?: string;
   profileCompleted: number;
