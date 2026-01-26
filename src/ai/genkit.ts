@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview This file is the central point for initializing the Genkit AI object.
  */
@@ -10,5 +9,5 @@ import {googleAI} from '@genkit-ai/google-genai';
 // the googleAI() plugin without any arguments will automatically use the
 // service account credentials of the runtime.
 export const ai = genkit({
-  plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
+  plugins: [googleAI()],
 });
