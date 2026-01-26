@@ -21,38 +21,48 @@ export async function getSubjects(): Promise<Subject[]> {
     }))));
 }
 
-export async function addSubject(item: Omit<Subject, 'id'>): Promise<Subject> {
+export async function addSubject(item: Omit<Subject, 'id'>, createLab: boolean = false): Promise<Subject[]> {
     const db = getDb();
-    const id = `SUB${Date.now()}`;
-    
-    let finalName = item.name;
-    if (item.type === 'lab' && !finalName.toLowerCase().includes('lab')) {
-        finalName += ' (Lab)';
-    }
+    const createdSubjects: Subject[] = [];
 
-    const newItem: Subject = { ...item, id, name: finalName };
-    
-    const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, item.code, (item.isSpecial || false) ? 1 : 0, item.type, item.semester, item.syllabus, item.departmentId, item.priority);
+    db.transaction(() => {
+        const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+
+        // Theory subject
+        const theoryId = `SUB${Date.now()}`;
+        const theoryItem: Subject = { ...item, id: theoryId, type: 'theory' };
+        stmt.run(theoryId, theoryItem.name, theoryItem.code, (theoryItem.isSpecial || false) ? 1 : 0, 'theory', theoryItem.semester, theoryItem.syllabus, theoryItem.departmentId, theoryItem.priority);
+        createdSubjects.push(theoryItem);
+
+        if (createLab) {
+            const labId = `SUB${Date.now() + 1}`;
+            // Ensure we don't add (Lab) if it's already there for some reason
+            const labName = `${theoryItem.name.replace(/\(Lab\)/i, '').trim()} (Lab)`;
+            
+            const labItem: Subject = {
+                ...item,
+                id: labId,
+                name: labName,
+                type: 'lab',
+                priority: null, // Labs don't have priority
+            };
+            stmt.run(labId, labItem.name, labItem.code, (labItem.isSpecial || false) ? 1 : 0, 'lab', labItem.semester, labItem.syllabus, labItem.departmentId, null);
+            createdSubjects.push(labItem);
+        }
+    })();
     
     revalidateAll();
-    return Promise.resolve(newItem);
+    return Promise.resolve(createdSubjects);
 }
 
 export async function updateSubject(updatedItem: Subject): Promise<Subject> {
     const db = getDb();
     
-    let finalName = updatedItem.name;
-    if (updatedItem.type === 'lab' && !finalName.toLowerCase().includes('lab')) {
-        finalName += ' (Lab)';
-    }
-    const finalItem = { ...updatedItem, name: finalName };
-
     const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, departmentId = ?, priority = ? WHERE id = ?');
-    stmt.run(finalItem.name, finalItem.code, (finalItem.isSpecial || false) ? 1 : 0, finalItem.type, finalItem.semester, finalItem.syllabus, finalItem.departmentId, finalItem.priority, finalItem.id);
+    stmt.run(updatedItem.name, updatedItem.code, (updatedItem.isSpecial || false) ? 1 : 0, updatedItem.type, updatedItem.semester, updatedItem.syllabus, updatedItem.departmentId, updatedItem.priority, updatedItem.id);
     
     revalidateAll();
-    return Promise.resolve(finalItem);
+    return Promise.resolve(updatedItem);
 }
 
 export async function deleteSubject(id: string) {
@@ -64,7 +74,6 @@ export async function deleteSubject(id: string) {
     }
     
     db.transaction(() => {
-        // Remove the subject from any faculty that has it allotted
         const allFaculty: {id: string, allottedSubjects: string | null}[] = db.prepare('SELECT id, allottedSubjects FROM faculty').all() as any[];
         allFaculty.forEach(fac => {
             if (!fac.allottedSubjects) return;
@@ -74,8 +83,6 @@ export async function deleteSubject(id: string) {
                 db.prepare('UPDATE faculty SET allottedSubjects = ? WHERE id = ?').run(JSON.stringify(newSubjects), fac.id);
             }
         });
-
-        // Delete the subject
         const stmt = db.prepare('DELETE FROM subjects WHERE id = ?');
         stmt.run(id);
     })();

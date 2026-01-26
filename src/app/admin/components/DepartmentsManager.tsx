@@ -32,6 +32,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const PRIORITY_OPTIONS: SubjectPriority[] = ['Non Negotiable', 'High', 'Medium', 'Low'];
@@ -389,6 +390,7 @@ export default function DepartmentsManager() {
   const [newDepartment, setNewDepartment] = useState({ name: '', code: ''});
   const [isRenameDeptDialogOpen, setRenameDeptDialogOpen] = useState(false);
   const [renamingDepartment, setRenamingDepartment] = useState({ id: '', name: '', code: ''});
+  const [createLabForSubject, setCreateLabForSubject] = useState(false);
   
   useEffect(() => {
       if(departments.length > 0 && !selectedDepartmentId){
@@ -427,16 +429,29 @@ export default function DepartmentsManager() {
   });
 
   const subjectMutation = useMutation({
-    mutationFn: async (subjectData: Omit<Subject, 'id'> & { id?: string }) => {
+    mutationFn: async (data: { subjectData: Omit<Subject, 'id'> & { id?: string }, createLab?: boolean }) => {
+      const { subjectData, createLab } = data;
       if (subjectData.id) {
-        return updateSubject(subjectData as Subject);
+        // update returns a single subject, wrap it in an array for consistent type
+        const updated = await updateSubject(subjectData as Subject);
+        return [updated]; 
       } else {
-        return addSubject(subjectData);
+        // addSubject now returns an array of subjects
+        return addSubject(subjectData, createLab);
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (createdSubjects, variables) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      toast({ title: variables.id ? "Subject Updated" : "Subject Added" });
+      let title = "Success";
+      let description = "";
+      if (!variables.subjectData.id) { // It's an add operation
+        title = createdSubjects.length > 1 ? "Subject & Lab Added" : "Subject Added";
+        description = createdSubjects.length > 1 ? `"${createdSubjects[0].name}" and its lab have been created.` : `"${createdSubjects[0].name}" has been created.`;
+      } else {
+        title = "Subject Updated";
+        description = `"${createdSubjects[0].name}" has been updated.`;
+      }
+      toast({ title, description });
       setSubjectDialogOpen(false);
     },
     onError: (error: any) => {
@@ -605,7 +620,7 @@ export default function DepartmentsManager() {
     };
     if(currentSubject.id) subjectToSave.id = currentSubject.id;
 
-    subjectMutation.mutate(subjectToSave);
+    subjectMutation.mutate({ subjectData: subjectToSave, createLab: createLabForSubject });
   };
   
   const openNewClassDialog = () => {
@@ -620,11 +635,13 @@ export default function DepartmentsManager() {
 
   const openNewSubjectDialog = () => {
     setCurrentSubject({ type: 'theory', semester: 1, priority: 'High' });
+    setCreateLabForSubject(false);
     setSubjectDialogOpen(true);
   };
   
   const openEditSubjectDialog = (subject: Subject) => {
     setCurrentSubject(subject);
+    setCreateLabForSubject(false);
     setSubjectDialogOpen(true);
   };
   
@@ -925,7 +942,7 @@ export default function DepartmentsManager() {
       </Dialog>
 
       {/* Subject Dialog */}
-      <Dialog open={isSubjectDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentSubject({}); } setSubjectDialogOpen(isOpen); }}>
+      <Dialog open={isSubjectDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentSubject({}); setCreateLabForSubject(false)} setSubjectDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : `Add Subject to ${selectedDepartment?.name}`}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
@@ -963,6 +980,19 @@ export default function DepartmentsManager() {
                     </SelectContent>
                 </Select>
               </div>
+            )}
+             {!currentSubject.id && currentSubject.type === 'theory' && (
+                <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                        id="create-lab"
+                        checked={createLabForSubject}
+                        onCheckedChange={(checked) => setCreateLabForSubject(!!checked)}
+                        disabled={subjectMutation.isPending}
+                    />
+                    <Label htmlFor="create-lab" className="font-normal">
+                        Also create a corresponding lab component
+                    </Label>
+                </div>
             )}
           </div>
           <DialogFooter>
@@ -1086,7 +1116,3 @@ export default function DepartmentsManager() {
     </div>
   );
 }
-
-    
-
-    
