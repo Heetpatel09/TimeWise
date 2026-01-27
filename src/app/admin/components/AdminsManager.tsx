@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const ALL_PERMISSIONS: { id: Permission, label: string }[] = [
     { id: 'manage_subjects', label: 'Manage Subjects' },
@@ -48,32 +49,53 @@ const ALL_PERMISSIONS: { id: Permission, label: string }[] = [
 
 export default function AdminsManager() {
   const { user: authUser } = useAuth();
-  const [admins, setAdmins] = useState<Admin[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: admins = [], isLoading } = useQuery<Admin[]>({
+    queryKey: ['admins'],
+    queryFn: getAdmins,
+  });
+
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentAdmin, setCurrentAdmin] = useState<Partial<Admin>>({});
   const [newAdminCredentials, setNewAdminCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
   const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
   const [manualPassword, setManualPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { toast } = useToast();
 
-  async function loadData() {
-    setIsLoading(true);
-    try {
-      const data = await getAdmins();
-      setAdmins(data);
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to load admins.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const adminMutation = useMutation({
+    mutationFn: async (payload: { adminData: Omit<Admin, 'id'> & { id?: string }, password?: string }) => {
+      const { adminData, password } = payload;
+      if (adminData.id) {
+        return updateAdmin(adminData as Admin);
+      } else {
+        return addAdmin(adminData, password);
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
+      toast({ title: currentAdmin.id ? 'User Updated' : 'User Added', description: currentAdmin.id ? "The user's details have been saved." : "The new user has been created." });
+      setDialogOpen(false);
+      if (result && 'initialPassword' in result && result.initialPassword) {
+        setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+    },
+  });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const deleteMutation = useMutation({
+    mutationFn: deleteAdmin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
+      toast({ title: "User Deleted", description: "The user has been removed." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+    },
+  });
 
   const handlePermissionChange = (permission: Permission, checked: boolean) => {
     setCurrentAdmin(prev => {
@@ -99,36 +121,16 @@ export default function AdminsManager() {
         return;
       }
       
-      const adminToSave: Omit<Admin, 'id'> = {
+      const adminToSave: Omit<Admin, 'id'> & { id?: string } = {
         name: currentAdmin.name!,
         email: currentAdmin.email!,
         avatar: currentAdmin.avatar,
         role: currentAdmin.role || 'manager',
         permissions: currentAdmin.role === 'admin' ? ['*'] : currentAdmin.permissions || [],
       }
+      if (currentAdmin.id) adminToSave.id = currentAdmin.id;
 
-      setIsSubmitting(true);
-      try {
-        if (currentAdmin.id) {
-          await updateAdmin({ ...adminToSave, id: currentAdmin.id });
-          toast({ title: "User Updated", description: "The user's details have been saved." });
-        } else {
-          const result = await addAdmin(
-            adminToSave, 
-            passwordOption === 'manual' ? manualPassword : undefined
-          );
-          toast({ title: "User Added", description: "The new user has been created." });
-          if (result.initialPassword) {
-            setNewAdminCredentials({ email: result.email, initialPassword: result.initialPassword });
-          }
-        }
-        await loadData();
-        setDialogOpen(false);
-      } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
-      } finally {
-        setIsSubmitting(false);
-      }
+      adminMutation.mutate({ adminData: adminToSave, password: passwordOption === 'manual' ? manualPassword : undefined });
     }
   };
   
@@ -143,13 +145,7 @@ export default function AdminsManager() {
   };
   
   const handleDelete = async (id: string) => {
-    try {
-      await deleteAdmin(id);
-      await loadData();
-      toast({ title: "User Deleted", description: "The user has been removed." });
-    } catch (error: any) {
-       toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
-    }
+    deleteMutation.mutate(id);
   };
   
   const openNewDialog = () => {
@@ -267,11 +263,11 @@ export default function AdminsManager() {
             <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" value={currentAdmin.name ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, name: e.target.value })} disabled={isSubmitting}/>
+                  <Input id="name" value={currentAdmin.name ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, name: e.target.value })} disabled={adminMutation.isPending}/>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={currentAdmin.email ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, email: e.target.value })} disabled={isSubmitting}/>
+                  <Input id="email" type="email" value={currentAdmin.email ?? ''} onChange={(e) => setCurrentAdmin({ ...currentAdmin, email: e.target.value })} disabled={adminMutation.isPending}/>
                 </div>
                  <div className="space-y-2">
                    <Label>Role</Label>
@@ -311,7 +307,7 @@ export default function AdminsManager() {
                                     value={manualPassword} 
                                     onChange={(e) => setManualPassword(e.target.value)} 
                                     className="pr-10"
-                                    disabled={isSubmitting}
+                                    disabled={adminMutation.isPending}
                                 />
                                  <Button
                                     type="button"
@@ -355,9 +351,9 @@ export default function AdminsManager() {
             </Card>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={adminMutation.isPending}>Cancel</Button>
+            <Button onClick={handleSave} disabled={adminMutation.isPending}>
+              {adminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
             </Button>
           </DialogFooter>
@@ -405,3 +401,5 @@ export default function AdminsManager() {
     </div>
   );
 }
+
+    

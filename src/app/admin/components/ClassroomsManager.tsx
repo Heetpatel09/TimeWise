@@ -27,52 +27,55 @@ import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Building, Wrench } f
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const maintenanceStatusOptions: Classroom['maintenanceStatus'][] = ['available', 'in_maintenance', 'unavailable'];
 
 export default function ClassroomsManager() {
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentClassroom, setCurrentClassroom] = useState<Partial<Classroom>>({});
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  async function loadData() {
-    setIsLoading(true);
-    try {
-      const data = await getClassrooms();
-      setClassrooms(data);
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to load classrooms.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const { data: classrooms = [], isLoading } = useQuery<Classroom[]>({
+    queryKey: ['classrooms'],
+    queryFn: getClassrooms,
+  });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [currentClassroom, setCurrentClassroom] = useState<Partial<Classroom>>({});
+
+  const classroomMutation = useMutation({
+    mutationFn: async (classroom: Omit<Classroom, 'id'> & { id?: string }) => {
+      if (classroom.id) {
+        return updateClassroom(classroom as Classroom);
+      } else {
+        return addClassroom(classroom);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classrooms'] });
+      toast({ title: currentClassroom.id ? 'Classroom Updated' : 'Classroom Added' });
+      setDialogOpen(false);
+      setCurrentClassroom({});
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteClassroom,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classrooms'] });
+      toast({ title: "Classroom Deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+    },
+  });
 
   const handleSave = async () => {
     if (currentClassroom && currentClassroom.name && currentClassroom.type && currentClassroom.building && currentClassroom.capacity && currentClassroom.maintenanceStatus) {
-      setIsSubmitting(true);
-      try {
-        if (currentClassroom.id) {
-          await updateClassroom(currentClassroom as Classroom);
-          toast({ title: "Classroom Updated", description: "The classroom details have been saved." });
-        } else {
-          await addClassroom(currentClassroom as Omit<Classroom, 'id'>);
-          toast({ title: "Classroom Added", description: "The new classroom has been added." });
-        }
-        await loadData();
-        setDialogOpen(false);
-        setCurrentClassroom({});
-      } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
-      } finally {
-        setIsSubmitting(false);
-      }
+      classroomMutation.mutate(currentClassroom as Omit<Classroom, 'id'> & { id?: string });
     } else {
         toast({ title: "Missing Information", description: "Please provide all the required details.", variant: "destructive" });
     }
@@ -84,13 +87,7 @@ export default function ClassroomsManager() {
   };
   
   const handleDelete = async (id: string) => {
-    try {
-      await deleteClassroom(id);
-      await loadData();
-      toast({ title: "Classroom Deleted", description: "The classroom has been removed." });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
-    }
+    deleteMutation.mutate(id);
   };
   
   const openNewDialog = () => {
@@ -185,25 +182,25 @@ export default function ClassroomsManager() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" value={currentClassroom.name || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, name: e.target.value })} disabled={isSubmitting}/>
+              <Input id="name" value={currentClassroom.name || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, name: e.target.value })} disabled={classroomMutation.isPending}/>
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="type">Type</Label>
-                    <Input id="type" value={currentClassroom.type || ''} placeholder="e.g. Classroom, Lab" onChange={(e) => setCurrentClassroom({ ...currentClassroom, type: e.target.value })} disabled={isSubmitting}/>
+                    <Input id="type" value={currentClassroom.type || ''} placeholder="e.g. Classroom, Lab" onChange={(e) => setCurrentClassroom({ ...currentClassroom, type: e.target.value })} disabled={classroomMutation.isPending}/>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="capacity">Capacity</Label>
-                    <Input id="capacity" type="number" value={currentClassroom.capacity || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, capacity: parseInt(e.target.value) || 0 })} disabled={isSubmitting}/>
+                    <Input id="capacity" type="number" value={currentClassroom.capacity || ''} onChange={(e) => setCurrentClassroom({ ...currentClassroom, capacity: parseInt(e.target.value) || 0 })} disabled={classroomMutation.isPending}/>
                 </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="building">Building</Label>
-                <Input id="building" value={currentClassroom.building || ''} placeholder="e.g. Main Building, Tech Park" onChange={(e) => setCurrentClassroom({ ...currentClassroom, building: e.target.value })} disabled={isSubmitting}/>
+                <Input id="building" value={currentClassroom.building || ''} placeholder="e.g. Main Building, Tech Park" onChange={(e) => setCurrentClassroom({ ...currentClassroom, building: e.target.value })} disabled={classroomMutation.isPending}/>
             </div>
              <div className="space-y-2">
                 <Label htmlFor="status">Maintenance Status</Label>
-                 <Select value={currentClassroom?.maintenanceStatus} onValueChange={(v: Classroom['maintenanceStatus']) => setCurrentClassroom({ ...currentClassroom, maintenanceStatus: v })} disabled={isSubmitting}>
+                 <Select value={currentClassroom?.maintenanceStatus} onValueChange={(v: Classroom['maintenanceStatus']) => setCurrentClassroom({ ...currentClassroom, maintenanceStatus: v })} disabled={classroomMutation.isPending}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                     </SelectTrigger>
@@ -216,9 +213,9 @@ export default function ClassroomsManager() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={classroomMutation.isPending}>Cancel</Button>
+            <Button onClick={handleSave} disabled={classroomMutation.isPending}>
+              {classroomMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save changes
             </Button>
           </DialogFooter>
@@ -227,3 +224,5 @@ export default function ClassroomsManager() {
     </div>
   );
 }
+
+    
