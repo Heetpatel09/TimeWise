@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@genkit-ai/google-genai": "^1.27.0",
+    "@genkit-ai/core": "^1.28.0",
+    "@genkit-ai/google-genai": "^1.28.0",
     "@genkit-ai/next": "^1.28.0",
     "@google/genai": "^1.33.0",
     "@hookform/resolvers": "^4.1.3",
