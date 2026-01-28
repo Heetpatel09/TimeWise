@@ -50,15 +50,12 @@ const LAB_TIME_PAIRS: [string, string][] = [
 ];
 
 const getHoursForSubject = (subject: Subject): number => {
-    if (subject.type === 'lab') return 2;
-    if (subject.weeklyHours) return subject.weeklyHours;
-    switch (subject.priority) {
-        case 'Non Negotiable': return 4;
-        case 'High': return 3;
-        case 'Medium': return 2;
-        case 'Low': return 1;
-        default: return 2;
-    }
+    if (subject.type === 'lab') return 2; // A lab session is 2 hours
+    if (subject.priority === 'Non Negotiable') return 4;
+    if (subject.priority === 'High') return 3;
+    if (subject.priority === 'Medium') return 2;
+    if (subject.priority === 'Low') return 1;
+    return 2; // Default
 };
 
 function calculateFacultyExperience(faculty: Faculty[]): (Faculty & { experience: number; level: 'Senior' | 'Mid-Level' | 'Junior' })[] {
@@ -83,7 +80,6 @@ function createLectureListForClass(allSubjects: Subject[], classInfo: Class): Le
         if (sub.id === 'LIB001') continue;
 
         if (sub.type === 'lab') {
-            // Batching Rule: Create two separate 2-hour lab sessions, one for each batch.
             lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, hours: 2, batch: 'Batch-1' });
             lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, hours: 2, batch: 'Batch-2' });
         } else {
@@ -128,29 +124,27 @@ export async function runGA(input: GenerateTimetableInput) {
                     continue;
                 }
                 
-                // Shuffle resources for variety
                 const shuffledDays = [...workingDays].sort(() => Math.random() - 0.5);
                 const shuffledFaculty = [...assignedFacultyIds].sort(() => Math.random() - 0.5);
 
                 for (const day of shuffledDays) {
+                    if (placed) break;
+
                     if (lecture.isLab) {
-                         if (!lecture.batch) { // Should not happen with new logic
-                             warnings.push(`Lab for ${lecture.subjectId} is missing batch info.`);
-                             continue;
-                         }
-                        // One lab per batch per week is already handled by lecture list construction
-                        // A class cannot have two different labs at the same time (even for different batches)
+                         if (!lecture.batch) continue;
+                        
+                        // Rule: A class cannot have another lab on the same day.
                         if (fullConflictSchedule.some(g => g.classId === lecture.classId && g.day === day && g.isLab)) continue;
 
                         for (const [time1, time2] of LAB_TIME_PAIRS.sort(() => Math.random() - 0.5)) {
                             for (const room of labClassrooms) {
                                 for (const facultyId of shuffledFaculty) {
-                                     const isConflict1 = fullConflictSchedule.some(g => g.day === day && g.time === time1 && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === lecture.classId));
-                                     const isConflict2 = fullConflictSchedule.some(g => g.day === day && g.time === time2 && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === lecture.classId));
+                                     const isConflict1 = fullConflictSchedule.some(g => g.day === day && g.time === time1 && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lecture.classId && g.batch === lecture.batch)));
+                                     const isConflict2 = fullConflictSchedule.some(g => g.day === day && g.time === time2 && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lecture.classId && g.batch === lecture.batch)));
 
                                      if (!isConflict1 && !isConflict2) {
-                                        const gene1: Gene = { day, time: time1, ...lecture, facultyId, classroomId: room.id, batch: lecture.batch };
-                                        const gene2: Gene = { day, time: time2, ...lecture, facultyId, classroomId: room.id, batch: lecture.batch };
+                                        const gene1: Gene = { day, time: time1, ...lecture, facultyId, classroomId: room.id };
+                                        const gene2: Gene = { day, time: time2, ...lecture, facultyId, classroomId: room.id };
                                         fullConflictSchedule.push(gene1, gene2);
                                         placed = true;
                                         break;
@@ -176,22 +170,25 @@ export async function runGA(input: GenerateTimetableInput) {
                              if(placed) break;
                         }
                     }
-                    if(placed) break;
                 }
                  if (!placed) {
-                    warnings.push(`Could not place ${lecture.isLab ? 'lab' : 'theory'} for ${input.subjects.find(s=>s.id === lecture.subjectId)?.name}. Force-placing may cause conflicts.`);
-                    // Force-place logic as a last resort
-                    const day = workingDays[0];
-                    const time = LECTURE_TIME_SLOTS[0];
+                    const subjectName = input.subjects.find(s=>s.id === lecture.subjectId)?.name || 'Unknown Subject';
+                    warnings.push(`Could not place ${subjectName} (${lecture.isLab ? `Lab, Batch ${lecture.batch}` : 'Theory'}). Force-placing.`);
+                    
+                    const day = workingDays[Math.floor(Math.random() * workingDays.length)];
                     const facultyId = shuffledFaculty[0];
-                    const classroomId = lecture.isLab ? labClassrooms[0]?.id : theoryClassrooms[0]?.id;
-                    if (classroomId) {
-                        if (lecture.isLab) {
-                           fullConflictSchedule.push({ day, time: LAB_TIME_PAIRS[0][0], ...lecture, facultyId, classroomId, batch: lecture.batch });
-                           fullConflictSchedule.push({ day, time: LAB_TIME_PAIRS[0][1], ...lecture, facultyId, classroomId, batch: lecture.batch });
-                        } else {
-                           fullConflictSchedule.push({ day, time, ...lecture, facultyId, classroomId });
-                        }
+
+                     if (lecture.isLab) {
+                        const [time1, time2] = LAB_TIME_PAIRS[Math.floor(Math.random() * LAB_TIME_PAIRS.length)];
+                        const classroomId = labClassrooms[0]?.id || 'TBD-LAB';
+                        if(classroomId === 'TBD-LAB') warnings.push(`No available lab rooms found.`);
+                        fullConflictSchedule.push({ day, time: time1, ...lecture, facultyId, classroomId });
+                        fullConflictSchedule.push({ day, time: time2, ...lecture, facultyId, classroomId });
+                    } else {
+                        const time = LECTURE_TIME_SLOTS[Math.floor(Math.random() * LECTURE_TIME_SLOTS.length)];
+                        const classroomId = theoryClassrooms[0]?.id || 'TBD-ROOM';
+                         if(classroomId === 'TBD-ROOM') warnings.push(`No available theory rooms found.`);
+                        fullConflictSchedule.push({ day, time, ...lecture, facultyId, classroomId });
                     }
                 }
             }
@@ -209,8 +206,8 @@ export async function runGA(input: GenerateTimetableInput) {
         }));
 
         return {
-            summary: `Generated a full 5-day schedule for ${input.classes.length} class sections. ${warnings.length > 0 ? `Encountered ${warnings.length} issues that were force-resolved.` : ''}`,
-            optimizationExplanation: `The engine strictly followed the 5-day week and lab batching rules. Labs were scheduled in 2-hour continuous blocks for Batch-1 and Batch-2 separately. ${warnings.join(' ')}`,
+            summary: `Generated a full 5-day schedule for ${input.classes.length} class sections. ${warnings.length > 0 ? `Encountered and force-resolved ${warnings.length} issues.` : 'All constraints satisfied.'}`,
+            optimizationExplanation: `The engine strictly followed the 5-day week and lab batching rules. Labs were scheduled in 2-hour continuous blocks for Batch-1 and Batch-2 separately.`,
             facultyWorkload,
             semesterTimetables,
             error: warnings.length > 0 ? warnings.join('; ') : undefined,

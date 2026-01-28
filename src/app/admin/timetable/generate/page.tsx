@@ -77,11 +77,11 @@ export default function TimetableGeneratorPage() {
                 existingSchedule,
             });
             
-            if (result && result.semesterTimetables && result.semesterTimetables.length > 0) {
+            if (result) {
                 setGeneratedData(result);
                 setReviewDialogOpen(true);
             } else {
-                 toast({ title: 'Generation Failed', description: result.error || 'The AI engine returned an empty or invalid timetable. Please check constraints.', variant: 'destructive' });
+                 toast({ title: 'Generation Failed', description: 'The AI engine returned an empty response.', variant: 'destructive' });
             }
         } catch (e: any) {
             console.error("Timetable generation caught error:", e);
@@ -165,8 +165,8 @@ export default function TimetableGeneratorPage() {
                     {generatedData && generatedData.error && (
                          <Alert variant="destructive">
                             <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Generation Issues</AlertTitle>
-                            <AlertDescription>{generatedData.error}</AlertDescription>
+                            <AlertTitle>Generation Issues Encountered</AlertTitle>
+                            <AlertDescription className="max-h-24 overflow-y-auto">{generatedData.error}</AlertDescription>
                         </Alert>
                     )}
                     {generatedData && generatedData.semesterTimetables && (

@@ -32,6 +32,7 @@ export const generateTimetableFlow = ai.defineFlow(
         semesterTimetables: [],
         codeChefDay: result.codeChefDay || 'N/A',
         error: result.error,
+        ...result, // Pass through the rest of the successful parts
       };
     }
 
