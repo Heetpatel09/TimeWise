@@ -98,8 +98,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const fullSchedule = [...input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }))];
 
     try {
-        const workingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        
+        const allPossibleDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const facultyWithExperience = calculateFacultyExperience(input.faculty);
         
         const subjectToFacultyMap = new Map<string, string[]>();
@@ -117,6 +116,11 @@ export async function runGA(input: GenerateTimetableInput) {
         const labClassrooms = input.classrooms.filter(c => c.type === 'lab');
 
         for (const classToSchedule of input.classes) {
+            // Assign a random day off for this specific class
+            const randomDayOffIndex = Math.floor(Math.random() * allPossibleDays.length);
+            const dayOff = allPossibleDays[randomDayOffIndex];
+            const workingDays = allPossibleDays.filter(day => day !== dayOff);
+            
             const lecturesToPlace = createLectureListForClass(input.subjects, classToSchedule);
             const labLectures = lecturesToPlace.filter(l => l.isLab);
             const theoryLectures = lecturesToPlace.filter(l => !l.isLab);
@@ -170,10 +174,10 @@ export async function runGA(input: GenerateTimetableInput) {
 
                                         if(!conflictA && !conflictB) {
                                             const genes = [
-                                                { day, time: time1, classId: classToSchedule.id, subjectId: labA_Id, facultyId: facA_Id, classroomId: roomA.id, isLab: true, batch: 'Batch-1' },
-                                                { day, time: time2, classId: classToSchedule.id, subjectId: labA_Id, facultyId: facA_Id, classroomId: roomA.id, isLab: true, batch: 'Batch-1' },
-                                                { day, time: time1, classId: classToSchedule.id, subjectId: labB_Id, facultyId: facB_Id, classroomId: roomB.id, isLab: true, batch: 'Batch-2' },
-                                                { day, time: time2, classId: classToSchedule.id, subjectId: labB_Id, facultyId: facB_Id, classroomId: roomB.id, isLab: true, batch: 'Batch-2' },
+                                                { day, time: time1, classId: classToSchedule.id, subjectId: labA_Id, facultyId: facA_Id, classroomId: roomA.id, isLab: true, batch: 'Batch-1' as const },
+                                                { day, time: time2, classId: classToSchedule.id, subjectId: labA_Id, facultyId: facA_Id, classroomId: roomA.id, isLab: true, batch: 'Batch-1' as const },
+                                                { day, time: time1, classId: classToSchedule.id, subjectId: labB_Id, facultyId: facB_Id, classroomId: roomB.id, isLab: true, batch: 'Batch-2' as const },
+                                                { day, time: time2, classId: classToSchedule.id, subjectId: labB_Id, facultyId: facB_Id, classroomId: roomB.id, isLab: true, batch: 'Batch-2' as const },
                                             ];
                                             generatedSchedule.push(...genes);
                                             fullSchedule.push(...genes);
