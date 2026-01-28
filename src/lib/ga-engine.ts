@@ -18,9 +18,8 @@ interface Gene {
 
 interface LectureToBePlaced {
     subjectId: string;
-    classId: string;
     isLab: boolean;
-    hours: number;
+    classId: string;
     batch?: 'Batch-1' | 'Batch-2';
 }
 
@@ -50,12 +49,12 @@ const LAB_TIME_PAIRS: [string, string][] = [
 ];
 
 const getHoursForSubject = (subject: Subject): number => {
-    if (subject.type === 'lab') return 2; // A lab session is 2 hours
+    if (subject.type === 'lab') return 2;
     if (subject.priority === 'Non Negotiable') return 4;
     if (subject.priority === 'High') return 3;
     if (subject.priority === 'Medium') return 2;
     if (subject.priority === 'Low') return 1;
-    return 2; // Default
+    return 2;
 };
 
 function calculateFacultyExperience(faculty: Faculty[]): (Faculty & { experience: number; level: 'Senior' | 'Mid-Level' | 'Junior' })[] {
@@ -80,22 +79,21 @@ function createLectureListForClass(allSubjects: Subject[], classInfo: Class): Le
         if (sub.id === 'LIB001') continue;
 
         if (sub.type === 'lab') {
-            lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, hours: 2, batch: 'Batch-1' });
-            lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, hours: 2, batch: 'Batch-2' });
+            lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, batch: 'Batch-1' });
+            lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, batch: 'Batch-2' });
         } else {
             const hours = getHoursForSubject(sub);
             for (let i = 0; i < hours; i++) {
-                lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: false, hours: 1 });
+                lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: false });
             }
         }
     }
     return lectures;
 }
 
-
 export async function runGA(input: GenerateTimetableInput) {
     const warnings: string[] = [];
-    const fullConflictSchedule: Gene[] = input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }));
+    let fullConflictSchedule: Gene[] = input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }));
     
     try {
         const workingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -131,9 +129,8 @@ export async function runGA(input: GenerateTimetableInput) {
                     if (placed) break;
 
                     if (lecture.isLab) {
-                         if (!lecture.batch) continue;
+                        if (!lecture.batch) continue;
                         
-                        // Rule: A class cannot have another lab on the same day.
                         if (fullConflictSchedule.some(g => g.classId === lecture.classId && g.day === day && g.isLab)) continue;
 
                         for (const [time1, time2] of LAB_TIME_PAIRS.sort(() => Math.random() - 0.5)) {
@@ -143,8 +140,8 @@ export async function runGA(input: GenerateTimetableInput) {
                                      const isConflict2 = fullConflictSchedule.some(g => g.day === day && g.time === time2 && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lecture.classId && g.batch === lecture.batch)));
 
                                      if (!isConflict1 && !isConflict2) {
-                                        const gene1: Gene = { day, time: time1, ...lecture, facultyId, classroomId: room.id };
-                                        const gene2: Gene = { day, time: time2, ...lecture, facultyId, classroomId: room.id };
+                                        const gene1: Gene = { day, time: time1, classId: lecture.classId, subjectId: lecture.subjectId, facultyId, classroomId: room.id, isLab: true, batch: lecture.batch };
+                                        const gene2: Gene = { day, time: time2, classId: lecture.classId, subjectId: lecture.subjectId, facultyId, classroomId: room.id, isLab: true, batch: lecture.batch };
                                         fullConflictSchedule.push(gene1, gene2);
                                         placed = true;
                                         break;
@@ -159,7 +156,7 @@ export async function runGA(input: GenerateTimetableInput) {
                              for (const room of theoryClassrooms) {
                                 for (const facultyId of shuffledFaculty) {
                                     if (!fullConflictSchedule.some(g => g.day === day && g.time === time && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === lecture.classId))) {
-                                        const gene: Gene = { day, time, ...lecture, facultyId, classroomId: room.id};
+                                        const gene: Gene = { day, time, classId: lecture.classId, subjectId: lecture.subjectId, facultyId, classroomId: room.id, isLab: false };
                                         fullConflictSchedule.push(gene);
                                         placed = true;
                                         break;
@@ -182,13 +179,17 @@ export async function runGA(input: GenerateTimetableInput) {
                         const [time1, time2] = LAB_TIME_PAIRS[Math.floor(Math.random() * LAB_TIME_PAIRS.length)];
                         const classroomId = labClassrooms[0]?.id || 'TBD-LAB';
                         if(classroomId === 'TBD-LAB') warnings.push(`No available lab rooms found.`);
-                        fullConflictSchedule.push({ day, time: time1, ...lecture, facultyId, classroomId });
-                        fullConflictSchedule.push({ day, time: time2, ...lecture, facultyId, classroomId });
+                        
+                        const gene1: Gene = { day, time: time1, classId: lecture.classId, subjectId: lecture.subjectId, facultyId, classroomId, isLab: true, batch: lecture.batch };
+                        const gene2: Gene = { day, time: time2, classId: lecture.classId, subjectId: lecture.subjectId, facultyId, classroomId, isLab: true, batch: lecture.batch };
+                        fullConflictSchedule.push(gene1, gene2);
+
                     } else {
                         const time = LECTURE_TIME_SLOTS[Math.floor(Math.random() * LECTURE_TIME_SLOTS.length)];
                         const classroomId = theoryClassrooms[0]?.id || 'TBD-ROOM';
                          if(classroomId === 'TBD-ROOM') warnings.push(`No available theory rooms found.`);
-                        fullConflictSchedule.push({ day, time, ...lecture, facultyId, classroomId });
+                        const gene: Gene = { day, time, classId: lecture.classId, subjectId: lecture.subjectId, facultyId, classroomId, isLab: false };
+                        fullConflictSchedule.push(gene);
                     }
                 }
             }
