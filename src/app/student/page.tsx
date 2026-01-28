@@ -30,6 +30,7 @@ import { getAssignmentsForStudent } from '@/lib/services/assignments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BadgeCard from './components/BadgeCard';
 import LeaderboardDialog from './components/LeaderboardDialog';
+import { Badge } from '@/components/ui/badge';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
     <div className="flex flex-col">
@@ -297,6 +298,36 @@ export default function StudentDashboard() {
                                 <h3 className="font-semibold text-xs">{feature.title}</h3>
                             </Card>
                         ))}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Leave Request Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {dashboardData.leaveRequests.length > 0 ? (
+                            <div className="space-y-4">
+                                {dashboardData.leaveRequests.slice(0, 3).map(request => (
+                                    <div key={request.id} className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                {format(new Date(request.startDate), 'MMM dd')} - {format(new Date(request.endDate), 'MMM dd')}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground truncate">{request.reason}</p>
+                                        </div>
+                                        <Badge variant={
+                                            request.status === 'approved' ? 'default' :
+                                            request.status === 'rejected' ? 'destructive' :
+                                            'secondary'
+                                        } className="capitalize">
+                                            {request.status}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No leave requests submitted yet.</p>
+                        )}
                     </CardContent>
                 </Card>
                 <Card>
