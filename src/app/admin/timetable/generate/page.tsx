@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +14,7 @@ import { getClassrooms } from '@/lib/services/classrooms';
 import { getSchedule, replaceSchedule } from '@/lib/services/schedule';
 import { getDepartments } from '@/lib/services/departments';
 import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOutput, Department } from '@/lib/types';
-import { Loader2, ArrowLeft, Bot } from 'lucide-react';
+import { Loader2, ArrowLeft, Bot, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
@@ -61,23 +62,8 @@ export default function TimetableGeneratorPage() {
 
         const relevantClasses = classes.filter(c => c.departmentId === selectedDepartmentId);
         
-        // Data Cleaning: Remove null properties that cause schema validation errors.
-        const cleanSubjects = JSON.parse(JSON.stringify(subjects)).map((sub: any) => {
-            if (sub.priority === null) delete sub.priority;
-            if (sub.weeklyHours === null) delete sub.weeklyHours;
-            return sub;
-        });
-
-        const cleanFaculty = JSON.parse(JSON.stringify(faculty)).map((fac: any) => {
-            if (fac.maxWeeklyHours === null) delete fac.maxWeeklyHours;
-            if (fac.designatedYear === null) delete fac.designatedYear;
-            if (fac.dateOfJoining === null) delete fac.dateOfJoining;
-            if (fac.code === null) delete fac.code;
-            if (fac.designation === null) delete fac.designation;
-            if (fac.employmentType === null) delete fac.employmentType;
-            if (fac.roles === null) delete fac.roles;
-            return fac;
-        });
+        const cleanSubjects = JSON.parse(JSON.stringify(subjects));
+        const cleanFaculty = JSON.parse(JSON.stringify(faculty));
 
         try {
             const result = await generateTimetableFlow({
@@ -91,13 +77,11 @@ export default function TimetableGeneratorPage() {
                 existingSchedule,
             });
             
-            if (result && result.error) {
-                toast({ title: 'Generation Failed', description: result.error, variant: 'destructive', duration: 10000 });
-            } else if (result && result.semesterTimetables && result.semesterTimetables.length > 0) {
+            if (result && result.semesterTimetables && result.semesterTimetables.length > 0) {
                 setGeneratedData(result);
                 setReviewDialogOpen(true);
             } else {
-                 toast({ title: 'Generation Failed', description: 'The AI engine returned an unexpected response or could not generate a timetable with the given constraints.', variant: 'destructive' });
+                 toast({ title: 'Generation Failed', description: result.error || 'The AI engine returned an empty or invalid timetable. Please check constraints.', variant: 'destructive' });
             }
         } catch (e: any) {
             console.error("Timetable generation caught error:", e);
@@ -181,7 +165,8 @@ export default function TimetableGeneratorPage() {
                     </DialogHeader>
                     {generatedData && generatedData.error && (
                          <Alert variant="destructive">
-                            <AlertTitle>Generation Error</AlertTitle>
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Generation Issues</AlertTitle>
                             <AlertDescription>{generatedData.error}</AlertDescription>
                         </Alert>
                     )}
@@ -275,7 +260,7 @@ export default function TimetableGeneratorPage() {
                     )}
                     <DialogFooter className="mt-4">
                         <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleApplySchedule} disabled={isApplying || !generatedData || !!generatedData.error}>
+                        <Button onClick={handleApplySchedule} disabled={isApplying || !generatedData || !generatedData.semesterTimetables || generatedData.semesterTimetables.length === 0}>
                             {isApplying && <Loader2 className="animate-spin mr-2" />}
                             Apply Full Schedule
                         </Button>
