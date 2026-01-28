@@ -59,3 +59,5 @@ const generateExamSchedule = ai.defineFlow(
 export async function generateExamScheduleFlow(input: GenerateExamScheduleInput): Promise<GenerateExamScheduleOutput> {
     return generateExamSchedule(input);
 }
+
+    
