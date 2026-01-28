@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -96,28 +94,45 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
         e.preventDefault();
         if (!students) return;
 
-        const term = quickMarkValue.trim().toLowerCase();
-        
-        const studentToMark = students.find(
-            s => s.rollNumber.toString() === term || s.name.toLowerCase().includes(term)
-        );
+        const terms = quickMarkValue.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
+        const foundStudents: Student[] = [];
+        const notFoundTerms: string[] = [];
+        const newAttendance = { ...attendance };
 
-        if (studentToMark) {
-            if (attendance[studentToMark.id] !== 'present') {
-                handleStatusChange(studentToMark.id, 'present');
+        terms.forEach(term => {
+            const studentToMark = students.find(
+                s => s.rollNumber.toString() === term || s.name.toLowerCase().includes(term)
+            );
+
+            if (studentToMark) {
+                if (newAttendance[studentToMark.id] !== 'present') {
+                    newAttendance[studentToMark.id] = 'present';
+                }
+                foundStudents.push(studentToMark);
+            } else {
+                notFoundTerms.push(term);
+            }
+        });
+
+        if (foundStudents.length > 0) {
+            setAttendance(newAttendance);
+            let description = `${foundStudents.map(s => s.name).join(', ')}.`;
+            if (notFoundTerms.length > 0) {
+                description += ` Could not find: ${notFoundTerms.join(', ')}.`;
             }
             toast({
-                title: 'Marked Present',
-                description: `${studentToMark.name} is marked as present.`,
+                title: `Marked ${foundStudents.length} student(s) present`,
+                description: description,
             });
-            setQuickMarkValue('');
         } else {
             toast({
-                title: 'Student Not Found',
-                description: `No student found matching "${quickMarkValue}".`,
+                title: 'Students Not Found',
+                description: `No students found matching: ${notFoundTerms.join(', ')}.`,
                 variant: 'destructive',
             });
         }
+
+        setQuickMarkValue('');
     }
   };
 
@@ -165,7 +180,7 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
                 <Label htmlFor="quick-mark">Quick Mark</Label>
                 <Input
                     id="quick-mark"
-                    placeholder="Enter Roll No. or Name and press Enter to mark present"
+                    placeholder="Enter Roll No(s) or Name(s), comma-separated..."
                     value={quickMarkValue}
                     onChange={(e) => setQuickMarkValue(e.target.value)}
                     onKeyDown={handleQuickMark}
@@ -236,4 +251,3 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     </Dialog>
   );
 }
-
