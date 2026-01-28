@@ -49,13 +49,25 @@ export async function getStudentAttendance(studentId: string): Promise<EnrichedA
 export async function upsertAttendance(records: Omit<Attendance, 'id' | 'timestamp' | 'isLocked'>[]): Promise<void> {
     const db = getDb();
     
-    // Check if the attendance slot is still editable (before 7 PM on the lecture day)
     const now = new Date();
     const lockTime = new Date(records[0].date);
-    lockTime.setHours(19, 0, 0, 0); // 7:00 PM on the lecture day
+    lockTime.setHours(19, 0, 0, 0);
 
+    // Allow edits on the same day before 7 PM
     if (now > lockTime) {
-        throw new Error("Attendance can no longer be modified. The lock time was 7:00 PM.");
+        // Check if we are trying to modify a locked record from a previous day
+        const firstRecord = records[0];
+        const existingRecordForCheck: Pick<Attendance, 'isLocked'> | undefined = db.prepare(`
+            SELECT isLocked FROM attendance 
+            WHERE scheduleId = ? AND studentId = ? AND date = ?`
+        ).get(firstRecord.scheduleId, firstRecord.studentId, firstRecord.date) as any;
+
+        if (existingRecordForCheck?.isLocked) {
+             throw new Error("Attendance is locked by an administrator and cannot be modified.");
+        }
+        if (new Date(firstRecord.date).toDateString() !== now.toDateString()) {
+            throw new Error("Attendance for past dates cannot be modified.");
+        }
     }
     
     const transaction = db.transaction(() => {

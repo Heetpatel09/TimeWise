@@ -75,13 +75,12 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
   const handleSave = () => {
     if (!slot) return;
     const records = Object.entries(attendance)
-        .filter(([studentId, status]) => status !== 'disputed') // Don't save over a student's dispute
         .map(([studentId, status]) => ({
       scheduleId: slot.id,
       studentId,
       date: dateString,
       status,
-    }));
+    })) as Omit<Attendance, 'id' | 'timestamp' | 'isLocked'>[];
     mutation.mutate(records);
   };
   
@@ -207,19 +206,19 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
                         <Checkbox 
                             checked={attendance[student.id] === 'present'}
                             onCheckedChange={(checked) => handleStatusChange(student.id, checked ? 'present' : 'absent')}
-                            disabled={attendance[student.id] === 'disputed'}
                         />
                     </TableCell>
                     <TableCell>{student.name}</TableCell>
                     <TableCell className="text-right">
-                       {attendance[student.id] === 'disputed' ? (
-                           <Badge variant="secondary" className="bg-yellow-400 text-yellow-900">
-                               <HelpCircle className="h-3 w-3 mr-1" />
-                               Disputed
-                           </Badge>
-                       ) : (
+                       <div className="flex items-center justify-end gap-4">
+                           {attendance[student.id] === 'disputed' && (
+                               <Badge variant="secondary" className="bg-yellow-400 text-yellow-900">
+                                   <HelpCircle className="h-3 w-3 mr-1" />
+                                   Disputed
+                               </Badge>
+                           )}
                            <RadioGroup 
-                             value={attendance[student.id] || 'present'}
+                             value={attendance[student.id] === 'disputed' ? '' : (attendance[student.id] || 'present')}
                              onValueChange={(value: 'present' | 'absent') => handleStatusChange(student.id, value)}
                              className="justify-end"
                             >
@@ -232,7 +231,7 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
                                 <Label htmlFor={`absent-${student.id}`}>Absent</Label>
                               </div>
                             </RadioGroup>
-                       )}
+                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
