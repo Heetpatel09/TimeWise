@@ -204,15 +204,21 @@ export default function TimetableGeneratorPage() {
                                                         <TableRow key={day}>
                                                             <TableCell className="font-semibold">{day}</TableCell>
                                                             {ALL_TIME_SLOTS.map(time => {
-                                                                const slot = st.timetable.find(g => g.day === day && g.time === time);
-                                                                const subject = slot ? subjects?.find(s => s.id === slot.subjectId) : null;
+                                                                const slotsInCell = st.timetable.filter(g => g.day === day && g.time === time);
                                                                 return (
-                                                                    <TableCell key={time}>
-                                                                        {slot && subject ? (
-                                                                            <div className="text-xs">
-                                                                                <div>{subject.name} {slot.batch && <span className='font-bold'>({slot.batch})</span>}</div>
-                                                                                <div className="text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</div>
-                                                                                <div className="text-muted-foreground font-bold">{classrooms?.find(c=>c.id === slot.classroomId)?.name}</div>
+                                                                    <TableCell key={time} className="p-1 align-top">
+                                                                        {slotsInCell.length > 0 ? (
+                                                                            <div className="space-y-1">
+                                                                                {slotsInCell.map(slot => {
+                                                                                    const subject = subjects?.find(s => s.id === slot.subjectId);
+                                                                                    return (
+                                                                                        <div key={slot.subjectId + (slot.batch || '')} className="text-xs p-1 rounded bg-muted">
+                                                                                            <div>{subject?.name} {slot.batch && <span className='font-bold'>({slot.batch})</span>}</div>
+                                                                                            <div className="text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</div>
+                                                                                            <div className="text-muted-foreground font-bold">{classrooms?.find(c=>c.id === slot.classroomId)?.name}</div>
+                                                                                        </div>
+                                                                                    )
+                                                                                })}
                                                                             </div>
                                                                         ) : null}
                                                                     </TableCell>
@@ -264,3 +270,5 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
+
+    

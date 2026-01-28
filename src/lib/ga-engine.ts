@@ -41,11 +41,10 @@ const LECTURE_TIME_SLOTS = [
     '01:15 PM - 02:10 PM'
 ];
 
-// Continuous 2-hour slots for labs
+// Labs can only be in the first two or last two slots
 const LAB_TIME_PAIRS: [string, string][] = [
-    ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'],
-    ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'],
-    ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM']
+    ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'], // Morning slot
+    ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM']  // Afternoon slot
 ];
 
 const getHoursForSubject = (subject: Subject): number => {
@@ -79,6 +78,7 @@ function createLectureListForClass(allSubjects: Subject[], classInfo: Class): Le
         if (sub.id === 'LIB001') continue;
 
         if (sub.type === 'lab') {
+            // Labs must have two batches
             lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, batch: 'Batch-1' });
             lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, batch: 'Batch-2' });
         } else {
@@ -94,7 +94,8 @@ function createLectureListForClass(allSubjects: Subject[], classInfo: Class): Le
 export async function runGA(input: GenerateTimetableInput) {
     const warnings: string[] = [];
     let generatedSchedule: Gene[] = [];
-    const fullSchedule = [...generatedSchedule, ...input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }))];
+    // Start with existing schedule from other departments to avoid conflicts
+    const fullSchedule = [...input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }))];
 
     try {
         const workingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -146,7 +147,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
                 for (const day of workingDays.sort(() => Math.random() - 0.5)) {
                     if(placed) break;
-                    // Check if class already has a lab on this day
+                    // Check if class already has labs on this day
                     if (fullSchedule.some(g => g.classId === classToSchedule.id && g.day === day && g.isLab)) continue;
 
                     for (const [time1, time2] of LAB_TIME_PAIRS.sort(() => Math.random() - 0.5)) {
@@ -194,7 +195,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
             // --- 2. Handle remaining/unpaired labs ---
             const remainingLabSubjects = classLabSubjects.filter(subId => !placedLabSubjectsForClass.has(subId));
-            for (const labSubId of remainingLabSubjects) {
+             for (const labSubId of remainingLabSubjects) {
                 const labBatches = labLectures.filter(l => l.subjectId === labSubId);
                 for (const lab of labBatches) {
                     let placed = false;
@@ -212,7 +213,7 @@ export async function runGA(input: GenerateTimetableInput) {
                                     const facData = facultyWithExperience.find(f => f.id === facultyId);
                                     if (!facData || (facultyWorkload.get(facultyId) || 0) + 2 > (facData.maxWeeklyHours || 18)) continue;
                                     
-                                    const conflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id));
+                                    const conflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lab.classId && g.batch === lab.batch)));
                                     if (!conflict) {
                                         const genes = [
                                             { day, time: time1, ...lab, facultyId, classroomId: room.id },
