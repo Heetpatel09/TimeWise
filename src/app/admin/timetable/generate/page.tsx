@@ -62,6 +62,7 @@ export default function TimetableGeneratorPage() {
 
         const relevantClasses = classes.filter(c => c.departmentId === selectedDepartmentId);
         
+        // Deep copy to avoid mutation issues with server actions
         const cleanSubjects = JSON.parse(JSON.stringify(subjects));
         const cleanFaculty = JSON.parse(JSON.stringify(faculty));
 
@@ -270,5 +271,3 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
-
-    

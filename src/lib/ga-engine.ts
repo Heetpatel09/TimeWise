@@ -116,7 +116,6 @@ export async function runGA(input: GenerateTimetableInput) {
         const labClassrooms = input.classrooms.filter(c => c.type === 'lab');
 
         for (const classToSchedule of input.classes) {
-            // Assign a random day off for this specific class
             const randomDayOffIndex = Math.floor(Math.random() * allPossibleDays.length);
             const dayOff = allPossibleDays[randomDayOffIndex];
             const workingDays = allPossibleDays.filter(day => day !== dayOff);

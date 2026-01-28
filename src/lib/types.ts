@@ -139,7 +139,6 @@ const SubjectSchema = z.object({
     departmentId: z.string(),
     isSpecial: z.boolean().optional(),
     priority: z.enum(['Non Negotiable', 'High', 'Medium', 'Low']).nullable().optional(),
-    weeklyHours: z.number().optional(),
 });
 
 const FacultySchema = z.object({
@@ -230,7 +229,6 @@ export interface Subject {
   departmentId: string;
   isSpecial?: boolean;
   priority?: SubjectPriority | null;
-  weeklyHours?: number;
 }
 
 export interface Class {
