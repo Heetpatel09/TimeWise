@@ -201,6 +201,17 @@ export const GenerateTimetableOutputSchema = z.object({
 });
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
 
+export const GenerateTeacherAllocationInputSchema = z.object({
+  subjects: z.array(SubjectSchema),
+  classes: z.array(ClassSchema),
+  faculty: z.array(FacultySchema),
+});
+export type GenerateTeacherAllocationInput = z.infer<typeof GenerateTeacherAllocationInputSchema>;
+
+export const GenerateTeacherAllocationOutputSchema = z.record(z.record(z.array(z.string())));
+export type GenerateTeacherAllocationOutput = z.infer<typeof GenerateTeacherAllocationOutputSchema>;
+
+
 export type SubjectPriority = 'Non Negotiable' | 'High' | 'Medium' | 'Low';
 
 export interface Department {

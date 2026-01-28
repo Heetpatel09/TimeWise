@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview This file is the entry point for Genkit flows in production.
  */
@@ -13,6 +14,7 @@ import { resolveScheduleConflictsFlow } from '@/ai/flows/resolve-schedule-confli
 import { generateExamScheduleFlow } from '@/ai/flows/generate-exam-schedule-flow';
 import { generateSeatingArrangementFlow } from '@/ai/flows/generate-seating-arrangement-flow';
 import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
+import { generateTeacherAllocationFlow } from '@/ai/flows/generate-teacher-allocation-flow';
 
 // This export is necessary for Genkit to discover and serve the flows.
 export const POST = createNextApiHandler({
@@ -24,5 +26,6 @@ export const POST = createNextApiHandler({
     generateExamScheduleFlow,
     generateSeatingArrangementFlow,
     generateTimetableFlow,
+    generateTeacherAllocationFlow,
   ],
 });

@@ -16,6 +16,7 @@ import { resolveScheduleConflictsFlow } from './flows/resolve-schedule-conflicts
 import { generateExamScheduleFlow } from './flows/generate-exam-schedule-flow';
 import { generateSeatingArrangementFlow } from './flows/generate-seating-arrangement-flow';
 import { generateTimetableFlow } from './flows/generate-timetable-flow';
+import { generateTeacherAllocationFlow } from './flows/generate-teacher-allocation-flow';
 
 
 export const flows = [
@@ -26,4 +27,5 @@ export const flows = [
   generateExamScheduleFlow,
   generateSeatingArrangementFlow,
   generateTimetableFlow,
+  generateTeacherAllocationFlow,
 ];
