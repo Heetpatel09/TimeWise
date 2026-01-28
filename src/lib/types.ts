@@ -174,16 +174,9 @@ export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema
 
 export const GenerateTimetableOutputSchema = z.object({
   summary: z.string(),
-  facultyWorkload: z.array(z.object({
-    facultyId: z.string(),
-    facultyName: z.string(),
-    experience: z.number(),
-    level: z.string(),
-    maxHours: z.number(),
-    assignedHours: z.number(),
-  })),
-  semesterTimetables: z.array(z.object({
-    semester: z.number(),
+  classTimetables: z.array(z.object({
+    classId: z.string(),
+    className: z.string(),
     timetable: z.array(z.object({
         day: z.string(),
         time: z.string(),
@@ -194,7 +187,14 @@ export const GenerateTimetableOutputSchema = z.object({
         batch: z.string().optional(),
     }))
   })),
-  codeChefDay: z.string().optional(),
+  facultyWorkload: z.array(z.object({
+    facultyId: z.string(),
+    facultyName: z.string(),
+    experience: z.number(),
+    level: z.string(),
+    maxHours: z.number(),
+    assignedHours: z.number(),
+  })),
   error: z.string().optional(),
   optimizationExplanation: z.string().optional(),
 });

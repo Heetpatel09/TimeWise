@@ -108,6 +108,23 @@ export async function replaceSchedule(schedule: Schedule[]) {
     return Promise.resolve({ success: true });
 }
 
+export async function applyScheduleForClass(classId: string, scheduleForClass: Omit<Schedule, 'id'>[]) {
+    const db = getDb();
+    db.transaction(() => {
+        // Delete old schedule for this class only
+        db.prepare('DELETE FROM schedule WHERE classId = ?').run(classId);
+        // Insert new schedule for this class
+        const insertStmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time, batch) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        for (const item of scheduleForClass) {
+            const id = `SCH${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
+            insertStmt.run(id, classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time, item.batch || null);
+        }
+    })();
+    revalidateAll();
+    return { success: true };
+}
+
+
 export async function getScheduleForFacultyInRange(facultyId: string, startDate: string, endDate: string): Promise<EnrichedSchedule[]> {
     const db = getDb();
     const start = new Date(startDate);
@@ -184,5 +201,3 @@ export async function approveAndReassign(notifications: Omit<Notification, 'id' 
     transaction();
     revalidateAll();
 }
-
-    
