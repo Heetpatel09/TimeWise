@@ -103,7 +103,7 @@ export default function TimetableGeneratorPage() {
             await applyScheduleForClass(classId, timetable);
             toast({ title: "Schedule Applied!", description: `The new timetable for this section has been saved.` });
             queryClient.invalidateQueries({ queryKey: ['schedule'] });
-            // Optional: Close dialog or indicate success on the tab
+            // You might want to update the state here to show it's applied, e.g., by adding a property to generatedData
         } catch(e: any) {
             toast({ title: 'Failed to Apply', description: e.message, variant: 'destructive' });
         } finally {
@@ -167,7 +167,7 @@ export default function TimetableGeneratorPage() {
                             <AlertDescription className="max-h-24 overflow-y-auto">{generatedData.error}</AlertDescription>
                         </Alert>
                     )}
-                    {generatedData && generatedData.classTimetables && (
+                    {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
                         <Tabs defaultValue={generatedData.classTimetables[0]?.classId}>
                             <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${generatedData.classTimetables.length}, minmax(0, 1fr))`}}>
                                 {generatedData.classTimetables.map(ct => (
@@ -226,7 +226,7 @@ export default function TimetableGeneratorPage() {
                                 </TabsContent>
                             ))}
                         </Tabs>
-                    )}
+                    ) : <p className="text-center py-8 text-muted-foreground">No timetable could be generated with the current settings.</p>}
                     <DialogFooter className="mt-4">
                         <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>Close</Button>
                     </DialogFooter>
