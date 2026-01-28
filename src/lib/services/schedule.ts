@@ -48,8 +48,8 @@ export async function addSchedule(item: Omit<Schedule, 'id'>) {
     
     const id = `SCH${Date.now()}`;
     const newItem: Schedule = { ...item, id };
-    const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time);
+    const stmt = db.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time, batch) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time, item.batch || null);
     revalidateAll();
     return Promise.resolve(newItem);
 }
@@ -65,8 +65,8 @@ export async function updateSchedule(updatedItem: Schedule) {
     // Check for conflicts before updating
     // checkForConflict(updatedItem, updatedItem.id);
 
-    const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, classroomId = ?, day = ?, time = ? WHERE id = ?');
-    stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time, updatedItem.id);
+    const stmt = db.prepare('UPDATE schedule SET classId = ?, subjectId = ?, facultyId = ?, classroomId = ?, day = ?, time = ?, batch = ? WHERE id = ?');
+    stmt.run(updatedItem.classId, updatedItem.subjectId, updatedItem.facultyId, updatedItem.classroomId, updatedItem.day, updatedItem.time, updatedItem.batch || null, updatedItem.id);
     
     revalidateAll();
     return Promise.resolve(updatedItem);
@@ -93,12 +93,12 @@ export async function replaceSchedule(schedule: Schedule[]) {
         // Clear the existing schedule
         dbInstance.prepare('DELETE FROM schedule').run();
 
-        const insertStmt = dbInstance.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const insertStmt = dbInstance.prepare('INSERT INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time, batch) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
         for (const item of schedule) {
             // Use existing ID or generate a new one if it's missing
             const id = item.id || `SCH${Date.now()}${Math.random().toString(16).slice(2, 8)}`;
-            insertStmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time);
+            insertStmt.run(id, item.classId, item.subjectId, item.facultyId, item.classroomId, item.day, item.time, item.batch || null);
         }
     });
 

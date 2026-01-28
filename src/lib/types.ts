@@ -53,6 +53,7 @@ const ScheduleSlotSchema = z.object({
   classroomName: z.string(),
   day: z.string(),
   time: z.string(),
+  batch: z.string().optional(),
 });
 
 export const ResolveConflictsInputSchema = z.object({
@@ -191,6 +192,7 @@ export const GenerateTimetableOutputSchema = z.object({
         subjectId: z.string(),
         facultyId: z.string(),
         classroomId: z.string(),
+        batch: z.string().optional(),
     }))
   })),
   codeChefDay: z.string().optional(),
@@ -310,6 +312,7 @@ export interface Schedule {
   classroomId: string;
   day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
   time: string; // e.g., "09:00 - 10:00"
+  batch?: string;
 }
 
 export interface EnrichedSchedule extends Schedule {

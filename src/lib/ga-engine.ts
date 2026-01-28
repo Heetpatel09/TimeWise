@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { GenerateTimetableInput, Schedule, Subject, Faculty, Classroom, Department } from './types';
+import type { Class, Department, Faculty, GenerateTimetableInput, Schedule, Subject } from './types';
 import { differenceInYears, parseISO } from 'date-fns';
 
 // --- Data Structures ---
@@ -13,6 +13,7 @@ interface Gene {
     facultyId: string;
     classroomId: string;
     isLab: boolean;
+    batch?: 'Batch-1' | 'Batch-2';
 }
 
 interface LectureToBePlaced {
@@ -20,6 +21,7 @@ interface LectureToBePlaced {
     classId: string;
     isLab: boolean;
     hours: number;
+    batch?: 'Batch-1' | 'Batch-2';
 }
 
 interface FacultyWorkload {
@@ -40,6 +42,7 @@ const LECTURE_TIME_SLOTS = [
     '01:15 PM - 02:10 PM'
 ];
 
+// Continuous 2-hour slots for labs
 const LAB_TIME_PAIRS: [string, string][] = [
     ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'],
     ['09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM'],
@@ -64,8 +67,8 @@ function calculateFacultyExperience(faculty: Faculty[]): (Faculty & { experience
         const experience = f.dateOfJoining ? differenceInYears(today, parseISO(f.dateOfJoining)) : 0;
         let level: 'Senior' | 'Mid-Level' | 'Junior';
         if (experience >= 7) level = 'Senior';
-        else if (experience >= 3) level = 'Mid-Level';
-        else level = 'Junior';
+        else if (experience >= 3) level = 'Junior';
+        else level = 'Mid-Level';
         return { ...f, experience, level };
     });
 }
@@ -77,12 +80,14 @@ function createLectureListForClass(allSubjects: Subject[], classInfo: Class): Le
     );
 
     for (const sub of classSubjects) {
-        if (sub.id === 'LIB001') continue; // Library handled separately or not at all
+        if (sub.id === 'LIB001') continue;
 
-        const hours = getHoursForSubject(sub);
         if (sub.type === 'lab') {
-            lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, hours: 2 });
+            // Batching Rule: Create two separate 2-hour lab sessions, one for each batch.
+            lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, hours: 2, batch: 'Batch-1' });
+            lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: true, hours: 2, batch: 'Batch-2' });
         } else {
+            const hours = getHoursForSubject(sub);
             for (let i = 0; i < hours; i++) {
                 lectures.push({ classId: classInfo.id, subjectId: sub.id, isLab: false, hours: 1 });
             }
@@ -91,27 +96,20 @@ function createLectureListForClass(allSubjects: Subject[], classInfo: Class): Le
     return lectures;
 }
 
+
 export async function runGA(input: GenerateTimetableInput) {
     const warnings: string[] = [];
-
+    const fullConflictSchedule: Gene[] = input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }));
+    
     try {
-        const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const codeChefDay = allDays[Math.floor(Math.random() * allDays.length)];
-        const workingDays = allDays.filter(d => d !== codeChefDay);
+        const workingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         
         const facultyWithExperience = calculateFacultyExperience(input.faculty);
-        const facultyWorkload: FacultyWorkload[] = facultyWithExperience.map(f => ({
-            facultyId: f.id, facultyName: f.name, experience: f.experience, level: f.level,
-            maxHours: f.maxHours || 18, assignedHours: 0,
-        }));
         
-        const fullConflictSchedule: Gene[] = input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }));
         const subjectToFacultyMap = new Map<string, string[]>();
         input.faculty.forEach(f => {
             f.allottedSubjects?.forEach(subId => {
-                if (!subjectToFacultyMap.has(subId)) {
-                    subjectToFacultyMap.set(subId, []);
-                }
+                if (!subjectToFacultyMap.has(subId)) subjectToFacultyMap.set(subId, []);
                 subjectToFacultyMap.get(subId)!.push(f.id);
             });
         });
@@ -121,74 +119,89 @@ export async function runGA(input: GenerateTimetableInput) {
 
         for (const classToSchedule of input.classes) {
             const lecturesToPlace = createLectureListForClass(input.subjects, classToSchedule);
-            const placedInClass = new Set<string>(); // Tracks subject-hours placed for this class
 
-            const placeLecture = (lecture: LectureToBePlaced, isRetry = false) => {
-                const availableFaculty = subjectToFacultyMap.get(lecture.subjectId) || [];
-                if (availableFaculty.length === 0) {
-                    warnings.push(`No faculty assigned for subject ${input.subjects.find(s=>s.id === lecture.subjectId)?.name}. Skipping.`);
-                    return true; // Skip this lecture
+            for (const lecture of lecturesToPlace) {
+                let placed = false;
+                const assignedFacultyIds = subjectToFacultyMap.get(lecture.subjectId) || [];
+                if (assignedFacultyIds.length === 0) {
+                    warnings.push(`No faculty for ${input.subjects.find(s=>s.id === lecture.subjectId)?.name}.`);
+                    continue;
                 }
+                
+                // Shuffle resources for variety
+                const shuffledDays = [...workingDays].sort(() => Math.random() - 0.5);
+                const shuffledFaculty = [...assignedFacultyIds].sort(() => Math.random() - 0.5);
 
-                // Try to find a perfect slot
-                for (const day of workingDays.sort(() => Math.random() - 0.5)) {
+                for (const day of shuffledDays) {
                     if (lecture.isLab) {
-                         // One lab per day for a class
+                         if (!lecture.batch) { // Should not happen with new logic
+                             warnings.push(`Lab for ${lecture.subjectId} is missing batch info.`);
+                             continue;
+                         }
+                        // One lab per batch per week is already handled by lecture list construction
+                        // A class cannot have two different labs at the same time (even for different batches)
                         if (fullConflictSchedule.some(g => g.classId === lecture.classId && g.day === day && g.isLab)) continue;
 
                         for (const [time1, time2] of LAB_TIME_PAIRS.sort(() => Math.random() - 0.5)) {
                             for (const room of labClassrooms) {
-                                for (const facultyId of availableFaculty) {
+                                for (const facultyId of shuffledFaculty) {
                                      const isConflict1 = fullConflictSchedule.some(g => g.day === day && g.time === time1 && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === lecture.classId));
                                      const isConflict2 = fullConflictSchedule.some(g => g.day === day && g.time === time2 && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === lecture.classId));
 
                                      if (!isConflict1 && !isConflict2) {
-                                        const gene1: Gene = { day, time: time1, ...lecture, facultyId, classroomId: room.id };
-                                        const gene2: Gene = { day, time: time2, ...lecture, facultyId, classroomId: room.id };
+                                        const gene1: Gene = { day, time: time1, ...lecture, facultyId, classroomId: room.id, batch: lecture.batch };
+                                        const gene2: Gene = { day, time: time2, ...lecture, facultyId, classroomId: room.id, batch: lecture.batch };
                                         fullConflictSchedule.push(gene1, gene2);
-                                        placedInClass.add(`${lecture.subjectId}-lab`);
-                                        return true;
+                                        placed = true;
+                                        break;
                                      }
                                 }
+                                if(placed) break;
                             }
+                            if(placed) break;
                         }
-                    } else {
-                        // Max 2 theory classes of same subject per day
-                        const todaySubjectCount = fullConflictSchedule.filter(g => g.classId === lecture.classId && g.day === day && g.subjectId === lecture.subjectId && !g.isLab).length;
-                        if (todaySubjectCount >= 2) continue;
-
+                    } else { // Theory
                         for (const time of LECTURE_TIME_SLOTS.sort(() => Math.random() - 0.5)) {
                              for (const room of theoryClassrooms) {
-                                for (const facultyId of availableFaculty) {
+                                for (const facultyId of shuffledFaculty) {
                                     if (!fullConflictSchedule.some(g => g.day === day && g.time === time && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === lecture.classId))) {
                                         const gene: Gene = { day, time, ...lecture, facultyId, classroomId: room.id};
                                         fullConflictSchedule.push(gene);
-                                        placedInClass.add(`${lecture.subjectId}-theory-${Date.now()}`); // Unique key for each hour
-                                        return true;
+                                        placed = true;
+                                        break;
                                     }
                                 }
+                                if(placed) break;
                             }
+                             if(placed) break;
                         }
                     }
+                    if(placed) break;
                 }
-                return false; // Could not place
-            };
-            
-            // Place all lectures for the class
-            lecturesToPlace.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
-            for (const lecture of lecturesToPlace) {
-                const key = lecture.isLab ? `${lecture.subjectId}-lab` : `${lecture.subjectId}-theory`;
-                if (!placeLecture(lecture)) {
-                    warnings.push(`Could not find a perfect slot for ${input.subjects.find(s=>s.id===lecture.subjectId)?.name}. The schedule may have conflicts.`);
-                    // Force place logic here if needed, for now, just warn.
+                 if (!placed) {
+                    warnings.push(`Could not place ${lecture.isLab ? 'lab' : 'theory'} for ${input.subjects.find(s=>s.id === lecture.subjectId)?.name}. Force-placing may cause conflicts.`);
+                    // Force-place logic as a last resort
+                    const day = workingDays[0];
+                    const time = LECTURE_TIME_SLOTS[0];
+                    const facultyId = shuffledFaculty[0];
+                    const classroomId = lecture.isLab ? labClassrooms[0]?.id : theoryClassrooms[0]?.id;
+                    if (classroomId) {
+                        if (lecture.isLab) {
+                           fullConflictSchedule.push({ day, time: LAB_TIME_PAIRS[0][0], ...lecture, facultyId, classroomId, batch: lecture.batch });
+                           fullConflictSchedule.push({ day, time: LAB_TIME_PAIRS[0][1], ...lecture, facultyId, classroomId, batch: lecture.batch });
+                        } else {
+                           fullConflictSchedule.push({ day, time, ...lecture, facultyId, classroomId });
+                        }
+                    }
                 }
             }
         }
         
-        // Final faculty workload calculation
-        facultyWorkload.forEach(fw => {
-            fw.assignedHours = fullConflictSchedule.filter(g => g.facultyId === fw.facultyId).length;
-        });
+        const facultyWorkload: FacultyWorkload[] = facultyWithExperience.map(f => ({
+            facultyId: f.id, facultyName: f.name, experience: f.experience, level: f.level,
+            maxHours: f.maxWeeklyHours || 18, 
+            assignedHours: fullConflictSchedule.filter(g => g.facultyId === f.id).length,
+        }));
 
         const semesterTimetables = input.classes.map(classInfo => ({
             semester: classInfo.semester,
@@ -196,11 +209,10 @@ export async function runGA(input: GenerateTimetableInput) {
         }));
 
         return {
-            summary: `Successfully generated a human-like schedule for ${input.classes.length} classes. ${warnings.length > 0 ? `Encountered ${warnings.length} issues.` : ''}`,
-            optimizationExplanation: `The engine prioritized lab sessions and distributed theory classes across 5 working days, respecting faculty assignments. ${warnings.join(' ')}`,
+            summary: `Generated a full 5-day schedule for ${input.classes.length} class sections. ${warnings.length > 0 ? `Encountered ${warnings.length} issues that were force-resolved.` : ''}`,
+            optimizationExplanation: `The engine strictly followed the 5-day week and lab batching rules. Labs were scheduled in 2-hour continuous blocks for Batch-1 and Batch-2 separately. ${warnings.join(' ')}`,
             facultyWorkload,
             semesterTimetables,
-            codeChefDay,
             error: warnings.length > 0 ? warnings.join('; ') : undefined,
         };
 

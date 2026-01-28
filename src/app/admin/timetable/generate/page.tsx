@@ -67,7 +67,7 @@ export default function TimetableGeneratorPage() {
 
         try {
             const result = await generateTimetableFlow({
-                days: ALL_DAYS,
+                days: ALL_DAYS.filter(d => d !== 'Saturday'), // Generate for Mon-Fri
                 timeSlots: ALL_TIME_SLOTS,
                 classes: relevantClasses,
                 subjects: cleanSubjects,
@@ -96,9 +96,8 @@ export default function TimetableGeneratorPage() {
         if (!generatedData || !generatedData.semesterTimetables) return;
         
         const newFullSchedule = generatedData.semesterTimetables.flatMap(st => st.timetable.map(g => ({
-            id: `SCH_${g.classId}_${g.day}_${g.time}`,
             ...g
-        })));
+        } as Omit<Schedule, 'id'>)));
 
         setIsApplying(true);
         try {
@@ -179,11 +178,6 @@ export default function TimetableGeneratorPage() {
                              <TabsContent value="timetables">
                                 <ScrollArea className="h-[60vh] p-1">
                                     <div className="space-y-6">
-                                    {generatedData.codeChefDay && (
-                                        <div className='text-center font-semibold p-2 bg-purple-100 dark:bg-purple-900 rounded-md'>
-                                            CodeChef Day is on <span className="font-bold">{generatedData.codeChefDay}</span>. No classes are scheduled on this day.
-                                        </div>
-                                    )}
                                      {generatedData.optimizationExplanation && (
                                         <Alert>
                                             <AlertTitle>Optimization Notes</AlertTitle>
@@ -206,7 +200,7 @@ export default function TimetableGeneratorPage() {
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                    {ALL_DAYS.filter(d => d !== generatedData?.codeChefDay).map(day => (
+                                                    {ALL_DAYS.filter(d => d !== generatedData?.codeChefDay && d !== 'Saturday').map(day => (
                                                         <TableRow key={day}>
                                                             <TableCell className="font-semibold">{day}</TableCell>
                                                             {ALL_TIME_SLOTS.map(time => {
@@ -216,7 +210,7 @@ export default function TimetableGeneratorPage() {
                                                                     <TableCell key={time}>
                                                                         {slot && subject ? (
                                                                             <div className="text-xs">
-                                                                                <div>{subject.name}</div>
+                                                                                <div>{subject.name} {slot.batch && <span className='font-bold'>({slot.batch})</span>}</div>
                                                                                 <div className="text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</div>
                                                                                 <div className="text-muted-foreground font-bold">{classrooms?.find(c=>c.id === slot.classroomId)?.name}</div>
                                                                             </div>
