@@ -95,7 +95,7 @@ export async function runGA(input: GenerateTimetableInput) {
     const warnings: string[] = [];
     let generatedSchedule: Gene[] = [];
     // Start with existing schedule from other departments to avoid conflicts
-    const fullSchedule = [...input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }))];
+    const fullSchedule: (Gene | Schedule)[] = [...input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }))];
 
     try {
         const allPossibleDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -139,7 +139,7 @@ export async function runGA(input: GenerateTimetableInput) {
             }
 
             for (const pair of labPairs) {
-                if (pair.length < 2) continue; // Skip single labs for now
+                if (pair.length < 2) continue;
                 
                 const [labA_Id, labB_Id] = pair;
                 let placed = false;
@@ -151,11 +151,11 @@ export async function runGA(input: GenerateTimetableInput) {
 
                 for (const day of workingDays.sort(() => Math.random() - 0.5)) {
                     if(placed) break;
-                    // Check if class already has labs on this day
-                    if (fullSchedule.some(g => g.classId === classToSchedule.id && g.day === day && g.isLab)) continue;
+                    if (fullSchedule.some(g => (g as Gene).isLab && g.classId === classToSchedule.id && g.day === day)) continue;
 
                     for (const [time1, time2] of LAB_TIME_PAIRS.sort(() => Math.random() - 0.5)) {
                          if(placed) break;
+                         if (labClassrooms.length < 2) continue; // Need at least 2 labs
                          for(const roomA of labClassrooms) {
                             if(placed) break;
                             for(const roomB of labClassrooms.filter(r => r.id !== roomA.id)) {
@@ -208,7 +208,8 @@ export async function runGA(input: GenerateTimetableInput) {
 
                     for (const day of workingDays.sort(() => Math.random() - 0.5)) {
                         if (placed) break;
-                        if (fullSchedule.some(g => g.classId === classToSchedule.id && g.day === day && g.isLab)) continue;
+                        if (fullSchedule.some(g => (g as Gene).isLab && g.classId === classToSchedule.id && g.day === day && (g as Gene).batch === lab.batch)) continue;
+
                         for (const [time1, time2] of LAB_TIME_PAIRS.sort(() => Math.random() - 0.5)) {
                             if (placed) break;
                             for (const room of labClassrooms) {
@@ -217,7 +218,7 @@ export async function runGA(input: GenerateTimetableInput) {
                                     const facData = facultyWithExperience.find(f => f.id === facultyId);
                                     if (!facData || (facultyWorkload.get(facultyId) || 0) + 2 > (facData.maxWeeklyHours || 18)) continue;
                                     
-                                    const conflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lab.classId && g.batch === lab.batch)));
+                                    const conflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lab.classId && g.time === g.time)));
                                     if (!conflict) {
                                         const genes = [
                                             { day, time: time1, ...lab, facultyId, classroomId: room.id },
@@ -320,5 +321,3 @@ export async function runGA(input: GenerateTimetableInput) {
         };
     }
 }
-
-    
