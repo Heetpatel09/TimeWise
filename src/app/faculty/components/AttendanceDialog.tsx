@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 
 interface AttendanceDialogProps {
   slot: EnrichedSchedule | null;
@@ -42,6 +43,7 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
   });
 
   const [attendance, setAttendance] = useState<Record<string, 'present' | 'absent' | 'disputed'>>({});
+  const [quickMarkValue, setQuickMarkValue] = useState('');
 
   useEffect(() => {
     if (students && existingAttendance) {
@@ -89,6 +91,36 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     setAttendance(prev => ({...prev, [studentId]: status}));
   }
 
+  const handleQuickMark = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && quickMarkValue.trim() !== '') {
+        e.preventDefault();
+        if (!students) return;
+
+        const term = quickMarkValue.trim().toLowerCase();
+        
+        const studentToMark = students.find(
+            s => s.rollNumber.toString() === term || s.name.toLowerCase().includes(term)
+        );
+
+        if (studentToMark) {
+            if (attendance[studentToMark.id] !== 'present') {
+                handleStatusChange(studentToMark.id, 'present');
+            }
+            toast({
+                title: 'Marked Present',
+                description: `${studentToMark.name} is marked as present.`,
+            });
+            setQuickMarkValue('');
+        } else {
+            toast({
+                title: 'Student Not Found',
+                description: `No student found matching "${quickMarkValue}".`,
+                variant: 'destructive',
+            });
+        }
+    }
+  };
+
   const handleSelectAll = (checked: boolean | string) => {
     if (students) {
         const newAttendance = { ...attendance };
@@ -129,6 +161,16 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
                     </AlertDescription>
                 </Alert>
             )}
+            <div className="space-y-2">
+                <Label htmlFor="quick-mark">Quick Mark</Label>
+                <Input
+                    id="quick-mark"
+                    placeholder="Enter Roll No. or Name and press Enter to mark present"
+                    value={quickMarkValue}
+                    onChange={(e) => setQuickMarkValue(e.target.value)}
+                    onKeyDown={handleQuickMark}
+                />
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -194,3 +236,4 @@ export default function AttendanceDialog({ slot, date, isOpen, onOpenChange }: A
     </Dialog>
   );
 }
+
