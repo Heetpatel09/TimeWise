@@ -220,8 +220,8 @@ export async function runGA(input: GenerateTimetableInput) {
                                     const conflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lab.classId && g.time === g.time)));
                                     if (!conflict) {
                                         const genes = [
-                                            { day, time: time1, ...lab, facultyId, classroomId: room.id },
-                                            { day, time: time2, ...lab, facultyId, classroomId: room.id },
+                                            { day, time: time1, ...lab, facultyId, classroomId: room.id, isLab: true },
+                                            { day, time: time2, ...lab, facultyId, classroomId: room.id, isLab: true },
                                         ];
                                         generatedSchedule.push(...genes);
                                         fullSchedule.push(...genes);
@@ -239,7 +239,7 @@ export async function runGA(input: GenerateTimetableInput) {
                         const [time1, time2] = LAB_TIME_PAIRS[generatedSchedule.length % LAB_TIME_PAIRS.length];
                         const facultyId = assignedFacultyIds[0];
                         const classroomId = labClassrooms[0]?.id || 'TBD-LAB';
-                        const genes = [ { day, time: time1, ...lab, facultyId, classroomId }, { day, time: time2, ...lab, facultyId, classroomId }, ];
+                        const genes = [ { day, time: time1, ...lab, facultyId, classroomId, isLab: true }, { day, time: time2, ...lab, facultyId, classroomId, isLab: true }, ];
                         generatedSchedule.push(...genes); fullSchedule.push(...genes);
                     }
                 }
@@ -297,16 +297,27 @@ export async function runGA(input: GenerateTimetableInput) {
             assignedHours: facultyWorkload.get(f.id) || 0,
         }));
 
-        const semesterTimetables = input.classes.map(classInfo => ({
-            semester: classInfo.semester,
-            timetable: generatedSchedule.filter(g => g.classId === classInfo.id)
+        const classTimetables = input.classes.map(classInfo => ({
+            classId: classInfo.id,
+            className: classInfo.name,
+            timetable: generatedSchedule
+                .filter(g => g.classId === classInfo.id)
+                .map(g => ({
+                    day: g.day,
+                    time: g.time,
+                    classId: g.classId,
+                    subjectId: g.subjectId,
+                    facultyId: g.facultyId,
+                    classroomId: g.classroomId,
+                    batch: g.batch,
+                }))
         }));
 
         return {
             summary: `Generated a full 5-day schedule for ${input.classes.length} class sections. ${warnings.length > 0 ? `Encountered and force-resolved ${warnings.length} issues.` : 'All constraints satisfied.'}`,
             optimizationExplanation: `The engine prioritized parallel lab scheduling for different batches and respected faculty workloads.`,
             facultyWorkload: finalWorkload,
-            semesterTimetables,
+            classTimetables,
             error: warnings.length > 0 ? warnings.join('; ') : undefined,
         };
 
@@ -316,7 +327,7 @@ export async function runGA(input: GenerateTimetableInput) {
             summary: 'An unexpected error occurred during generation.',
             error: e.message || 'An unhandled exception occurred in the engine.',
             facultyWorkload: [],
-            semesterTimetables: [],
+            classTimetables: [],
         };
     }
 }
