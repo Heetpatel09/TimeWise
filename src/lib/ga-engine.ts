@@ -90,7 +90,8 @@ function createLectureListForClass(allSubjects: Subject[], classInfo: Class): Le
 
 export async function runGA(input: GenerateTimetableInput) {
     const warnings: string[] = [];
-    let generatedSchedule: Gene[] = [];
+    let finalGeneratedSchedule: Gene[] = [];
+    
     // Start with existing schedule from other departments to avoid conflicts
     const fullSchedule: (Gene | Schedule)[] = [...input.existingSchedule.map(s => ({ ...s, isLab: input.subjects.find(sub => sub.id === s.subjectId)?.type === 'lab' }))];
 
@@ -113,6 +114,7 @@ export async function runGA(input: GenerateTimetableInput) {
         const labClassrooms = input.classrooms.filter(c => c.type === 'lab');
 
         for (const classToSchedule of input.classes) {
+            let classSpecificSchedule: Gene[] = [];
             const randomDayOffIndex = Math.floor(Math.random() * allPossibleDays.length);
             const dayOff = allPossibleDays[randomDayOffIndex];
             const workingDays = allPossibleDays.filter(day => day !== dayOff);
@@ -151,7 +153,7 @@ export async function runGA(input: GenerateTimetableInput) {
 
                     for (const [time1, time2] of LAB_TIME_PAIRS.sort(() => Math.random() - 0.5)) {
                          if(placed) break;
-                         if (labClassrooms.length < 2) continue; // Need at least 2 labs
+                         if (labClassrooms.length < 2) continue;
                          for(const roomA of labClassrooms) {
                             if(placed) break;
                             for(const roomB of labClassrooms.filter(r => r.id !== roomA.id)) {
@@ -165,6 +167,9 @@ export async function runGA(input: GenerateTimetableInput) {
                                         const facB_Data = facultyWithExperience.find(f => f.id === facB_Id);
                                         if (!facB_Data || (facultyWorkload.get(facB_Id) || 0) + 2 > (facB_Data.maxWeeklyHours || 18)) continue;
 
+                                        const classConflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && g.classId === classToSchedule.id);
+                                        if(classConflict) continue;
+
                                         const conflictA = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facA_Id || g.classroomId === roomA.id));
                                         const conflictB = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facB_Id || g.classroomId === roomB.id));
 
@@ -175,7 +180,7 @@ export async function runGA(input: GenerateTimetableInput) {
                                                 { day, time: time1, classId: classToSchedule.id, subjectId: labB_Id, facultyId: facB_Id, classroomId: roomB.id, isLab: true, batch: 'Batch-2' as const },
                                                 { day, time: time2, classId: classToSchedule.id, subjectId: labB_Id, facultyId: facB_Id, classroomId: roomB.id, isLab: true, batch: 'Batch-2' as const },
                                             ];
-                                            generatedSchedule.push(...genes);
+                                            classSpecificSchedule.push(...genes);
                                             fullSchedule.push(...genes);
                                             facultyWorkload.set(facA_Id, (facultyWorkload.get(facA_Id) || 0) + 2);
                                             facultyWorkload.set(facB_Id, (facultyWorkload.get(facB_Id) || 0) + 2);
@@ -214,13 +219,16 @@ export async function runGA(input: GenerateTimetableInput) {
                                     const facData = facultyWithExperience.find(f => f.id === facultyId);
                                     if (!facData || (facultyWorkload.get(facultyId) || 0) + 2 > (facData.maxWeeklyHours || 18)) continue;
                                     
-                                    const conflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lab.classId && g.time === g.time)));
-                                    if (!conflict) {
+                                    const classConflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && g.classId === classToSchedule.id);
+                                    if(classConflict) continue;
+
+                                    const resourceConflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id));
+                                    if (!resourceConflict) {
                                         const genes = [
                                             { day, time: time1, ...lab, facultyId, classroomId: room.id, isLab: true },
                                             { day, time: time2, ...lab, facultyId, classroomId: room.id, isLab: true },
                                         ];
-                                        generatedSchedule.push(...genes);
+                                        classSpecificSchedule.push(...genes);
                                         fullSchedule.push(...genes);
                                         facultyWorkload.set(facultyId, (facultyWorkload.get(facultyId) || 0) + 2);
                                         placed = true;
@@ -231,13 +239,13 @@ export async function runGA(input: GenerateTimetableInput) {
                         }
                     }
                      if (!placed) {
-                        warnings.push(`Could not find slot for lab ${input.subjects.find(s=>s.id === lab.subjectId)?.name} (${lab.batch}). Force-placing.`);
-                        const day = workingDays[generatedSchedule.length % workingDays.length];
-                        const [time1, time2] = LAB_TIME_PAIRS[generatedSchedule.length % LAB_TIME_PAIRS.length];
+                        warnings.push(`Could not find conflict-free slot for lab ${input.subjects.find(s=>s.id === lab.subjectId)?.name} (${lab.batch}). Force-placing.`);
+                        const day = workingDays[classSpecificSchedule.length % workingDays.length];
+                        const [time1, time2] = LAB_TIME_PAIRS[classSpecificSchedule.length % LAB_TIME_PAIRS.length];
                         const facultyId = assignedFacultyIds[0];
                         const classroomId = labClassrooms[0]?.id || 'TBD-LAB';
                         const genes = [ { day, time: time1, ...lab, facultyId, classroomId, isLab: true }, { day, time: time2, ...lab, facultyId, classroomId, isLab: true }, ];
-                        generatedSchedule.push(...genes); fullSchedule.push(...genes);
+                        classSpecificSchedule.push(...genes); fullSchedule.push(...genes);
                     }
                 }
             }
@@ -264,7 +272,7 @@ export async function runGA(input: GenerateTimetableInput) {
                                 const isConflict = fullSchedule.some(g => g.day === day && g.time === time && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === theory.classId));
                                 if (!isConflict) {
                                     const gene: Gene = { day, time, classId: theory.classId, subjectId: theory.subjectId, facultyId, classroomId: room.id, isLab: false };
-                                    generatedSchedule.push(gene);
+                                    classSpecificSchedule.push(gene);
                                     fullSchedule.push(gene);
                                     facultyWorkload.set(facultyId, (facultyWorkload.get(facultyId) || 0) + 1);
                                     placed = true;
@@ -280,12 +288,13 @@ export async function runGA(input: GenerateTimetableInput) {
                     warnings.push(`Could not find a conflict-free slot for ${subjectName} (Theory). Force-placing.`);
                     const facultyId = assignedFacultyIds[0];
                     const classroomId = theoryClassrooms[0]?.id || 'TBD-ROOM';
-                    const day = workingDays[generatedSchedule.length % workingDays.length];
-                    const time = LECTURE_TIME_SLOTS[generatedSchedule.length % LECTURE_TIME_SLOTS.length];
+                    const day = workingDays[classSpecificSchedule.length % workingDays.length];
+                    const time = LECTURE_TIME_SLOTS[classSpecificSchedule.length % LECTURE_TIME_SLOTS.length];
                     const gene: Gene = { day, time, classId: theory.classId, subjectId: theory.subjectId, facultyId, classroomId, isLab: false };
-                    generatedSchedule.push(gene); fullSchedule.push(gene);
+                    classSpecificSchedule.push(gene); fullSchedule.push(gene);
                  }
             }
+            finalGeneratedSchedule.push(...classSpecificSchedule);
         }
         
         const finalWorkload: FacultyWorkload[] = facultyWithExperience.map(f => ({
@@ -297,7 +306,7 @@ export async function runGA(input: GenerateTimetableInput) {
         const classTimetables = input.classes.map(classInfo => ({
             classId: classInfo.id,
             className: classInfo.name,
-            timetable: generatedSchedule
+            timetable: finalGeneratedSchedule
                 .filter(g => g.classId === classInfo.id)
                 .map(g => ({
                     day: g.day,

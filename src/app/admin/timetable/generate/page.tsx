@@ -168,8 +168,8 @@ export default function TimetableGeneratorPage() {
                         </Alert>
                     )}
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
-                        <Tabs defaultValue={generatedData.classTimetables[0]?.classId}>
-                            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${generatedData.classTimetables.length}, minmax(0, 1fr))`}}>
+                        <Tabs defaultValue={generatedData.classTimetables[0]?.classId} className="w-full">
+                            <TabsList className="flex-wrap h-auto">
                                 {generatedData.classTimetables.map(ct => (
                                     <TabsTrigger key={ct.classId} value={ct.classId}>{ct.className}</TabsTrigger>
                                 ))}
@@ -180,40 +180,43 @@ export default function TimetableGeneratorPage() {
                                     <Card>
                                         <CardContent className="pt-6">
                                             <ScrollArea className="h-[60vh]">
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>Day</TableHead>
-                                                            {ALL_TIME_SLOTS.map(t => <TableHead key={t}>{t}</TableHead>)}
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                    {ALL_DAYS.filter(d => d !== 'Saturday').map(day => (
-                                                        <TableRow key={day}>
-                                                            <TableCell className="font-semibold">{day}</TableCell>
-                                                            {ALL_TIME_SLOTS.map(time => {
-                                                                const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
-                                                                return (
-                                                                    <TableCell key={time} className="p-1 align-top min-w-[150px]">
-                                                                        <div className="space-y-1">
-                                                                            {slotsInCell.map(slot => {
-                                                                                const subject = subjects?.find(s => s.id === slot.subjectId);
-                                                                                return (
-                                                                                    <div key={slot.subjectId + (slot.batch || '')} className="text-xs p-2 rounded bg-muted">
-                                                                                        <div className='font-bold'>{subject?.name} {slot.batch && <span className='text-muted-foreground'>({slot.batch})</span>}</div>
-                                                                                        <div>{faculty?.find(f=>f.id === slot.facultyId)?.name}</div>
-                                                                                        <div className="text-muted-foreground font-semibold">{classrooms?.find(c=>c.id === slot.classroomId)?.name || 'TBD'}</div>
-                                                                                    </div>
-                                                                                )
-                                                                            })}
-                                                                        </div>
-                                                                    </TableCell>
-                                                                )
-                                                            })}
-                                                        </TableRow>
-                                                    ))}
-                                                    </TableBody>
-                                                </Table>
+                                                 <div className="overflow-x-auto">
+                                                    <Table className="border-collapse min-w-full">
+                                                        <TableHeader>
+                                                            <TableRow>
+                                                                <TableHead className="border font-semibold p-2 w-[120px]">Time</TableHead>
+                                                                {ALL_DAYS.filter(d => d !== 'Saturday').map(day => <TableHead key={day} className="border font-semibold p-2 text-center">{day}</TableHead>)}
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {ALL_TIME_SLOTS.map(time => (
+                                                                <TableRow key={time}>
+                                                                    <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
+                                                                    {ALL_DAYS.filter(d => d !== 'Saturday').map(day => {
+                                                                        const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
+                                                                        return (
+                                                                            <TableCell key={day} className="border p-1 align-top text-xs min-w-[150px] h-24">
+                                                                                <div className="space-y-1">
+                                                                                    {slotsInCell.map((slot, index) => {
+                                                                                        const subject = subjects?.find(s => s.id === slot.subjectId);
+                                                                                        return (
+                                                                                            <div key={index} className={cn("p-2 rounded-lg shadow text-[11px] leading-tight", subject?.isSpecial ? "bg-primary/20" : "bg-muted")}>
+                                                                                                <p className="font-bold truncate">{subject?.name}</p>
+                                                                                                {slot.batch && <p className="font-medium text-muted-foreground">{slot.batch}</p>}
+                                                                                                <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</p>
+                                                                                                <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === slot.classroomId)?.name || 'TBD'}</p>
+                                                                                            </div>
+                                                                                        )
+                                                                                    })}
+                                                                                </div>
+                                                                            </TableCell>
+                                                                        )
+                                                                    })}
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
                                             </ScrollArea>
                                         </CardContent>
                                         <CardFooter className='justify-end'>
