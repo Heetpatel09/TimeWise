@@ -26,12 +26,12 @@ export async function addSubject(item: Omit<Subject, 'id'>, createLab: boolean =
     const createdSubjects: Subject[] = [];
 
     db.transaction(() => {
-        const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const stmt = db.prepare('INSERT INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, credits) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
 
         // Theory subject
         const theoryId = `SUB${Date.now()}`;
         const theoryItem: Subject = { ...item, id: theoryId, type: 'theory' };
-        stmt.run(theoryId, theoryItem.name, theoryItem.code, (theoryItem.isSpecial || false) ? 1 : 0, 'theory', theoryItem.semester, theoryItem.syllabus, theoryItem.departmentId, theoryItem.priority);
+        stmt.run(theoryId, theoryItem.name, theoryItem.code, (theoryItem.isSpecial || false) ? 1 : 0, 'theory', theoryItem.semester, theoryItem.syllabus, theoryItem.departmentId, theoryItem.credits);
         createdSubjects.push(theoryItem);
 
         if (createLab) {
@@ -44,7 +44,7 @@ export async function addSubject(item: Omit<Subject, 'id'>, createLab: boolean =
                 id: labId,
                 name: labName,
                 type: 'lab',
-                priority: null, // Labs don't have priority
+                credits: null, // Labs don't have credits
             };
             stmt.run(labId, labItem.name, labItem.code, (labItem.isSpecial || false) ? 1 : 0, 'lab', labItem.semester, labItem.syllabus, labItem.departmentId, null);
             createdSubjects.push(labItem);
@@ -58,8 +58,8 @@ export async function addSubject(item: Omit<Subject, 'id'>, createLab: boolean =
 export async function updateSubject(updatedItem: Subject): Promise<Subject> {
     const db = getDb();
     
-    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, departmentId = ?, priority = ? WHERE id = ?');
-    stmt.run(updatedItem.name, updatedItem.code, (updatedItem.isSpecial || false) ? 1 : 0, updatedItem.type, updatedItem.semester, updatedItem.syllabus, updatedItem.departmentId, updatedItem.priority, updatedItem.id);
+    const stmt = db.prepare('UPDATE subjects SET name = ?, code = ?, isSpecial = ?, type = ?, semester = ?, syllabus = ?, departmentId = ?, credits = ? WHERE id = ?');
+    stmt.run(updatedItem.name, updatedItem.code, (updatedItem.isSpecial || false) ? 1 : 0, updatedItem.type, updatedItem.semester, updatedItem.syllabus, updatedItem.departmentId, updatedItem.credits, updatedItem.id);
     
     revalidateAll();
     return Promise.resolve(updatedItem);

@@ -35,7 +35,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 70; // Increment this to force re-initialization
+const schemaVersion = 71; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'workspace/db-version.txt');
 
 
@@ -99,7 +99,7 @@ function createSchemaAndSeed() {
         syllabus TEXT,
         isSpecial BOOLEAN,
         departmentId TEXT NOT NULL,
-        priority TEXT,
+        credits INTEGER,
         FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS classes (
@@ -370,7 +370,7 @@ function createSchemaAndSeed() {
   
   // Seed the database
     const insertDepartment = db.prepare('INSERT OR IGNORE INTO departments (id, name, code) VALUES (?, ?, ?)');
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, credits) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, departmentId, section) VALUES (?, ?, ?, ?, ?)');
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear, dateOfJoining) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -393,7 +393,7 @@ function createSchemaAndSeed() {
     db.transaction(() => {
         // 1. Independent Entities
         placeholderDepartments.forEach(d => insertDepartment.run(d.id, d.name, d.code));
-        placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, s.departmentId, s.priority || null));
+        placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, s.departmentId, s.credits || null));
         placeholderClassrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
         placeholderClasses.forEach(c => insertClass.run(c.id, c.name, c.semester, c.departmentId, c.section));
         placeholderFaculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.departmentId, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear, f.dateOfJoining));

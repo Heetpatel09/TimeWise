@@ -138,7 +138,7 @@ const SubjectSchema = z.object({
     syllabus: z.string().optional().nullable(),
     departmentId: z.string(),
     isSpecial: z.boolean().optional(),
-    priority: z.enum(['Non Negotiable', 'High', 'Medium', 'Low']).nullable().optional(),
+    credits: z.number().optional().nullable(),
 });
 
 const FacultySchema = z.object({
@@ -210,9 +210,6 @@ export type GenerateTeacherAllocationInput = z.infer<typeof GenerateTeacherAlloc
 export const GenerateTeacherAllocationOutputSchema = z.record(z.record(z.array(z.string())));
 export type GenerateTeacherAllocationOutput = z.infer<typeof GenerateTeacherAllocationOutputSchema>;
 
-
-export type SubjectPriority = 'Non Negotiable' | 'High' | 'Medium' | 'Low';
-
 export interface Department {
   id: string;
   name: string;
@@ -228,7 +225,7 @@ export interface Subject {
   syllabus?: string;
   departmentId: string;
   isSpecial?: boolean;
-  priority?: SubjectPriority | null;
+  credits?: number | null;
 }
 
 export interface Class {

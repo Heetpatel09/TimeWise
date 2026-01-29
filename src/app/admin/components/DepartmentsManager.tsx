@@ -14,7 +14,7 @@ import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/ser
 import { getClasses, addClass, updateClass, deleteClass } from '@/lib/services/classes';
 import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
 import { getDepartments, addDepartment, updateDepartment, deleteDepartment } from '@/lib/services/departments';
-import type { Subject, Class, Faculty, SubjectPriority, Department } from '@/lib/types';
+import type { Subject, Class, Faculty, Department } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, Beaker, Pencil, ChevronsUpDown, Check, X, Eye, EyeOff, Copy, UserCheck, Users, GraduationCap, Wand2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from '@/components/ui/checkbox';
 
 
-const PRIORITY_OPTIONS: SubjectPriority[] = ['Non Negotiable', 'High', 'Medium', 'Low'];
+const CREDIT_OPTIONS = [4, 3, 2, 1];
 const DESIGNATION_OPTIONS = ['Professor', 'Assistant Professor', 'Lecturer'];
 const YEAR_OPTIONS = [1, 2, 3, 4];
 
@@ -614,7 +614,7 @@ export default function DepartmentsManager() {
         type: currentSubject.type,
         semester: currentSubject.semester,
         departmentId: selectedDepartmentId,
-        priority: currentSubject.priority,
+        credits: currentSubject.credits,
         isSpecial: currentSubject.isSpecial,
         syllabus: currentSubject.syllabus,
     };
@@ -634,7 +634,7 @@ export default function DepartmentsManager() {
   };
 
   const openNewSubjectDialog = () => {
-    setCurrentSubject({ type: 'theory', semester: 1, priority: 'High' });
+    setCurrentSubject({ type: 'theory', semester: 1, credits: 3 });
     setCreateLabForSubject(false);
     setSubjectDialogOpen(true);
   };
@@ -972,11 +972,11 @@ export default function DepartmentsManager() {
             </div>
              {currentSubject.type === 'theory' && (
               <div className="space-y-2">
-                <Label htmlFor="s-priority">Priority (Weekly Hours)</Label>
-                <Select value={currentSubject.priority} onValueChange={(v: SubjectPriority) => setCurrentSubject({ ...currentSubject, priority: v })}>
-                    <SelectTrigger id="s-priority"><SelectValue placeholder="Select priority"/></SelectTrigger>
+                <Label htmlFor="s-credits">Credits (Weekly Hours)</Label>
+                <Select value={currentSubject.credits?.toString()} onValueChange={(v) => setCurrentSubject({ ...currentSubject, credits: v ? parseInt(v) : undefined })}>
+                    <SelectTrigger id="s-credits"><SelectValue placeholder="Select credits"/></SelectTrigger>
                     <SelectContent>
-                        {PRIORITY_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        {CREDIT_OPTIONS.map(c => <SelectItem key={c} value={c.toString()}>{c}</SelectItem>)}
                     </SelectContent>
                 </Select>
               </div>

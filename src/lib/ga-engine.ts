@@ -48,12 +48,9 @@ const LAB_TIME_PAIRS: [string, string][] = [
 ];
 
 const getHoursForSubject = (subject: Subject): number => {
-    if (subject.type === 'lab') return 2;
-    if (subject.priority === 'Non Negotiable') return 4;
-    if (subject.priority === 'High') return 3;
-    if (subject.priority === 'Medium') return 2;
-    if (subject.priority === 'Low') return 1;
-    return 2;
+    if (subject.type === 'lab') return 2; // Labs are always 2 hours.
+    // For theory subjects, credits directly map to weekly hours.
+    return subject.credits || 2; // Default to 2 hours if credits are not set.
 };
 
 function calculateFacultyExperience(faculty: Faculty[]): (Faculty & { experience: number; level: 'Senior' | 'Mid-Level' | 'Junior' })[] {

@@ -14,48 +14,48 @@ export const departments: Department[] = [
 // --- SUBJECTS ---
 export const subjects: Subject[] = [
   // CSE Semester 1
-  { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB001', name: 'Intro to Programming', code: 'CS101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', credits: 3 },
   { id: 'SUB002', name: 'Programming Lab I', code: 'CS102', type: 'lab', semester: 1, departmentId: 'DEPT_CSE' },
-  { id: 'SUB003', name: 'Digital Logic Design', code: 'EC101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB003', name: 'Digital Logic Design', code: 'EC101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', credits: 3 },
   { id: 'SUB300', name: 'Digital Logic Design Lab', code: 'EC102', type: 'lab', semester: 1, departmentId: 'DEPT_CSE' },
-  { id: 'SUB004', name: 'Applied Mathematics I', code: 'AM101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'Non Negotiable' },
-  { id: 'SUB005', name: 'Communication Skills', code: 'HU101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', priority: 'Medium' },
+  { id: 'SUB004', name: 'Applied Mathematics I', code: 'AM101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', credits: 4 },
+  { id: 'SUB005', name: 'Communication Skills', code: 'HU101', type: 'theory', semester: 1, departmentId: 'DEPT_CSE', credits: 2 },
 
   // CSE Semester 3
-  { id: 'SUB006', name: 'Data Structures', code: 'CS201', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB006', name: 'Data Structures', code: 'CS201', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', credits: 3 },
   { id: 'SUB007', name: 'Data Structures Lab', code: 'CS202', type: 'lab', semester: 3, departmentId: 'DEPT_CSE' },
-  { id: 'SUB008', name: 'Object Oriented Programming', code: 'CS203', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'High' },
-  { id: 'SUB009', name: 'Applied Mathematics III', code: 'AM201', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'High' },
-  { id: 'SUB010', name: 'Computer Architecture', code: 'CS204', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', priority: 'Medium' },
+  { id: 'SUB008', name: 'Object Oriented Programming', code: 'CS203', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', credits: 3 },
+  { id: 'SUB009', name: 'Applied Mathematics III', code: 'AM201', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', credits: 3 },
+  { id: 'SUB010', name: 'Computer Architecture', code: 'CS204', type: 'theory', semester: 3, departmentId: 'DEPT_CSE', credits: 2 },
 
   // CSE Semester 5
-  { id: 'SUB011', name: 'Database Management Systems', code: 'CS301', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB011', name: 'Database Management Systems', code: 'CS301', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', credits: 3 },
   { id: 'SUB012', name: 'DBMS Lab', code: 'CS302', type: 'lab', semester: 5, departmentId: 'DEPT_CSE' },
-  { id: 'SUB013', name: 'Operating Systems', code: 'CS303', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB013', name: 'Operating Systems', code: 'CS303', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', credits: 3 },
   { id: 'SUB014', name: 'Operating Systems Lab', code: 'CS304', type: 'lab', semester: 5, departmentId: 'DEPT_CSE' },
-  { id: 'SUB015', name: 'Computer Networks', code: 'CS305', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB015', name: 'Computer Networks', code: 'CS305', type: 'theory', semester: 5, departmentId: 'DEPT_CSE', credits: 3 },
 
   // CSE Semester 7
-  { id: 'SUB016', name: 'Cryptography and Security', code: 'CS402', type: 'theory', semester: 7, departmentId: 'DEPT_CSE', priority: 'High' },
-  { id: 'SUB017', name: 'Cloud Computing', code: 'CS403', type: 'theory', semester: 7, departmentId: 'DEPT_CSE', priority: 'High' },
+  { id: 'SUB016', name: 'Cryptography and Security', code: 'CS402', type: 'theory', semester: 7, departmentId: 'DEPT_CSE', credits: 3 },
+  { id: 'SUB017', name: 'Cloud Computing', code: 'CS403', type: 'theory', semester: 7, departmentId: 'DEPT_CSE', credits: 3 },
   { id: 'SUB018', name: 'Project I', code: 'CS450', type: 'lab', semester: 7, departmentId: 'DEPT_CSE' },
   
   // AI & ML Semester 5
-  { id: 'SUB101', name: 'Intro to AI', code: 'AI301', type: 'theory', semester: 5, departmentId: 'DEPT_AIML', priority: 'High' },
+  { id: 'SUB101', name: 'Intro to AI', code: 'AI301', type: 'theory', semester: 5, departmentId: 'DEPT_AIML', credits: 3 },
   { id: 'SUB102', name: 'Python for ML', code: 'AI302', type: 'lab', semester: 5, departmentId: 'DEPT_AIML' },
-  { id: 'SUB103', name: 'Linear Algebra for ML', code: 'AI303', type: 'theory', semester: 5, departmentId: 'DEPT_AIML', priority: 'High' },
+  { id: 'SUB103', name: 'Linear Algebra for ML', code: 'AI303', type: 'theory', semester: 5, departmentId: 'DEPT_AIML', credits: 3 },
 
   // AI & ML Semester 7
-  { id: 'SUB104', name: 'Machine Learning', code: 'AI401', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', priority: 'High' },
-  { id: 'SUB105', name: 'Deep Learning', code: 'AI402', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', priority: 'High' },
-  { id: 'SUB106', name: 'Natural Language Processing', code: 'AI403', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', priority: 'High' },
+  { id: 'SUB104', name: 'Machine Learning', code: 'AI401', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', credits: 3 },
+  { id: 'SUB105', name: 'Deep Learning', code: 'AI402', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', credits: 3 },
+  { id: 'SUB106', name: 'Natural Language Processing', code: 'AI403', type: 'theory', semester: 7, departmentId: 'DEPT_AIML', credits: 3 },
   { id: 'SUB107', name: 'AI Lab', code: 'AI404', type: 'lab', semester: 7, departmentId: 'DEPT_AIML' },
   
   // ECE Subjects
-  { id: 'SUB201', name: 'Analog Circuits', code: 'EC201', type: 'theory', semester: 3, departmentId: 'DEPT_ECE', priority: 'High' },
-  { id: 'SUB202', name: 'Digital Electronics', code: 'EC202', type: 'theory', semester: 3, departmentId: 'DEPT_ECE', priority: 'High' },
-  { id: 'SUB203', name: 'Signals and Systems', code: 'EC301', type: 'theory', semester: 5, departmentId: 'DEPT_ECE', priority: 'High' },
-  { id: 'SUB204', name: 'VLSI Design', code: 'EC401', type: 'theory', semester: 7, departmentId: 'DEPT_ECE', priority: 'High' },
+  { id: 'SUB201', name: 'Analog Circuits', code: 'EC201', type: 'theory', semester: 3, departmentId: 'DEPT_ECE', credits: 3 },
+  { id: 'SUB202', name: 'Digital Electronics', code: 'EC202', type: 'theory', semester: 3, departmentId: 'DEPT_ECE', credits: 3 },
+  { id: 'SUB203', name: 'Signals and Systems', code: 'EC301', type: 'theory', semester: 5, departmentId: 'DEPT_ECE', credits: 3 },
+  { id: 'SUB204', name: 'VLSI Design', code: 'EC401', type: 'theory', semester: 7, departmentId: 'DEPT_ECE', credits: 3 },
   
   // Special / Common Subjects
   { id: 'CODECHEF', name: 'CodeChef', code: 'CC001', type: 'lab', semester: 3, isSpecial: true, departmentId: 'DEPT_CSE' },
