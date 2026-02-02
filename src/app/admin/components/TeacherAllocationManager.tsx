@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Loader2, Bot } from 'lucide-react';
+import { Loader2, Bot, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getClasses } from '@/lib/services/classes';
 import { getSubjects } from '@/lib/services/subjects';
@@ -14,10 +14,12 @@ import { getFaculty } from '@/lib/services/faculty';
 import { getDepartments } from '@/lib/services/departments';
 import type { Class, Subject, Faculty, Department, GenerateTeacherAllocationOutput } from '@/lib/types';
 import { generateTeacherAllocationFlow } from '@/ai/flows/generate-teacher-allocation-flow';
+import { saveTeacherAllocation } from '@/lib/services/allocations';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export default function TeacherAllocationManager() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: classes, isLoading: classesLoading } = useQuery<Class[]>({ queryKey: ['classes'], queryFn: getClasses });
   const { data: subjects, isLoading: subjectsLoading } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: getSubjects });
@@ -39,6 +41,22 @@ export default function TeacherAllocationManager() {
       );
       return Array.from(semesters).sort((a,b) => parseInt(a) - parseInt(b));
   }, [classes, selectedDepartmentId]);
+
+  const { mutate: saveAllocation, isPending: isSaving } = useMutation({
+    mutationFn: () => {
+        if (!allocationResult || !subjects || !faculty) {
+            throw new Error('No allocation data to save.');
+        }
+        return saveTeacherAllocation(allocationResult, subjects, faculty);
+    },
+    onSuccess: () => {
+        toast({ title: 'Allocation Saved!', description: 'Faculty subject assignments have been updated.' });
+        queryClient.invalidateQueries({ queryKey: ['faculty'] });
+    },
+    onError: (e: any) => {
+        toast({ title: 'Save Failed', description: e.message, variant: 'destructive' });
+    }
+  });
 
   const handleGenerate = async () => {
     if (!selectedDepartmentId || !selectedSemester || !classes || !subjects || !faculty) {
@@ -119,7 +137,7 @@ export default function TeacherAllocationManager() {
             <CardHeader>
                 <CardTitle>Generated Allocation</CardTitle>
                 <CardDescription>
-                    The following allocation has been generated based on the available faculty and sections.
+                    Review the proposed allocation. Clicking "Save" will update which subjects each faculty member is assigned to in the database.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -141,6 +159,12 @@ export default function TeacherAllocationManager() {
                     ))}
                 </Accordion>
             </CardContent>
+            <CardFooter>
+                <Button onClick={() => saveAllocation()} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2 h-4 w-4" />}
+                    Save Allocation
+                </Button>
+            </CardFooter>
         </Card>
       )}
     </div>
