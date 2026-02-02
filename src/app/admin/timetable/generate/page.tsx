@@ -189,10 +189,10 @@ export default function TimetableGeneratorPage() {
                 <DialogContent className="max-w-7xl">
                     <DialogHeader>
                         <DialogTitle>Review Generated Timetable</DialogTitle>
-                        <DialogDescription>
+                         <DialogDescription>
                             {generatedData?.summary || "Review the generated timetable for each section."}
+                            {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                         </DialogDescription>
-                        {generatedData?.optimizationExplanation && <p className="mt-1 text-sm text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
@@ -218,7 +218,7 @@ export default function TimetableGeneratorPage() {
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {ALL_TIME_SLOTS.sort(sortTime).map(time => {
+                                                        {ALL_TIME_SLOTS.sort(sortTime).map((time, timeIndex) => {
                                                             if (BREAK_SLOTS.includes(time)) {
                                                                 return (
                                                                     <TableRow key={time}>
@@ -234,13 +234,15 @@ export default function TimetableGeneratorPage() {
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
                                                                     {ALL_DAYS.map(day => {
-                                                                         const isContinuationOfLab = LAB_TIME_PAIRS.some(pair =>
-                                                                            time === pair[1] &&
-                                                                            ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
-                                                                        );
-
-                                                                        if (isContinuationOfLab) {
-                                                                            return null; // This cell is covered by rowspan from the previous row
+                                                                        const previousTime = timeIndex > 0 ? ALL_TIME_SLOTS.sort(sortTime)[timeIndex - 1] : null;
+                                                                        if (previousTime) {
+                                                                            const isContinuationOfLab = LAB_TIME_PAIRS.some(pair =>
+                                                                                time === pair[1] &&
+                                                                                ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
+                                                                            );
+                                                                            if (isContinuationOfLab) {
+                                                                                return null;
+                                                                            }
                                                                         }
 
                                                                         const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
@@ -307,3 +309,5 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
+
+    

@@ -21,3 +21,5 @@ export const generateTimetableFlow = ai.defineFlow(
     return result;
   }
 );
+
+    
