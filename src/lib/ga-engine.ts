@@ -89,7 +89,7 @@ function generateForSingleClass(
     const labClassrooms = input.classrooms.filter(c => c.type === 'lab');
     
     // Assign a consistent "home room" for the class's theory lectures
-    const homeClassroom = theoryClassrooms.find(c => !fullSchedule.some(s => s.classroomId === c.id)) || theoryClassrooms[0];
+    const homeClassroom = theoryClassrooms.find(c => !fullSchedule.some(s => s.classroomId === c.id && s.classId !== classToSchedule.id)) || theoryClassrooms[0];
     if (!homeClassroom) {
         warnings.push(`No available theory classroom for ${classToSchedule.name}`);
         return { schedule: [], warnings };
@@ -226,18 +226,30 @@ export async function runGA(input: GenerateTimetableInput): Promise<GenerateTime
 
     const departmentClasses = input.classes.filter(c => c.departmentId === input.departments?.[0].id);
 
-    const classTimetables = departmentClasses.map(classInfo => {
-        const { schedule, warnings: classWarnings } = generateForSingleClass(classInfo, fullSchedule, input, facultyWorkload, subjectToFacultyMap);
-        warnings.push(...classWarnings);
-        fullSchedule.push(...schedule); // Add generated schedule to the master list for conflict checking next class
-        return {
-            classId: classInfo.id,
-            className: classInfo.name,
-            timetable: schedule.map(g => ({
-                day: g.day, time: g.time, classId: g.classId, subjectId: g.subjectId, facultyId: g.facultyId, classroomId: g.classroomId, batch: g.batch, isLab: g.isLab
-            }))
-        };
-    });
+    // Group classes by semester
+    const classesBySemester = departmentClasses.reduce((acc, c) => {
+        if (!acc[c.semester]) acc[c.semester] = [];
+        acc[c.semester].push(c);
+        return acc;
+    }, {} as Record<number, Class[]>);
+
+    const classTimetables: GenerateTimetableOutput['classTimetables'] = [];
+
+    // Generate timetable iteratively for each class
+    for (const semester in classesBySemester) {
+        for (const classInfo of classesBySemester[semester]) {
+            const { schedule, warnings: classWarnings } = generateForSingleClass(classInfo, fullSchedule, input, facultyWorkload, subjectToFacultyMap);
+            warnings.push(...classWarnings);
+            fullSchedule.push(...schedule); // Add generated schedule to the master list for conflict checking next class
+            classTimetables.push({
+                classId: classInfo.id,
+                className: classInfo.name,
+                timetable: schedule.map(g => ({
+                    day: g.day, time: g.time, classId: g.classId, subjectId: g.subjectId, facultyId: g.facultyId, classroomId: g.classroomId, batch: g.batch, isLab: g.isLab
+                }))
+            });
+        }
+    }
     
     const facultyWithExperience = (input.faculty || []).map(f => {
         const experience = f.dateOfJoining ? differenceInYears(new Date(), parseISO(f.dateOfJoining)) : 0;
@@ -261,5 +273,3 @@ export async function runGA(input: GenerateTimetableInput): Promise<GenerateTime
         classTimetables,
     };
 }
-
-    
