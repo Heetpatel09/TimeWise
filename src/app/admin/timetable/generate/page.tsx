@@ -191,7 +191,7 @@ export default function TimetableGeneratorPage() {
                         <DialogTitle>Review Generated Timetable</DialogTitle>
                          <DialogDescription>
                             {generatedData?.summary || "Review the generated timetable for each section."}
-                            {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
+                            {generatedData?.optimizationExplanation && <div className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</div>}
                         </DialogDescription>
                     </DialogHeader>
                     
@@ -230,18 +230,19 @@ export default function TimetableGeneratorPage() {
                                                                 )
                                                             }
                                                             
-                                                            const isSecondHalfOfAnyLab = LAB_TIME_PAIRS.some(pair => 
-                                                                time === pair[1] && 
-                                                                ALL_DAYS.some(day => 
-                                                                    ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
-                                                                )
-                                                            );
-                                                            if (isSecondHalfOfAnyLab) return null;
-
                                                             return (
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
                                                                     {ALL_DAYS.map(day => {
+                                                                         const isContinuationOfLab = LAB_TIME_PAIRS.some(pair =>
+                                                                            time === pair[1] &&
+                                                                            ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
+                                                                        );
+
+                                                                        if (isContinuationOfLab) {
+                                                                            return null; // This cell is covered by rowspan from the previous row
+                                                                        }
+
                                                                         const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
                                                                         const isLabStart = slotsInCell.some(s => s.isLab);
 
