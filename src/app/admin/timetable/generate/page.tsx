@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -188,7 +189,10 @@ export default function TimetableGeneratorPage() {
                 <DialogContent className="max-w-7xl">
                     <DialogHeader>
                         <DialogTitle>Review Generated Timetable</DialogTitle>
-                        <DialogDescription>{generatedData?.summary || "Review the generated timetable for each section."}</DialogDescription>
+                         <DialogDescription>
+                            {generatedData?.summary || "Review the generated timetable for each section."}
+                            {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
+                        </DialogDescription>
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
@@ -226,20 +230,24 @@ export default function TimetableGeneratorPage() {
                                                                 )
                                                             }
                                                             
+                                                            const isSecondHalfOfAnyLab = LAB_TIME_PAIRS.some(pair => 
+                                                                time === pair[1] && 
+                                                                ALL_DAYS.some(day => 
+                                                                    ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
+                                                                )
+                                                            );
+                                                            if (isSecondHalfOfAnyLab) return null;
+
                                                             return (
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
                                                                     {ALL_DAYS.map(day => {
                                                                         const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
-                                                                        const isLabContinuation = LAB_TIME_PAIRS.some(p => p[1] === time && ct.timetable.some(s => s.isLab && s.day === day && s.time === p[0]));
-                                                                        
-                                                                        if(isLabContinuation) return null;
-                                                                        
                                                                         const isLabStart = slotsInCell.some(s => s.isLab);
 
                                                                         return (
                                                                             <TableCell key={day} className="p-1 align-top" rowSpan={isLabStart ? 2 : 1}>
-                                                                                <div className={cn("h-full", slotsInCell.length > 1 && "flex flex-col gap-1 justify-around")}>
+                                                                                <div className={cn("h-full", isLabStart && "grid grid-cols-2 gap-1")}>
                                                                                     {slotsInCell.map((slot, index) => {
                                                                                         const subject = subjects?.find(s => s.id === slot.subjectId);
                                                                                         if (subject?.id === 'LIB001') {
@@ -256,7 +264,7 @@ export default function TimetableGeneratorPage() {
                                                                                         else if (subject?.isSpecial) bgColor = "bg-primary/10";
                                                                                         
                                                                                         return (
-                                                                                            <div key={index} className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", bgColor, slotsInCell.length > 1 && 'flex-1')}>
+                                                                                            <div key={index} className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", bgColor)}>
                                                                                                 <div>
                                                                                                     <p className="font-bold truncate">{subject?.name}</p>
                                                                                                     {slot.isLab && <p className="font-medium text-purple-800 dark:text-purple-200">{slot.batch}</p>}
@@ -298,3 +306,5 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
+
+    
