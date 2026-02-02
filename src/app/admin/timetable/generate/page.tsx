@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -215,9 +215,9 @@ export default function TimetableGeneratorPage() {
                                                 <Table className="border">
                                                     <TableHeader>
                                                         <TableRow>
-                                                            <TableHead className="w-40 text-sm">Time</TableHead>
-                                                            {ALL_DAYS.filter(d => d !== 'Saturday').map(day => (
-                                                                <TableHead key={day} className="text-center text-sm">{day}</TableHead>
+                                                            <TableHead className="w-28 text-sm p-2">Time</TableHead>
+                                                            {ALL_DAYS.map(day => (
+                                                                <TableHead key={day} className="text-center text-sm p-2">{day}</TableHead>
                                                             ))}
                                                         </TableRow>
                                                     </TableHeader>
@@ -227,8 +227,8 @@ export default function TimetableGeneratorPage() {
                                                             if (isBreak) {
                                                                 return (
                                                                     <TableRow key={time}>
-                                                                        <TableCell className="font-medium text-muted-foreground align-middle text-xs">{time}</TableCell>
-                                                                        <TableCell colSpan={5} className="text-center font-semibold bg-secondary text-muted-foreground">
+                                                                        <TableCell className="font-medium text-muted-foreground align-middle text-xs p-2">{time}</TableCell>
+                                                                        <TableCell colSpan={ALL_DAYS.length} className="text-center font-semibold bg-secondary text-muted-foreground p-2">
                                                                             {time === '11:20 AM - 12:20 PM' ? 'LUNCH BREAK' : 'RECESS'}
                                                                         </TableCell>
                                                                     </TableRow>
@@ -236,16 +236,44 @@ export default function TimetableGeneratorPage() {
                                                             }
                                                             return (
                                                                 <TableRow key={time} className="h-28">
-                                                                    <TableCell className="font-medium align-top text-xs">{time}</TableCell>
-                                                                    {ALL_DAYS.filter(d => d !== 'Saturday').map(day => {
+                                                                    <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
+                                                                    {ALL_DAYS.map(day => {
                                                                         const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
+                                                                        const labSlot = slotsInCell.find(s => s.isLab);
+                                                                        
+                                                                        // Logic to merge lab cells
+                                                                        if (labSlot) {
+                                                                            const pairIndex = LAB_TIME_PAIRS.findIndex(p => p.includes(time));
+                                                                            if (pairIndex !== -1 && time === LAB_TIME_PAIRS[pairIndex][0]) {
+                                                                                // This is the first slot of a lab, render a double-height cell
+                                                                                return (
+                                                                                    <TableCell key={day} className="p-1 align-top" rowSpan={2}>
+                                                                                        <div className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", "bg-purple-100 dark:bg-purple-900/40")}>
+                                                                                             <div>
+                                                                                                <p className="font-bold truncate">{subjects?.find(s => s.id === labSlot.subjectId)?.name}</p>
+                                                                                                <p className="font-medium text-purple-800 dark:text-purple-200">{labSlot.batch}</p>
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === labSlot.facultyId)?.name}</p>
+                                                                                                <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === labSlot.classroomId)?.name || 'TBD'}</p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </TableCell>
+                                                                                );
+                                                                            } else if (pairIndex !== -1 && time === LAB_TIME_PAIRS[pairIndex][1]) {
+                                                                                // This is the second slot of a lab, so we render nothing as it's covered by the rowspan
+                                                                                return null;
+                                                                            }
+                                                                        }
+
+
                                                                         return (
                                                                             <TableCell key={day} className="p-1 align-top">
                                                                                 {slotsInCell.map((slot, index) => {
                                                                                     const subject = subjects?.find(s => s.id === slot.subjectId);
                                                                                     if (subject?.id === 'LIB001') {
                                                                                         return (
-                                                                                            <div key={index} className="bg-blue-50 text-blue-800 rounded-md p-2 h-full flex flex-col items-center justify-center text-center">
+                                                                                            <div key={index} className="bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-md p-2 h-full flex flex-col items-center justify-center text-center">
                                                                                                 <Library className="h-5 w-5 mb-1"/>
                                                                                                 <p className="font-semibold text-xs">Library</p>
                                                                                             </div>
@@ -255,7 +283,6 @@ export default function TimetableGeneratorPage() {
                                                                                         <div key={index} className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", subject?.isSpecial ? "bg-primary/10" : "bg-muted")}>
                                                                                             <div>
                                                                                                 <p className="font-bold truncate">{subject?.name}</p>
-                                                                                                {slot.batch && <p className="font-medium text-muted-foreground">{slot.batch}</p>}
                                                                                             </div>
                                                                                             <div>
                                                                                                 <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</p>
