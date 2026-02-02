@@ -189,10 +189,10 @@ export default function TimetableGeneratorPage() {
                 <DialogContent className="max-w-7xl">
                     <DialogHeader>
                         <DialogTitle>Review Generated Timetable</DialogTitle>
-                         <DialogDescription>
+                        <DialogDescription>
                             {generatedData?.summary || "Review the generated timetable for each section."}
-                            {generatedData?.optimizationExplanation && <div className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</div>}
                         </DialogDescription>
+                        {generatedData?.optimizationExplanation && <p className="mt-1 text-sm text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
