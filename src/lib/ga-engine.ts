@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { GenerateTimetableInput, Schedule, Class, Subject } from './types';
@@ -144,7 +143,16 @@ export async function runGA(input: GenerateTimetableInput) {
                                 const facData = facultyWithExperience.find(f => f.id === facultyId);
                                 if (!facData || (facultyWorkload.get(facultyId) || 0) + 2 > (facData.maxWeeklyHours || 18)) continue;
 
-                                const conflict = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && (g.facultyId === facultyId || g.classroomId === room.id || (g.classId === lecture.classId && g.batch === lecture.batch)));
+                                const conflict = fullSchedule.some(g => {
+                                    if (g.day !== day || (g.time !== time1 && g.time !== time2)) return false;
+                                    if (g.facultyId === facultyId || g.classroomId === room.id) return true;
+                                    if (g.classId === lecture.classId) {
+                                        if (!(g as any).batch) return true; // Theory conflict
+                                        if ((g as any).batch === lecture.batch) return true; // Same batch conflict
+                                    }
+                                    return false;
+                                });
+
                                 if (!conflict) {
                                     const genes = [
                                         { day, time: time1, ...lecture, facultyId, classroomId: room.id },
@@ -236,6 +244,5 @@ export async function runGA(input: GenerateTimetableInput) {
         optimizationExplanation: `The engine prioritized labs and then filled remaining slots with theory and library periods to ensure a complete schedule.`,
         facultyWorkload: finalWorkload,
         classTimetables,
-        error: warnings.length > 0 ? warnings.join('; ') : undefined,
     };
 }

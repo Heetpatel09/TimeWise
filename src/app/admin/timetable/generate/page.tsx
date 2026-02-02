@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -105,7 +104,7 @@ export default function TimetableGeneratorPage() {
                 setGeneratedData(result);
                 setReviewDialogOpen(true);
             } else {
-                 toast({ title: 'Generation Failed', description: result.error || 'The AI engine returned an empty or invalid response.', variant: 'destructive' });
+                 toast({ title: 'Generation Failed', description: 'The AI engine returned an empty or invalid response.', variant: 'destructive' });
             }
         } catch (e: any) {
             console.error("Timetable generation caught error:", e);
@@ -192,13 +191,7 @@ export default function TimetableGeneratorPage() {
                         <DialogTitle>Review Generated Timetable</DialogTitle>
                         <DialogDescription>{generatedData?.summary}</DialogDescription>
                     </DialogHeader>
-                    {generatedData && generatedData.error && (
-                         <Alert variant="destructive">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Generation Issues Encountered</AlertTitle>
-                            <AlertDescription className="max-h-24 overflow-y-auto">{generatedData.error}</AlertDescription>
-                        </Alert>
-                    )}
+                    
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
                         <Tabs defaultValue={generatedData.classTimetables[0]?.classId} className="w-full">
                             <TabsList className="flex-wrap h-auto">
@@ -238,34 +231,35 @@ export default function TimetableGeneratorPage() {
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
                                                                     {ALL_DAYS.map(day => {
+                                                                        // Check if this cell should be skipped because of a row-spanning lab from the previous row
+                                                                        const isSecondHalfOfLab = LAB_TIME_PAIRS.some(pair => 
+                                                                            time === pair[1] && 
+                                                                            ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
+                                                                        );
+                                                                        if (isSecondHalfOfLab) {
+                                                                            return null;
+                                                                        }
+                                                                        
                                                                         const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
                                                                         const labSlot = slotsInCell.find(s => s.isLab);
                                                                         
-                                                                        // Logic to merge lab cells
                                                                         if (labSlot) {
-                                                                            const pairIndex = LAB_TIME_PAIRS.findIndex(p => p.includes(time));
-                                                                            if (pairIndex !== -1 && time === LAB_TIME_PAIRS[pairIndex][0]) {
-                                                                                // This is the first slot of a lab, render a double-height cell
-                                                                                return (
-                                                                                    <TableCell key={day} className="p-1 align-top" rowSpan={2}>
-                                                                                        <div className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", "bg-purple-100 dark:bg-purple-900/40")}>
-                                                                                             <div>
-                                                                                                <p className="font-bold truncate">{subjects?.find(s => s.id === labSlot.subjectId)?.name}</p>
-                                                                                                <p className="font-medium text-purple-800 dark:text-purple-200">{labSlot.batch}</p>
-                                                                                            </div>
-                                                                                            <div>
-                                                                                                <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === labSlot.facultyId)?.name}</p>
-                                                                                                <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === labSlot.classroomId)?.name || 'TBD'}</p>
-                                                                                            </div>
+                                                                            // This is the first slot of a lab, render a double-height cell
+                                                                            return (
+                                                                                <TableCell key={day} className="p-1 align-top" rowSpan={2}>
+                                                                                    <div className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", "bg-purple-100 dark:bg-purple-900/40")}>
+                                                                                         <div>
+                                                                                            <p className="font-bold truncate">{subjects?.find(s => s.id === labSlot.subjectId)?.name}</p>
+                                                                                            <p className="font-medium text-purple-800 dark:text-purple-200">{labSlot.batch}</p>
                                                                                         </div>
-                                                                                    </TableCell>
-                                                                                );
-                                                                            } else if (pairIndex !== -1 && time === LAB_TIME_PAIRS[pairIndex][1]) {
-                                                                                // This is the second slot of a lab, so we render nothing as it's covered by the rowspan
-                                                                                return null;
-                                                                            }
+                                                                                        <div>
+                                                                                            <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === labSlot.facultyId)?.name}</p>
+                                                                                            <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === labSlot.classroomId)?.name || 'TBD'}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </TableCell>
+                                                                            );
                                                                         }
-
 
                                                                         return (
                                                                             <TableCell key={day} className="p-1 align-top">
