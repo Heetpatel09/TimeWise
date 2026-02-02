@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -15,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight, BrainCircuit, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Loader2, UserCog, UserCheck, Users, ArrowRight, BrainCircuit, Eye, EyeOff, Contact } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/lib/types';
@@ -48,7 +47,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
     setIsLoading(true);
     try {
       const user = await login(email, password);
-       if (user.role !== role) {
+       if (user.role !== role && !(role === 'admin' && user.permissions)) { // Allow admin/manager login
         throw new Error(`Invalid credentials for this role.`);
       }
       toast({
@@ -138,7 +137,7 @@ const CredentialDialog = ({ role, onBack }: { role: User['role'], onBack: () => 
   )
 }
 
-const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role']) => void }) => {
+const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role'] | 'GUEST') => void }) => {
 
     const roles: { role: User['role'], title: string, description: string, icon: React.ElementType}[] = [
         { role: 'admin', title: 'Admin / Manager', description: 'Access the administrative dashboard.', icon: UserCog },
@@ -169,6 +168,18 @@ const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role
                         </CardHeader>
                     </Card>
                 ))}
+                 <Card className="hover:bg-accent hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer animate-in fade-in-0 zoom-in-95" onClick={() => onSelectRole('GUEST')}>
+                    <CardHeader className="flex flex-row items-center gap-4">
+                        <div className="bg-secondary p-3 rounded-lg">
+                            <Contact className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                            <CardTitle>Login as Guest</CardTitle>
+                            <CardDescription>Explore the app with a demo dataset.</CardDescription>
+                        </div>
+                        <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground" />
+                    </CardHeader>
+                </Card>
             </div>
         </div>
     )
@@ -176,7 +187,19 @@ const RoleSelectionDialog = ({ onSelectRole }: { onSelectRole: (role: User['role
 
 export default function Home() {
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<User['role'] | null>(null);
+  const [selectedRole, setSelectedRole] = useState<User['role'] | 'GUEST' | null>(null);
+  const router = useRouter();
+  const { loginAsGuest, isLoading } = useAuth();
+  
+  const handleRoleSelect = async (role: User['role'] | 'GUEST') => {
+    if (role === 'GUEST') {
+      await loginAsGuest();
+      router.push('/admin');
+    } else {
+      setSelectedRole(role);
+    }
+  }
+
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden"
@@ -202,16 +225,16 @@ export default function Home() {
                 setDialogOpen(open);
             }}>
                 <DialogTrigger asChild>
-                    <Button size="lg" className="hover:scale-105 hover:shadow-lg transform transition-transform">
-                        <LogIn className="mr-2 h-5 w-5" />
+                    <Button size="lg" className="hover:scale-105 hover:shadow-lg transform transition-transform" disabled={isLoading}>
+                       {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
                         Login / Get Started
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   {selectedRole ? (
-                        <CredentialDialog role={selectedRole} onBack={() => setSelectedRole(null)} />
+                        <CredentialDialog role={selectedRole as User['role']} onBack={() => setSelectedRole(null)} />
                   ) : (
-                        <RoleSelectionDialog onSelectRole={setSelectedRole} />
+                        <RoleSelectionDialog onSelectRole={handleRoleSelect} />
                   )}
                 </DialogContent>
             </Dialog>
