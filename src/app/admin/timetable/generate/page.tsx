@@ -188,7 +188,7 @@ export default function TimetableGeneratorPage() {
                 <DialogContent className="max-w-7xl">
                     <DialogHeader>
                         <DialogTitle>Review Generated Timetable</DialogTitle>
-                        <DialogDescription>{generatedData?.summary}</DialogDescription>
+                        <DialogDescription>{generatedData?.summary || "Review the generated timetable for each section."}</DialogDescription>
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
@@ -226,12 +226,6 @@ export default function TimetableGeneratorPage() {
                                                                 )
                                                             }
                                                             
-                                                            const isSecondHalfOfLab = LAB_TIME_PAIRS.some(pair => 
-                                                                time === pair[1] && 
-                                                                ct.timetable.some(slot => slot.day === ALL_DAYS[ALL_DAYS.indexOf(day)] && slot.time === pair[0] && slot.isLab)
-                                                            );
-                                                            if(isSecondHalfOfLab && ct.timetable.some(slot => slot.time === time)) return null;
-
                                                             return (
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
@@ -240,8 +234,8 @@ export default function TimetableGeneratorPage() {
                                                                         const labsInCell = slotsInCell.filter(s => s.isLab);
                                                                         const theoriesInCell = slotsInCell.filter(s => !s.isLab);
 
-                                                                        const isSpanned = LAB_TIME_PAIRS.some(p => p[1] === time && ct.timetable.some(s => s.day === day && s.time === p[0] && s.isLab));
-                                                                        if (isSpanned) return null;
+                                                                        const isSpannedByLab = LAB_TIME_PAIRS.some(p => p[1] === time && ct.timetable.some(s => s.day === day && s.time === p[0] && s.isLab));
+                                                                        if (isSpannedByLab) return null;
                                                                         
                                                                         return (
                                                                             <TableCell key={day} className="p-1 align-top" rowSpan={labsInCell.length > 0 ? 2 : 1}>
