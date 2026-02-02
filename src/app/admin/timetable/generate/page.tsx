@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -215,57 +216,66 @@ export default function TimetableGeneratorPage() {
                                     <Card>
                                         <CardContent className="pt-6">
                                             <ScrollArea className="h-[60vh]">
-                                                 <div className="grid grid-cols-[auto_repeat(6,minmax(0,1fr))] border rounded-lg overflow-hidden">
-                                                    <div className="font-semibold p-2 border-b border-r text-center bg-muted">
-                                                        <Clock className="h-4 w-4 mx-auto" />
-                                                    </div>
-                                                    {ALL_DAYS.filter(d => d !== 'Saturday').map(day => <div key={day} className="font-semibold p-2 text-center border-b border-r bg-muted">{day}</div>)}
-                                                    
-                                                    {ALL_TIME_SLOTS.sort(sortTime).map(time => {
-                                                        const isBreak = BREAK_SLOTS.includes(time);
-                                                        return (
-                                                            <React.Fragment key={time}>
-                                                                <div className="font-medium text-xs p-2 border-r bg-muted text-center flex items-center justify-center">
-                                                                    {time}
-                                                                </div>
-                                                                {isBreak ? (
-                                                                     <div className="col-span-5 border-r p-2 text-center font-semibold bg-secondary text-muted-foreground flex items-center justify-center">
-                                                                         {time === '11:20 AM - 12:20 PM' ? 'LUNCH BREAK' : 'RECESS'}
-                                                                     </div>
-                                                                ) : ALL_DAYS.filter(d => d !== 'Saturday').map(day => {
-                                                                    const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
-                                                                    return (
-                                                                         <div key={day} className="border-r p-1 space-y-1 min-h-[90px]">
-                                                                            {slotsInCell.map((slot, index) => {
-                                                                                const subject = subjects?.find(s => s.id === slot.subjectId);
-                                                                                 if (subject?.id === 'LIB001') {
+                                                <Table className="border">
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead className="w-40 text-sm">Time</TableHead>
+                                                            {ALL_DAYS.filter(d => d !== 'Saturday').map(day => (
+                                                                <TableHead key={day} className="text-center text-sm">{day}</TableHead>
+                                                            ))}
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {ALL_TIME_SLOTS.sort(sortTime).map(time => {
+                                                            const isBreak = BREAK_SLOTS.includes(time);
+                                                            if (isBreak) {
+                                                                return (
+                                                                    <TableRow key={time}>
+                                                                        <TableCell className="font-medium text-muted-foreground align-middle text-xs">{time}</TableCell>
+                                                                        <TableCell colSpan={5} className="text-center font-semibold bg-secondary text-muted-foreground">
+                                                                            {time === '11:20 AM - 12:20 PM' ? 'LUNCH BREAK' : 'RECESS'}
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                )
+                                                            }
+                                                            return (
+                                                                <TableRow key={time} className="h-28">
+                                                                    <TableCell className="font-medium align-top text-xs">{time}</TableCell>
+                                                                    {ALL_DAYS.filter(d => d !== 'Saturday').map(day => {
+                                                                        const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
+                                                                        return (
+                                                                            <TableCell key={day} className="p-1 align-top">
+                                                                                {slotsInCell.map((slot, index) => {
+                                                                                    const subject = subjects?.find(s => s.id === slot.subjectId);
+                                                                                    if (subject?.id === 'LIB001') {
+                                                                                        return (
+                                                                                            <div key={index} className="bg-blue-50 text-blue-800 rounded-md p-2 h-full flex flex-col items-center justify-center text-center">
+                                                                                                <Library className="h-5 w-5 mb-1"/>
+                                                                                                <p className="font-semibold text-xs">Library</p>
+                                                                                            </div>
+                                                                                        )
+                                                                                    }
                                                                                     return (
-                                                                                         <div key={index} className="bg-blue-50 text-blue-800 rounded-md p-2 h-full flex flex-col items-center justify-center text-center">
-                                                                                            <Library className="h-5 w-5 mb-1"/>
-                                                                                            <p className="font-semibold text-xs">Library</p>
+                                                                                        <div key={index} className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", subject?.isSpecial ? "bg-primary/10" : "bg-muted")}>
+                                                                                            <div>
+                                                                                                <p className="font-bold truncate">{subject?.name}</p>
+                                                                                                {slot.batch && <p className="font-medium text-muted-foreground">{slot.batch}</p>}
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</p>
+                                                                                                <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === slot.classroomId)?.name || 'TBD'}</p>
+                                                                                            </div>
                                                                                         </div>
                                                                                     )
-                                                                                }
-                                                                                return (
-                                                                                    <div key={index} className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm flex flex-col justify-between h-full", subject?.isSpecial ? "bg-primary/10 text-primary-foreground" : "bg-muted")}>
-                                                                                        <div>
-                                                                                            <p className="font-bold truncate">{subject?.name}</p>
-                                                                                            {slot.batch && <p className="font-medium text-muted-foreground">{slot.batch}</p>}
-                                                                                        </div>
-                                                                                        <div>
-                                                                                            <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</p>
-                                                                                            <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === slot.classroomId)?.name || 'TBD'}</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )
-                                                                            })}
-                                                                        </div>
-                                                                    )
-                                                                })}
-                                                            </React.Fragment>
-                                                        )
-                                                    })}
-                                                </div>
+                                                                                })}
+                                                                            </TableCell>
+                                                                        )
+                                                                    })}
+                                                                </TableRow>
+                                                            )
+                                                        })}
+                                                    </TableBody>
+                                                </Table>
                                             </ScrollArea>
                                         </CardContent>
                                         <CardFooter className='justify-end'>
