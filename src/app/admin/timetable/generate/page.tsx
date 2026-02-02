@@ -225,8 +225,8 @@ export default function TimetableGeneratorPage() {
                                                         const isBreak = BREAK_SLOTS.includes(time);
                                                         return (
                                                             <React.Fragment key={time}>
-                                                                <div className="font-medium text-xs whitespace-nowrap p-2 border-r flex items-center justify-center bg-muted">
-                                                                    <div className="transform -rotate-90">{time}</div>
+                                                                <div className="font-medium text-xs p-2 border-r bg-muted text-center flex items-center justify-center">
+                                                                    {time}
                                                                 </div>
                                                                 {isBreak ? (
                                                                      <div className="col-span-5 border-r p-2 text-center font-semibold bg-secondary text-muted-foreground flex items-center justify-center">
