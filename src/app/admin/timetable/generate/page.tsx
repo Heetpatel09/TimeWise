@@ -14,7 +14,7 @@ import { getClassrooms } from '@/lib/services/classrooms';
 import { getSchedule, applyScheduleForClass } from '@/lib/services/schedule';
 import { getDepartments } from '@/lib/services/departments';
 import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOutput, Department } from '@/lib/types';
-import { Loader2, ArrowLeft, Bot, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowLeft, Bot, AlertTriangle, Library, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
@@ -31,6 +31,26 @@ const ALL_TIME_SLOTS = [
     '12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'
 ];
 const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
+const FULL_DAY_SLOTS = [
+    '07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM',
+    '09:20 AM - 09:30 AM', // Recess
+    '09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM',
+    '11:20 AM - 12:20 PM', // Lunch
+    '12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'
+];
+
+function sortTime(a: string, b: string) {
+    const toMinutes = (time: string) => {
+        const [start] = time.split(' - ');
+        let [h, m] = start.split(':').map(Number);
+        const modifier = time.slice(-2);
+        if (h === 12) h = 0;
+        if (modifier === 'PM') h += 12;
+        return h * 60 + m;
+    };
+    return toMinutes(a) - toMinutes(b);
+}
 
 export default function TimetableGeneratorPage() {
     const { toast } = useToast();
@@ -53,7 +73,7 @@ export default function TimetableGeneratorPage() {
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || departmentsLoading;
 
     const handleGenerate = async () => {
-        if (!selectedDepartmentId || !classes || !subjects || !faculty || !classrooms || !existingSchedule || !departments) {
+        if (!selectedDepartmentId || !classes || !subjects || !faculty || !classrooms || !departments) {
             toast({ title: 'Data not loaded or selection missing', description: 'Please select a department and wait for all data to load.', variant: 'destructive' });
             return;
         }
@@ -67,19 +87,16 @@ export default function TimetableGeneratorPage() {
             return;
         }
         
-        const cleanSubjects = JSON.parse(JSON.stringify(subjects));
-        const cleanFaculty = JSON.parse(JSON.stringify(faculty));
-
         try {
             const result = await generateTimetableFlow({
-                days: ALL_DAYS.filter(d => d !== 'Saturday'),
-                timeSlots: ALL_TIME_SLOTS,
+                days: ALL_DAYS,
+                timeSlots: LECTURE_TIME_SLOTS,
                 classes: relevantClasses,
-                subjects: cleanSubjects,
-                faculty: cleanFaculty,
+                subjects,
+                faculty,
                 classrooms,
                 departments,
-                existingSchedule,
+                existingSchedule: existingSchedule || [],
             });
             
             if (result && result.classTimetables) {
@@ -103,7 +120,15 @@ export default function TimetableGeneratorPage() {
             await applyScheduleForClass(classId, timetable);
             toast({ title: "Schedule Applied!", description: `The new timetable for this section has been saved.` });
             queryClient.invalidateQueries({ queryKey: ['schedule'] });
-            // You might want to update the state here to show it's applied, e.g., by adding a property to generatedData
+            
+            setGeneratedData(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    classTimetables: prev.classTimetables.filter(ct => ct.classId !== classId)
+                }
+            })
+
         } catch(e: any) {
             toast({ title: 'Failed to Apply', description: e.message, variant: 'destructive' });
         } finally {
@@ -180,42 +205,56 @@ export default function TimetableGeneratorPage() {
                                     <Card>
                                         <CardContent className="pt-6">
                                             <ScrollArea className="h-[60vh]">
-                                                 <div className="overflow-x-auto">
-                                                    <Table className="border-collapse min-w-full">
-                                                        <TableHeader>
-                                                            <TableRow>
-                                                                <TableHead className="border font-semibold p-2 w-[120px]">Time</TableHead>
-                                                                {ALL_DAYS.filter(d => d !== 'Saturday').map(day => <TableHead key={day} className="border font-semibold p-2 text-center">{day}</TableHead>)}
-                                                            </TableRow>
-                                                        </TableHeader>
-                                                        <TableBody>
-                                                            {ALL_TIME_SLOTS.map(time => (
-                                                                <TableRow key={time}>
-                                                                    <TableCell className="border font-medium text-xs whitespace-nowrap p-2">{time}</TableCell>
-                                                                    {ALL_DAYS.filter(d => d !== 'Saturday').map(day => {
-                                                                        const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
-                                                                        return (
-                                                                            <TableCell key={day} className="border p-1 align-top text-xs min-w-[150px] h-24">
-                                                                                <div className="space-y-1">
-                                                                                    {slotsInCell.map((slot, index) => {
-                                                                                        const subject = subjects?.find(s => s.id === slot.subjectId);
-                                                                                        return (
-                                                                                            <div key={index} className={cn("p-2 rounded-lg shadow text-[11px] leading-tight", subject?.isSpecial ? "bg-primary/20" : "bg-muted")}>
-                                                                                                <p className="font-bold truncate">{subject?.name}</p>
-                                                                                                {slot.batch && <p className="font-medium text-muted-foreground">{slot.batch}</p>}
-                                                                                                <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</p>
-                                                                                                <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === slot.classroomId)?.name || 'TBD'}</p>
-                                                                                            </div>
-                                                                                        )
-                                                                                    })}
-                                                                                </div>
-                                                                            </TableCell>
-                                                                        )
-                                                                    })}
-                                                                </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
+                                                 <div className="grid grid-cols-[auto_repeat(6,minmax(0,1fr))] border rounded-lg overflow-hidden">
+                                                    <div className="font-semibold p-2 border-b border-r text-center bg-muted">
+                                                        <Clock className="h-4 w-4 mx-auto" />
+                                                    </div>
+                                                    {ALL_DAYS.filter(d => d !== 'Saturday').map(day => <div key={day} className="font-semibold p-2 text-center border-b border-r bg-muted">{day}</div>)}
+                                                    
+                                                    {FULL_DAY_SLOTS.sort(sortTime).map(time => {
+                                                        const isBreak = BREAK_SLOTS.includes(time);
+                                                        return (
+                                                            <React.Fragment key={time}>
+                                                                <div className="font-medium text-xs whitespace-nowrap p-2 border-r flex items-center justify-center bg-muted">
+                                                                    <div className="transform -rotate-90">{time}</div>
+                                                                </div>
+                                                                {isBreak ? (
+                                                                     <div className="col-span-5 border-r p-2 text-center font-semibold bg-secondary text-muted-foreground flex items-center justify-center">
+                                                                         {time === '11:20 AM - 12:20 PM' ? 'LUNCH BREAK' : 'RECESS'}
+                                                                     </div>
+                                                                ) : ALL_DAYS.filter(d => d !== 'Saturday').map(day => {
+                                                                    const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
+                                                                    return (
+                                                                         <div key={day} className="border-r p-1 space-y-1 min-h-[90px]">
+                                                                            {slotsInCell.map((slot, index) => {
+                                                                                const subject = subjects?.find(s => s.id === slot.subjectId);
+                                                                                 if (subject?.id === 'LIB001') {
+                                                                                    return (
+                                                                                         <div key={index} className="bg-blue-50 text-blue-800 rounded-md p-2 h-full flex flex-col items-center justify-center text-center">
+                                                                                            <Library className="h-5 w-5 mb-1"/>
+                                                                                            <p className="font-semibold text-xs">Library</p>
+                                                                                        </div>
+                                                                                    )
+                                                                                }
+                                                                                return (
+                                                                                    <div key={index} className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm flex flex-col justify-between h-full", subject?.isSpecial ? "bg-primary/10 text-primary-foreground" : "bg-muted")}>
+                                                                                        <div>
+                                                                                            <p className="font-bold truncate">{subject?.name}</p>
+                                                                                            {slot.batch && <p className="font-medium text-muted-foreground">{slot.batch}</p>}
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</p>
+                                                                                            <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === slot.classroomId)?.name || 'TBD'}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )
+                                                                            })}
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </React.Fragment>
+                                                        )
+                                                    })}
                                                 </div>
                                             </ScrollArea>
                                         </CardContent>
