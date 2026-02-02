@@ -189,100 +189,18 @@ function generateForSingleClass(
     // Fill remaining slots with Library
     for (const day of workingDays) {
         for (const time of LECTURE_TIME_SLOTS) {
-            const isSlotFilled = classSpecificSchedule.some(g => g.day === day && g.time === time);
+            const isSlotFilled = fullSchedule.some(g => g.classId === classToSchedule.id && g.day === day && g.time === time);
             if (!isSlotFilled) {
                 const gene: Gene = {
                     day, time, classId: classToSchedule.id, subjectId: 'LIB001',
                     facultyId: 'FAC_LIB', classroomId: 'CR_LIB', isLab: false,
                 };
                 classSpecificSchedule.push(gene);
+                fullSchedule.push(gene);
             }
         }
     }
     return { schedule: classSpecificSchedule, warnings };
-}
-
-
-function applyTemplateToClass(
-    targetClass: Class,
-    templateSchedule: Gene[],
-    fullSchedule: (Gene | Schedule)[],
-    input: GenerateTimetableInput,
-    facultyWorkload: Map<string, number>,
-    subjectToFacultyMap: Map<string, string[]>
-): { schedule: Gene[] | null, warnings: string[] } {
-    const newSchedule: Gene[] = [];
-    const warnings: string[] = [];
-    const facultyWithExperience = calculateFacultyExperience(input.faculty);
-    const theoryClassrooms = input.classrooms.filter(c => c.type === 'classroom');
-    const labClassrooms = input.classrooms.filter(c => c.type === 'lab');
-
-    for (const templateSlot of templateSchedule) {
-        if (newSchedule.some(g => g.day === templateSlot.day && g.time === templateSlot.time)) {
-            continue; // Slot already filled, likely by the second half of a lab
-        }
-
-        let placed = false;
-        const facultyIds = subjectToFacultyMap.get(templateSlot.subjectId) || [];
-        
-        if (templateSlot.subjectId === 'LIB001') {
-            newSchedule.push({ ...templateSlot, classId: targetClass.id });
-            continue;
-        }
-
-        if (templateSlot.isLab) {
-            const [time1, time2] = LAB_TIME_PAIRS.find(p => p.includes(templateSlot.time))!;
-            const rooms = [...labClassrooms].sort(() => Math.random() - 0.5);
-            for (const room of rooms) {
-                const facultyOptions = [...facultyIds].sort(() => Math.random() - 0.5);
-                for (const facultyId of facultyOptions) {
-                    const facData = facultyWithExperience.find(f => f.id === facultyId);
-                    if (!facData || (facultyWorkload.get(facultyId) || 0) + 2 > (facData.maxWeeklyHours || 18)) continue;
-
-                    const conflict = fullSchedule.some(g => {
-                        if (g.day !== templateSlot.day || (g.time !== time1 && g.time !== time2)) return false;
-                        if (g.facultyId === facultyId || g.classroomId === room.id || g.classId === targetClass.id) return true;
-                        return false;
-                    });
-
-                    if (!conflict) {
-                        const genes: Gene[] = [
-                            { ...templateSlot, time: time1, classId: targetClass.id, facultyId, classroomId: room.id },
-                            { ...templateSlot, time: time2, classId: targetClass.id, facultyId, classroomId: room.id },
-                        ];
-                        newSchedule.push(...genes);
-                        fullSchedule.push(...genes);
-                        facultyWorkload.set(facultyId, (facultyWorkload.get(facultyId) || 0) + 2);
-                        placed = true;
-                        break;
-                    }
-                }
-                if (placed) break;
-            }
-        } else { // Theory
-            const rooms = [...theoryClassrooms].sort(() => Math.random() - 0.5);
-            for (const room of rooms) {
-                const facultyOptions = [...facultyIds].sort(() => Math.random() - 0.5);
-                for (const facultyId of facultyOptions) {
-                    const facData = facultyWithExperience.find(f => f.id === facultyId);
-                    if (!facData || (facultyWorkload.get(facultyId) || 0) + 1 > (facData.maxWeeklyHours || 18)) continue;
-                    
-                    const conflict = fullSchedule.some(g => g.day === templateSlot.day && g.time === templateSlot.time && (g.facultyId === facultyId || g.classroomId === room.id || g.classId === targetClass.id));
-                    if (!conflict) {
-                        newSchedule.push({ ...templateSlot, classId: targetClass.id, facultyId, classroomId: room.id });
-                        fullSchedule.push({ ...templateSlot, classId: targetClass.id, facultyId, classroomId: room.id });
-                        facultyWorkload.set(facultyId, (facultyWorkload.get(facultyId) || 0) + 1);
-                        placed = true;
-                        break;
-                    }
-                }
-                if (placed) break;
-            }
-        }
-        if (!placed) warnings.push(`Could not apply template for ${input.subjects.find(s=>s.id === templateSlot.subjectId)?.name} at ${templateSlot.day} ${templateSlot.time} to ${targetClass.name}`);
-    }
-
-    return { schedule: newSchedule, warnings };
 }
 
 
@@ -313,32 +231,21 @@ export async function runGA(input: GenerateTimetableInput): Promise<GenerateTime
         return acc;
     }, {} as Record<string, Class[]>);
 
+    // This loop replaces the flawed template logic.
+    // It iterates through all classes and generates a schedule for each one individually,
+    // making the process robust to resource constraints.
     for (const groupKey in classesByGroup) {
         const classGroup = classesByGroup[groupKey].sort((a,b) => a.section.localeCompare(b.section));
-        let templateSchedule: Gene[] | null = null;
-        
-        const firstClass = classGroup[0];
-        const { schedule: generatedTemplate, warnings: templateWarnings } = generateForSingleClass(firstClass, fullSchedule, input, facultyWorkload, subjectToFacultyMap);
-        
-        if (templateWarnings.length > 0) warnings.push(...templateWarnings);
+        for (const classToSchedule of classGroup) {
+            const { schedule, warnings: generationWarnings } = generateForSingleClass(classToSchedule, fullSchedule, input, facultyWorkload, subjectToFacultyMap);
+            
+            if (generationWarnings.length > 0) warnings.push(...generationWarnings);
 
-        if (generatedTemplate) {
-            templateSchedule = generatedTemplate;
-            allGeneratedGenes.push(...generatedTemplate);
-        } else {
-            warnings.push(`Failed to generate a base template for ${firstClass.name}. Aborting for this group.`);
-            continue;
-        }
-
-        for (let i = 1; i < classGroup.length; i++) {
-            const subsequentClass = classGroup[i];
-            const { schedule: appliedSchedule, warnings: applyWarnings } = applyTemplateToClass(subsequentClass, templateSchedule, fullSchedule, input, facultyWorkload, subjectToFacultyMap);
-
-            if (applyWarnings.length > 0) warnings.push(...applyWarnings);
-            if (appliedSchedule) {
-                allGeneratedGenes.push(...appliedSchedule);
+            if (schedule) {
+                allGeneratedGenes.push(...schedule);
+                // Note: fullSchedule is already updated inside generateForSingleClass
             } else {
-                warnings.push(`Failed to apply template to ${subsequentClass.name}.`);
+                warnings.push(`[Critical] Failed to generate a schedule for ${classToSchedule.name}.`);
             }
         }
     }
@@ -369,7 +276,7 @@ export async function runGA(input: GenerateTimetableInput): Promise<GenerateTime
 
     return {
         summary: `Generated timetable for ${classTimetables.length} sections. ${warnings.length > 0 ? `Encountered ${warnings.length} issues.` : 'All constraints satisfied.'}`,
-        optimizationExplanation: `The engine first generates a template for one section, then applies it consistently across all other sections in the same cohort. It prioritizes labs and then fills remaining slots to ensure a dense, conflict-free schedule.`,
+        optimizationExplanation: `The engine now uses an iterative approach. It generates a full schedule for one section, then generates the next by working around the already-scheduled classes, ensuring all sections get a complete, conflict-free timetable.`,
         facultyWorkload: finalWorkload,
         classTimetables,
     };
