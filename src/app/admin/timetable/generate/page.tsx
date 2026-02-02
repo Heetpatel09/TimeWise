@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -24,21 +23,27 @@ import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React from 'react';
 
-const ALL_TIME_SLOTS = [
+const LECTURE_TIME_SLOTS = [
     '07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM',
     '09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM',
     '12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'
 ];
-const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
-const FULL_DAY_SLOTS = [
+const ALL_TIME_SLOTS = [
     '07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM',
     '09:20 AM - 09:30 AM', // Recess
     '09:30 AM - 10:25 AM', '10:25 AM - 11:20 AM',
     '11:20 AM - 12:20 PM', // Lunch
     '12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM'
 ];
+const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BREAK_SLOTS = ['09:20 AM - 09:30 AM', '11:20 AM - 12:20 PM'];
+const LAB_TIME_PAIRS: [string, string][] = [
+    ['07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM'],
+    ['12:20 PM - 01:15 PM', '01:15 PM - 02:10 PM']
+];
+
 
 function sortTime(a: string, b: string) {
     const toMinutes = (time: string) => {
@@ -123,9 +128,14 @@ export default function TimetableGeneratorPage() {
             
             setGeneratedData(prev => {
                 if (!prev) return null;
+                const newClassTimetables = prev.classTimetables.filter(ct => ct.classId !== classId);
+                if (newClassTimetables.length === 0) {
+                    setReviewDialogOpen(false); // Close dialog if no more timetables to review
+                    return null;
+                }
                 return {
                     ...prev,
-                    classTimetables: prev.classTimetables.filter(ct => ct.classId !== classId)
+                    classTimetables: newClassTimetables,
                 }
             })
 
@@ -211,7 +221,7 @@ export default function TimetableGeneratorPage() {
                                                     </div>
                                                     {ALL_DAYS.filter(d => d !== 'Saturday').map(day => <div key={day} className="font-semibold p-2 text-center border-b border-r bg-muted">{day}</div>)}
                                                     
-                                                    {FULL_DAY_SLOTS.sort(sortTime).map(time => {
+                                                    {ALL_TIME_SLOTS.sort(sortTime).map(time => {
                                                         const isBreak = BREAK_SLOTS.includes(time);
                                                         return (
                                                             <React.Fragment key={time}>
