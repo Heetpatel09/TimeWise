@@ -92,6 +92,12 @@ export default function TimetableGeneratorPage() {
     }, [classes, selectedDepartmentId, selectedSemester]);
     
     useEffect(() => {
+        if (departments && departments.length > 0 && !selectedDepartmentId) {
+            setSelectedDepartmentId(departments[0].id);
+        }
+    }, [departments, selectedDepartmentId]);
+
+    useEffect(() => {
         setSelectedSemester('all');
     }, [selectedDepartmentId]);
 
@@ -199,7 +205,7 @@ export default function TimetableGeneratorPage() {
                            <div className="space-y-2">
                                 <Label htmlFor="department">Department</Label>
                                 <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
-                                    <SelectTrigger className="w-[250px]" id="department">
+                                    <SelectTrigger className="w-full sm:w-[250px]" id="department">
                                         <SelectValue placeholder="Select a Department" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -210,7 +216,7 @@ export default function TimetableGeneratorPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="semester">Semester</Label>
                                 <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedDepartmentId}>
-                                    <SelectTrigger className="w-[180px]" id="semester">
+                                    <SelectTrigger className="w-full sm:w-[180px]" id="semester">
                                         <SelectValue placeholder="Select Semester" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -221,7 +227,7 @@ export default function TimetableGeneratorPage() {
                              <div className="space-y-2">
                                 <Label htmlFor="class">Class</Label>
                                 <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedDepartmentId}>
-                                    <SelectTrigger className="w-[250px]" id="class">
+                                    <SelectTrigger className="w-full sm:w-[250px]" id="class">
                                         <SelectValue placeholder="Select Class" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -244,10 +250,10 @@ export default function TimetableGeneratorPage() {
                 <DialogContent className="max-w-7xl">
                     <DialogHeader>
                         <DialogTitle>Review Generated Timetable</DialogTitle>
-                        <DialogDescription>
+                         <DialogDescription>
                             {generatedData?.summary || "Review the generated timetable for each section."}
+                            {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                         </DialogDescription>
-                        {generatedData?.optimizationExplanation && <p className="text-sm text-muted-foreground pt-2">{generatedData.optimizationExplanation}</p>}
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
@@ -273,7 +279,7 @@ export default function TimetableGeneratorPage() {
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {ALL_TIME_SLOTS.sort(sortTime).map((time, timeIndex) => {
+                                                        {ALL_TIME_SLOTS.sort(sortTime).map((time) => {
                                                             if (BREAK_SLOTS.includes(time)) {
                                                                 return (
                                                                     <TableRow key={time}>
@@ -285,23 +291,23 @@ export default function TimetableGeneratorPage() {
                                                                 )
                                                             }
                                                             
+                                                            const isSecondHalfOfLab = LAB_TIME_PAIRS.some(pair => time === pair[1]);
+                                                            if (isSecondHalfOfLab) return null;
+                                                            
                                                             return (
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
                                                                     {ALL_DAYS.map(day => {
                                                                         const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
-                                                                        const isLabStart = slotsInCell.some(s => s.isLab);
-
-                                                                        const isContinuationOfLab = isLabStart ? false : LAB_TIME_PAIRS.some(pair =>
-                                                                            time === pair[1] &&
-                                                                            ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
-                                                                        );
-
-                                                                        if (isContinuationOfLab) return null;
-
+                                                                        const isLab = slotsInCell.some(s => s.isLab);
+                                                                        
+                                                                        if (slotsInCell.length === 0) {
+                                                                            return <TableCell key={day} className="p-1 align-top"></TableCell>;
+                                                                        }
+                                                                        
                                                                         return (
-                                                                            <TableCell key={day} className="p-1 align-top" rowSpan={isLabStart ? 2 : 1}>
-                                                                                <div className={cn("h-full", isLabStart && "grid grid-cols-2 gap-1")}>
+                                                                            <TableCell key={day} className="p-1 align-top" rowSpan={isLab ? 2 : 1}>
+                                                                                <div className={cn("h-full", isLab && "grid grid-cols-2 gap-1")}>
                                                                                     {slotsInCell.map((slot, index) => {
                                                                                         const subject = subjects?.find(s => s.id === slot.subjectId);
                                                                                         if (subject?.id === 'LIB001') {
