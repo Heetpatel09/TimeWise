@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import React from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 const ALL_TIME_SLOTS = [
     '07:30 AM - 08:25 AM', '08:25 AM - 09:20 AM',
@@ -54,6 +55,7 @@ function sortTime(a: string, b: string) {
 
 export default function TimetableGeneratorPage() {
     const { toast } = useToast();
+    const { user } = useAuth();
     const queryClient = useQueryClient();
 
     const { data: classes, isLoading: classesLoading } = useQuery<Class[]>({ queryKey: ['classes'], queryFn: getClasses });
@@ -155,6 +157,10 @@ export default function TimetableGeneratorPage() {
     };
     
     const handleApplyScheduleForClass = async (classId: string, timetable: Omit<Schedule, 'id'>[]) => {
+        if (user?.isGuest) {
+            toast({ title: 'Guest Mode', description: 'Login to save your work permanently.' });
+            return;
+        }
         setApplyingClass(classId);
         try {
             await applyScheduleForClass(classId, timetable);
@@ -252,8 +258,8 @@ export default function TimetableGeneratorPage() {
                         <DialogTitle>Review Generated Timetable</DialogTitle>
                          <DialogDescription>
                             {generatedData?.summary || "Review the generated timetable for each section."}
-                            {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                         </DialogDescription>
+                        {generatedData?.optimizationExplanation && <p className="mt-1 text-sm text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
@@ -291,52 +297,45 @@ export default function TimetableGeneratorPage() {
                                                                 )
                                                             }
                                                             
-                                                            const isSecondHalfOfLab = LAB_TIME_PAIRS.some(pair => time === pair[1]);
-                                                            if (isSecondHalfOfLab) return null;
-                                                            
+                                                            const slotsForTime = ct.timetable.filter(g => g.time === time);
+                                                            const isLabMerged: Record<string, boolean> = {};
+
                                                             return (
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
                                                                     {ALL_DAYS.map(day => {
-                                                                        const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
-                                                                        const isLab = slotsInCell.some(s => s.isLab);
+                                                                         const slotForCell = slotsForTime.find(s => s.day === day);
                                                                         
-                                                                        if (slotsInCell.length === 0) {
-                                                                            return <TableCell key={day} className="p-1 align-top"></TableCell>;
+                                                                         if (slotForCell?.isLab) {
+                                                                            const pairKey = `${day}-${slotForCell.subjectId}-${slotForCell.batch}`;
+                                                                            const isSecondHalfOfLab = LAB_TIME_PAIRS.some(p => p[1] === time);
+                                                                            if (isSecondHalfOfLab || isLabMerged[pairKey]) {
+                                                                                 return null; 
+                                                                            }
+                                                                            isLabMerged[pairKey] = true;
                                                                         }
                                                                         
                                                                         return (
-                                                                            <TableCell key={day} className="p-1 align-top" rowSpan={isLab ? 2 : 1}>
-                                                                                <div className={cn("h-full", isLab && "grid grid-cols-2 gap-1")}>
-                                                                                    {slotsInCell.map((slot, index) => {
-                                                                                        const subject = subjects?.find(s => s.id === slot.subjectId);
-                                                                                        if (subject?.id === 'LIB001') {
-                                                                                            return (
-                                                                                                <div key={index} className="bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-md p-2 h-full flex flex-col items-center justify-center text-center">
+                                                                            <TableCell key={day} className="p-1 align-top" rowSpan={slotForCell?.isLab ? 2 : 1}>
+                                                                                {slotForCell && (
+                                                                                     slotForCell.subjectId === 'LIB001' ? (
+                                                                                                <div className="bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-md p-2 h-full flex flex-col items-center justify-center text-center">
                                                                                                     <Library className="h-5 w-5 mb-1"/>
                                                                                                     <p className="font-semibold text-xs">Library</p>
                                                                                                 </div>
-                                                                                            )
-                                                                                        }
-                                                                                        
-                                                                                        let bgColor = "bg-muted";
-                                                                                        if (slot.isLab) bgColor = "bg-purple-100 dark:bg-purple-900/40";
-                                                                                        else if (subject?.isSpecial) bgColor = "bg-primary/10";
-                                                                                        
-                                                                                        return (
-                                                                                            <div key={index} className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", bgColor)}>
+                                                                                            ) : (
+                                                                                            <div className={cn("rounded-md p-2 text-[11px] leading-tight shadow-sm h-full flex flex-col justify-between", slotForCell.isLab ? "bg-purple-100 dark:bg-purple-900/40" : (subjects?.find(s => s.id === slotForCell.subjectId)?.isSpecial ? 'bg-primary/10' : 'bg-muted'))}>
                                                                                                 <div>
-                                                                                                    <p className="font-bold truncate">{subject?.name}</p>
-                                                                                                    {slot.isLab && <p className="font-medium text-purple-800 dark:text-purple-200">{slot.batch}</p>}
+                                                                                                    <p className="font-bold truncate">{subjects?.find(s => s.id === slotForCell.subjectId)?.name}</p>
+                                                                                                    {slotForCell.isLab && <p className="font-medium text-purple-800 dark:text-purple-200">{slotForCell.batch}</p>}
                                                                                                 </div>
                                                                                                 <div>
-                                                                                                    <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slot.facultyId)?.name}</p>
-                                                                                                    <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === slot.classroomId)?.name || 'TBD'}</p>
+                                                                                                    <p className="truncate text-muted-foreground">{faculty?.find(f=>f.id === slotForCell.facultyId)?.name}</p>
+                                                                                                    <p className="truncate font-semibold text-muted-foreground">{classrooms?.find(c=>c.id === slotForCell.classroomId)?.name || 'TBD'}</p>
                                                                                                 </div>
                                                                                             </div>
                                                                                         )
-                                                                                    })}
-                                                                                </div>
+                                                                                )}
                                                                             </TableCell>
                                                                         )
                                                                     })}
