@@ -58,5 +58,3 @@ export const testApiKey = ai.defineFlow(
 export async function testApiKeyFlow(): Promise<{success: boolean, error?: string}> {
   return testApiKey();
 }
-
-    

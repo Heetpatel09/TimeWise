@@ -48,5 +48,3 @@ const generateSeatingArrangement = ai.defineFlow(
 export async function generateSeatingArrangementFlow(input: GenerateSeatingArrangementInput): Promise<GenerateSeatingArrangementOutput> {
     return generateSeatingArrangement(input);
 }
-
-    
