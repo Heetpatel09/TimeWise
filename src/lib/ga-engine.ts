@@ -58,8 +58,8 @@ const LAB_TIME_PAIRS: [string, string][] = [
 ];
 
 const getHoursForSubject = (subject: { type: string, credits?: number | null }): number => {
-    if (subject.type === 'lab') return 2;
-    return subject.credits || 2;
+    if (subject.type === 'lab') return 2; // Labs are always 2-hour blocks
+    return subject.credits || 3; // Default to 3 hours for a theory subject if not specified
 };
 
 function calculateFacultyExperience(faculty: GenerateTimetableInput['faculty']): (GenerateTimetableInput['faculty'][0] & { experience: number; level: 'Senior' | 'Mid-Level' | 'Junior' })[] {
@@ -94,15 +94,6 @@ function createLectureListForClass(allSubjects: GenerateTimetableInput['subjects
         }
     }
     
-    // This logic is now handled by the main engine's filling step.
-    // const totalWorkingSlots = workingDays.length * LECTURE_TIME_SLOTS.length;
-    // const academicLecturesCount = lectures.filter(l => l.isLab).length * 2 + lectures.filter(l => !l.isLab).length;
-    // const librarySlotsNeeded = Math.max(0, totalWorkingSlots - academicLecturesCount);
-
-    // for (let i = 0; i < librarySlotsNeeded; i++) {
-    //     lectures.push({ classId: classInfo.id, subjectId: 'LIB001', isLab: false });
-    // }
-
     lectures.sort((a, b) => (b.isLab ? 1 : 0) - (a.isLab ? 1 : 0));
     return lectures;
 }
