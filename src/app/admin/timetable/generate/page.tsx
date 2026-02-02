@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -65,6 +64,8 @@ export default function TimetableGeneratorPage() {
     const { data: departments, isLoading: departmentsLoading } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments });
 
     const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
+    const [selectedSemester, setSelectedSemester] = useState<string>('all');
+    const [selectedClassId, setSelectedClassId] = useState<string>('all');
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -72,6 +73,31 @@ export default function TimetableGeneratorPage() {
     const [applyingClass, setApplyingClass] = useState<string | null>(null);
 
     const isLoading = classesLoading || subjectsLoading || facultyLoading || classroomsLoading || scheduleLoading || departmentsLoading;
+    
+    const semesterOptions = useMemo(() => {
+        if (!classes || !selectedDepartmentId) return [];
+        const semesters = new Set(
+            classes.filter(c => c.departmentId === selectedDepartmentId).map(c => c.semester.toString())
+        );
+        return ['all', ...Array.from(semesters).sort((a, b) => parseInt(a) - parseInt(b))];
+    }, [classes, selectedDepartmentId]);
+
+    const classOptions = useMemo(() => {
+        if (!classes || !selectedDepartmentId) return [];
+        let filtered = classes.filter(c => c.departmentId === selectedDepartmentId);
+        if (selectedSemester !== 'all') {
+            filtered = filtered.filter(c => c.semester.toString() === selectedSemester);
+        }
+        return [{id: 'all', name: 'All Filtered Classes', section: '', departmentId: '', semester: 0}, ...filtered];
+    }, [classes, selectedDepartmentId, selectedSemester]);
+    
+    useEffect(() => {
+        setSelectedSemester('all');
+    }, [selectedDepartmentId]);
+
+    useEffect(() => {
+        setSelectedClassId('all');
+    }, [selectedSemester]);
 
     const handleGenerate = async () => {
         if (!selectedDepartmentId || !classes || !subjects || !faculty || !classrooms || !departments) {
@@ -80,10 +106,17 @@ export default function TimetableGeneratorPage() {
         }
 
         setIsGenerating(true);
-
-        const relevantClasses = classes.filter(c => c.departmentId === selectedDepartmentId);
+        
+        let relevantClasses = classes.filter(c => c.departmentId === selectedDepartmentId);
+        if (selectedSemester !== 'all') {
+            relevantClasses = relevantClasses.filter(c => c.semester.toString() === selectedSemester);
+        }
+        if (selectedClassId !== 'all') {
+            relevantClasses = relevantClasses.filter(c => c.id === selectedClassId);
+        }
+        
         if (relevantClasses.length === 0) {
-            toast({ title: 'No Classes Found', description: 'There are no classes in the selected department to generate a timetable for.', variant: 'destructive' });
+            toast({ title: 'No Classes Found', description: 'There are no classes that match your filter criteria.', variant: 'destructive' });
             setIsGenerating(false);
             return;
         }
@@ -100,11 +133,11 @@ export default function TimetableGeneratorPage() {
                 existingSchedule: existingSchedule || [],
             });
             
-            if (result && result.classTimetables) {
+            if (result && result.classTimetables && result.classTimetables.length > 0) {
                 setGeneratedData(result);
                 setReviewDialogOpen(true);
             } else {
-                 toast({ title: 'Generation Failed', description: 'The AI engine returned an empty or invalid response.', variant: 'destructive' });
+                 toast({ title: 'Generation Failed', description: result.summary || 'The AI engine returned an empty or invalid response.', variant: 'destructive' });
             }
         } catch (e: any) {
             console.error("Timetable generation caught error:", e);
@@ -158,11 +191,11 @@ export default function TimetableGeneratorPage() {
                         Generate an optimized, conflict-free timetable for all sections within a department.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                      {isLoading ? (
                          <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
                      ) : (
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-wrap gap-4 items-end">
                            <div className="space-y-2">
                                 <Label htmlFor="department">Department</Label>
                                 <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
@@ -171,6 +204,28 @@ export default function TimetableGeneratorPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {departments?.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="semester">Semester</Label>
+                                <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedDepartmentId}>
+                                    <SelectTrigger className="w-[180px]" id="semester">
+                                        <SelectValue placeholder="Select Semester" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {semesterOptions.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Semesters' : `Semester ${s}`}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="class">Class</Label>
+                                <Select value={selectedClassId} onValueChange={setSelectedClassId} disabled={!selectedDepartmentId}>
+                                    <SelectTrigger className="w-[250px]" id="class">
+                                        <SelectValue placeholder="Select Class" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {classOptions.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -234,19 +289,15 @@ export default function TimetableGeneratorPage() {
                                                                 <TableRow key={time} className="h-28">
                                                                     <TableCell className="font-medium align-top text-xs p-2">{time}</TableCell>
                                                                     {ALL_DAYS.map(day => {
-                                                                        const previousTime = timeIndex > 0 ? ALL_TIME_SLOTS.sort(sortTime)[timeIndex - 1] : null;
-                                                                        if (previousTime) {
-                                                                            const isContinuationOfLab = LAB_TIME_PAIRS.some(pair =>
-                                                                                time === pair[1] &&
-                                                                                ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
-                                                                            );
-                                                                            if (isContinuationOfLab) {
-                                                                                return null;
-                                                                            }
-                                                                        }
-
                                                                         const slotsInCell = ct.timetable.filter(g => g.day === day && g.time === time);
                                                                         const isLabStart = slotsInCell.some(s => s.isLab);
+
+                                                                        const isContinuationOfLab = isLabStart ? false : LAB_TIME_PAIRS.some(pair =>
+                                                                            time === pair[1] &&
+                                                                            ct.timetable.some(slot => slot.day === day && slot.time === pair[0] && slot.isLab)
+                                                                        );
+
+                                                                        if (isContinuationOfLab) return null;
 
                                                                         return (
                                                                             <TableCell key={day} className="p-1 align-top" rowSpan={isLabStart ? 2 : 1}>
@@ -309,5 +360,3 @@ export default function TimetableGeneratorPage() {
         </DashboardLayout>
     );
 }
-
-    
