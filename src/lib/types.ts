@@ -167,7 +167,7 @@ export const GenerateTimetableInputSchema = z.object({
   subjects: z.array(SubjectSchema),
   faculty: z.array(FacultySchema),
   classrooms: z.array(z.any()),
-  departments: z.array(DepartmentSchema),
+  departments: z.array(DepartmentSchema).optional(),
   existingSchedule: z.array(z.any()).describe("The existing schedule for all other classes to avoid conflicts."),
 });
 export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema>;
@@ -185,6 +185,7 @@ export const GenerateTimetableOutputSchema = z.object({
         facultyId: z.string(),
         classroomId: z.string(),
         batch: z.string().optional(),
+        isLab: z.boolean(),
     }))
   })),
   facultyWorkload: z.array(z.object({
