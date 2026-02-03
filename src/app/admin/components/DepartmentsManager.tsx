@@ -1,0 +1,1118 @@
+
+
+'use client';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
+import { getClasses, addClass, updateClass, deleteClass } from '@/lib/services/classes';
+import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
+import { getDepartments, addDepartment, updateDepartment, deleteDepartment } from '@/lib/services/departments';
+import type { Subject, Class, Faculty, Department } from '@/lib/types';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, Beaker, Pencil, ChevronsUpDown, Check, X, Eye, EyeOff, Copy, UserCheck, Users, GraduationCap, Wand2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from '@/components/ui/checkbox';
+
+
+const CREDIT_OPTIONS = [4, 3, 2, 1];
+const DESIGNATION_OPTIONS = ['Professor', 'Assistant Professor', 'Lecturer'];
+const YEAR_OPTIONS = [1, 2, 3, 4];
+
+const facultySchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email(),
+    code: z.string().min(1, "Staff ID is required"),
+    departmentId: z.string().min(1, "Department is required"),
+    designation: z.string().min(1, "Designation is required"),
+    employmentType: z.enum(['full-time', 'part-time', 'contract']),
+    maxWeeklyHours: z.coerce.number().min(1, "Required").max(48, "Cannot exceed 48"),
+    designatedYear: z.coerce.number().min(1, "Required"),
+    allottedSubjects: z.array(z.string()).optional(),
+});
+
+function FacultyForm({
+  faculty,
+  onSave,
+  onCancel,
+  isSubmitting,
+  departments,
+  subjects,
+  facultyCount,
+}: {
+  faculty: Partial<Faculty>;
+  onSave: (data: z.infer<typeof facultySchema>, password?: string) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  departments: Department[];
+  subjects: Subject[];
+  facultyCount: number;
+}) {
+  const form = useForm<z.infer<typeof facultySchema>>({
+    resolver: zodResolver(facultySchema),
+    defaultValues: {
+        name: faculty.name || '',
+        email: faculty.email || '',
+        code: faculty.code || '',
+        designation: faculty.designation || '',
+        employmentType: faculty.employmentType || 'full-time',
+        departmentId: faculty.departmentId || '',
+        maxWeeklyHours: faculty.maxWeeklyHours || 20,
+        designatedYear: faculty.designatedYear || 1,
+        allottedSubjects: faculty.allottedSubjects || [],
+    },
+  });
+
+  const [isCodeManuallyEdited, setIsCodeManuallyEdited] = useState(!!faculty.code);
+  
+  useEffect(() => {
+    const watchedCode = form.watch('code');
+    const currentEmail = form.getValues('email');
+    if (watchedCode && !isCodeManuallyEdited && !currentEmail) {
+        form.setValue('email', `${watchedCode.toLowerCase()}@timewise.app`, { shouldValidate: true });
+    }
+  }, [form.watch('code'), form, isCodeManuallyEdited]);
+
+  useEffect(() => {
+    form.reset({
+        name: faculty.name || '',
+        email: faculty.email || '',
+        code: faculty.code || '',
+        designation: faculty.designation || '',
+        employmentType: faculty.employmentType || 'full-time',
+        departmentId: faculty.departmentId || '',
+        maxWeeklyHours: faculty.maxWeeklyHours || 20,
+        designatedYear: faculty.designatedYear || 1,
+        allottedSubjects: faculty.allottedSubjects || [],
+    });
+    setIsCodeManuallyEdited(!!faculty.code);
+  }, [faculty, form]);
+
+
+  const [passwordOption, setPasswordOption] = useState<'auto' | 'manual'>('auto');
+  const [manualPassword, setManualPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubjectPopoverOpen, setSubjectPopoverOpen] = useState(false);
+  const { toast } = useToast();
+  
+  const selectedDepartmentId = form.watch('departmentId');
+  const availableSubjects = useMemo(() => subjects.filter(s => s.departmentId === selectedDepartmentId), [subjects, selectedDepartmentId]);
+  
+  const generateStaffId = () => {
+    const { designatedYear, designation, departmentId } = form.getValues();
+    const department = departments.find(d => d.id === departmentId);
+
+    if (!designatedYear || !designation || !department) {
+        toast({ title: "Missing Information", description: "Please select Designated Year, Designation, and Department to generate an ID.", variant: "destructive" });
+        return;
+    }
+
+    const yearOfJoining = new Date().getFullYear().toString().slice(-2); // AB
+    const desYear = designatedYear.toString().padStart(2, '0'); // CD
+
+    let positionCode = '00'; // EF
+    if (designation === 'Professor') positionCode = '01';
+    else if (designation === 'Assistant Professor') positionCode = '02';
+    else if (designation === 'Lecturer') positionCode = '03';
+    
+    const deptCode = department.code.padStart(3, '0'); // GHI
+    
+    const sequentialPart = (facultyCount + 1).toString().padStart(3, '0'); // JKL
+
+    const newCode = `${yearOfJoining}${desYear}${positionCode}${deptCode}${sequentialPart}`;
+    form.setValue('code', newCode, { shouldValidate: true });
+    setIsCodeManuallyEdited(true); // Mark as manually edited to prevent email override
+    toast({ title: "Staff ID Generated!", description: `ID: ${newCode}` });
+  };
+
+  const handleSubmit = async (data: z.infer<typeof facultySchema>) => {
+    if (!faculty.id && passwordOption === 'manual' && !manualPassword) {
+      toast({ title: "Password Required", description: "Please enter a password for the new faculty member.", variant: "destructive" });
+      return;
+    }
+    
+    const { maxWeeklyHours, employmentType } = data;
+    if (employmentType === 'part-time' && (maxWeeklyHours! < 15 || maxWeeklyHours! > 30)) {
+        form.setError('maxWeeklyHours', { message: 'Part-time hours must be between 15 and 30.'});
+        return;
+    }
+
+    await onSave(data, passwordOption === 'manual' ? manualPassword : undefined);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="grid grid-rows-[1fr_auto] gap-4 h-full">
+        <div className="overflow-y-auto pr-4 -mr-4">
+        <div className="grid gap-4 py-4">
+            <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+        
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                <FormField control={form.control} name="code" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Staff ID</FormLabel>
+                        <FormControl>
+                            <Input {...field} disabled={isSubmitting} onChange={(e) => { field.onChange(e); setIsCodeManuallyEdited(true); }} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <Button type="button" variant="outline" onClick={generateStaffId} disabled={isSubmitting || faculty.id !== undefined}>
+                    <Wand2 className="h-4 w-4" />
+                </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+                 <FormField control={form.control} name="designation" render={({ field }) => (<FormItem><FormLabel>Designation</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select designation"/></SelectTrigger></FormControl><SelectContent>{DESIGNATION_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                 <FormField control={form.control} name="designatedYear" render={({ field }) => (<FormItem><FormLabel>Designated Year</FormLabel><Select onValueChange={(v) => field.onChange(parseInt(v))} defaultValue={field.value?.toString()}><FormControl><SelectTrigger><SelectValue placeholder="Select year"/></SelectTrigger></FormControl><SelectContent>{YEAR_OPTIONS.map(y => <SelectItem key={y} value={y.toString()}>Year {y}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+            </div>
+
+        <FormField
+          control={form.control}
+          name="departmentId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Department</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="allottedSubjects"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Allotted Subjects</FormLabel>
+              <Popover open={isSubjectPopoverOpen} onOpenChange={setSubjectPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between h-auto min-h-10",
+                        !field.value?.length && "text-muted-foreground"
+                      )}
+                    >
+                      <div className="flex gap-1 flex-wrap">
+                        {field.value && field.value.length > 0
+                          ? field.value.map((subId) => {
+                               const sub = availableSubjects.find(s => s.id === subId);
+                               return (
+                                <Badge
+                                  variant="secondary"
+                                  key={subId}
+                                  className="mr-1"
+                                >
+                                  {sub?.name || subId}
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
+                                    className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      field.onChange(field.value?.filter((id) => id !== subId));
+                                    }}
+                                  >
+                                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                  </span>
+                                </Badge>
+                              )
+                            })
+                          : "Select subjects"}
+                      </div>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search subjects..." />
+                    <CommandList>
+                        <CommandEmpty>No subjects found for this department.</CommandEmpty>
+                        <CommandGroup>
+                            <ScrollArea className='h-48'>
+                          {availableSubjects.map((sub) => (
+                            <CommandItem
+                              value={sub.name}
+                              key={sub.id}
+                              onSelect={() => {
+                                const currentValue = field.value || [];
+                                const newValue = currentValue.includes(sub.id)
+                                  ? currentValue.filter((id) => id !== sub.id)
+                                  : [...currentValue, sub.id];
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value?.includes(sub.id)
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {sub.name}
+                            </CommandItem>
+                          ))}
+                          </ScrollArea>
+                        </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>Employment Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger></FormControl><SelectContent><SelectItem value="full-time">Full-time</SelectItem><SelectItem value="part-time">Part-time</SelectItem><SelectItem value="contract">Contract</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="maxWeeklyHours" render={({ field }) => (<FormItem><FormLabel>Max Working Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
+        </div>
+
+
+        {!faculty.id && (
+            <>
+                <div className="space-y-2"><Label>Password</Label>
+                <RadioGroup value={passwordOption} onValueChange={(v: 'auto' | 'manual') => setPasswordOption(v)} className="flex gap-4 pt-2">
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="auto" id="auto-faculty" /><Label htmlFor="auto-faculty">Auto-generate</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="manual" id="manual-faculty" /><Label htmlFor="manual-faculty">Manual</Label></div>
+                </RadioGroup>
+                </div>
+                {passwordOption === 'manual' && (
+                  <div className="space-y-2">
+                      <Label htmlFor="manual-password">Set Password</Label>
+                      <div className="relative">
+                          <Input 
+                              id="manual-password" 
+                              type={showPassword ? "text" : "password"}
+                              value={manualPassword} 
+                              onChange={(e) => setManualPassword(e.target.value)} 
+                              className="pr-10"
+                              disabled={isSubmitting}
+                          />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute inset-y-0 right-0 h-full px-3"
+                              onClick={() => setShowPassword(!showPassword)}
+                              >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                      </div>
+                  </div>
+              )}
+            </>
+        )}
+        </div>
+        </div>
+        <DialogFooter className="mt-4 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  )
+}
+
+
+export default function DepartmentsManager() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: subjects = [], isLoading: isSubjectsLoading } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: getSubjects });
+  const { data: classes = [], isLoading: isClassesLoading } = useQuery<Class[]>({ queryKey: ['classes'], queryFn: getClasses });
+  const { data: allFaculty = [], isLoading: isFacultyLoading } = useQuery<Faculty[]>({ queryKey: ['faculty'], queryFn: getFaculty });
+  const { data: departments = [], isLoading: isDepartmentsLoading } = useQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments });
+  
+  const isLoading = isSubjectsLoading || isClassesLoading || isFacultyLoading || isDepartmentsLoading;
+
+  const [isClassDialogOpen, setClassDialogOpen] = useState(false);
+  const [isSubjectDialogOpen, setSubjectDialogOpen] = useState(false);
+  const [isDeptDialogOpen, setDeptDialogOpen] = useState(false);
+  const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
+  
+  const [currentClass, setCurrentClass] = useState<Partial<Class>>({});
+  const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
+  const [currentFaculty, setCurrentFaculty] = useState<Partial<Faculty>>({});
+  const [newFacultyCredentials, setNewFacultyCredentials] = useState<{ email: string, initialPassword?: string } | null>(null);
+
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
+  const [selectedSemester, setSelectedSemester] = useState('all');
+  
+  const [newDepartment, setNewDepartment] = useState({ name: '', code: ''});
+  const [isRenameDeptDialogOpen, setRenameDeptDialogOpen] = useState(false);
+  const [renamingDepartment, setRenamingDepartment] = useState({ id: '', name: '', code: ''});
+  const [createLabForSubject, setCreateLabForSubject] = useState(false);
+  
+  useEffect(() => {
+      if(departments.length > 0 && !selectedDepartmentId){
+        setSelectedDepartmentId(departments[0].id);
+      }
+  }, [departments, selectedDepartmentId]);
+
+  const semestersInDept = useMemo(() => {
+    if (!selectedDepartmentId || !classes) return [];
+    return ['all', ...Array.from(new Set(classes.filter(c => c.departmentId === selectedDepartmentId).map(c => c.semester.toString()))).sort()];
+  }, [classes, selectedDepartmentId]);
+
+  useEffect(() => {
+    if (selectedDepartmentId && !semestersInDept.includes(selectedSemester)) {
+        setSelectedSemester('all');
+    }
+  }, [selectedDepartmentId, selectedSemester, semestersInDept]);
+
+  
+  const classMutation = useMutation({
+    mutationFn: async (classData: Omit<Class, 'id'> & { id?: string }) => {
+      if (classData.id) {
+        return updateClass(classData as Class);
+      } else {
+        return addClass(classData);
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      toast({ title: variables.id ? "Class Updated" : "Class Added" });
+      setClassDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const subjectMutation = useMutation({
+    mutationFn: async (data: { subjectData: Omit<Subject, 'id'> & { id?: string }, createLab?: boolean }) => {
+      const { subjectData, createLab } = data;
+      if (subjectData.id) {
+        // update returns a single subject, wrap it in an array for consistent type
+        const updated = await updateSubject(subjectData as Subject);
+        return [updated]; 
+      } else {
+        // addSubject now returns an array of subjects
+        return addSubject(subjectData, createLab);
+      }
+    },
+    onSuccess: (createdSubjects, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      let title = "Success";
+      let description = "";
+      if (!variables.subjectData.id) { // It's an add operation
+        title = createdSubjects.length > 1 ? "Subject & Lab Added" : "Subject Added";
+        description = createdSubjects.length > 1 ? `"${createdSubjects[0].name}" and its lab have been created.` : `"${createdSubjects[0].name}" has been created.`;
+      } else {
+        title = "Subject Updated";
+        description = `"${createdSubjects[0].name}" has been updated.`;
+      }
+      toast({ title, description });
+      setSubjectDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const facultyMutation = useMutation({
+    mutationFn: async ({ data, password }: { data: z.infer<typeof facultySchema>, password?: string }) => {
+      if (currentFaculty.id) {
+        return updateFaculty({ ...data, id: currentFaculty.id, allottedSubjects: data.allottedSubjects || [] });
+      } else {
+        const facultyData = {
+          ...data,
+          allottedSubjects: data.allottedSubjects || []
+        } as Omit<Faculty, 'id'>;
+        return addFaculty(facultyData, password);
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      toast({ title: currentFaculty.id ? "Faculty Updated" : "Faculty Added" });
+      setFacultyDialogOpen(false);
+      if (result && 'initialPassword' in result && result.initialPassword) {
+        setNewFacultyCredentials({ email: result.email, initialPassword: result.initialPassword });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+    }
+  });
+  
+  const deleteClassMutation = useMutation({
+    mutationFn: deleteClass,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      toast({ title: "Class Deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deleteSubjectMutation = useMutation({
+    mutationFn: deleteSubject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      toast({ title: "Subject Deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+  
+  const deleteFacultyMutation = useMutation({
+    mutationFn: deleteFaculty,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faculty'] });
+      toast({ title: "Faculty Deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deptMutation = useMutation({
+    mutationFn: async ({ id, name, code }: { id?: string, name: string, code: string }) => {
+      if (id) {
+        return updateDepartment({ id, name, code });
+      } else {
+        await addDepartment({ name, code });
+        // Add a default class when a new department is created
+        const newDept = await queryClient.fetchQuery<Department[]>({ queryKey: ['departments'], queryFn: getDepartments }).then(depts => depts.find(d => d.name === name));
+        if (newDept) {
+            return addClass({
+                name: `${name.trim()} Year 1`,
+                semester: 1,
+                section: 'A',
+                departmentId: newDept.id,
+            });
+        }
+      }
+    },
+    onSuccess: (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['departments'] });
+        queryClient.invalidateQueries({ queryKey: ['classes'] });
+        queryClient.invalidateQueries({ queryKey: ['subjects'] });
+        queryClient.invalidateQueries({ queryKey: ['faculty'] });
+        
+        if (variables.id) {
+            toast({ title: "Department Updated" });
+            setRenameDeptDialogOpen(false);
+        } else {
+            toast({ title: "Department Added" });
+            setDeptDialogOpen(false);
+            // Don't auto-select, let user find it.
+        }
+    },
+    onError: (error: any) => {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const selectedDepartment = useMemo(() => departments.find(d => d.id === selectedDepartmentId), [departments, selectedDepartmentId]);
+
+  const classesInDept = useMemo(() => {
+    if (!selectedDepartmentId) return [];
+    const filtered = classes.filter(c => c.departmentId === selectedDepartmentId);
+    if (selectedSemester === 'all') return filtered;
+    return filtered.filter(c => c.semester.toString() === selectedSemester);
+  }, [classes, selectedDepartmentId, selectedSemester]);
+
+  const subjectsInDept = useMemo(() => {
+    if (!selectedDepartmentId) return [];
+    const filtered = subjects.filter(s => s.departmentId === selectedDepartmentId);
+    if (selectedSemester === 'all') return filtered;
+    return filtered.filter(s => s.semester.toString() === selectedSemester);
+  }, [subjects, selectedDepartmentId, selectedSemester]);
+
+  const facultyInDept = useMemo(() => {
+    if (!selectedDepartmentId) return [];
+    const filteredByDept = allFaculty.filter(f => f.departmentId === selectedDepartmentId);
+    if (selectedSemester === 'all') return filteredByDept;
+
+    const subjectIdsInSemester = subjects
+        .filter(s => s.departmentId === selectedDepartmentId && s.semester.toString() === selectedSemester)
+        .map(s => s.id);
+        
+    return filteredByDept.filter(f => 
+        (f.allottedSubjects?.some(subId => subjectIdsInSemester.includes(subId))) ||
+        (f.designatedYear && (parseInt(selectedSemester) <= f.designatedYear * 2) && (parseInt(selectedSemester) > (f.designatedYear -1) * 2))
+    );
+  }, [allFaculty, selectedDepartmentId, selectedSemester, subjects]);
+
+  
+  const handleSaveClass = async () => {
+    if (!currentClass || !currentClass.name || !currentClass.semester || !currentClass.section || !selectedDepartmentId) {
+      toast({ title: "Missing information", description: "Please fill out all class fields.", variant: "destructive" });
+      return;
+    }
+    const classToSave: Omit<Class, 'id'> & { id?: string } = {
+        name: currentClass.name,
+        semester: currentClass.semester,
+        section: currentClass.section,
+        departmentId: selectedDepartmentId
+    };
+    if(currentClass.id) classToSave.id = currentClass.id;
+    classMutation.mutate(classToSave);
+  };
+  
+  const handleSaveSubject = async () => {
+    if (!currentSubject || !currentSubject.name || !currentSubject.code || !currentSubject.type || !currentSubject.semester || !selectedDepartmentId) {
+      toast({ title: "Missing information", description: "Please fill out all subject fields.", variant: "destructive" });
+      return;
+    }
+    const subjectToSave: Omit<Subject, 'id'> & { id?: string } = {
+        name: currentSubject.name,
+        code: currentSubject.code,
+        type: currentSubject.type,
+        semester: currentSubject.semester,
+        departmentId: selectedDepartmentId,
+        credits: currentSubject.credits,
+        isSpecial: currentSubject.isSpecial,
+        syllabus: currentSubject.syllabus,
+    };
+    if(currentSubject.id) subjectToSave.id = currentSubject.id;
+
+    subjectMutation.mutate({ subjectData: subjectToSave, createLab: createLabForSubject });
+  };
+  
+  const openNewClassDialog = () => {
+    setCurrentClass({ semester: 1, section: 'A' });
+    setClassDialogOpen(true);
+  };
+
+  const openEditClassDialog = (cls: Class) => {
+    setCurrentClass(cls);
+    setClassDialogOpen(true);
+  };
+
+  const openNewSubjectDialog = () => {
+    setCurrentSubject({ type: 'theory', semester: 1, credits: 3 });
+    setCreateLabForSubject(false);
+    setSubjectDialogOpen(true);
+  };
+  
+  const openEditSubjectDialog = (subject: Subject) => {
+    setCurrentSubject(subject);
+    setCreateLabForSubject(false);
+    setSubjectDialogOpen(true);
+  };
+  
+  const openNewFacultyDialog = () => {
+    setCurrentFaculty({ employmentType: 'full-time', departmentId: selectedDepartmentId || '', maxWeeklyHours: 20, designatedYear: 1, allottedSubjects: [] });
+    setFacultyDialogOpen(true);
+  };
+  
+  const openEditFacultyDialog = (faculty: Faculty) => {
+    setCurrentFaculty(faculty);
+    setFacultyDialogOpen(true);
+  };
+  
+  const openRenameDialog = () => {
+      if (selectedDepartment) {
+          setRenamingDepartment(selectedDepartment);
+          setRenameDeptDialogOpen(true);
+      }
+  }
+
+  const handleAddDepartment = async () => {
+    if (newDepartment.name.trim() && newDepartment.code.trim()) {
+        if (departments.find(d => d.name.toLowerCase() === newDepartment.name.trim().toLowerCase() || d.code.toLowerCase() === newDepartment.code.trim().toLowerCase())) {
+            toast({ title: "Department Exists", description: "This department name or code already exists.", variant: "destructive" });
+            return;
+        }
+        deptMutation.mutate({ name: newDepartment.name.trim(), code: newDepartment.code.trim() });
+    }
+  }
+
+  const handleRenameDepartment = async () => {
+    if (renamingDepartment.name.trim() && renamingDepartment.code.trim() && renamingDepartment.id) {
+        if (departments.find(d => (d.name.toLowerCase() === renamingDepartment.name.trim().toLowerCase() || d.code.toLowerCase() === renamingDepartment.code.trim().toLowerCase()) && d.id !== renamingDepartment.id )) {
+            toast({ title: "Department Exists", description: "This department name or code already exists.", variant: "destructive" });
+            return;
+        }
+        deptMutation.mutate({ id: renamingDepartment.id, name: renamingDepartment.name.trim(), code: renamingDepartment.code.trim() });
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied!', description: 'Password copied to clipboard.' });
+  }
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
+  
+  return (
+    <div className="space-y-6">
+        <div className="flex justify-between items-center flex-wrap gap-4">
+             <div className="flex items-center gap-2 flex-wrap">
+                <Select value={selectedDepartmentId || ''} onValueChange={(val) => {setSelectedDepartmentId(val)}}>
+                    <SelectTrigger className="w-[300px]">
+                        <SelectValue placeholder="Select a Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={openRenameDialog} disabled={!selectedDepartmentId}>
+                    <Pencil className="h-4 w-4" />
+                </Button>
+                <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedDepartmentId}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select a Semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {semestersInDept.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'All Semesters' : `Semester ${s}`}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+            <Button onClick={() => setDeptDialogOpen(true)}>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Department
+            </Button>
+        </div>
+
+       {selectedDepartmentId && selectedDepartment && (
+           <Card key={selectedDepartment.id}>
+                <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className='space-y-1.5'>
+                        <CardTitle className="flex items-center gap-2 text-2xl"><Building className="h-6 w-6" />{selectedDepartment.name}</CardTitle>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="classes">
+                        <TabsList className='mb-4'>
+                            <TabsTrigger value="classes">Classes &amp; Sections</TabsTrigger>
+                            <TabsTrigger value="subjects">Subjects</TabsTrigger>
+                            <TabsTrigger value="faculty">Faculty</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="classes">
+                            <div className='flex justify-end gap-2 mb-4'>
+                                <Button onClick={openNewClassDialog} className="w-full sm:w-auto">
+                                    <PlusCircle className="h-4 w-4 mr-2" /> Add Class/Section
+                                </Button>
+                            </div>
+                            <div className="border rounded-lg">
+                               <ScrollArea className="h-96">
+                                    <Table>
+                                    <TableHeader><TableRow><TableHead>Class Name</TableHead><TableHead>Semester</TableHead><TableHead>Section</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                    <TableBody>
+                                        {classesInDept.length > 0 ? classesInDept.map((cls) => (
+                                            <TableRow key={cls.id}>
+                                                <TableCell>{cls.name}</TableCell>
+                                                <TableCell>{cls.semester}</TableCell>
+                                                <TableCell>{cls.section}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                          <DropdownMenuItem onClick={() => openEditClassDialog(cls)}><Edit className="h-4 w-4 mr-2"/>Edit</DropdownMenuItem>
+                                                          <AlertDialog>
+                                                            <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem></AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the class. Make sure no students are assigned to it.</AlertDialogDescription></AlertDialogHeader>
+                                                                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteClassMutation.mutate(cls.id)}>Delete</AlertDialogAction></AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                         </AlertDialog>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        )) : <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No classes found for this selection.</TableCell></TableRow>}
+                                    </TableBody>
+                                    </Table>
+                                </ScrollArea>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="subjects">
+                            <div className='flex justify-end gap-2 mb-4'>
+                                <Button onClick={openNewSubjectDialog} className="w-full sm:w-auto">
+                                    <PlusCircle className="h-4 w-4 mr-2" /> Add Subject
+                                </Button>
+                            </div>
+                            <div className="border rounded-lg">
+                                <ScrollArea className="h-96">
+                                    <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Assigned Faculty</TableHead>
+                                        <TableHead>Semester</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {subjectsInDept.length > 0 ? subjectsInDept.map((subject) => {
+                                            const assignedFaculty = allFaculty.filter(f => f.allottedSubjects?.includes(subject.id));
+                                            return (
+                                            <TableRow key={subject.id}>
+                                                <TableCell>
+                                                <div>{subject.name}</div>
+                                                <div className="text-xs text-muted-foreground">{subject.code}</div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {assignedFaculty.length > 0 ? (
+                                                      <div className="flex flex-wrap gap-1">
+                                                        {assignedFaculty.map(f => (
+                                                          <Badge key={f.id} variant="secondary" className="text-xs">{f.name}</Badge>
+                                                        ))}
+                                                      </div>
+                                                    ) : <span className="text-xs text-muted-foreground">N/A</span>}
+                                                </TableCell>
+                                                <TableCell>{subject.semester}</TableCell>
+                                                <TableCell className='capitalize'>
+                                                    <Badge variant={subject.type.toLowerCase() === 'lab' ? 'secondary' : 'outline'} className="gap-1">
+                                                        {subject.type.toLowerCase() === 'lab' ? <Beaker className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                                                        {subject.type}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openEditSubjectDialog(subject); }}>
+                                                        <Edit className="h-4 w-4 mr-2" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => deleteSubjectMutation.mutate(subject.id)}>Continue</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                            )
+                                        }) : (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No subjects found for this selection.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                    </Table>
+                                </ScrollArea>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="faculty">
+                             <div className='flex justify-end gap-2 mb-4'>
+                                <Button onClick={openNewFacultyDialog} className="w-full sm:w-auto">
+                                    <PlusCircle className="h-4 w-4 mr-2" /> Add Faculty
+                                </Button>
+                            </div>
+                             <div className="border rounded-lg">
+                                 <ScrollArea className="h-96">
+                                     <Table>
+                                         <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Staff ID</TableHead><TableHead>Designation</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                                         <TableBody>
+                                             {facultyInDept.length > 0 ? facultyInDept.map(fac => (
+                                                 <TableRow key={fac.id}>
+                                                     <TableCell>
+                                                         <div className="flex items-center gap-3">
+                                                            <Avatar>
+                                                                <AvatarImage src={fac.avatar} alt={fac.name} />
+                                                                <AvatarFallback>{fac.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                                            </Avatar>
+                                                            <div>
+                                                                <div className="font-bold">{fac.name}</div>
+                                                                <div className="text-sm text-muted-foreground">{fac.email}</div>
+                                                            </div>
+                                                         </div>
+                                                     </TableCell>
+                                                      <TableCell><Badge variant="outline">{fac.code}</Badge></TableCell>
+                                                     <TableCell>{fac.designation}</TableCell>
+                                                     <TableCell className="text-right">
+                                                         <DropdownMenu>
+                                                             <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                             <DropdownMenuContent>
+                                                                 <DropdownMenuItem onClick={() => openEditFacultyDialog(fac)}><Edit className="h-4 w-4 mr-2"/>Edit</DropdownMenuItem>
+                                                                  <AlertDialog>
+                                                                    <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem></AlertDialogTrigger>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the faculty member.</AlertDialogDescription></AlertDialogHeader>
+                                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteFacultyMutation.mutate(fac.id)}>Delete</AlertDialogAction></AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                 </AlertDialog>
+                                                             </DropdownMenuContent>
+                                                         </DropdownMenu>
+                                                     </TableCell>
+                                                 </TableRow>
+                                             )) : (
+                                                 <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No faculty found for this selection.</TableCell></TableRow>
+                                             )}
+                                         </TableBody>
+                                     </Table>
+                                 </ScrollArea>
+                             </div>
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+           </Card>
+       )}
+
+      {/* Class Dialog */}
+       <Dialog open={isClassDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentClass({}); } setClassDialogOpen(isOpen); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>{currentClass?.id ? 'Edit Class' : `Add Class to ${selectedDepartment?.name}`}</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="c-name">Class Name</Label>
+              <Input id="c-name" value={currentClass.name ?? ''} onChange={(e) => setCurrentClass({ ...currentClass, name: e.target.value })} disabled={classMutation.isPending} placeholder="e.g., Computer Engineering 2024"/>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <Label htmlFor="c-semester">Semester</Label>
+                <Input id="c-semester" type="number" min="1" max="8" value={currentClass.semester ?? ''} onChange={(e) => setCurrentClass({ ...currentClass, semester: parseInt(e.target.value) || 1 })} disabled={classMutation.isPending}/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="c-section">Section</Label>
+                    <Input id="c-section" value={currentClass.section ?? ''} onChange={(e) => setCurrentClass({ ...currentClass, section: e.target.value })} disabled={classMutation.isPending} placeholder="e.g., A, B, 1, 2"/>
+                </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClassDialogOpen(false)} disabled={classMutation.isPending}>Cancel</Button>
+            <Button onClick={handleSaveClass} disabled={classMutation.isPending}>{classMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subject Dialog */}
+      <Dialog open={isSubjectDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) {setCurrentSubject({}); setCreateLabForSubject(false)} setSubjectDialogOpen(isOpen); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>{currentSubject?.id ? 'Edit Subject' : `Add Subject to ${selectedDepartment?.name}`}</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="s-name">Name</Label>
+              <Input id="s-name" value={currentSubject.name ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, name: e.target.value })} disabled={subjectMutation.isPending}/>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="s-code">Code</Label>
+              <Input id="s-code" value={currentSubject.code ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })} disabled={subjectMutation.isPending}/>
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <Label htmlFor="s-type">Type</Label>
+                <Select value={currentSubject.type} onValueChange={(v: 'theory' | 'lab') => setCurrentSubject({ ...currentSubject, type: v })}>
+                    <SelectTrigger id="s-type"><SelectValue placeholder="Select type"/></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="theory">Theory</SelectItem>
+                        <SelectItem value="lab">Lab</SelectItem>
+                    </SelectContent>
+                </Select>
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="s-semester">Semester</Label>
+                <Input id="s-semester" type="number" min="1" max="8" value={currentSubject.semester ?? ''} onChange={(e) => setCurrentSubject({ ...currentSubject, semester: parseInt(e.target.value) || 1 })} disabled={subjectMutation.isPending}/>
+                </div>
+            </div>
+             {currentSubject.type === 'theory' && (
+              <div className="space-y-2">
+                <Label htmlFor="s-credits">Credits (Weekly Hours)</Label>
+                <Select value={currentSubject.credits?.toString()} onValueChange={(v) => setCurrentSubject({ ...currentSubject, credits: v ? parseInt(v) : undefined })}>
+                    <SelectTrigger id="s-credits"><SelectValue placeholder="Select credits"/></SelectTrigger>
+                    <SelectContent>
+                        {CREDIT_OPTIONS.map(c => <SelectItem key={c} value={c.toString()}>{c}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+              </div>
+            )}
+             {!currentSubject.id && currentSubject.type === 'theory' && (
+                <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                        id="create-lab"
+                        checked={createLabForSubject}
+                        onCheckedChange={(checked) => setCreateLabForSubject(!!checked)}
+                        disabled={subjectMutation.isPending}
+                    />
+                    <Label htmlFor="create-lab" className="font-normal">
+                        Also create a corresponding lab component
+                    </Label>
+                </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubjectDialogOpen(false)} disabled={subjectMutation.isPending}>Cancel</Button>
+            <Button onClick={handleSaveSubject} disabled={subjectMutation.isPending}>{subjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add Department Dialog */}
+      <Dialog open={isDeptDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setNewDepartment({ name: '', code: ''}); setDeptDialogOpen(isOpen); }}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle>Add New Department</DialogTitle></DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="dept-name">Department Name</Label>
+                    <Input id="dept-name" value={newDepartment.name} onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="dept-code">Department Code</Label>
+                    <Input id="dept-code" value={newDepartment.code} onChange={(e) => setNewDepartment({...newDepartment, code: e.target.value})} placeholder="e.g., 004" disabled={deptMutation.isPending}/>
+                    <p className='text-xs text-muted-foreground'>This should be a unique 3-digit numerical code.</p>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setDeptDialogOpen(false)} disabled={deptMutation.isPending}>Cancel</Button>
+                <Button onClick={handleAddDepartment} disabled={deptMutation.isPending}>{deptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Add</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Department Dialog */}
+      <Dialog open={isRenameDeptDialogOpen} onOpenChange={setRenameDeptDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Update Department</DialogTitle>
+                <DialogDescription>
+                    Update the department name and code.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="new-dept-name">New Department Name</Label>
+                    <Input id="new-dept-name" value={renamingDepartment.name} onChange={(e) => setRenamingDepartment({...renamingDepartment, name: e.target.value})} placeholder="e.g. Mechanical Engineering" disabled={deptMutation.isPending}/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="new-dept-code">New Department Code</Label>
+                    <Input id="new-dept-code" value={renamingDepartment.code} onChange={(e) => setRenamingDepartment({...renamingDepartment, code: e.target.value})} placeholder="e.g., 004" disabled={deptMutation.isPending}/>
+                     <p className='text-xs text-muted-foreground'>This should be a unique 3-digit numerical code.</p>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setRenameDeptDialogOpen(false)} disabled={deptMutation.isPending}>Cancel</Button>
+                <Button onClick={handleRenameDepartment} disabled={deptMutation.isPending}>{deptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Update</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Faculty Dialog */}
+      <Dialog open={isFacultyDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setCurrentFaculty({}); setFacultyDialogOpen(isOpen); }}>
+        <DialogContent className="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] flex h-[90vh] flex-col p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>{currentFaculty?.id ? 'Edit Faculty' : 'Add Faculty'}</DialogTitle>
+            <DialogDescription>
+              {currentFaculty?.id ? 'Update faculty details.' : `Add a new faculty member.`}
+            </DialogDescription>
+          </DialogHeader>
+            <div className="overflow-y-auto px-6">
+                <FacultyForm
+                faculty={currentFaculty}
+                onSave={async (data, password) => facultyMutation.mutate({ data, password })}
+                onCancel={() => setFacultyDialogOpen(false)}
+                isSubmitting={facultyMutation.isPending}
+                departments={departments}
+                subjects={subjects}
+                facultyCount={allFaculty.length}
+                />
+            </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* New Faculty Credentials Dialog */}
+       <Dialog open={!!newFacultyCredentials} onOpenChange={() => setNewFacultyCredentials(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Faculty Member Created</DialogTitle>
+            <DialogDescription>
+              Share the following credentials with the new faculty member so they can log in. The password is temporary.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert>
+              <AlertTitle>Login Credentials</AlertTitle>
+              <AlertDescription>
+                <div className="space-y-2 mt-2">
+                  <div>
+                    <Label>Email</Label>
+                    <Input readOnly value={newFacultyCredentials?.email ?? ''} />
+                  </div>
+                  {newFacultyCredentials?.initialPassword && (
+                    <div>
+                        <Label>Initial Password</Label>
+                        <div className="flex items-center gap-2">
+                        <Input readOnly type="text" value={newFacultyCredentials?.initialPassword ?? ''} />
+                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(newFacultyCredentials?.initialPassword || '')}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                        </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground pt-2">The faculty member will be required to change this password on their first login.</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setNewFacultyCredentials(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
