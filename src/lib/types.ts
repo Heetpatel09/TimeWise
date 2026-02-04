@@ -158,6 +158,7 @@ const FacultySchema = z.object({
     maxWeeklyHours: z.number().optional().nullable(),
     designatedYear: z.number().optional().nullable(),
     dateOfJoining: z.string().optional().nullable(),
+    unavailableSlots: z.array(z.object({ day: z.string(), time: z.string() })).optional(),
 });
 
 export const GenerateTimetableInputSchema = z.object({
@@ -277,6 +278,7 @@ export interface Faculty {
   maxWeeklyHours?: number;
   designatedYear?: number;
   dateOfJoining?: string;
+  unavailableSlots?: { day: string; time: string }[];
 }
 
 export type Permission = 

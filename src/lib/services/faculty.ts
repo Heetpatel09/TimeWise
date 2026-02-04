@@ -17,7 +17,6 @@ function revalidateAll() {
 
 export async function getFaculty(): Promise<Faculty[]> {
   const db = getDb();
-  // REMOVED the JOIN to prevent inconsistent data shapes.
   const stmt = db.prepare('SELECT * FROM faculty');
   const results = stmt.all() as any[];
 
@@ -26,18 +25,20 @@ export async function getFaculty(): Promise<Faculty[]> {
       avatar: f.avatar || `https://avatar.vercel.sh/${f.email}.png`,
       roles: JSON.parse(f.roles || '[]'),
       allottedSubjects: JSON.parse(f.allottedSubjects || '[]'),
-      dateOfJoining: f.dateOfJoining || '2022-01-01T00:00:00.000Z', // Add fallback
+      dateOfJoining: f.dateOfJoining || '2022-01-01T00:00:00.000Z',
+      unavailableSlots: JSON.parse(f.unavailableSlots || '[]'),
     }))));
 }
 
 
 export async function addFaculty(
-    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted' | 'roles' | 'points' | 'allottedSubjects'> & {
+    item: Omit<Faculty, 'id' | 'streak' | 'profileCompleted' | 'roles' | 'points' | 'allottedSubjects' | 'unavailableSlots'> & {
         streak?: number,
         profileCompleted?: number,
         roles?: string[] | string,
         points?: number,
         allottedSubjects?: string[],
+        unavailableSlots?: { day: string, time: string }[],
     },
     password?: string
 ) {
@@ -67,10 +68,11 @@ export async function addFaculty(
         points: item.points || 0,
         allottedSubjects: item.allottedSubjects || [],
         dateOfJoining: item.dateOfJoining || new Date().toISOString(),
+        unavailableSlots: item.unavailableSlots || [],
     };
 
-    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear, dateOfJoining) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.departmentId, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.points, JSON.stringify(newItem.allottedSubjects), newItem.maxWeeklyHours, newItem.designatedYear, newItem.dateOfJoining);
+    const stmt = db.prepare('INSERT INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear, dateOfJoining, unavailableSlots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.code, newItem.departmentId, newItem.designation, newItem.employmentType, JSON.stringify(newItem.roles), newItem.streak, newItem.avatar, newItem.profileCompleted, newItem.points, JSON.stringify(newItem.allottedSubjects), newItem.maxWeeklyHours, newItem.designatedYear, newItem.dateOfJoining, JSON.stringify(newItem.unavailableSlots));
 
     const initialPassword = password || randomBytes(8).toString('hex');
     await addCredential({
@@ -123,11 +125,12 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
             ...updatedItem,
             roles: newRoles,
             allottedSubjects: JSON.stringify(updatedItem.allottedSubjects || JSON.parse(oldFaculty.allottedSubjects || '[]')),
+            unavailableSlots: JSON.stringify(updatedItem.unavailableSlots || JSON.parse(oldFaculty.unavailableSlots || '[]')),
             dateOfJoining: updatedItem.dateOfJoining || oldFaculty.dateOfJoining || new Date().toISOString(),
         };
 
-        const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, departmentId = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allottedSubjects = ?, maxWeeklyHours = ?, designatedYear = ?, dateOfJoining = ? WHERE id = ?');
-        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.departmentId, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.allottedSubjects, mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.dateOfJoining, mergedItem.id);
+        const stmt = db.prepare('UPDATE faculty SET name = ?, email = ?, code = ?, departmentId = ?, designation = ?, employmentType = ?, roles = ?, streak = ?, avatar = ?, profileCompleted = ?, points = ?, allottedSubjects = ?, maxWeeklyHours = ?, designatedYear = ?, dateOfJoining = ?, unavailableSlots = ? WHERE id = ?');
+        stmt.run(mergedItem.name, mergedItem.email, mergedItem.code, mergedItem.departmentId, mergedItem.designation, mergedItem.employmentType, JSON.stringify(mergedItem.roles), mergedItem.streak, mergedItem.avatar, mergedItem.profileCompleted, mergedItem.points, mergedItem.allottedSubjects, mergedItem.maxWeeklyHours, mergedItem.designatedYear, mergedItem.dateOfJoining, mergedItem.unavailableSlots, mergedItem.id);
 
         if (oldFaculty.email !== mergedItem.email) {
             addCredential({
@@ -143,6 +146,7 @@ export async function updateFaculty(updatedItem: Partial<Faculty> & { id: string
     const finalFaculty: any = db.prepare('SELECT * FROM faculty WHERE id = ?').get(updatedItem.id);
     finalFaculty.roles = JSON.parse(finalFaculty.roles || '[]');
     finalFaculty.allottedSubjects = JSON.parse(finalFaculty.allottedSubjects || '[]');
+    finalFaculty.unavailableSlots = JSON.parse(finalFaculty.unavailableSlots || '[]');
     return Promise.resolve(finalFaculty as Faculty);
 }
 

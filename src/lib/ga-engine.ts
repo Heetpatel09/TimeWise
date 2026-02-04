@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { GenerateTimetableInput, Schedule, Class, Subject, Department } from './types';
+import type { GenerateTimetableInput, Schedule, Class, Subject, Department, Faculty } from './types';
 import { differenceInYears, parseISO } from 'date-fns';
 
 // --- Data Structures ---
@@ -128,10 +128,18 @@ function generateForSingleClass(
                     !fullSchedule.some(g => g.classroomId === r.id && g.day === day && (g.time === time1 || g.time === time2))
                 );
                 
-                const availableFaculty = facultyForSub.filter(fId => 
-                    !fullSchedule.some(g => g.facultyId === fId && g.day === day && (g.time === time1 || g.time === time2)) && 
-                    ((facultyWorkload.get(fId) || 0) + 2 <= (input.faculty.find(f => f.id === fId)?.maxWeeklyHours || 18))
-                );
+                const availableFaculty = facultyForSub.filter(fId => {
+                    const facultyMember = input.faculty.find(f => f.id === fId);
+                    if (!facultyMember) return false;
+                    
+                    const isUnavailable = facultyMember.unavailableSlots?.some(slot => slot.day === day && (slot.time === time1 || slot.time === time2));
+                    if(isUnavailable) return false;
+
+                    const isBusy = fullSchedule.some(g => g.day === day && (g.time === time1 || g.time === time2) && g.facultyId === fId)
+                    if(isBusy) return false;
+
+                    return ((facultyWorkload.get(fId) || 0) + 2 <= (facultyMember.maxWeeklyHours || 18));
+                });
 
                 if (availableRooms.length >= 2 && availableFaculty.length >= 2) {
                     const room1 = availableRooms[0];
@@ -163,18 +171,6 @@ function generateForSingleClass(
             .map(fId => ({ id: fId, workload: facultyWorkload.get(fId) || 0 }))
             .sort((a,b) => a.workload - b.workload);
             
-        const facultyId = facultyOptions[0]?.id;
-
-        if (!facultyId) {
-            warnings.push(`No faculty for theory subject ${input.subjects.find(s=>s.id === lecture.subjectId)?.name}.`);
-            continue;
-        }
-
-        if ((facultyWorkload.get(facultyId) || 0) + 1 > (input.faculty.find(f => f.id === facultyId)?.maxWeeklyHours || 18)) {
-             warnings.push(`Faculty ${input.faculty.find(f => f.id === facultyId)?.name} has reached max workload.`);
-             continue;
-        }
-
         for (const day of [...workingDays].sort(() => Math.random() - 0.5)) {
             if (placed) break;
             for (const time of [...LECTURE_TIME_SLOTS].sort(() => Math.random() - 0.5)) {
@@ -184,22 +180,40 @@ function generateForSingleClass(
                 const classIsBusy = classSpecificSchedule.some(g => g.day === day && g.time === time);
                 if (classIsBusy) continue;
                 
-                // Find an available classroom for this specific slot
-                for(const classroom of theoryClassrooms) {
-                    const resourcesAreBusy = fullSchedule.some(g => g.day === day && g.time === time && (g.facultyId === facultyId || g.classroomId === classroom.id));
+                const availableFacultyForSlot = facultyOptions.filter(fOpt => {
+                  const facultyMember = input.faculty.find(f => f.id === fOpt.id);
+                  if (!facultyMember) return false;
+                  
+                  const isUnavailable = facultyMember.unavailableSlots?.some(slot => slot.day === day && slot.time === time);
+                  if (isUnavailable) return false;
 
-                    if (!resourcesAreBusy) {
+                  if ((facultyWorkload.get(facultyMember.id) || 0) + 1 > (facultyMember.maxWeeklyHours || 18)) return false;
+
+                  const facultyIsBusy = fullSchedule.some(g => g.day === day && g.time === time && g.facultyId === facultyMember.id);
+                  if (facultyIsBusy) return false;
+
+                  return true;
+                });
+
+                if (availableFacultyForSlot.length === 0) continue;
+
+                const facultyId = availableFacultyForSlot[0].id;
+
+                for(const classroom of theoryClassrooms) {
+                    const classroomIsBusy = fullSchedule.some(g => g.day === day && g.time === time && g.classroomId === classroom.id);
+
+                    if (!classroomIsBusy) {
                         const gene = { day, time, ...lecture, facultyId, classroomId: classroom.id };
                         classSpecificSchedule.push(gene);
                         facultyWorkload.set(facultyId, (facultyWorkload.get(facultyId) || 0) + 1);
                         placed = true;
-                        break; // Classroom found, break from classroom loop
+                        break; 
                     }
                 }
             }
         }
         if (!placed) {
-            warnings.push(`Could not schedule a theory slot for ${input.subjects.find(s => s.id === lecture.subjectId)?.name} in ${classToSchedule.name}.`);
+            warnings.push(`Could not schedule a theory slot for ${input.subjects.find(s=>s.id === lecture.subjectId)?.name} in ${classToSchedule.name}.`);
         }
     }
     
@@ -290,5 +304,3 @@ export async function runGA(input: GenerateTimetableInput): Promise<GenerateTime
         classTimetables,
     };
 }
-
-    

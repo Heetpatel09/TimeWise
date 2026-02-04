@@ -38,6 +38,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 const CREDIT_OPTIONS = [4, 3, 2, 1];
 const DESIGNATION_OPTIONS = ['Professor', 'Assistant Professor', 'Lecturer'];
 const YEAR_OPTIONS = [1, 2, 3, 4];
+const LECTURE_TIME_SLOTS = [
+    '07:30 AM - 08:25 AM',
+    '08:25 AM - 09:20 AM',
+    '09:30 AM - 10:25 AM',
+    '10:25 AM - 11:20 AM',
+    '12:20 PM - 01:15 PM',
+    '01:15 PM - 02:10 PM'
+];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 
 const facultySchema = z.object({
     id: z.string().optional(),
@@ -50,6 +60,7 @@ const facultySchema = z.object({
     maxWeeklyHours: z.coerce.number().min(1, "Required").max(48, "Cannot exceed 48"),
     designatedYear: z.coerce.number().min(1, "Required"),
     allottedSubjects: z.array(z.string()).optional(),
+    unavailableSlots: z.array(z.object({ day: z.string(), time: z.string() })).optional(),
 });
 
 function FacultyForm({
@@ -81,6 +92,7 @@ function FacultyForm({
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
         designatedYear: faculty.designatedYear || 1,
         allottedSubjects: faculty.allottedSubjects || [],
+        unavailableSlots: faculty.unavailableSlots || [],
     },
   });
 
@@ -105,6 +117,7 @@ function FacultyForm({
         maxWeeklyHours: faculty.maxWeeklyHours || 20,
         designatedYear: faculty.designatedYear || 1,
         allottedSubjects: faculty.allottedSubjects || [],
+        unavailableSlots: faculty.unavailableSlots || [],
     });
     setIsCodeManuallyEdited(!!faculty.code);
   }, [faculty, form]);
@@ -312,6 +325,45 @@ function FacultyForm({
                 <FormField control={form.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>Employment Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type"/></SelectTrigger></FormControl><SelectContent><SelectItem value="full-time">Full-time</SelectItem><SelectItem value="part-time">Part-time</SelectItem><SelectItem value="contract">Contract</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="maxWeeklyHours" render={({ field }) => (<FormItem><FormLabel>Max Working Hours</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>)} />
         </div>
+        
+        <div className="space-y-2">
+            <FormLabel>Unavailable Time Slots</FormLabel>
+            <Card>
+                <CardContent className="p-2">
+                    <div className="grid grid-cols-7 text-xs text-center font-bold">
+                        <div className="w-24">&nbsp;</div>
+                        {DAYS.map(day => <div key={day} className="flex-1 p-1">{day.substring(0,3)}</div>)}
+                    </div>
+                    {LECTURE_TIME_SLOTS.map(time => (
+                        <div key={time} className="grid grid-cols-7 items-center text-xs">
+                            <div className="w-24 text-muted-foreground pr-2 text-right">{time.split(' - ')[0]}</div>
+                            {DAYS.map(day => (
+                                <div key={day} className="flex-1 flex justify-center items-center p-1">
+                                    <FormField
+                                        control={form.control}
+                                        name="unavailableSlots"
+                                        render={({ field }) => (
+                                            <Checkbox
+                                                checked={field.value?.some(slot => slot.day === day && slot.time === time)}
+                                                onCheckedChange={(checked) => {
+                                                    const currentSlots = field.value || [];
+                                                    const slot = { day, time };
+                                                    if (checked) {
+                                                        field.onChange([...currentSlots, slot]);
+                                                    } else {
+                                                        field.onChange(currentSlots.filter(s => !(s.day === day && s.time === time)));
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+        </div>
 
 
         {!faculty.id && (
@@ -462,11 +514,12 @@ export default function DepartmentsManager() {
   const facultyMutation = useMutation({
     mutationFn: async ({ data, password }: { data: z.infer<typeof facultySchema>, password?: string }) => {
       if (currentFaculty.id) {
-        return updateFaculty({ ...data, id: currentFaculty.id, allottedSubjects: data.allottedSubjects || [] });
+        return updateFaculty({ ...data, id: currentFaculty.id, allottedSubjects: data.allottedSubjects || [], unavailableSlots: data.unavailableSlots || [] });
       } else {
         const facultyData = {
           ...data,
-          allottedSubjects: data.allottedSubjects || []
+          allottedSubjects: data.allottedSubjects || [],
+          unavailableSlots: data.unavailableSlots || [],
         } as Omit<Faculty, 'id'>;
         return addFaculty(facultyData, password);
       }
@@ -646,7 +699,7 @@ export default function DepartmentsManager() {
   };
   
   const openNewFacultyDialog = () => {
-    setCurrentFaculty({ employmentType: 'full-time', departmentId: selectedDepartmentId || '', maxWeeklyHours: 20, designatedYear: 1, allottedSubjects: [] });
+    setCurrentFaculty({ employmentType: 'full-time', departmentId: selectedDepartmentId || '', maxWeeklyHours: 20, designatedYear: 1, allottedSubjects: [], unavailableSlots: [] });
     setFacultyDialogOpen(true);
   };
   
