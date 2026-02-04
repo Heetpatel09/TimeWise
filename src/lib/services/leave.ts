@@ -17,8 +17,8 @@ export async function addLeaveRequest(request: Omit<LeaveRequest, 'id' | 'status
     const db = getDb();
     const id = `LR${Date.now()}`;
     const status = 'pending';
-    const stmt = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, request.requesterId, request.requesterName, request.requesterRole, request.startDate, request.endDate, request.reason, status);
+    const stmt = db.prepare('INSERT INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, request.requesterId, request.requesterName, request.requesterRole, request.startDate, request.endDate, request.reason, status, request.type || 'academic');
 
     // Notify the admin
     await addNotification({

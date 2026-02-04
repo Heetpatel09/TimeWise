@@ -94,7 +94,11 @@ export default function LeaveRequestsPage() {
       const facultyMap: Record<string, Faculty[]> = {};
       for (const slot of slots) {
         const available = await getAvailableFacultyForSlot(slot.day, slot.time);
-        facultyMap[slot.id] = available.filter(f => f.id !== request.requesterId);
+        const qualified = available.filter(f => 
+            f.id !== request.requesterId && 
+            f.allottedSubjects?.includes(slot.subjectId)
+        );
+        facultyMap[slot.id] = qualified;
       }
       setAvailableFacultyMap(facultyMap);
       setReassignDialogOpen(true);
@@ -285,7 +289,7 @@ export default function LeaveRequestsPage() {
                                                       <SelectItem key={fac.id} value={fac.id}>{fac.name}</SelectItem>
                                                   ))
                                                 ) : (
-                                                  <div className='p-2 text-sm text-muted-foreground'>No available faculty</div>
+                                                  <div className='p-2 text-sm text-muted-foreground'>No qualified faculty available</div>
                                                 )}
                                             </SelectContent>
                                         </Select>
