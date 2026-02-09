@@ -5,14 +5,21 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Loader2, Star, Zap } from 'lucide-react';
+import { Check, Loader2, Star, Zap, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { getAdminById } from '@/lib/services/admins';
 import { upgradeSubscription } from '@/lib/services/subscription';
 import type { Admin } from '@/lib/types';
 import { cn } from '@/lib/utils';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const plans = [
     { name: 'Pro 30', price: 299, credits: 30, tier: 'pro30', features: ['30 Timetable Generations', 'Standard Support'] },
@@ -20,11 +27,15 @@ const plans = [
     { name: 'Pro 100', price: 899, credits: 100, tier: 'pro100', features: ['100 Timetable Generations', 'Dedicated Support'] },
 ];
 
+type Plan = typeof plans[0];
+
 export default function SubscriptionManager() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(false);
+    
+    const [isPaymentDialogOpen, setPaymentDialogOpen] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
     const { data: adminDetails, isLoading: adminLoading } = useQuery<Admin | null>({
         queryKey: ['adminDetails', user?.id],
@@ -40,11 +51,23 @@ export default function SubscriptionManager() {
                 title: 'Upgrade Successful!',
                 description: `Your plan has been upgraded to ${data.tier}. ${data.newCredits} credits have been added.`,
             });
+            setPaymentDialogOpen(false);
         },
         onError: (error: any) => {
             toast({ title: 'Upgrade Failed', description: error.message, variant: 'destructive' });
         }
     });
+    
+    const handleUpgradeClick = (plan: Plan) => {
+        setSelectedPlan(plan);
+        setPaymentDialogOpen(true);
+    };
+
+    const handleConfirmPurchase = () => {
+        if (selectedPlan) {
+            upgradeMutation.mutate(selectedPlan.tier as any);
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -99,10 +122,9 @@ export default function SubscriptionManager() {
                             <CardFooter>
                                 <Button
                                     className="w-full"
-                                    onClick={() => upgradeMutation.mutate(plan.tier as any)}
-                                    disabled={upgradeMutation.isPending}
+                                    onClick={() => handleUpgradeClick(plan)}
                                 >
-                                    {upgradeMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+                                    <Zap className="h-4 w-4 mr-2" />
                                     Upgrade to {plan.name}
                                 </Button>
                             </CardFooter>
@@ -110,6 +132,38 @@ export default function SubscriptionManager() {
                     ))}
                 </CardContent>
             </Card>
+            
+            <Dialog open={isPaymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><CreditCard /> Complete Your Purchase</DialogTitle>
+                        <DialogDescription>
+                             You are about to purchase the <span className="font-semibold text-primary">{selectedPlan?.name}</span> plan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <Card className="bg-muted/50 p-6">
+                            <div className="flex justify-between items-center">
+                                <span className="font-semibold">Plan: {selectedPlan?.name}</span>
+                                <span className="font-bold text-lg">₹{selectedPlan?.price}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                This will add {selectedPlan?.credits} generation credits to your account.
+                            </p>
+                        </Card>
+                        <div className="text-center text-xs text-muted-foreground">
+                            This is a simulated payment gateway. No real payment will be processed.
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPaymentDialogOpen(false)} disabled={upgradeMutation.isPending}>Cancel</Button>
+                        <Button onClick={handleConfirmPurchase} disabled={upgradeMutation.isPending}>
+                            {upgradeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            Confirm Purchase
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
