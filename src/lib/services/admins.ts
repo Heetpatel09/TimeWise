@@ -22,6 +22,17 @@ export async function getAdmins(): Promise<Admin[]> {
     }))));
 }
 
+export async function getAdminById(adminId: string): Promise<Admin | null> {
+    const db = getDb();
+    const admin = db.prepare('SELECT * FROM admins WHERE id = ?').get(adminId) as any;
+    if (!admin) return null;
+    return {
+        ...admin,
+        permissions: JSON.parse(admin.permissions || '[]')
+    };
+}
+
+
 export async function getAdminDashboardStats() {
   const db = getDb();
   const studentCount = (db.prepare('SELECT COUNT(*) as count FROM students').get() as any).count;
@@ -60,8 +71,8 @@ export async function addAdmin(item: Omit<Admin, 'id'>, password?: string): Prom
         permissions: item.role === 'admin' ? ['*'] : item.permissions || [],
     };
     
-    const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newItem.name, newItem.email, newItem.avatar, newItem.role, JSON.stringify(newItem.permissions));
+    const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar, role, permissions, subscriptionTier, generationCredits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newItem.name, newItem.email, newItem.avatar, newItem.role, JSON.stringify(newItem.permissions), 'free', 5);
 
     const initialPassword = password || randomBytes(8).toString('hex');
     

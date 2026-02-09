@@ -35,7 +35,7 @@ const dbFilePath = './timewise.db';
 
 // A flag to indicate if the schema has been checked in the current run.
 let schemaChecked = false;
-const schemaVersion = 72; // Increment this to force re-initialization
+const schemaVersion = 73; // Increment this to force re-initialization
 const versionFilePath = path.join(process.cwd(), 'workspace/db-version.txt');
 
 
@@ -124,7 +124,9 @@ function createSchemaAndSeed() {
         email TEXT NOT NULL UNIQUE,
         avatar TEXT,
         role TEXT NOT NULL DEFAULT 'admin',
-        permissions TEXT
+        permissions TEXT,
+        subscriptionTier TEXT NOT NULL DEFAULT 'free',
+        generationCredits INTEGER NOT NULL DEFAULT 5
     );
     CREATE TABLE IF NOT EXISTS faculty (
         id TEXT PRIMARY KEY,
@@ -381,7 +383,7 @@ function createSchemaAndSeed() {
     const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
     const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
     const insertUser = db.prepare('INSERT OR REPLACE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
-    const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions, subscriptionTier, generationCredits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
     const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId, floor) VALUES (?, ?, ?, ?, ?, ?)');
     const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status, transactionId, paymentDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -405,8 +407,8 @@ function createSchemaAndSeed() {
         placeholderStudents.forEach(s => insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.batch, s.phone, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0, s.category || 'general'));
 
         // 3. User Credentials for all roles
-        insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]');
-        insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions));
+        insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]', 'pro100', 999);
+        insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions), 'free', 5);
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
         insertUser.run(managerUser.email, managerUser.id, managerUser.password, 'admin', 0);
         placeholderFaculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1));

@@ -302,6 +302,8 @@ export interface Admin {
   avatar?: string;
   role: 'admin' | 'manager';
   permissions: (Permission | '*')[];
+  subscriptionTier?: 'free' | 'pro30' | 'pro50' | 'pro100';
+  generationCredits?: number;
 }
 
 export interface Classroom {

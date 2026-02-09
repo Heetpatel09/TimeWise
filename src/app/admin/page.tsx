@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, Bot, Lock, PieChart } from "lucide-react";
+import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, Bot, Lock, PieChart, Star } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
@@ -10,7 +10,7 @@ import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/u
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import type { Permission, Admin } from '@/lib/types';
-import { getAdminDashboardStats } from '@/lib/services/admins';
+import { getAdminDashboardStats, getAdminById } from '@/lib/services/admins';
 import {
   Tooltip,
   TooltipContent,
@@ -99,6 +99,7 @@ const systemLinks = [
   { href: "/admin/admins", title: "Admins & Managers", icon: ShieldCheck },
   { href: "/admin/leaderboards", title: "Leaderboards", icon: Trophy },
   { href: "/admin/hall-of-fame", title: "Hall of Fame", icon: Award },
+  { href: "/admin/subscription", title: "Billing & Subscription", icon: DollarSign },
   { href: "/admin/api-test", title: "API Key Test", icon: KeyRound },
 ];
 
@@ -136,6 +137,12 @@ function AdminDashboard() {
     const { data: stats, isLoading: statsLoading } = useQuery({ 
       queryKey: ['adminDashboardStats'], 
       queryFn: getAdminDashboardStats 
+    });
+
+    const { data: adminDetails, isLoading: adminLoading } = useQuery<Admin | null>({
+        queryKey: ['adminDetails', user?.id],
+        queryFn: () => getAdminById(user!.id),
+        enabled: !!user
     });
     
     const studentCount = stats?.studentCount ?? 0;
@@ -181,6 +188,35 @@ function AdminDashboard() {
             </div>
 
             <div className="xl:col-span-1 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            Subscription Status
+                             <Link href="/admin/subscription">
+                                <Button variant="outline" size="sm">Manage</Button>
+                            </Link>
+                        </CardTitle>
+                        <CardDescription>Your current plan and usage.</CardDescription>
+                    </CardHeader>
+                    <CardContent className='space-y-4'>
+                        {adminLoading ? (
+                             <div className="flex justify-center items-center h-24"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+                        ): adminDetails ? (
+                           <>
+                                <div className='flex items-center gap-2'>
+                                    <Star className="w-5 h-5 text-primary" />
+                                    <p>Current Plan: <span className="font-semibold capitalize">{adminDetails.subscriptionTier || 'free'}</span></p>
+                                </div>
+                                <div className='flex items-center gap-2'>
+                                    <Bot className="w-5 h-5 text-primary" />
+                                    <p>Generations Left: <span className="font-semibold">{adminDetails.generationCredits}</span></p>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-muted-foreground">Could not load subscription details.</p>
+                        )}
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>University at a Glance</CardTitle>

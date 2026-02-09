@@ -84,14 +84,16 @@ export async function registerAdmin(name: string, email: string, password: strin
         id,
         name,
         email,
-        role: 'admin', // New users get full admin rights as requested
+        role: 'admin',
         permissions: ['*'],
         avatar: `https://avatar.vercel.sh/${email}.png`,
+        subscriptionTier: 'free',
+        generationCredits: 5,
     };
 
     // Add to admins table
-    const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(id, newUser.name, newUser.email, newUser.avatar, newUser.role, JSON.stringify(newUser.permissions));
+    const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar, role, permissions, subscriptionTier, generationCredits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newUser.name, newUser.email, newUser.avatar, newUser.role, JSON.stringify(newUser.permissions), newUser.subscriptionTier, newUser.generationCredits);
 
     // Add to credentials table
     await addCredential({

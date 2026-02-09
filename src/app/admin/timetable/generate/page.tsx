@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,12 +13,14 @@ import { getFaculty } from '@/lib/services/faculty';
 import { getClassrooms } from '@/lib/services/classrooms';
 import { getSchedule, applyScheduleForClass } from '@/lib/services/schedule';
 import { getDepartments } from '@/lib/services/departments';
+import { checkAndDecrementCredits } from '@/lib/services/subscription';
 import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOutput, Department } from '@/lib/types';
 import { Loader2, ArrowLeft, Bot, AlertTriangle, Library, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -57,6 +60,7 @@ export default function TimetableGeneratorPage() {
     const { toast } = useToast();
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     const { data: classes, isLoading: classesLoading } = useQuery<Class[]>({ queryKey: ['classes'], queryFn: getClasses });
     const { data: subjects, isLoading: subjectsLoading } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: getSubjects });
@@ -71,6 +75,7 @@ export default function TimetableGeneratorPage() {
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [isReviewDialogOpen, setReviewDialogOpen] = useState(false);
+    const [isOutOfCreditsOpen, setOutOfCreditsOpen] = useState(false);
     const [generatedData, setGeneratedData] = useState<GenerateTimetableOutput | null>(null);
     const [applyingClass, setApplyingClass] = useState<string | null>(null);
 
@@ -115,21 +120,29 @@ export default function TimetableGeneratorPage() {
 
         setIsGenerating(true);
         
-        let relevantClasses = classes.filter(c => c.departmentId === selectedDepartmentId);
-        if (selectedSemester !== 'all') {
-            relevantClasses = relevantClasses.filter(c => c.semester.toString() === selectedSemester);
-        }
-        if (selectedClassId !== 'all') {
-            relevantClasses = relevantClasses.filter(c => c.id === selectedClassId);
-        }
-        
-        if (relevantClasses.length === 0) {
-            toast({ title: 'No Classes Found', description: 'There are no classes that match your filter criteria.', variant: 'destructive' });
-            setIsGenerating(false);
-            return;
-        }
-        
         try {
+            if (user) {
+                if (user.isGuest) {
+                     // For guest users, bypass credit check for demo purposes
+                } else {
+                    await checkAndDecrementCredits(user.id);
+                }
+            }
+
+            let relevantClasses = classes.filter(c => c.departmentId === selectedDepartmentId);
+            if (selectedSemester !== 'all') {
+                relevantClasses = relevantClasses.filter(c => c.semester.toString() === selectedSemester);
+            }
+            if (selectedClassId !== 'all') {
+                relevantClasses = relevantClasses.filter(c => c.id === selectedClassId);
+            }
+            
+            if (relevantClasses.length === 0) {
+                toast({ title: 'No Classes Found', description: 'There are no classes that match your filter criteria.', variant: 'destructive' });
+                setIsGenerating(false);
+                return;
+            }
+            
             const result = await generateTimetableFlow({
                 days: ALL_DAYS,
                 timeSlots: ALL_TIME_SLOTS.filter(t => !BREAK_SLOTS.includes(t)),
@@ -149,8 +162,12 @@ export default function TimetableGeneratorPage() {
             }
         } catch (e: any) {
             console.error("Timetable generation caught error:", e);
-            const description = e?.message && typeof e.message === 'string' ? e.message : 'An unexpected error occurred. Check the console for details.';
-            toast({ title: 'Engine Error', description, variant: 'destructive' });
+            if (e.message.includes('out of timetable generation credits')) {
+                setOutOfCreditsOpen(true);
+            } else {
+                const description = e?.message && typeof e.message === 'string' ? e.message : 'An unexpected error occurred. Check the console for details.';
+                toast({ title: 'Engine Error', description, variant: 'destructive' });
+            }
         } finally {
             setIsGenerating(false);
         }
@@ -258,8 +275,8 @@ export default function TimetableGeneratorPage() {
                         <DialogTitle>Review Generated Timetable</DialogTitle>
                          <DialogDescription>
                             {generatedData?.summary || "Review the generated timetable for each section."}
-                        </DialogDescription>
-                        {generatedData?.optimizationExplanation && <p className="mt-1 text-sm text-muted-foreground">{generatedData.optimizationExplanation}</p>}
+                         </DialogDescription>
+                         {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
@@ -362,6 +379,22 @@ export default function TimetableGeneratorPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <AlertDialog open={isOutOfCreditsOpen} onOpenChange={setOutOfCreditsOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Out of Credits</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You have used all of your free timetable generations. Please upgrade to a Pro plan to continue generating timetables.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => router.push('/admin/subscription')}>
+                        Upgrade Plan
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </DashboardLayout>
     );
 }
