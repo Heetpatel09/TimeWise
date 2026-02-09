@@ -18,6 +18,7 @@ import type { Class, Subject, Faculty, Classroom, Schedule, GenerateTimetableOut
 import { Loader2, ArrowLeft, Bot, AlertTriangle, Library, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { generateTimetableFlow } from '@/ai/flows/generate-timetable-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -275,8 +276,8 @@ export default function TimetableGeneratorPage() {
                         <DialogTitle>Review Generated Timetable</DialogTitle>
                          <DialogDescription>
                             {generatedData?.summary || "Review the generated timetable for each section."}
+                            {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                          </DialogDescription>
-                         {generatedData?.optimizationExplanation && <p className="mt-1 text-xs text-muted-foreground">{generatedData.optimizationExplanation}</p>}
                     </DialogHeader>
                     
                     {generatedData && generatedData.classTimetables && generatedData.classTimetables.length > 0 ? (
