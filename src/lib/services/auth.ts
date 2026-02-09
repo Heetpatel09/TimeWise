@@ -45,7 +45,8 @@ export async function login(email: string, password: string): Promise<User> {
     if (!details) {
         throw new Error('User details not found.');
     }
-
+    
+    // Base user object
     const user: User = {
         id: details.id,
         name: details.name,
@@ -58,7 +59,8 @@ export async function login(email: string, password: string): Promise<User> {
     // If the user is from the 'admins' table, correctly fetch their specific role (admin/manager) and permissions
     if (credentialEntry.role === 'admin') {
       const adminDetails: Admin = details as Admin;
-      (user as Admin).role = adminDetails.role;
+      // Overwrite the base role 'admin' with the more specific 'admin' or 'manager'
+      user.role = adminDetails.role;
       (user as Admin).permissions = adminDetails.permissions ? JSON.parse(adminDetails.permissions as any) : [];
     }
     

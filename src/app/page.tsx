@@ -11,16 +11,14 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { registerAdmin } from '@/lib/services/auth';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { User } from '@/lib/types';
 
+// The logo component is kept internal to this page as it's specific to the splash/login screen
 function TimeWiseLogo() {
   return (
-    <div className="flex items-center justify-center gap-2 md:gap-4 mb-8">
-      <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0">
-        <BrainCircuit className="w-full h-full text-primary animation-pulse" />
-      </div>
-      <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-wider font-headline text-foreground">
+    <div className="flex items-center justify-center gap-4">
+      <BrainCircuit className="w-12 h-12 text-primary" />
+      <h1 className="text-5xl font-bold tracking-tighter font-headline text-foreground">
         TimeWise
       </h1>
     </div>
@@ -30,7 +28,6 @@ function TimeWiseLogo() {
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<User['role']>('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -42,14 +39,12 @@ function LoginForm() {
     setIsLoading(true);
     try {
       const user = await login(email, password);
-       if (user.role !== role && !(role === 'admin' && (user.role === 'admin' || (user as any).role === 'manager'))) {
-        throw new Error(`Invalid credentials for the selected role.`);
-      }
       toast({
         title: 'Login Successful',
         description: `Welcome, ${user.name}! Redirecting...`,
       });
-      router.push(`/${user.role}`);
+      // Redirect based on the actual role returned from the login service
+      router.push(`/${(user as any).role || user.role}`);
     } catch (error: any) {
       toast({
         title: 'Login Failed',
@@ -76,14 +71,6 @@ function LoginForm() {
           </Button>
         </div>
       </div>
-       <div className="space-y-2">
-          <Label>Role</Label>
-          <RadioGroup value={role} onValueChange={(v: User['role']) => setRole(v)} className="flex gap-4 pt-2">
-            <div className="flex items-center space-x-2"><RadioGroupItem value="admin" id="role-admin" /><Label htmlFor="role-admin">Admin/Manager</Label></div>
-            <div className="flex items-center space-x-2"><RadioGroupItem value="faculty" id="role-faculty" /><Label htmlFor="role-faculty">Faculty</Label></div>
-            <div className="flex items-center space-x-2"><RadioGroupItem value="student" id="role-student" /><Label htmlFor="role-student">Student</Label></div>
-          </RadioGroup>
-        </div>
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
         Login
@@ -162,49 +149,59 @@ export default function Home() {
   };
 
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden"
-      style={{
-        backgroundImage: `url('https://picsum.photos/seed/1/1920/1080')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      }}
-    >
-      <div className="absolute inset-0 bg-background/20 backdrop-blur-sm"></div>
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center">
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <TimeWiseLogo />
+    <main className="grid lg:grid-cols-2 min-h-screen">
+        <div className="hidden lg:flex flex-col items-center justify-center bg-muted/40 p-12 border-r">
+            <div className="max-w-md text-center">
+                <TimeWiseLogo />
+                <p className="text-lg text-muted-foreground mt-6">
+                    The intelligent, AI-powered scheduling solution for modern educational institutions.
+                </p>
+            </div>
         </div>
 
-        <Card className="w-full max-w-md mt-8 text-left animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            <Tabs defaultValue="login">
-                <CardHeader>
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="login">Login</TabsTrigger>
-                        <TabsTrigger value="register">Register</TabsTrigger>
-                    </TabsList>
-                </CardHeader>
-                <CardContent>
-                    <TabsContent value="login">
-                        <LoginForm />
-                    </TabsContent>
-                    <TabsContent value="register">
-                        <CardDescription className="text-center mb-4">
-                            Create a new administrator account. This will grant full access.
-                        </CardDescription>
-                        <RegisterForm />
-                    </TabsContent>
-                </CardContent>
-            </Tabs>
-        </Card>
-        
-        <div className="mt-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
-          <Button variant="outline" onClick={handleGuestLogin} disabled={isGuestLoading}>
-            {isGuestLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Contact className="mr-2 h-4 w-4" />}
-            Continue as Guest
-          </Button>
+        <div className="flex flex-col items-center justify-center p-4">
+             <div className="lg:hidden mb-8">
+                <TimeWiseLogo />
+            </div>
+            <Card className="w-full max-w-sm">
+                <Tabs defaultValue="login">
+                    <CardHeader>
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="login">Login</TabsTrigger>
+                            <TabsTrigger value="register">Register Admin</TabsTrigger>
+                        </TabsList>
+                    </CardHeader>
+                    <CardContent>
+                        <TabsContent value="login">
+                            <CardTitle className="mb-1 text-2xl">Welcome Back</CardTitle>
+                            <CardDescription className="mb-4">Enter your credentials to access your dashboard.</CardDescription>
+                            <LoginForm />
+                        </TabsContent>
+                        <TabsContent value="register">
+                             <CardTitle className="mb-1 text-2xl">Create Admin Account</CardTitle>
+                             <CardDescription className="mb-4">Get started by creating a new administrator account.</CardDescription>
+                            <RegisterForm />
+                        </TabsContent>
+                    </CardContent>
+                </Tabs>
+                <div className="relative p-6 pt-0">
+                    <div className="absolute inset-x-6 top-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                            Or
+                        </span>
+                    </div>
+                </div>
+                 <div className="px-6 pb-6">
+                    <Button variant="outline" onClick={handleGuestLogin} disabled={isGuestLoading} className="w-full">
+                        {isGuestLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Contact className="mr-2 h-4 w-4" />}
+                        Continue as Guest
+                    </Button>
+                </div>
+            </Card>
         </div>
-      </div>
     </main>
   );
 }
