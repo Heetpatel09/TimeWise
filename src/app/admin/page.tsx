@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Button } from '@/components/ui/button';
 
 const Section = ({ title, icon: Icon, children, gridCols = "grid-cols-1 sm:grid-cols-2" }: { title: string, icon: React.ElementType, children: React.ReactNode, isLocked?: boolean, gridCols?: string }) => (
     <div>
