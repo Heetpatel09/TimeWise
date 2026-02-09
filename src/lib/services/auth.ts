@@ -65,6 +65,55 @@ export async function login(email: string, password: string): Promise<User> {
     return user;
 }
 
+export async function registerAdmin(name: string, email: string, password: string): Promise<User> {
+    const db = getDb();
+
+    // Check if user already exists in any table
+    const existingAdmin = db.prepare('SELECT id FROM admins WHERE email = ?').get(email);
+    const existingFaculty = db.prepare('SELECT id FROM faculty WHERE email = ?').get(email);
+    const existingStudent = db.prepare('SELECT id FROM students WHERE email = ?').get(email);
+
+    if (existingAdmin || existingFaculty || existingStudent) {
+        throw new Error('An account with this email already exists.');
+    }
+
+    const id = `ADM${Date.now()}`;
+    const newUser: Admin = {
+        id,
+        name,
+        email,
+        role: 'admin', // New users get full admin rights as requested
+        permissions: ['*'],
+        avatar: `https://avatar.vercel.sh/${email}.png`,
+    };
+
+    // Add to admins table
+    const stmt = db.prepare('INSERT INTO admins (id, name, email, avatar, role, permissions) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(id, newUser.name, newUser.email, newUser.avatar, newUser.role, JSON.stringify(newUser.permissions));
+
+    // Add to credentials table
+    await addCredential({
+      userId: newUser.id,
+      email: newUser.email,
+      password: password,
+      role: 'admin',
+      requiresPasswordChange: false,
+    });
+
+    const user: User = {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        avatar: newUser.avatar!,
+        role: 'admin',
+        permissions: ['*'],
+        requiresPasswordChange: false,
+    };
+    
+    return user;
+}
+
+
 export async function updateAdmin(updatedDetails: { id: string; name: string, email: string, avatar: string }): Promise<User> {
     const db = getDb();
     
