@@ -1,5 +1,3 @@
-
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
@@ -12,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSubjects, addSubject, updateSubject, deleteSubject } from '@/lib/services/subjects';
 import { getClasses, addClass, updateClass, deleteClass } from '@/lib/services/classes';
-import { getFaculty, addFaculty, updateFaculty, deleteFaculty } from '@/lib/services/faculty';
+import { getFaculty, addFaculty, updateFaculty, deleteFaculty, bulkAddFaculty } from '@/lib/services/faculty';
 import { getDepartments, addDepartment, updateDepartment, deleteDepartment } from '@/lib/services/departments';
 import type { Subject, Class, Faculty, Department } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, Beaker, Pencil, ChevronsUpDown, Check, X, Eye, EyeOff, Copy, UserCheck, Users, GraduationCap, Wand2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, BookOpen, Building, Beaker, Pencil, ChevronsUpDown, Check, X, Eye, EyeOff, Copy, UserCheck, Users, GraduationCap, Wand2, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from '@/components/ui/checkbox';
+import CsvImportDialog from './CsvImportDialog';
 
 
 const CREDIT_OPTIONS = [4, 3, 2, 1];
@@ -47,6 +46,8 @@ const LECTURE_TIME_SLOTS = [
     '01:15 PM - 02:10 PM'
 ];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const facultyCsvHeaders = ['name', 'email', 'code', 'departmentName', 'designation', 'employmentType', 'maxWeeklyHours', 'designatedYear'];
 
 
 const facultySchema = z.object({
@@ -430,6 +431,7 @@ export default function DepartmentsManager() {
   const [isSubjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [isDeptDialogOpen, setDeptDialogOpen] = useState(false);
   const [isFacultyDialogOpen, setFacultyDialogOpen] = useState(false);
+  const [isFacultyImportOpen, setFacultyImportOpen] = useState(false);
   
   const [currentClass, setCurrentClass] = useState<Partial<Class>>({});
   const [currentSubject, setCurrentSubject] = useState<Partial<Subject>>({});
@@ -739,6 +741,18 @@ export default function DepartmentsManager() {
     navigator.clipboard.writeText(text);
     toast({ title: 'Copied!', description: 'Password copied to clipboard.' });
   }
+
+  const handleFacultyImport = async (data: Omit<Faculty, 'id'>[]) => {
+    const result = await bulkAddFaculty(data, departments);
+    if(result.successCount > 0) {
+        queryClient.invalidateQueries({ queryKey: ['faculty'] });
+    }
+    toast({
+        title: 'Import Complete',
+        description: `${result.successCount} faculty added, ${result.errorCount} failed.`
+    });
+    return result;
+  };
   
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -913,6 +927,10 @@ export default function DepartmentsManager() {
 
                         <TabsContent value="faculty">
                              <div className='flex justify-end gap-2 mb-4'>
+                                <Button variant="outline" onClick={() => setFacultyImportOpen(true)}>
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Import Faculty
+                                </Button>
                                 <Button onClick={openNewFacultyDialog} className="w-full sm:w-auto">
                                     <PlusCircle className="h-4 w-4 mr-2" /> Add Faculty
                                 </Button>
@@ -1166,6 +1184,13 @@ export default function DepartmentsManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CsvImportDialog
+        isOpen={isFacultyImportOpen}
+        onOpenChange={setFacultyImportOpen}
+        requiredHeaders={facultyCsvHeaders}
+        onImport={handleFacultyImport}
+        dataName="Faculty"
+      />
     </div>
   );
 }

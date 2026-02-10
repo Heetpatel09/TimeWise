@@ -1,6 +1,5 @@
-
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -21,15 +20,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getClassrooms, addClassroom, updateClassroom, deleteClassroom } from '@/lib/services/classrooms';
+import { getClassrooms, addClassroom, updateClassroom, deleteClassroom, bulkAddClassrooms } from '@/lib/services/classrooms';
 import type { Classroom } from '@/lib/types';
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Building, Wrench } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Building, Wrench, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import CsvImportDialog from './CsvImportDialog';
 
 const maintenanceStatusOptions: Classroom['maintenanceStatus'][] = ['available', 'in_maintenance', 'unavailable'];
+const classroomHeaders = ['name', 'type', 'capacity', 'maintenanceStatus', 'building'];
 
 export default function ClassroomsManager() {
   const queryClient = useQueryClient();
@@ -41,6 +42,7 @@ export default function ClassroomsManager() {
   });
 
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isImportOpen, setImportOpen] = useState(false);
   const [currentClassroom, setCurrentClassroom] = useState<Partial<Classroom>>({});
 
   const classroomMutation = useMutation({
@@ -94,6 +96,18 @@ export default function ClassroomsManager() {
     setCurrentClassroom({type: 'classroom', maintenanceStatus: 'available', capacity: 30});
     setDialogOpen(true);
   };
+
+  const handleImport = async (data: Omit<Classroom, 'id'>[]) => {
+    const result = await bulkAddClassrooms(data);
+    if(result.successCount > 0) {
+        queryClient.invalidateQueries({ queryKey: ['classrooms'] });
+    }
+    toast({
+        title: 'Import Complete',
+        description: `${result.successCount} added, ${result.errorCount} failed.`
+    });
+    return result;
+  };
   
   const getStatusVariant = (status: Classroom['maintenanceStatus']) => {
     switch (status) {
@@ -110,7 +124,11 @@ export default function ClassroomsManager() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
+        <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import from CSV
+        </Button>
         <Button onClick={openNewDialog}>
           <PlusCircle className="h-4 w-4 mr-2" />
           Add Classroom
@@ -221,8 +239,13 @@ export default function ClassroomsManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CsvImportDialog
+        isOpen={isImportOpen}
+        onOpenChange={setImportOpen}
+        requiredHeaders={classroomHeaders}
+        onImport={handleImport}
+        dataName="Classrooms"
+      />
     </div>
   );
 }
-
-    

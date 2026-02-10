@@ -165,3 +165,67 @@ export async function deleteFaculty(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+export async function bulkAddFaculty(facultyList: any[], allDepartments: Department[]) {
+    const db = getDb();
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    const existingFaculty = db.prepare('SELECT email, code FROM faculty').all() as {email: string, code: string}[];
+    const existingEmails = new Set(existingFaculty.map(f => f.email.toLowerCase()));
+    const existingCodes = new Set(existingFaculty.map(f => f.code).filter(Boolean));
+
+    const departmentMap = new Map(allDepartments.map(d => [d.name.toLowerCase(), d.id]));
+
+    const facultyStmt = db.prepare('INSERT INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear, dateOfJoining, unavailableSlots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    
+    db.transaction(() => {
+        for (const [index, faculty] of facultyList.entries()) {
+            if (!faculty.name || !faculty.email || !faculty.code || !faculty.departmentName || !faculty.designation || !faculty.employmentType) {
+                errors.push(`Row ${index + 2}: Missing required fields.`);
+                errorCount++;
+                continue;
+            }
+            if (existingEmails.has(faculty.email.toLowerCase())) {
+                errors.push(`Row ${index + 2}: Email "${faculty.email}" already exists.`);
+                errorCount++;
+                continue;
+            }
+            if (existingCodes.has(faculty.code)) {
+                errors.push(`Row ${index + 2}: Staff ID "${faculty.code}" already exists.`);
+                errorCount++;
+                continue;
+            }
+            const departmentId = departmentMap.get(faculty.departmentName.toLowerCase());
+            if (!departmentId) {
+                errors.push(`Row ${index + 2}: Department "${faculty.departmentName}" not found.`);
+                errorCount++;
+                continue;
+            }
+
+            try {
+                const id = `FAC_BULK_${Date.now()}_${index}`;
+                const initialPassword = randomBytes(8).toString('hex');
+                facultyStmt.run(id, faculty.name, faculty.email, faculty.code, departmentId, faculty.designation, faculty.employmentType, '[]', 0, `https://avatar.vercel.sh/${faculty.email}.png`, 0, 0, '[]', Number(faculty.maxWeeklyHours) || 18, Number(faculty.designatedYear) || 1, new Date().toISOString(), '[]');
+                addCredential({
+                    userId: id,
+                    email: faculty.email,
+                    password: initialPassword,
+                    role: 'faculty',
+                    requiresPasswordChange: true
+                });
+                
+                existingEmails.add(faculty.email.toLowerCase());
+                existingCodes.add(faculty.code);
+                successCount++;
+            } catch(e: any) {
+                 errors.push(`Row ${index + 2}: Database error - ${e.message}`);
+                errorCount++;
+            }
+        }
+    })();
+    
+    revalidateAll();
+    return { successCount, errorCount, errors };
+}

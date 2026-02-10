@@ -54,3 +54,42 @@ export async function deleteClassroom(id: string) {
     revalidateAll();
     return Promise.resolve(id);
 }
+
+export async function bulkAddClassrooms(classrooms: Omit<Classroom, 'id'>[]) {
+    const db = getDb();
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    const existingNames = new Set((db.prepare('SELECT name FROM classrooms').all() as {name: string}[]).map(c => c.name.toLowerCase()));
+
+    const stmt = db.prepare('INSERT INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
+
+    db.transaction(() => {
+        classrooms.forEach((classroom, index) => {
+            if (!classroom.name || !classroom.type || !classroom.building || !classroom.capacity) {
+                errors.push(`Row ${index + 2}: Missing required fields (name, type, building, capacity).`);
+                errorCount++;
+                return;
+            }
+            if (existingNames.has(classroom.name.toLowerCase())) {
+                errors.push(`Row ${index + 2}: Classroom name "${classroom.name}" already exists.`);
+                errorCount++;
+                return;
+            }
+
+            try {
+                const id = `CR_BULK_${Date.now()}_${index}`;
+                stmt.run(id, classroom.name, classroom.type, Number(classroom.capacity), classroom.maintenanceStatus || 'available', classroom.building);
+                existingNames.add(classroom.name.toLowerCase());
+                successCount++;
+            } catch (e: any) {
+                errors.push(`Row ${index + 2}: Database error - ${e.message}`);
+                errorCount++;
+            }
+        });
+    })();
+
+    revalidateAll();
+    return { successCount, errorCount, errors };
+}
