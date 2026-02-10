@@ -3,7 +3,7 @@
  * @fileoverview This file is the entry point for Genkit flows in production.
  */
 
-import { createNextApiHandler } from '@genkit-ai/google-genai';
+import { createNextApiHandler } from '@genkit-ai/next/server';
 
 // Import flows directly for production builds.
 // This decouples the production API from the development-only `dev.ts` file.
