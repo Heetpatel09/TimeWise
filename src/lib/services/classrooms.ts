@@ -55,6 +55,43 @@ export async function deleteClassroom(id: string) {
     return Promise.resolve(id);
 }
 
+export async function bulkDeleteClassrooms(ids: string[]): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    const db = getDb();
+
+    if (!ids || ids.length === 0) {
+        return { success: false, message: 'No classrooms selected for deletion.', deletedCount: 0 };
+    }
+
+    try {
+        // Conflict checking
+        const placeholders = ids.map(() => '?').join(',');
+        const query = `SELECT DISTINCT classroomId FROM schedule WHERE classroomId IN (${placeholders})`;
+        const conflictingClassrooms: { classroomId: string }[] = db.prepare(query).all(...ids) as any;
+        
+        if (conflictingClassrooms.length > 0) {
+            const classroomNames = conflictingClassrooms.map(c => {
+                const classroom = db.prepare('SELECT name FROM classrooms WHERE id = ?').get(c.classroomId) as { name: string };
+                return classroom?.name || c.classroomId;
+            });
+            throw new Error(`Cannot delete. The following classrooms are in use: ${classroomNames.join(', ')}.`);
+        }
+
+        // Deletion
+        const stmt = db.prepare(`DELETE FROM classrooms WHERE id IN (${placeholders})`);
+        const result = db.transaction(() => {
+            return stmt.run(...ids);
+        })();
+
+        revalidateAll();
+        return { success: true, message: `${result.changes} classrooms deleted successfully.`, deletedCount: result.changes };
+
+    } catch (error: any) {
+        console.error('Bulk delete failed:', error);
+        return { success: false, message: error.message || 'An unexpected error occurred during bulk deletion.', deletedCount: 0 };
+    }
+}
+
+
 export async function bulkAddClassrooms(classrooms: Omit<Classroom, 'id'>[]) {
     const db = getDb();
     let successCount = 0;

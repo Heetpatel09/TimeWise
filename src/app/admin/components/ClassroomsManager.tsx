@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getClassrooms, addClassroom, updateClassroom, deleteClassroom, bulkAddClassrooms } from '@/lib/services/classrooms';
+import { getClassrooms, addClassroom, updateClassroom, deleteClassroom, bulkAddClassrooms, bulkDeleteClassrooms } from '@/lib/services/classrooms';
 import type { Classroom } from '@/lib/types';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2, Building, Wrench, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -28,6 +29,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import CsvImportDialog from './CsvImportDialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const maintenanceStatusOptions: Classroom['maintenanceStatus'][] = ['available', 'in_maintenance', 'unavailable'];
 const classroomHeaders = ['name', 'type', 'capacity', 'maintenanceStatus', 'building'];
@@ -44,6 +57,7 @@ export default function ClassroomsManager() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isImportOpen, setImportOpen] = useState(false);
   const [currentClassroom, setCurrentClassroom] = useState<Partial<Classroom>>({});
+  const [selectedClassroomIds, setSelectedClassroomIds] = useState<string[]>([]);
 
   const classroomMutation = useMutation({
     mutationFn: async (classroom: Omit<Classroom, 'id'> & { id?: string }) => {
@@ -74,6 +88,23 @@ export default function ClassroomsManager() {
       toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
     },
   });
+  
+  const bulkDeleteMutation = useMutation({
+    mutationFn: bulkDeleteClassrooms,
+    onSuccess: (result) => {
+        if (result.success) {
+            queryClient.invalidateQueries({ queryKey: ['classrooms'] });
+            toast({ title: "Bulk Deletion Successful", description: result.message });
+            setSelectedClassroomIds([]);
+        } else {
+            toast({ title: "Bulk Deletion Failed", description: result.message, variant: 'destructive' });
+        }
+    },
+    onError: (error: any) => {
+        toast({ title: "Error", description: error.message || "An unexpected error occurred.", variant: "destructive" });
+    }
+  });
+
 
   const handleSave = async () => {
     if (currentClassroom && currentClassroom.name && currentClassroom.type && currentClassroom.building && currentClassroom.capacity && currentClassroom.maintenanceStatus) {
@@ -118,26 +149,74 @@ export default function ClassroomsManager() {
     }
   };
   
+  const handleSelectAll = (checked: boolean | string) => {
+    if (checked) {
+        setSelectedClassroomIds(classrooms.map(c => c.id));
+    } else {
+        setSelectedClassroomIds([]);
+    }
+  };
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+      if (checked) {
+          setSelectedClassroomIds(prev => [...prev, id]);
+      } else {
+          setSelectedClassroomIds(prev => prev.filter(rowId => rowId !== id));
+      }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
   return (
     <div>
-      <div className="flex justify-end gap-2 mb-4">
-        <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import from CSV
-        </Button>
-        <Button onClick={openNewDialog}>
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Add Classroom
-        </Button>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          {selectedClassroomIds.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={bulkDeleteMutation.isPending}>
+                  {bulkDeleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Trash2 className="h-4 w-4 mr-2" />}
+                  Delete Selected ({selectedClassroomIds.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          This will permanently delete {selectedClassroomIds.length} classroom(s). This action cannot be undone.
+                      </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => bulkDeleteMutation.mutate(selectedClassroomIds)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import from CSV
+          </Button>
+          <Button onClick={openNewDialog}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Classroom
+          </Button>
+        </div>
       </div>
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                  <Checkbox 
+                    checked={selectedClassroomIds.length === classrooms.length && classrooms.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Building</TableHead>
@@ -149,6 +228,12 @@ export default function ClassroomsManager() {
           <TableBody>
             {classrooms.map((cls) => (
               <TableRow key={cls.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedClassroomIds.includes(cls.id)}
+                    onCheckedChange={(checked) => handleSelectRow(cls.id, !!checked)}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{cls.name}</TableCell>
                  <TableCell className="capitalize">
                   <Badge variant={cls.type === 'lab' ? 'secondary' : 'outline'}>{cls.type}</Badge>
@@ -173,7 +258,7 @@ export default function ClassroomsManager() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(cls.id)} className="text-destructive focus:text-destructive-foreground">
+                      <DropdownMenuItem onClick={() => handleDelete(cls.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10">
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
