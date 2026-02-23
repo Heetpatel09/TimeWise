@@ -1,272 +1,321 @@
 
 'use client';
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Calendar, School, UserCheck, Users, Mail, PencilRuler, Trophy, Award, Warehouse, PlusSquare, UserCog, DollarSign, Home, FileText, CheckSquare, BarChart3, Loader2, ArrowRight, Building, KeyRound, Workflow, ShieldCheck, Dumbbell, Banknote, Bot, Lock, PieChart, Star } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
-import { useQuery } from '@tanstack/react-query';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
-import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext';
-import type { Permission, Admin } from '@/lib/types';
-import { getAdminDashboardStats, getAdminById } from '@/lib/services/admins';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Button } from '@/components/ui/button';
 
-const Section = ({ title, icon: Icon, children, gridCols = "grid-cols-1 sm:grid-cols-2" }: { title: string, icon: React.ElementType, children: React.ReactNode, isLocked?: boolean, gridCols?: string }) => (
-    <div>
-        <h2 className="text-lg font-semibold flex items-center gap-2 mb-3 text-muted-foreground">
-            <Icon className="h-5 w-5" />
-            {title}
-        </h2>
-        <div className={cn("grid gap-4", gridCols)}>
+import React, { useMemo } from 'react';
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { 
+    Book, 
+    Calendar, 
+    School, 
+    UserCheck, 
+    Users, 
+    Mail, 
+    Trophy, 
+    Award, 
+    Warehouse, 
+    PlusSquare, 
+    ShieldCheck, 
+    DollarSign, 
+    Home, 
+    FileText, 
+    CheckSquare, 
+    BarChart3, 
+    Loader2, 
+    ArrowRight, 
+    Building, 
+    KeyRound, 
+    Workflow, 
+    Dumbbell, 
+    Banknote, 
+    Bot, 
+    AlertTriangle,
+    Activity,
+    ClipboardList
+} from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { getAdminDashboardStats } from '@/lib/services/admins';
+import { getFaculty } from '@/lib/services/faculty';
+import { getSchedule } from '@/lib/services/schedule';
+import { getLeaveRequests } from '@/lib/services/leave';
+import { getNewSlotRequests } from '@/lib/services/new-slot-requests';
+
+// --- Components ---
+
+const SummaryStat = ({ title, value, icon: Icon, colorClass, isLoading }: { title: string, value: string | number, icon: any, colorClass: string, isLoading: boolean }) => (
+    <Card className="overflow-hidden border-none shadow-sm bg-card/50 backdrop-blur-sm">
+        <CardContent className="p-4 flex items-center justify-between">
+            <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+                {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin mt-1 text-muted-foreground" />
+                ) : (
+                    <h3 className="text-2xl font-bold mt-0.5">{value}</h3>
+                )}
+            </div>
+            <div className={cn("p-2.5 rounded-xl", colorClass)}>
+                <Icon className="h-5 w-5" />
+            </div>
+        </CardContent>
+    </Card>
+);
+
+const FeatureCard = ({ href, title, icon: Icon, description }: { href: string, title: string, icon: any, description?: string }) => (
+    <Link href={href} className="block group">
+        <Card className="h-full border-muted/60 transition-all duration-300 hover:shadow-md hover:border-primary/30 hover:-translate-y-1 rounded-2xl overflow-hidden">
+            <CardContent className="p-4 flex items-start gap-4">
+                <div className="rounded-xl p-2.5 bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                    <Icon className="h-5 w-5" />
+                </div>
+                <div className="space-y-0.5">
+                    <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">{title}</h4>
+                    {description && <p className="text-[11px] text-muted-foreground leading-tight line-clamp-1">{description}</p>}
+                </div>
+                <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground/40 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />
+            </CardContent>
+        </Card>
+    </Link>
+);
+
+const DashboardSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
+    <div className="space-y-3">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">{title}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
             {children}
         </div>
     </div>
 );
 
-
-const ManagementCard = ({ href, title, icon: Icon, isLocked }: { href: string, title: string, icon: React.ElementType, isLocked?: boolean }) => {
-    const content = (
-         <Card className={cn(
-            "group transition-all duration-300",
-            isLocked 
-            ? "cursor-not-allowed bg-muted/50" 
-            : "hover:bg-primary/5 hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
-        )}>
-            <CardContent className="p-4 flex items-center gap-4">
-                 <div className={cn(
-                    "rounded-lg p-3 transition-colors", 
-                    isLocked ? "bg-muted" : "bg-primary/10 group-hover:bg-primary"
-                 )}>
-                    <Icon className={cn(
-                        "h-6 w-6",
-                        isLocked ? "text-muted-foreground" : "text-primary group-hover:text-primary-foreground"
-                    )}/>
-                </div>
-                <span className={cn("font-semibold", isLocked && "text-muted-foreground")}>{title}</span>
-                 {isLocked ? (
-                    <Lock className="ml-auto h-4 w-4 text-muted-foreground" />
-                ) : (
-                    <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                )}
-            </CardContent>
-        </Card>
-    );
-    
-    if(isLocked) {
-        return (
-             <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger className="w-full text-left">{content}</TooltipTrigger>
-                    <TooltipContent><p>You don't have permission to access this section.</p></TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        );
-    }
-    
-    return <Link href={href} passHref className="w-full">{content}</Link>;
-};
-
-const academicLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
-  { href: "/admin/schedule", title: "Master Schedule", icon: Calendar, permission: 'manage_schedule' },
-  { href: "/admin/timetable/generate", title: "Timetable Generator", icon: Bot, permission: 'manage_schedule' },
-  { href: "/admin/teacher-allocation", title: "Teacher Allocator AI", icon: Bot, permission: 'manage_faculty' },
-  { href: "/admin/exams", title: "Exams", icon: FileText, permission: 'manage_exams' },
-  { href: "/admin/attendance", title: "Attendance", icon: CheckSquare, permission: 'manage_attendance' },
-  { href: "/admin/results", title: "Results", icon: BarChart3, permission: 'manage_results' },
-];
-
-const coreDataLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
-  { href: "/admin/students", title: "Students", icon: Users, permission: 'manage_students' },
-  { href: "/admin/departments", title: "Departments, Subjects & Faculty", icon: Building, permission: 'manage_classes' }, // Combined
-  { href: "/admin/classrooms", title: "Classrooms", icon: Warehouse, permission: 'manage_classrooms' },
-];
-
-const adminLinks: { href: string, title: string, icon: React.ElementType, permission: Permission }[] = [
-  { href: "/admin/fees", title: "Fees", icon: Banknote, permission: 'manage_fees' },
-  { href: "/admin/hostels", title: "Hostels", icon: Home, permission: 'manage_hostels' },
-  { href: "/admin/leave-requests", title: "Leave Requests", icon: Mail, permission: 'manage_requests' },
-  { href: "/admin/new-slot-requests", title: "New Slot Requests", icon: PlusSquare, permission: 'manage_requests' },
-];
-
-const systemLinks = [
-  { href: "/admin/admins", title: "Admins & Managers", icon: ShieldCheck },
-  { href: "/admin/leaderboards", title: "Leaderboards", icon: Trophy },
-  { href: "/admin/hall-of-fame", title: "Hall of Fame", icon: Award },
-  { href: "/admin/subscription", title: "Billing & Subscription", icon: DollarSign },
-  { href: "/admin/api-test", title: "API Key Test", icon: KeyRound },
-];
-
-const StatCard = ({ title, value, icon, isLoading }: { title: string, value: number, icon: React.ElementType, isLoading: boolean }) => {
-    const Icon = icon;
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                 <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                {isLoading ? <Loader2 className='h-6 w-6 animate-spin' /> : <div className="text-2xl font-bold">{value}</div>}
-            </CardContent>
-        </Card>
-    )
-}
-
-function AdminDashboard() {
-    const { user } = useAuth();
-    
-    const hasPermission = (permission: Permission) => {
-        if (!user) return false;
-        
-        const adminDetails = user as Admin;
-        if (!adminDetails.permissions || !Array.isArray(adminDetails.permissions)) {
-             return false;
-        }
-
-        return adminDetails.permissions.includes('*') || adminDetails.permissions.includes(permission);
-    }
-
-    const isFullAdmin = hasPermission('*');
-
-    const { data: stats, isLoading: statsLoading } = useQuery({ 
-      queryKey: ['adminDashboardStats'], 
-      queryFn: getAdminDashboardStats 
-    });
-
-    const { data: adminDetails, isLoading: adminLoading } = useQuery<Admin | null>({
-        queryKey: ['adminDetails', user?.id],
-        queryFn: () => getAdminById(user!.id),
-        enabled: !!user
-    });
-    
-    const studentCount = stats?.studentCount ?? 0;
-    const facultyCount = stats?.facultyCount ?? 0;
-    const classCount = stats?.classCount ?? 0;
-    const subjectCount = stats?.subjectCount ?? 0;
-    const scheduleCount = stats?.scheduleCount ?? 0;
-
-    const chartData = [
-        { name: "Students", value: studentCount, fill: "hsl(var(--chart-1))" },
-        { name: "Faculty", value: facultyCount, fill: "hsl(var(--chart-2))" },
-        { name: "Classes", value: classCount, fill: "hsl(var(--chart-3))" },
-        { name: "Subjects", value: subjectCount, fill: "hsl(var(--chart-4))" },
-        { name: "Scheduled", value: scheduleCount, fill: "hsl(var(--chart-5))" },
-    ];
-
-    const chartConfig: ChartConfig = {
-        value: { label: "Total" },
-        students: { label: "Students", color: "hsl(var(--chart-1))" },
-        faculty: { label: "Faculty", color: "hsl(var(--chart-2))" },
-        classes: { label: "Classes", color: "hsl(var(--chart-3))" },
-        subjects: { label: "Subjects", color: "hsl(var(--chart-4))" },
-        scheduled: { label: "Scheduled", color: "hsl(var(--chart-5))" },
-    }
-
-    return (
-        <div className='grid grid-cols-1 xl:grid-cols-3 gap-6'>
-            <div className="xl:col-span-2 space-y-8">
-                 <Section title="Academics" icon={Dumbbell}>
-                    {academicLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
-                </Section>
-                <Section title="Analytics & Insights" icon={PieChart}>
-                    <ManagementCard href="/admin/faculty-analysis" title="Faculty Analysis" icon={BarChart3} isLocked={!hasPermission('manage_faculty')} />
-                </Section>
-                <Section title="Core Data" icon={School}>
-                    {coreDataLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
-                </Section>
-                <Section title="Administration & Requests" icon={Workflow}>
-                    {adminLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
-                </Section>
-                {isFullAdmin && (
-                    <Section title="System & Engagement" icon={Trophy}>
-                        {systemLinks.map(link => <ManagementCard key={link.href} {...link} />)}
-                    </Section>
-                )}
-            </div>
-
-            <div className="xl:col-span-1 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                            Subscription Status
-                             <Link href="/admin/subscription">
-                                <Button variant="outline" size="sm">Manage</Button>
-                            </Link>
-                        </CardTitle>
-                        <CardDescription>Your current plan and usage.</CardDescription>
-                    </CardHeader>
-                    <CardContent className='space-y-4'>
-                        {adminLoading ? (
-                             <div className="flex justify-center items-center h-24"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-                        ): adminDetails ? (
-                           <>
-                                <div className='flex items-center gap-2'>
-                                    <Star className="w-5 h-5 text-primary" />
-                                    <p>Current Plan: <span className="font-semibold capitalize">{adminDetails.subscriptionTier || 'free'}</span></p>
-                                </div>
-                                <div className='flex items-center gap-2'>
-                                    <Bot className="w-5 h-5 text-primary" />
-                                    <p>Generations Left: <span className="font-semibold">{adminDetails.generationCredits}</span></p>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-muted-foreground">Could not load subscription details.</p>
-                        )}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>University at a Glance</CardTitle>
-                        <CardDescription>An overview of core university metrics.</CardDescription>
-                    </CardHeader>
-                    <CardContent className='grid grid-cols-2 gap-4'>
-                        <StatCard title="Students" value={studentCount} icon={Users} isLoading={statsLoading} />
-                        <StatCard title="Faculty" value={facultyCount} icon={UserCheck} isLoading={statsLoading} />
-                        <StatCard title="Classes" value={classCount} icon={School} isLoading={statsLoading} />
-                        <StatCard title="Subjects" value={subjectCount} icon={Book} isLoading={statsLoading} />
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Data Distribution</CardTitle>
-                         <CardDescription>A visual breakdown of key entities.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height={250}>
-                                <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10 }}>
-                                    <YAxis
-                                        dataKey="name"
-                                        type="category"
-                                        tickLine={false}
-                                        tickMargin={10}
-                                        axisLine={false}
-                                        tickFormatter={(value) => value.slice(0, 10)}
-                                    />
-                                    <XAxis type="number" hide />
-                                    <RechartsTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                    <Bar dataKey="value" layout="vertical" radius={5} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-    )
-}
+// --- Main Page ---
 
 export default function AdminPage() {
+    const { data: stats, isLoading: statsLoading } = useQuery({ 
+        queryKey: ['adminDashboardStats'], 
+        queryFn: getAdminDashboardStats 
+    });
+
+    const { data: facultyList = [], isLoading: facultyLoading } = useQuery({ 
+        queryKey: ['faculty'], 
+        queryFn: getFaculty 
+    });
+
+    const { data: schedule = [], isLoading: scheduleLoading } = useQuery({ 
+        queryKey: ['schedule'], 
+        queryFn: getSchedule 
+    });
+
+    const { data: leaveRequests = [], isLoading: leaveLoading } = useQuery({ 
+        queryKey: ['leaveRequests'], 
+        queryFn: getLeaveRequests 
+    });
+
+    const { data: slotRequests = [], isLoading: slotsLoading } = useQuery({ 
+        queryKey: ['newSlotRequests'], 
+        queryFn: getNewSlotRequests 
+    });
+
+    const isDataLoading = statsLoading || facultyLoading || scheduleLoading || leaveLoading || slotsLoading;
+
+    // --- Derived Stats ---
+    
+    const overloadedCount = useMemo(() => {
+        if (!facultyList.length || !schedule.length) return 0;
+        const hoursMap = new Map<string, number>();
+        schedule.forEach(s => {
+            if (s.subjectId !== 'LIB001') {
+                hoursMap.set(s.facultyId, (hoursMap.get(s.facultyId) || 0) + 1);
+            }
+        });
+        return facultyList.filter(f => (hoursMap.get(f.id) || 0) > (f.maxWeeklyHours || 18)).length;
+    }, [facultyList, schedule]);
+
+    const pendingRequestsCount = useMemo(() => {
+        const pLeaves = leaveRequests.filter(r => r.status === 'pending').length;
+        const pSlots = slotRequests.filter(r => r.status === 'pending').length;
+        return pLeaves + pSlots;
+    }, [leaveRequests, slotRequests]);
+
     return (
-        <DashboardLayout pageTitle='Admin Dashboard' role="admin">
-            <AdminDashboard />
+        <DashboardLayout pageTitle="Admin Control Panel" role="admin">
+            <div className="flex flex-col gap-8 flex-grow">
+                
+                {/* --- Summary Bar --- */}
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <SummaryStat 
+                        title="Total Faculty" 
+                        value={stats?.facultyCount ?? 0} 
+                        icon={UserCheck} 
+                        colorClass="bg-blue-500/10 text-blue-600 dark:text-blue-400" 
+                        isLoading={isDataLoading}
+                    />
+                    <SummaryStat 
+                        title="Students" 
+                        value={stats?.studentCount ?? 0} 
+                        icon={Users} 
+                        colorClass="bg-purple-500/10 text-purple-600 dark:text-purple-400" 
+                        isLoading={isDataLoading}
+                    />
+                    <SummaryStat 
+                        title="Active Classes" 
+                        value={stats?.classCount ?? 0} 
+                        icon={School} 
+                        colorClass="bg-green-500/10 text-green-600 dark:text-green-400" 
+                        isLoading={isDataLoading}
+                    />
+                    <SummaryStat 
+                        title="Overloaded" 
+                        value={overloadedCount} 
+                        icon={AlertTriangle} 
+                        colorClass="bg-orange-500/10 text-orange-600 dark:text-orange-400" 
+                        isLoading={isDataLoading}
+                    />
+                    <SummaryStat 
+                        title="Pending Req." 
+                        value={pendingRequestsCount} 
+                        icon={Activity} 
+                        colorClass="bg-red-500/10 text-red-600 dark:text-red-400" 
+                        isLoading={isDataLoading}
+                    />
+                </div>
+
+                {/* --- Categorized Features --- */}
+                <div className="space-y-10">
+                    
+                    <DashboardSection title="Academics">
+                        <FeatureCard 
+                            href="/admin/schedule" 
+                            title="Master Schedule" 
+                            icon={Calendar} 
+                            description="View and manually edit slots"
+                        />
+                        <FeatureCard 
+                            href="/admin/timetable/generate" 
+                            title="Timetable Gen" 
+                            icon={Bot} 
+                            description="AI-powered engine"
+                        />
+                        <FeatureCard 
+                            href="/admin/teacher-allocation" 
+                            title="Teacher AI" 
+                            icon={Workflow} 
+                            description="Smart workload distribution"
+                        />
+                        <FeatureCard 
+                            href="/admin/exams" 
+                            title="Exams" 
+                            icon={FileText} 
+                            description="Schedule and seating plans"
+                        />
+                        <FeatureCard 
+                            href="/admin/attendance" 
+                            title="Attendance" 
+                            icon={CheckSquare} 
+                            description="Review and lock logs"
+                        />
+                        <FeatureCard 
+                            href="/admin/results" 
+                            title="Results" 
+                            icon={BarChart3} 
+                            description="Manage student marksheets"
+                        />
+                    </DashboardSection>
+
+                    <DashboardSection title="Analytics">
+                        <FeatureCard 
+                            href="/admin/faculty-analysis" 
+                            title="Faculty Analysis" 
+                            icon={Activity} 
+                            description="Heatmaps and load balancing"
+                        />
+                        <FeatureCard 
+                            href="/admin/leaderboards" 
+                            title="Leaderboards" 
+                            icon={Trophy} 
+                            description="Rankings and points"
+                        />
+                    </DashboardSection>
+
+                    <DashboardSection title="Core Data">
+                        <FeatureCard 
+                            href="/admin/students" 
+                            title="Students" 
+                            icon={Users} 
+                            description="Profile management"
+                        />
+                        <FeatureCard 
+                            href="/admin/departments" 
+                            title="Departments" 
+                            icon={Building} 
+                            description="Faculty and subject setup"
+                        />
+                        <FeatureCard 
+                            href="/admin/classrooms" 
+                            title="Classrooms" 
+                            icon={Warehouse} 
+                            description="Maintenance and capacity"
+                        />
+                    </DashboardSection>
+
+                    <DashboardSection title="Administration">
+                        <FeatureCard 
+                            href="/admin/fees" 
+                            title="Fees" 
+                            icon={Banknote} 
+                            description="Invoices and payments"
+                        />
+                        <FeatureCard 
+                            href="/admin/hostels" 
+                            title="Hostels" 
+                            icon={Home} 
+                            description="Room assignments"
+                        />
+                        <FeatureCard 
+                            href="/admin/leave-requests" 
+                            title="Leave Requests" 
+                            icon={Mail} 
+                            description="Approve and reassign substitute"
+                        />
+                        <FeatureCard 
+                            href="/admin/new-slot-requests" 
+                            title="Slot Requests" 
+                            icon={PlusSquare} 
+                            description="New class requests"
+                        />
+                    </DashboardSection>
+
+                    <DashboardSection title="System">
+                        <FeatureCard 
+                            href="/admin/admins" 
+                            title="Permissions" 
+                            icon={ShieldCheck} 
+                            description="Manage managers and roles"
+                        />
+                        <FeatureCard 
+                            href="/admin/subscription" 
+                            title="Billing" 
+                            icon={DollarSign} 
+                            description="Credits and plans"
+                        />
+                        <FeatureCard 
+                            href="/admin/hall-of-fame" 
+                            title="Hall of Fame" 
+                            icon={Award} 
+                            description="Dedication champions"
+                        />
+                        <FeatureCard 
+                            href="/admin/api-test" 
+                            title="System Check" 
+                            icon={KeyRound} 
+                            description="API and engine diagnostics"
+                        />
+                    </DashboardSection>
+
+                </div>
+            </div>
         </DashboardLayout>
     );
 }
