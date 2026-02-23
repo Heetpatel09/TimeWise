@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, BookOpen, MessageSquare, Loader2, Flame, ClipboardList, Plus, BrainCircuit, Check, PlusCircle, Flag, Tag, X, Archive, Trash2, MoreVertical, ArchiveRestore, ChevronDown, FolderKanban } from "lucide-react";
-import type { Faculty, EnrichedSchedule, Event, LeaveRequest } from '@/lib/types';
+import type { Faculty, EnrichedSchedule, Event, LeaveRequest, Schedule } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -32,6 +31,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Link from 'next/link';
+import FacultyHeatmap from './components/FacultyHeatmap';
 
 interface TodoItem {
   id: string;
@@ -50,7 +50,7 @@ export default function FacultyDashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [facultyMember, setFacultyMember] = useState<Faculty | null>(null);
-  const [facultySchedule, setFacultySchedule] = useState<EnrichedSchedule[]>([]);
+  const [facultySchedule, setFacultySchedule] = useState<Schedule[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   
@@ -95,7 +95,7 @@ export default function FacultyDashboard() {
                 setFacultyMember(member || null);
                 
                 const schedule = scheduleData.filter(s => s.facultyId === user.id);
-                setFacultySchedule(schedule as EnrichedSchedule[]);
+                setFacultySchedule(schedule);
                 
                 setEvents(eventsData);
                 setLeaveRequests(leaveData.filter(lr => lr.requesterId === user.id));
@@ -339,13 +339,16 @@ export default function FacultyDashboard() {
                        )}
                     </CardContent>
                 </Card>
-                <div className="flex-grow">
+                <div className="hidden lg:block">
                      <ScheduleCalendar 
-                        schedule={facultySchedule}
+                        schedule={facultySchedule as EnrichedSchedule[]}
                         leaveRequests={leaveRequests}
                         events={events}
                         onDayClick={handleDayClick}
                     />
+                </div>
+                <div className="block lg:hidden">
+                    <FacultyHeatmap schedule={facultySchedule} faculty={facultyMember} />
                 </div>
             </div>
             <div className="lg:col-span-1 space-y-6">
@@ -387,7 +390,7 @@ export default function FacultyDashboard() {
                         </Button>
                     </CardContent>
                 </Card>
-                <DailySchedule schedule={facultySchedule} />
+                <DailySchedule schedule={facultySchedule as EnrichedSchedule[]} />
             </div>
       </div>
       
@@ -415,7 +418,7 @@ export default function FacultyDashboard() {
 
         <Dialog open={isEventDialogOpen} onOpenChange={setEventDialogOpen}>
             <DialogContent>
-                <DialogHeader><DialogTitle>{leaveDialogTitle}</DialogTitle><DialogDescription>{leaveDialogDescription}</DialogDescription></DialogHeader>
+                <DialogHeader><DialogTitle>Add a Note/Reminder</DialogTitle><DialogDescription>{`For ${selectedDate ? format(selectedDate, 'PPP') : ''}`}</DialogDescription></DialogHeader>
                  {dialogAction === 'reminder' ? (
                      <div className="grid gap-4 py-4">
                         <div className="space-y-2"><Label htmlFor="event-title">Title</Label><Input id="event-title" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} placeholder="e.g. Project Deadline" disabled={isSubmitting}/></div>
@@ -477,7 +480,7 @@ export default function FacultyDashboard() {
             isOpen={isSlotChangeDialogOpen}
             onOpenChange={setSlotChangeDialogOpen}
             facultyId={user?.id || ''}
-            facultySchedule={facultySchedule}
+            facultySchedule={facultySchedule as EnrichedSchedule[]}
         />
 
         <GenerateTestDialog

@@ -175,6 +175,9 @@ function AdminDashboard() {
                  <Section title="Academics" icon={Dumbbell}>
                     {academicLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </Section>
+                <Section title="Analytics & Insights" icon={PieChart}>
+                    <ManagementCard href="/admin/faculty-analysis" title="Faculty Analysis" icon={BarChart3} isLocked={!hasPermission('manage_faculty')} />
+                </Section>
                 <Section title="Core Data" icon={School}>
                     {coreDataLinks.map(link => <ManagementCard key={link.href} {...link} isLocked={!hasPermission(link.permission)} />)}
                 </Section>
