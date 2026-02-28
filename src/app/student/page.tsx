@@ -4,8 +4,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, Home, Loader2, Flame, FolderKanban, ShieldCheck, Zap, Gem, Trophy } from "lucide-react";
-import type { Student, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, Fee, EnrichedExam, EnrichedAssignment, Submission, EnrichedAttendance } from '@/lib/types';
+import { Calendar, ClipboardList, BookCheck, BarChart3, Wallet, Home, Loader2, Flame, FolderKanban, ShieldCheck, Gem, Trophy } from "lucide-react";
+import type { Student, EnrichedSchedule, Event, LeaveRequest, EnrichedResult, EnrichedExam, EnrichedAssignment, Submission, EnrichedAttendance, EnrichedFee } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -31,11 +31,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BadgeCard from './components/BadgeCard';
 import LeaderboardDialog from './components/LeaderboardDialog';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const InfoItem = ({ label, value }: { label: string, value: string | number }) => (
-    <div className="flex flex-col">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="font-semibold text-sm">{value}</span>
+    <div className="flex flex-col min-w-0">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">{label}</span>
+        <span className="font-bold text-sm truncate">{value}</span>
     </div>
 );
 
@@ -191,14 +192,14 @@ export default function StudentDashboard() {
   };
 
   const features = [
-      { title: "Time Table", icon: Calendar, onClick: () => setTimetableModalOpen(true) },
-      { title: "Attendance", icon: ClipboardList, onClick: () => setAttendanceOpen(true) },
-      { title: "Assignments", icon: FolderKanban, onClick: () => setAssignmentsOpen(true) },
-      { title: "Leaderboards", icon: Trophy, onClick: () => setLeaderboardOpen(true) },
-      { title: "Exam Schedule", icon: BookCheck, onClick: () => setExamsOpen(true) },
-      { title: "Results", icon: BarChart3, onClick: () => setResultsOpen(true) },
-      { title: "Fees", icon: Wallet, onClick: () => setFeesOpen(true) },
-      { title: "Hostel Details", icon: Home, onClick: () => setHostelOpen(true) },
+      { title: "Time Table", icon: Calendar, onClick: () => setTimetableModalOpen(true), color: "bg-blue-500/10 text-blue-600" },
+      { title: "Attendance", icon: ClipboardList, onClick: () => setAttendanceOpen(true), color: "bg-green-500/10 text-green-600" },
+      { title: "Assignments", icon: FolderKanban, onClick: () => setAssignmentsOpen(true), color: "bg-orange-500/10 text-orange-600" },
+      { title: "Leaderboards", icon: Trophy, onClick: () => setLeaderboardOpen(true), color: "bg-yellow-500/10 text-yellow-600" },
+      { title: "Exam Dates", icon: BookCheck, onClick: () => setExamsOpen(true), color: "bg-red-500/10 text-red-600" },
+      { title: "Marksheets", icon: BarChart3, onClick: () => setResultsOpen(true), color: "bg-purple-500/10 text-purple-600" },
+      { title: "Fees & Dues", icon: Wallet, onClick: () => setFeesOpen(true), color: "bg-emerald-500/10 text-emerald-600" },
+      { title: "Hostel Hub", icon: Home, onClick: () => setHostelOpen(true), color: "bg-sky-500/10 text-sky-600" },
   ];
 
   const earnedBadges = useMemo(() => {
@@ -206,12 +207,10 @@ export default function StudentDashboard() {
     const { student, attendance } = dashboardData;
     const badges = [];
 
-    // CGPA Badges
     if (student.cgpa >= 9.5) badges.push({ title: 'Titan Scholar', icon: Gem, description: 'CGPA of 9.5 or higher' });
     else if (student.cgpa >= 9.0) badges.push({ title: 'Oracle', icon: Gem, description: 'CGPA of 9.0 or higher' });
     else if (student.cgpa >= 8.0) badges.push({ title: 'Prodigy', icon: Gem, description: 'CGPA of 8.0 or higher' });
 
-    // Attendance Badges
     const totalAttendance = attendance.length;
     const presentAttendance = attendance.filter(a => a.status === 'present').length;
     const attendancePercentage = totalAttendance > 0 ? (presentAttendance / totalAttendance) * 100 : 0;
@@ -224,144 +223,191 @@ export default function StudentDashboard() {
   if (isLoading || !dashboardData) {
     return (
         <DashboardLayout pageTitle="Student Dashboard" role="student">
-            <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>
+            <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         </DashboardLayout>
     );
   }
 
   const { student } = dashboardData;
-  const leaveDialogTitle = dialogAction === 'leave' ? 'Request Leave of Absence' : 'Add a Note for Admin';
-  const leaveDialogDescription = dialogAction === 'leave' 
-    ? 'Please fill out the form below to submit your leave request.'
-    : `Add a note for ${selectedDate ? format(selectedDate, 'PPP') : 'the selected date'}. This will be visible to you and the admin.`;
-  const eventDialogTitle = dialogAction === 'reminder' ? 'Add Reminder' : 'Add a Personal Note';
-  const eventDialogDescription = `For ${selectedDate ? format(selectedDate, 'PPP') : ''}`;
 
   return (
     <DashboardLayout pageTitle="Student Dashboard" role="student">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
-            <div className="lg:col-span-2 flex flex-col space-y-6">
-                <Card className="mb-6 animate-in fade-in-0 duration-500">
-                    <CardHeader>
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                             <div className="flex items-center gap-4">
-                                <Avatar className="w-16 h-16 border-2 border-primary">
+        <div className="flex flex-col gap-8 pb-12">
+            
+            {/* Header Identity Card */}
+            <Card className="border-none shadow-sm bg-card/50 overflow-hidden relative group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-1000 rotate-12">
+                    <BrainCircuit className="h-48 w-48" />
+                </div>
+                <CardHeader className="relative z-10 border-b pb-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                         <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                            <div className="relative">
+                                <Avatar className="w-20 h-20 border-4 border-background shadow-xl">
                                     <AvatarImage src={student.avatar} alt={student.name} />
-                                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback className="bg-primary/10 text-primary font-black text-2xl">{student.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <div>
-                                    <CardTitle className="text-2xl">
-                                        {student.name}
-                                    </CardTitle>
-                                    <CardDescription>{student.email}</CardDescription>
+                                <div className="absolute -bottom-1 -right-1 bg-orange-500 text-white rounded-full p-1.5 shadow-lg border-2 border-background">
+                                    <Flame className="h-4 w-4" />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/70">
-                                {earnedBadges.slice(0, 3).map(badge => (
-                                     <BadgeCard key={badge.title} {...badge} />
-                                ))}
-                                <div className="flex items-center gap-4 text-right pl-4 border-l">
-                                   <Flame className="w-8 h-8 text-orange-500 animation-pulse" />
-                                   <div>
-                                        <p className="text-2xl font-bold">{student.streak || 0}</p>
-                                        <p className="text-sm text-muted-foreground">Day Streak</p>
-                                   </div>
-                                </div>
+                            <div className="space-y-1">
+                                <CardTitle className="text-3xl font-black font-headline tracking-tight">
+                                    {student.name}
+                                </CardTitle>
+                                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground opacity-80">{student.email}</p>
                             </div>
                         </div>
-                    </CardHeader>
-                     <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-                        <InfoItem label="Enrollment No." value={student.enrollmentNumber} />
-                        <InfoItem label="Department" value={student.department} />
-                        <InfoItem label="Class" value={student.className} />
-                        <InfoItem label="Roll No" value={student.rollNumber} />
-                    </CardContent>
-                </Card>
-                
-                <ScheduleCalendar 
-                    schedule={dashboardData.schedule}
-                    leaveRequests={dashboardData.leaveRequests}
-                    events={dashboardData.events}
-                    onDayClick={handleDayClick}
-                />
-
-            </div>
-            <div className="lg:col-span-1 space-y-6 animate-in fade-in-0 slide-in-from-left-8 duration-500 delay-300">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
-                        {features.map((feature) => (
-                             <Card key={feature.title} className="group relative flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer bg-secondary/50 hover:bg-secondary" onClick={feature.onClick}>
-                                <feature.icon className="w-8 h-8 mb-2 text-primary" />
-                                <h3 className="font-semibold text-xs">{feature.title}</h3>
-                            </Card>
-                        ))}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Leave Request Status</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {dashboardData.leaveRequests.length > 0 ? (
-                            <div className="space-y-4">
-                                {dashboardData.leaveRequests.slice(0, 3).map(request => (
-                                    <div key={request.id} className="flex justify-between items-center">
-                                        <div>
-                                            <p className="text-sm font-medium">
-                                                {format(new Date(request.startDate), 'MMM dd')} - {format(new Date(request.endDate), 'MMM dd')}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground truncate">{request.reason}</p>
-                                        </div>
-                                        <Badge variant={
-                                            request.status === 'approved' ? 'default' :
-                                            request.status === 'rejected' ? 'destructive' :
-                                            'secondary'
-                                        } className="capitalize">
-                                            {request.status}
-                                        </Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground text-center py-4">No leave requests submitted yet.</p>
-                        )}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Today's Schedule</CardTitle>
-                         <CardDescription>{format(new Date(), 'PPP')}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {todaysSchedule.length > 0 ? (
-                            <div className="space-y-3">
-                            {todaysSchedule.map(slot => (
-                                <div key={slot.id} className="flex justify-between items-center p-2 rounded-md bg-muted">
-                                    <div>
-                                        <p className="font-semibold text-sm">{slot.subjectName}</p>
-
-                                        <p className="text-xs text-muted-foreground">{slot.time} - {slot.facultyName}</p>
-                                    </div>
-                                </div>
+                        <div className="flex items-center gap-2 sm:gap-4 p-2 px-4 rounded-3xl bg-background/60 backdrop-blur-sm border shadow-sm">
+                            {earnedBadges.slice(0, 3).map(badge => (
+                                 <BadgeCard key={badge.title} {...badge} />
                             ))}
+                            <div className="h-10 w-px bg-border mx-2" />
+                            <div className="text-right">
+                                <p className="text-2xl font-black text-primary leading-none">{student.streak || 0}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Day Streak</p>
                             </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground text-center py-4">No classes scheduled for today.</p>
-                        )}
-                    </CardContent>
-                </Card>
+                        </div>
+                    </div>
+                </CardHeader>
+                 <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-muted/10 relative z-10">
+                    <InfoItem label="Enrollment No." value={student.enrollmentNumber} />
+                    <InfoItem label="Department" value={student.department} />
+                    <InfoItem label="Current Class" value={student.className} />
+                    <InfoItem label="Roll Number" value={student.rollNumber} />
+                </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Action Area */}
+                <div className="lg:col-span-2 space-y-8">
+                    <DashboardSection title="Academic Tools">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {features.map((feature) => (
+                                 <Card 
+                                    key={feature.title} 
+                                    className="group relative flex flex-col items-center justify-center p-4 h-32 text-center transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 cursor-pointer rounded-2xl bg-card/40 hover:-translate-y-1" 
+                                    onClick={feature.onClick}
+                                >
+                                    <div className={cn("p-3 rounded-2xl mb-3 group-hover:scale-110 transition-transform duration-300 shadow-inner", feature.color)}>
+                                        <feature.icon className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="font-bold text-[10px] uppercase tracking-widest">{feature.title}</h3>
+                                </Card>
+                            ))}
+                        </div>
+                    </DashboardSection>
+                    
+                    <div className="hidden md:block">
+                        <ScheduleCalendar 
+                            schedule={dashboardData.schedule}
+                            leaveRequests={dashboardData.leaveRequests}
+                            events={dashboardData.events}
+                            onDayClick={handleDayClick}
+                        />
+                    </div>
+                </div>
+
+                {/* Sidebar Intelligence Area */}
+                <div className="space-y-8">
+                    <Card className="border-none shadow-sm bg-card/50">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Live Feed</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-4">
+                                <h4 className="text-[10px] font-black uppercase text-primary/60 tracking-widest flex items-center gap-2">
+                                    <Calendar className="h-3 w-3" /> Today's Sessions
+                                </h4>
+                                {todaysSchedule.length > 0 ? (
+                                    <div className="space-y-3">
+                                    {todaysSchedule.map(slot => (
+                                        <div key={slot.id} className="flex justify-between items-center p-3 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/10 transition-colors">
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-xs truncate">{slot.subjectName}</p>
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase">{slot.time} &bull; {slot.facultyName}</p>
+                                            </div>
+                                            <Badge variant="outline" className="rounded-lg text-[9px] px-1.5 h-5 font-black shrink-0 ml-2">Slot Active</Badge>
+                                        </div>
+                                    ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 rounded-2xl bg-muted/10 border border-dashed">
+                                        <p className="text-[10px] font-black text-muted-foreground/40 uppercase">No sessions active today</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-4 pt-4 border-t">
+                                <h4 className="text-[10px] font-black uppercase text-orange-500/60 tracking-widest flex items-center gap-2">
+                                    <Mail className="h-3 w-3" /> Leave Requests
+                                </h4>
+                                {dashboardData.leaveRequests.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {dashboardData.leaveRequests.slice(0, 2).map(request => (
+                                            <div key={request.id} className="flex justify-between items-center p-3 rounded-2xl bg-muted/10">
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] font-bold truncate">{request.reason}</p>
+                                                    <p className="text-[9px] font-black text-muted-foreground uppercase mt-0.5">
+                                                        {format(new Date(request.startDate), 'MMM dd')} - {format(new Date(request.endDate), 'MMM dd')}
+                                                    </p>
+                                                </div>
+                                                <Badge variant={
+                                                    request.status === 'approved' ? 'default' :
+                                                    request.status === 'rejected' ? 'destructive' :
+                                                    'secondary'
+                                                } className="rounded-lg text-[8px] h-5 uppercase font-black shrink-0 ml-2">
+                                                    {request.status}
+                                                </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-[10px] font-black text-center text-muted-foreground/40 uppercase">No active requests</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-sm bg-primary/5 overflow-hidden relative">
+                        <CardHeader>
+                            <CardTitle className="text-sm font-black uppercase tracking-[0.2em]">Academic Pulse</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-[10px] font-black uppercase">
+                                    <span className="text-muted-foreground">Semester GPA (SGPA)</span>
+                                    <span className="text-primary">{student.sgpa.toFixed(2)}</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${(student.sgpa / 10) * 100}%` }} />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5 pt-2">
+                                <div className="flex justify-between text-[10px] font-black uppercase">
+                                    <span className="text-muted-foreground">Attendance Punctuality</span>
+                                    <span className="text-emerald-600">Active</span>
+                                </div>
+                                <p className="text-[11px] font-medium text-muted-foreground leading-tight italic">
+                                    Maintain your {student.streak} day streak to unlock the 'Vanguard' badge.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
 
-        {/* Dialogs */}
+        {/* Dash Modal Components */}
         <Dialog open={isTimetableModalOpen} onOpenChange={setTimetableModalOpen}>
-            <DialogContent className="max-w-4xl">
-                <DialogHeader><DialogTitle>My Weekly Timetable</DialogTitle></DialogHeader>
-                <div className="max-h-[70vh] overflow-y-auto p-1"><TimetableView /></div>
-                <DialogFooter><Button variant="outline" onClick={() => setTimetableModalOpen(false)}>Close</Button></DialogFooter>
+            <DialogContent className="max-w-5xl rounded-3xl p-0 overflow-hidden">
+                <DialogHeader className="p-6 border-b bg-muted/20">
+                    <DialogTitle className="text-xl font-black font-headline uppercase tracking-tight">Weekly Timetable Matrix</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[70vh] overflow-y-auto p-6 bg-card"><TimetableView /></div>
+                <DialogFooter className="p-4 border-t bg-muted/10">
+                    <Button variant="outline" onClick={() => setTimetableModalOpen(false)} className="rounded-xl font-bold">Dismiss Console</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
         
@@ -407,40 +453,79 @@ export default function StudentDashboard() {
         )}
         
         <Dialog open={isLeaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
-            <DialogContent>
-                <DialogHeader><DialogTitle>{leaveDialogTitle}</DialogTitle><DialogDescription>{leaveDialogDescription}</DialogDescription></DialogHeader>
-                <div className="grid gap-4 py-4">
+            <DialogContent className="rounded-3xl">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-black uppercase tracking-tight">Academic Leave Portal</DialogTitle>
+                    <DialogDescription className="text-xs font-medium">Submit absence justification for approval.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-6 py-4">
                     {dialogAction === 'leave' && (
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label htmlFor="start-date">Start Date</Label><Input id="start-date" type="date" value={leaveStartDate} onChange={(e) => setLeaveStartDate(e.target.value)} disabled={isSubmitting}/></div>
-                        <div className="space-y-2"><Label htmlFor="end-date">End Date</Label><Input id="end-date" type="date" value={leaveEndDate} onChange={(e) => setLeaveEndDate(e.target.value)} min={leaveStartDate} disabled={isSubmitting}/></div>
+                        <div className="space-y-2">
+                            <Label htmlFor="start-date" className="text-[10px] font-bold uppercase tracking-widest ml-1">Start Date</Label>
+                            <Input id="start-date" type="date" value={leaveStartDate} onChange={(e) => setLeaveStartDate(e.target.value)} disabled={isSubmitting} className="rounded-xl" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="end-date" className="text-[10px] font-bold uppercase tracking-widest ml-1">End Date</Label>
+                            <Input id="end-date" type="date" value={leaveEndDate} onChange={(e) => setLeaveEndDate(e.target.value)} min={leaveStartDate} disabled={isSubmitting} className="rounded-xl" />
+                        </div>
                     </div>
                     )}
-                    <div className="space-y-2"><Label htmlFor="reason">Reason / Note</Label><Textarea id="reason" placeholder="Please provide a brief reason..." value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} disabled={isSubmitting}/></div>
+                    <div className="space-y-2">
+                        <Label htmlFor="reason" className="text-[10px] font-bold uppercase tracking-widest ml-1">Reason / Justification</Label>
+                        <Textarea id="reason" placeholder="Briefly state your reason..." value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} disabled={isSubmitting} className="rounded-xl min-h-[100px]" />
+                    </div>
                 </div>
-                <DialogFooter><Button variant="outline" onClick={() => setLeaveDialogOpen(false)}>Cancel</Button><Button onClick={handleLeaveSubmit} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Submit</Button></DialogFooter>
+                <DialogFooter className="gap-2">
+                    <Button variant="outline" onClick={() => setLeaveDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
+                    <Button onClick={handleLeaveSubmit} disabled={isSubmitting} className="rounded-xl font-bold bg-primary px-8">
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Send Request'}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
 
         <Dialog open={isEventDialogOpen} onOpenChange={setEventDialogOpen}>
-            <DialogContent>
-                <DialogHeader><DialogTitle>{eventDialogTitle}</DialogTitle><DialogDescription>{eventDialogDescription}</DialogDescription></DialogHeader>
-                 {dialogAction === 'reminder' ? (
-                     <div className="grid gap-4 py-4">
-                        <div className="space-y-2"><Label htmlFor="event-title">Title</Label><Input id="event-title" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} placeholder="e.g. Project Deadline" disabled={isSubmitting}/></div>
-                        <div className="flex items-center space-x-2"><Switch id="reminder" checked={eventReminder} onCheckedChange={setEventReminder} disabled={isSubmitting}/><Label htmlFor="reminder">Set Reminder Time</Label></div>
-                        {eventReminder && <div className="space-y-2"><Label htmlFor="reminder-time">Time</Label><Input id="reminder-time" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} disabled={isSubmitting}/></div>}
+            <DialogContent className="rounded-3xl">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-black uppercase tracking-tight">Custom Reminder</DialogTitle>
+                    <DialogDescription className="text-xs font-medium">{selectedDate ? format(selectedDate, 'PPP') : ''}</DialogDescription>
+                </DialogHeader>
+                 <div className="grid gap-6 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="event-title" className="text-[10px] font-bold uppercase tracking-widest ml-1">Reminder Subject</Label>
+                        <Input id="event-title" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} placeholder="e.g. Workshop Registration" disabled={isSubmitting} className="rounded-xl" />
                     </div>
-                 ) : (
-                    <div className="grid gap-4 py-4">
-                        <div className="space-y-2"><Label htmlFor="reason-note">Note</Label><Textarea id="reason-note" placeholder="Add a note for yourself..." value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} disabled={isSubmitting}/></div>
+                    <div className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-dashed">
+                        <Label htmlFor="reminder" className="text-xs font-bold uppercase tracking-widest">Enable Alert</Label>
+                        <Switch id="reminder" checked={eventReminder} onValueChange={setEventReminder} disabled={isSubmitting}/>
                     </div>
-                 )}
-                <DialogFooter><Button variant="outline" onClick={() => setEventDialogOpen(false)}>Cancel</Button><Button onClick={handleEventSubmit} disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Save</Button></DialogFooter>
+                    {eventReminder && (
+                        <div className="space-y-2 animate-in fade-in-0 slide-in-from-top-2">
+                            <Label htmlFor="reminder-time" className="text-[10px] font-bold uppercase tracking-widest ml-1">Alert Time</Label>
+                            <Input id="reminder-time" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} disabled={isSubmitting} className="rounded-xl" />
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setEventDialogOpen(false)} className="rounded-xl font-bold">Discard</Button>
+                    <Button onClick={handleEventSubmit} disabled={isSubmitting} className="rounded-xl font-bold bg-primary px-8">
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Save Event'}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     </DashboardLayout>
   );
 }
 
-    
+const DashboardSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
+    <div className="space-y-4">
+        <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">{title}</h3>
+        {children}
+    </div>
+);
+
+const Mail = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+);

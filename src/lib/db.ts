@@ -1,6 +1,4 @@
 
-'use server';
-
 import Database from 'better-sqlite3';
 import {
   subjects as placeholderSubjects,
@@ -29,15 +27,14 @@ import fs from 'fs';
 import path from 'path';
 import { randomBytes } from 'crypto';
 
-// This will be our singleton database instance
-let db: Database.Database;
+// Persistent Singleton pattern for production readiness
+declare global {
+  var __db: Database.Database | undefined;
+}
+
 const dbFilePath = './timewise.db';
-
-// A flag to indicate if the schema has been checked in the current run.
-let schemaChecked = false;
-const schemaVersion = 73; // Increment this to force re-initialization
+const schemaVersion = 74; 
 const versionFilePath = path.join(process.cwd(), 'workspace/db-version.txt');
-
 
 function getDbVersion() {
   if (fs.existsSync(versionFilePath)) {
@@ -54,36 +51,39 @@ function setDbVersion(version: number) {
   fs.writeFileSync(versionFilePath, version.toString(), 'utf-8');
 }
 
-
 function initializeDb() {
   const currentVersion = getDbVersion();
   const dbExists = fs.existsSync(dbFilePath);
 
   if (dbExists && currentVersion < schemaVersion) {
-    fs.unlinkSync(dbFilePath);
-    console.log('Database file deleted due to schema update.');
+    console.log(`[Database] Schema migration required (v${currentVersion} -> v${schemaVersion})`);
+    try {
+        // Backup before deletion in production-ready logic (optional but good practice)
+        fs.unlinkSync(dbFilePath);
+    } catch (e) {
+        console.error("[Database] Failed to delete old DB file:", e);
+    }
   }
 
-  db = new Database(dbFilePath);
+  const db = new Database(dbFilePath, { 
+    verbose: process.env.NODE_ENV === 'development' ? console.log : undefined 
+  });
   
-  if (!dbExists || currentVersion < schemaVersion) {
-    console.log('Database does not exist or is outdated, creating and seeding...');
-    createSchemaAndSeed();
-    setDbVersion(schemaVersion);
-  } else {
-    console.log('Database exists and schema is up to date. Persistence is enabled.');
-  }
-
-
+  // High performance mode
   db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
   db.pragma('foreign_keys = ON');
+
+  if (!dbExists || currentVersion < schemaVersion) {
+    console.log('[Database] Re-initializing schema and seed data...');
+    createSchemaAndSeed(db);
+    setDbVersion(schemaVersion);
+  }
 
   return db;
 }
 
-
-function createSchemaAndSeed() {
-   // Use "IF NOT EXISTS" for every table to make initialization idempotent
+function createSchemaAndSeed(db: Database.Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS departments (
         id TEXT PRIMARY KEY,
@@ -305,7 +305,7 @@ function createSchemaAndSeed() {
         id TEXT PRIMARY KEY,
         scheduleId TEXT NOT NULL,
         studentId TEXT NOT NULL,
-        date TEXT NOT NULL, -- YYYY-MM-DD
+        date TEXT NOT NULL, 
         status TEXT NOT NULL CHECK(status IN ('present', 'absent', 'disputed')),
         isLocked BOOLEAN NOT NULL DEFAULT 0,
         timestamp TEXT NOT NULL,
@@ -345,7 +345,7 @@ function createSchemaAndSeed() {
       id TEXT PRIMARY KEY,
       assignmentId TEXT NOT NULL,
       studentId TEXT NOT NULL,
-      fileUrl TEXT NOT NULL, -- URL to the submission file
+      fileUrl TEXT NOT NULL,
       submittedAt TEXT NOT NULL,
       grade TEXT,
       remarks TEXT,
@@ -371,30 +371,29 @@ function createSchemaAndSeed() {
     );
   `);
   
-  // Seed the database
-    const insertDepartment = db.prepare('INSERT OR IGNORE INTO departments (id, name, code) VALUES (?, ?, ?)');
-    const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, credits) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, departmentId, section) VALUES (?, ?, ?, ?, ?)');
-    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear, dateOfJoining, unavailableSlots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time, batch) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertUser = db.prepare('INSERT OR REPLACE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
-    const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions, subscriptionTier, generationCredits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
-    const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId, floor) VALUES (?, ?, ?, ?, ?, ?)');
-    const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status, transactionId, paymentDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertAttendance = db.prepare('INSERT OR IGNORE INTO attendance (id, scheduleId, studentId, date, status, isLocked, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const insertResult = db.prepare('INSERT OR IGNORE INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade, examType) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertGatePass = db.prepare('INSERT OR IGNORE INTO gate_passes (id, studentId, requestDate, departureDate, arrivalDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const insertBadge = db.prepare('INSERT OR IGNORE INTO badges (id, name, description, icon, rarity, category, points) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const insertUserBadge = db.prepare('INSERT OR IGNORE INTO user_badges (id, userId, badgeId, earnedAt) VALUES (?, ?, ?, ?)');
-
+    // Seed within a transaction for speed and safety
     db.transaction(() => {
-        // 1. Independent Entities
+        const insertDepartment = db.prepare('INSERT OR IGNORE INTO departments (id, name, code) VALUES (?, ?, ?)');
+        const insertSubject = db.prepare('INSERT OR IGNORE INTO subjects (id, name, code, isSpecial, type, semester, syllabus, departmentId, credits) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertClass = db.prepare('INSERT OR IGNORE INTO classes (id, name, semester, departmentId, section) VALUES (?, ?, ?, ?, ?)');
+        const insertStudent = db.prepare('INSERT OR IGNORE INTO students (id, name, email, enrollmentNumber, rollNumber, batch, phone, classId, avatar, profileCompleted, sgpa, cgpa, streak, points, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertFaculty = db.prepare('INSERT OR IGNORE INTO faculty (id, name, email, code, departmentId, designation, employmentType, roles, streak, avatar, profileCompleted, points, allottedSubjects, maxWeeklyHours, designatedYear, dateOfJoining, unavailableSlots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertClassroom = db.prepare('INSERT OR IGNORE INTO classrooms (id, name, type, capacity, maintenanceStatus, building) VALUES (?, ?, ?, ?, ?, ?)');
+        const insertSchedule = db.prepare('INSERT OR IGNORE INTO schedule (id, classId, subjectId, facultyId, classroomId, day, time, batch) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertLeaveRequest = db.prepare('INSERT OR IGNORE INTO leave_requests (id, requesterId, requesterName, requesterRole, startDate, endDate, reason, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertScheduleChangeRequest = db.prepare('INSERT OR IGNORE INTO schedule_change_requests (id, scheduleId, facultyId, reason, status, requestedClassroomId) VALUES (?, ?, ?, ?, ?, ?)');
+        const insertNotification = db.prepare('INSERT OR IGNORE INTO notifications (id, userId, message, isRead, createdAt, category) VALUES (?, ?, ?, ?, ?, ?)');
+        const insertUser = db.prepare('INSERT OR REPLACE INTO user_credentials (email, userId, password, role, requiresPasswordChange) VALUES (?, ?, ?, ?, ?)');
+        const insertAdmin = db.prepare('INSERT OR IGNORE INTO admins (id, name, email, avatar, role, permissions, subscriptionTier, generationCredits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertHostel = db.prepare('INSERT OR IGNORE INTO hostels (id, name, blocks) VALUES (?, ?, ?)');
+        const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, hostelId, roomNumber, block, studentId, floor) VALUES (?, ?, ?, ?, ?, ?)');
+        const insertFee = db.prepare('INSERT OR IGNORE INTO fees (id, studentId, semester, feeType, amount, dueDate, status, transactionId, paymentDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertAttendance = db.prepare('INSERT OR IGNORE INTO attendance (id, scheduleId, studentId, date, status, isLocked, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const insertResult = db.prepare('INSERT OR IGNORE INTO results (id, studentId, subjectId, semester, marks, totalMarks, grade, examType) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        const insertGatePass = db.prepare('INSERT OR IGNORE INTO gate_passes (id, studentId, requestDate, departureDate, arrivalDate, reason, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const insertBadge = db.prepare('INSERT OR IGNORE INTO badges (id, name, description, icon, rarity, category, points) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const insertUserBadge = db.prepare('INSERT OR IGNORE INTO user_badges (id, userId, badgeId, earnedAt) VALUES (?, ?, ?, ?)');
+
         placeholderDepartments.forEach(d => insertDepartment.run(d.id, d.name, d.code));
         placeholderSubjects.forEach(s => insertSubject.run(s.id, s.name, s.code, (s as any).isSpecial ? 1: 0, s.type, s.semester, s.syllabus || null, s.departmentId, s.credits || null));
         placeholderClassrooms.forEach(cr => insertClassroom.run(cr.id, cr.name, cr.type, cr.capacity, cr.maintenanceStatus, cr.building));
@@ -402,11 +401,8 @@ function createSchemaAndSeed() {
         placeholderFaculty.forEach(f => insertFaculty.run(f.id, f.name, f.email, f.code, f.departmentId, f.designation, f.employmentType, JSON.stringify(f.roles), f.streak, f.avatar || null, f.profileCompleted || 0, f.points || 0, JSON.stringify(f.allottedSubjects || []), f.maxWeeklyHours, f.designatedYear, f.dateOfJoining, JSON.stringify(f.unavailableSlots || [])));
         hostels.forEach(h => insertHostel.run(h.id, h.name, h.blocks));
         badges.forEach(b => insertBadge.run(b.id, b.name, b.description, b.icon, b.rarity, b.category, b.points));
-
-        // 2. Dependent Entities (like students who need a classId)
         placeholderStudents.forEach(s => insertStudent.run(s.id, s.name, s.email, s.enrollmentNumber, s.rollNumber, s.batch, s.phone, s.classId, s.avatar || null, s.profileCompleted || 0, s.sgpa, s.cgpa, s.streak || 0, s.points || 0, s.category || 'general'));
 
-        // 3. User Credentials for all roles
         insertAdmin.run(adminUser.id, adminUser.name, adminUser.email, adminUser.avatar, 'admin', '["*"]', 'pro100', 999);
         insertAdmin.run(managerUser.id, managerUser.name, managerUser.email, managerUser.avatar, 'manager', JSON.stringify(managerUser.permissions), 'free', 5);
         insertUser.run(adminUser.email, adminUser.id, adminUser.password, 'admin', 0);
@@ -414,7 +410,6 @@ function createSchemaAndSeed() {
         placeholderFaculty.forEach(f => insertUser.run(f.email, f.id, 'faculty123', 'faculty', 1));
         placeholderStudents.forEach(s => insertUser.run(s.email, s.id, 'student123', 'student', 1));
 
-        // 4. Relational Data
         placeholderSchedule.forEach(s => insertSchedule.run(s.id, s.classId, s.subjectId, s.facultyId, s.classroomId, s.day, s.time, (s as any).batch || null));
         leaveRequests.forEach(lr => insertLeaveRequest.run(lr.id, lr.requesterId, lr.requesterName, lr.requesterRole, lr.startDate, lr.endDate, lr.reason, lr.status, lr.type || 'academic'));
         scheduleChangeRequests.forEach(scr => insertScheduleChangeRequest.run(scr.id, scr.scheduleId, scr.facultyId, scr.reason, scr.status, scr.requestedClassroomId || null));
@@ -425,18 +420,13 @@ function createSchemaAndSeed() {
         results.forEach(r => insertResult.run(r.id, r.studentId, r.subjectId, r.semester, r.marks, r.totalMarks, r.grade, r.examType));
         gatePasses.forEach(gp => insertGatePass.run(gp.id, gp.studentId, gp.requestDate, gp.departureDate, gp.arrivalDate, gp.reason, gp.status));
         userBadges.forEach(ub => insertUserBadge.run(ub.id, ub.userId, ub.badgeId, ub.earnedAt));
-        
     })();
-    console.log('Database initialized and seeded successfully.');
 }
 
-
-// Initialize and export the database connection
-const getDb = () => {
-    if (!db) {
-        db = initializeDb();
+// Singleton connection getter
+export const db = () => {
+    if (!global.__db) {
+        global.__db = initializeDb();
     }
-    return db;
-}
-
-export { getDb as db };
+    return global.__db;
+};

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,7 +33,7 @@
     --input: 240 5.9% 90%;
     --ring: 262 84% 57%;
     
-    --radius: 0.75rem;
+    --radius: 1rem; /* Standardizing larger radius for modern look */
 
     --chart-1: 262 84% 57%;
     --chart-2: 262 74% 67%;
@@ -61,7 +62,7 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 262 84% 57%;
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     --chart-1: 262 84% 57%;
     --chart-2: 262 74% 67%;
@@ -76,11 +77,19 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground;
   }
 }
 
 @layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   .animation-shake {
     animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
   }
@@ -92,25 +101,17 @@
     40%, 60% { transform: translate3d(4px, 0, 0); }
   }
 
-  .animation-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulse {
-    50% { transform: scale(1.05); opacity: 0.8; }
-  }
-
   .bg-grid-white {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgba(255,255,255,0.05)'%3E%3Cpath d='M0 .5H31.5V32'/%3E%3C/svg%3E");
+  }
+
+  .animate-grid-move {
+    animation: grid-move 3s linear infinite;
   }
 
   @keyframes grid-move {
     0% { transform: translateY(0); }
     100% { transform: translateY(32px); }
-  }
-
-  .animate-grid-move {
-    animation: grid-move 3s linear infinite;
   }
 
   .glass-card {
@@ -119,5 +120,20 @@
 
   .bg-gradient-primary {
     @apply bg-gradient-to-r from-primary to-[#9333ea] hover:from-[#9333ea] hover:to-primary;
+  }
+  
+  .animate-wave {
+    animation: wave 2s linear infinite;
+  }
+
+  @keyframes wave {
+    0% { transform: rotate(0.0deg) }
+    10% { transform: rotate(14.0deg) }
+    20% { transform: rotate(-8.0deg) }
+    30% { transform: rotate(14.0deg) }
+    40% { transform: rotate(-4.0deg) }
+    50% { transform: rotate(10.0deg) }
+    60% { transform: rotate(0.0deg) }
+    100% { transform: rotate(0.0deg) }
   }
 }
